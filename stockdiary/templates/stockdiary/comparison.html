@@ -306,6 +306,65 @@
         vertical-align: middle;
     }
 
+    /* 連続上昇ラベル */
+    .streak-badge {
+        display: inline-block;
+        font-size: 0.68rem;
+        font-weight: var(--font-bold);
+        padding: 1px 5px;
+        border-radius: var(--radius-full);
+        margin-left: 4px;
+        vertical-align: middle;
+    }
+    .streak-badge-all {
+        background-color: rgba(16,185,129,0.15);
+        color: var(--success-color);
+        border: 1px solid rgba(16,185,129,0.4);
+    }
+    .streak-badge-partial {
+        background-color: rgba(16,185,129,0.08);
+        color: var(--success-color);
+        border: 1px solid rgba(16,185,129,0.25);
+    }
+
+    /* NGパターン検出カード */
+    .ng-stocks-grid {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    .ng-stock-card {
+        flex: 1;
+        min-width: 160px;
+        border: 1px solid var(--border-primary);
+        border-radius: 8px;
+        padding: 10px 12px;
+        background: var(--bg-secondary);
+    }
+    .ng-stock-header {
+        font-size: 0.8rem;
+        font-weight: var(--font-bold);
+        color: var(--text-primary);
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .ng-alert-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 5px;
+        font-size: 0.78rem;
+        padding: 4px 0;
+        border-bottom: 1px solid var(--border-light);
+        line-height: 1.4;
+    }
+    .ng-alert-item:last-child { border-bottom: none; }
+    .ng-alert-item.level-danger  { color: var(--danger-color); }
+    .ng-alert-item.level-warning { color: var(--warning-color); }
+    .ng-alert-item.level-ok      { color: var(--success-color); }
+    .ng-alert-icon { flex-shrink: 0; margin-top: 1px; }
+
     /* トースト */
     #cmp-toast {
         position: fixed;
@@ -403,6 +462,15 @@
             </div>
         </div>
 
+        <!-- NGパターン検出 -->
+        <div class="section-card">
+            <div class="section-title">
+                <i class="bi bi-shield-exclamation"></i>リスク・アラート検出
+                <span style="font-size:0.75rem;font-weight:var(--font-normal);color:var(--text-secondary);margin-left:4px;">4年データから自動検出</span>
+            </div>
+            <div class="ng-stocks-grid" id="ng-stocks-grid"></div>
+        </div>
+
     </div>
 </div>
 
@@ -492,6 +560,109 @@
     }
 
     function getStockColor(idx) { return STOCK_COLORS[idx % STOCK_COLORS.length]; }
+
+    // ============================================================
+    // トレンド分析
+    // ============================================================
+
+    /** 前年比変化方向の配列を返す。null値は無視して隣接する非nullペアを比較 */
+    function trendArrows(arr) {
+        const pts = (arr || []).map((v, i) => ({ v, i })).filter(x => x.v != null);
+        const out = [];
+        for (let i = 1; i < pts.length; i++) {
+            const prev = pts[i - 1].v, curr = pts[i].v;
+            out.push(curr > prev * 1.005 ? '↑' : curr < prev * 0.995 ? '↓' : '→');
+        }
+        return out;
+    }
+
+    /** 矢印をカラーHTMLに変換 */
+    function trendSeqHtml(arr) {
+        return trendArrows(arr).map(a => {
+            if (a === '↑') return `<span class="badge-good">${a}</span>`;
+            if (a === '↓') return `<span class="badge-bad">${a}</span>`;
+            return `<span style="color:var(--text-secondary);">${a}</span>`;
+        }).join('');
+    }
+
+    /** 末尾の連続↑本数を返す */
+    function consecutiveUpCount(arr) {
+        const arrows = trendArrows(arr);
+        let n = 0;
+        for (let i = arrows.length - 1; i >= 0; i--) {
+            if (arrows[i] === '↑') n++;
+            else break;
+        }
+        return n;
+    }
+
+    /** 連続↑バッジHTML（0本なら空文字） */
+    function streakBadge(arr) {
+        const arrows = trendArrows(arr);
+        if (!arrows.length) return '';
+        const n     = consecutiveUpCount(arr);
+        const total = arrows.length;
+        if (n === 0) return '';
+        const isAll = n === total;
+        const cls   = isAll ? 'streak-badge streak-badge-all' : 'streak-badge streak-badge-partial';
+        const label = isAll ? `全${total}期連続↑` : `${n}期連続↑`;
+        return `<span class="${cls}">${label}</span>`;
+    }
+
+    /** 値セル: 最新値 + 推移矢印 + 連続バッジ */
+    function valueCellWithTrend(val, arr, fmt) {
+        const v = val ?? null;
+        if (v == null) return '<span class="badge-na">-</span>';
+        const seq   = trendSeqHtml(arr);
+        const badge = streakBadge(arr);
+        return `${fmt(v)}<br><small style="font-size:0.7rem;">${seq}${badge}</small>`;
+    }
+
+    // ============================================================
+    // NGパターン検出
+    // ============================================================
+    function detectNgPatterns(d) {
+        const alerts = [];
+        const revA  = trendArrows(d.revenue || []);
+        const oiA   = trendArrows(d.operating_income || []);
+        const cfA   = trendArrows(d.operating_cf || []);
+        const roeA  = trendArrows(d.roe || []);
+
+        const last  = a => a.length ? a[a.length - 1] : null;
+        const allEq = (a, n, v) => a.length >= n && a.slice(-n).every(x => x === v);
+
+        // 売上増加 × 利益減少
+        if (last(revA) === '↑' && last(oiA) === '↓') {
+            const level = allEq(revA, 2, '↑') && allEq(oiA, 2, '↓') ? 'danger' : 'warning';
+            alerts.push({ level, msg: level === 'danger'
+                ? '売上増加 × 利益減少（2期連続）'
+                : '売上増加 × 利益減少（直近年）' });
+        }
+
+        // 利益増加 × 営業CF減少
+        if (last(oiA) === '↑' && last(cfA) === '↓') {
+            alerts.push({ level: 'warning', msg: '利益増加 × 営業CF減少（直近年）' });
+        }
+
+        // 利益と営業CFが乖離（2期連続）
+        if (allEq(oiA, 2, '↑') && allEq(cfA, 2, '↓')) {
+            alerts.push({ level: 'danger', msg: '利益↑ × 営業CF↓（2期連続）— 利益の質に要注意' });
+        }
+
+        // ROE低下傾向
+        if (allEq(roeA, 3, '↓')) {
+            alerts.push({ level: 'danger', msg: 'ROE低下傾向（3期連続↓）' });
+        } else if (allEq(roeA, 2, '↓')) {
+            alerts.push({ level: 'warning', msg: 'ROE低下傾向（2期連続↓）' });
+        }
+
+        // 営業CF連続減少
+        if (allEq(cfA, 3, '↓')) {
+            alerts.push({ level: 'danger', msg: '営業CF3期連続減少' });
+        }
+
+        return alerts;
+    }
 
     // ============================================================
     // 銘柄検索オートコンプリート
@@ -640,6 +811,7 @@
         renderCompareTable(codes);
         renderCagrTable(codes);
         renderTrendChart(codes, currentChartMetric);
+        renderNgSection(codes);
     }
 
     // ============================================================
@@ -663,8 +835,14 @@
         }
 
         const rows = [
-            { label: '売上高（最新）',   fn: d => fmtOku(latest(d.revenue)) },
-            { label: '営業利益（最新）', fn: d => fmtOku(latest(d.operating_income)) },
+            {
+                label: '売上高',
+                fn: d => valueCellWithTrend(latest(d.revenue), d.revenue, v => fmtOku(v)),
+            },
+            {
+                label: '営業利益',
+                fn: d => valueCellWithTrend(latest(d.operating_income), d.operating_income, v => fmtOku(v)),
+            },
             {
                 label: '営業利益率（最新）',
                 fn: d => {
@@ -734,6 +912,50 @@
             html += '</tr>';
         });
         tbody.innerHTML = html;
+    }
+
+    // ============================================================
+    // NGパターン検出セクション
+    // ============================================================
+    function renderNgSection(codes) {
+        const grid = document.getElementById('ng-stocks-grid');
+        grid.innerHTML = '';
+
+        codes.forEach(c => {
+            const d      = stocksData[c];
+            const alerts = detectNgPatterns(d);
+            const color  = d._color;
+
+            const card = document.createElement('div');
+            card.className = 'ng-stock-card';
+
+            const iconMap = { danger: '🔴', warning: '⚠️', ok: '✅' };
+
+            let alertsHtml = '';
+            if (alerts.length === 0) {
+                alertsHtml = `<div class="ng-alert-item level-ok">
+                    <span class="ng-alert-icon">✅</span>
+                    <span>検出されたリスクなし</span>
+                </div>`;
+            } else {
+                alertsHtml = alerts.map(a => `
+                    <div class="ng-alert-item level-${a.level}">
+                        <span class="ng-alert-icon">${a.level === 'danger' ? '🔴' : '⚠️'}</span>
+                        <span>${a.msg}</span>
+                    </div>`).join('');
+            }
+
+            card.innerHTML = `
+                <div class="ng-stock-header">
+                    <span class="legend-dot" style="background:${color};"></span>
+                    ${d.stock_name || c}
+                    <span style="color:var(--text-secondary);font-weight:var(--font-normal);">${c}</span>
+                    ${alerts.length > 0 ? `<span style="margin-left:auto;font-size:0.75rem;color:var(--danger-color);font-weight:var(--font-bold);">${alerts.length}件</span>` : ''}
+                </div>
+                ${alertsHtml}
+            `;
+            grid.appendChild(card);
+        });
     }
 
     // ============================================================
