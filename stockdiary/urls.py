@@ -110,6 +110,8 @@ urlpatterns = [
     
     path('dashboard/', views.TradingDashboardView.as_view(), name='dashboard'),
     path('compare/', views_comparison.StockComparisonView.as_view(), name='stock_comparison'),
+    path('investment-hub/', views_comparison.InvestmentHubView.as_view(), name='investment_hub'),
+    path('api/gemini-stock-analysis/', views_comparison.api_gemini_stock_analysis, name='api_gemini_stock_analysis'),
 
     # ==========================================
     # 日記関連グラフ
