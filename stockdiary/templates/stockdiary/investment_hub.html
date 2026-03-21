@@ -711,7 +711,8 @@ table.hub-table {
             </div>
         </div>
 
-        <!-- ④ AI 分析セクション -->
+        <!-- ④ AI 分析セクション（SuperUser のみ表示） -->
+        {% if user.is_superuser %}
         <div class="ai-section">
             <div class="ai-section-header">
                 <p class="ai-title">
@@ -746,6 +747,7 @@ table.hub-table {
                 </div>
             </div>
         </div>
+        {% endif %}
 
         <!-- 免責事項 -->
         <div class="disclaimer">
@@ -1008,7 +1010,7 @@ table.hub-table {
         countHint.textContent=`${total} / ${MAX_STOCKS} 銘柄`;
         btnAdd.disabled=total>=MAX_STOCKS;
         const readyCodes=Object.keys(stocksData).filter(c=>!stocksData[c].loading);
-        btnAI.disabled=readyCodes.length===0;
+        if(btnAI) btnAI.disabled=readyCodes.length===0;
     }
 
     // ============================================================
@@ -1265,9 +1267,9 @@ table.hub-table {
     }
 
     // ============================================================
-    // ⑥ AI 分析
+    // ⑥ AI 分析（SuperUser のみ）
     // ============================================================
-    btnAI.addEventListener('click', async function(){
+    if(btnAI) btnAI.addEventListener('click', async function(){
         const codes=Object.keys(stocksData).filter(c=>!stocksData[c].loading);
         if(!codes.length){showToast('銘柄を追加してください','warning');return;}
 

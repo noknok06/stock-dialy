@@ -27,7 +27,11 @@ def api_gemini_stock_analysis(request):
     """
     複数銘柄の財務データを受け取りGemini AIで比較分析するAPIエンドポイント
     POST body: { "stocks": [ { code, stock_name, revenue[], roe[], per, pbr, ... }, ... ] }
+    SuperUser のみ利用可能
     """
+    if not request.user.is_superuser:
+        return JsonResponse({'success': False, 'error': '権限がありません（管理者のみ利用可能）'}, status=403)
+
     try:
         body = json.loads(request.body)
     except (json.JSONDecodeError, ValueError):
