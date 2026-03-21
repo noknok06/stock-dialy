@@ -477,8 +477,8 @@ def get_stock_historical(request, stock_code):
             balance_sheet = ticker.balance_sheet  # 年次
             cash_flow = ticker.cash_flow          # 年次
 
-            # 利用可能な年を古い順に並べる（最大5年）
-            cols = sorted(income_stmt.columns, reverse=False)[-5:]
+            # 利用可能な年を古い順に並べる（最大4年）
+            cols = sorted(income_stmt.columns, reverse=False)[-4:]
 
             for col in cols:
                 year_str = str(col.year)

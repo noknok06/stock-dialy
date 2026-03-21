@@ -6,21 +6,10 @@
 {% block head %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
-    :root {
-        --primary: #3b82f6;
-        --secondary: #8b5cf6;
-        --success: #10b981;
-        --destructive: #ef4444;
-        --accent: #f59e0b;
-        --background: #0f172a;
-        --foreground: #f1f5f9;
-        --card: #1e293b;
-        --border: #334155;
-        --muted: #475569;
-        --warning: #f59e0b;
-    }
-
-    body { background-color: var(--background); color: var(--foreground); }
+    /* ============================================================
+       comparison.html — ライト/ダークモード両対応
+       既存の variables.css セマンティック変数を使用
+       ============================================================ */
 
     .comparison-container {
         max-width: 1280px;
@@ -30,27 +19,36 @@
 
     /* ヘッダー */
     .page-header {
-        background-color: var(--card);
-        border: 1px solid var(--border);
-        border-radius: 10px;
+        background-color: var(--bg-primary);
+        border: 1px solid var(--border-primary);
+        border-radius: var(--radius-sm);
         padding: 20px;
         margin-bottom: 20px;
+        box-shadow: var(--card-shadow);
     }
     .page-header h1 {
         font-size: 1.4rem;
-        font-weight: 700;
-        color: var(--foreground);
+        font-weight: var(--font-bold);
+        color: var(--text-primary);
         margin: 0 0 4px;
     }
-    .page-header p { color: var(--muted); font-size: 0.875rem; margin: 0; }
+    .page-header p {
+        color: var(--text-secondary);
+        font-size: var(--text-sm);
+        margin: 0;
+    }
+    .page-header h1 i {
+        color: var(--primary-color);
+    }
 
     /* 銘柄検索エリア */
     .search-section {
-        background-color: var(--card);
-        border: 1px solid var(--border);
-        border-radius: 10px;
+        background-color: var(--bg-primary);
+        border: 1px solid var(--border-primary);
+        border-radius: var(--radius-sm);
         padding: 16px;
         margin-bottom: 20px;
+        box-shadow: var(--card-shadow);
     }
     .search-row {
         display: flex;
@@ -66,56 +64,73 @@
     }
     .search-input-wrap input {
         width: 100%;
-        background-color: var(--background);
-        border: 1px solid var(--border);
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border-primary);
         border-radius: 8px;
-        color: var(--foreground);
+        color: var(--text-primary);
         padding: 9px 12px;
-        font-size: 0.9rem;
+        font-size: var(--text-sm);
+        transition: border-color var(--duration-150) var(--ease-out),
+                    box-shadow var(--duration-150) var(--ease-out);
+    }
+    .search-input-wrap input::placeholder {
+        color: var(--text-secondary);
     }
     .search-input-wrap input:focus {
         outline: none;
-        border-color: var(--primary);
-        box-shadow: 0 0 0 2px rgba(59,130,246,0.2);
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.2);
     }
     .autocomplete-list {
         position: absolute;
         top: calc(100% + 4px);
         left: 0;
         right: 0;
-        background: var(--card);
-        border: 1px solid var(--border);
+        background: var(--bg-primary);
+        border: 1px solid var(--border-primary);
         border-radius: 8px;
-        z-index: 100;
+        z-index: var(--z-dropdown);
         max-height: 240px;
         overflow-y: auto;
         display: none;
+        box-shadow: var(--shadow-md);
     }
     .autocomplete-list.show { display: block; }
     .autocomplete-item {
         padding: 9px 12px;
         cursor: pointer;
-        font-size: 0.875rem;
-        border-bottom: 1px solid var(--border);
+        font-size: var(--text-sm);
+        border-bottom: 1px solid var(--border-light);
+        color: var(--text-primary);
     }
     .autocomplete-item:last-child { border-bottom: none; }
-    .autocomplete-item:hover { background-color: rgba(59,130,246,0.1); }
-    .ac-code { font-weight: 600; color: var(--primary); margin-right: 6px; }
-    .ac-market { color: var(--muted); font-size: 0.8rem; margin-left: 6px; }
+    .autocomplete-item:hover {
+        background-color: var(--state-hover);
+    }
+    .ac-code {
+        font-weight: var(--font-semibold);
+        color: var(--primary-color);
+        margin-right: 6px;
+    }
+    .ac-market {
+        color: var(--text-secondary);
+        font-size: 0.8rem;
+        margin-left: 6px;
+    }
 
     .btn-add {
-        background-color: var(--primary);
-        color: white;
+        background-color: var(--primary-color);
+        color: var(--color-on-primary);
         border: none;
         border-radius: 8px;
         padding: 9px 18px;
-        font-size: 0.9rem;
-        font-weight: 600;
+        font-size: var(--text-sm);
+        font-weight: var(--font-semibold);
         cursor: pointer;
-        transition: background-color 0.2s;
+        transition: background-color var(--duration-200) var(--ease-out);
         white-space: nowrap;
     }
-    .btn-add:hover { background-color: #2563eb; }
+    .btn-add:hover { background-color: var(--primary-dark); }
     .btn-add:disabled { opacity: 0.5; cursor: not-allowed; }
 
     /* 選択済み銘柄チップ */
@@ -131,9 +146,9 @@
         align-items: center;
         gap: 6px;
         padding: 5px 10px;
-        border-radius: 20px;
+        border-radius: var(--radius-full);
         font-size: 0.8rem;
-        font-weight: 600;
+        font-weight: var(--font-semibold);
         border: 2px solid;
     }
     .chip-remove {
@@ -146,13 +161,12 @@
         opacity: 0.7;
     }
     .chip-remove:hover { opacity: 1; }
-    .chip-loading { opacity: 0.6; }
 
     /* ローディング */
     #loading-bar {
-        background: var(--card);
-        border: 1px solid var(--border);
-        border-radius: 10px;
+        background: var(--bg-primary);
+        border: 1px solid var(--border-primary);
+        border-radius: var(--radius-sm);
         padding: 32px;
         text-align: center;
         display: none;
@@ -160,94 +174,97 @@
     }
     .spinner {
         width: 32px; height: 32px;
-        border: 3px solid var(--border);
-        border-top-color: var(--primary);
+        border: 3px solid var(--border-primary);
+        border-top-color: var(--primary-color);
         border-radius: 50%;
         animation: spin 0.8s linear infinite;
         margin: 0 auto 12px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+    #loading-bar p {
+        color: var(--text-secondary);
+        font-size: var(--text-sm);
+        margin: 0;
+    }
 
     /* 空状態 */
     #empty-state {
-        background: var(--card);
-        border: 1px solid var(--border);
-        border-radius: 10px;
+        background: var(--bg-primary);
+        border: 1px solid var(--border-primary);
+        border-radius: var(--radius-sm);
         padding: 48px 20px;
         text-align: center;
-        color: var(--muted);
+        color: var(--text-secondary);
+        box-shadow: var(--card-shadow);
     }
-    #empty-state i { font-size: 3rem; margin-bottom: 12px; display: block; }
+    #empty-state i {
+        font-size: 3rem;
+        margin-bottom: 12px;
+        display: block;
+        color: var(--text-tertiary);
+    }
 
-    /* 比較テーブル */
+    /* 比較コンテンツ */
     #comparison-section { display: none; }
 
     .section-card {
-        background: var(--card);
-        border: 1px solid var(--border);
-        border-radius: 10px;
+        background: var(--bg-primary);
+        border: 1px solid var(--border-primary);
+        border-radius: var(--radius-sm);
         padding: 16px;
         margin-bottom: 20px;
         overflow-x: auto;
+        box-shadow: var(--card-shadow);
     }
     .section-title {
         font-size: 1rem;
-        font-weight: 700;
-        color: var(--foreground);
+        font-weight: var(--font-bold);
+        color: var(--text-primary);
         margin: 0 0 14px;
         display: flex;
         align-items: center;
         gap: 8px;
     }
-    .section-title i { color: var(--primary); }
+    .section-title i { color: var(--primary-color); }
 
+    /* 比較テーブル */
     table.compare-table {
         width: 100%;
         border-collapse: collapse;
-        font-size: 0.875rem;
+        font-size: var(--text-sm);
         min-width: 480px;
     }
     .compare-table th, .compare-table td {
         padding: 10px 12px;
         text-align: right;
-        border-bottom: 1px solid var(--border);
+        border-bottom: 1px solid var(--border-light);
         white-space: nowrap;
+        color: var(--text-primary);
     }
     .compare-table th:first-child,
     .compare-table td:first-child {
         text-align: left;
-        color: var(--muted);
-        font-weight: 500;
+        color: var(--text-secondary);
+        font-weight: var(--font-medium);
         min-width: 150px;
     }
     .compare-table thead th {
-        background-color: rgba(59,130,246,0.08);
-        color: var(--primary);
-        font-weight: 700;
+        background-color: var(--state-hover);
+        color: var(--primary-color);
+        font-weight: var(--font-bold);
         font-size: 0.8rem;
         position: sticky;
         top: 0;
     }
     .compare-table tbody tr:hover td {
-        background-color: rgba(255,255,255,0.03);
-    }
-    .compare-table tfoot td {
-        border-bottom: none;
-        color: var(--muted);
-        font-size: 0.75rem;
-        padding-top: 8px;
+        background-color: var(--state-hover);
     }
 
     /* 色分けバッジ */
-    .badge-good  { color: #10b981; font-weight: 700; }
-    .badge-mid   { color: #f59e0b; font-weight: 700; }
-    .badge-bad   { color: #ef4444; font-weight: 700; }
-    .badge-na    { color: var(--muted); font-size: 0.8rem; }
-
-    /* CAGR表示 */
-    .cagr-positive { color: #10b981; font-size: 0.75rem; display: block; }
-    .cagr-negative { color: #ef4444; font-size: 0.75rem; display: block; }
-    .cagr-neutral  { color: var(--muted);  font-size: 0.75rem; display: block; }
+    .badge-good  { color: var(--success-color); font-weight: var(--font-bold); }
+    .badge-mid   { color: var(--warning-color); font-weight: var(--font-bold); }
+    .badge-bad   { color: var(--danger-color);  font-weight: var(--font-bold); }
+    .badge-na    { color: var(--text-secondary); font-size: 0.8rem; }
 
     /* グラフタブ */
     .chart-tabs {
@@ -258,36 +275,52 @@
     }
     .chart-tab {
         padding: 6px 14px;
-        border-radius: 20px;
-        border: 1px solid var(--border);
+        border-radius: var(--radius-full);
+        border: 1px solid var(--border-primary);
         background: transparent;
-        color: var(--muted);
+        color: var(--text-secondary);
         font-size: 0.8rem;
         cursor: pointer;
-        transition: all 0.2s;
+        transition: all var(--duration-150) var(--ease-out);
     }
     .chart-tab.active {
-        background: var(--primary);
-        border-color: var(--primary);
-        color: white;
-        font-weight: 600;
+        background: var(--primary-color);
+        border-color: var(--primary-color);
+        color: var(--color-on-primary);
+        font-weight: var(--font-semibold);
     }
     .chart-tab:hover:not(.active) {
-        border-color: var(--primary);
-        color: var(--primary);
+        border-color: var(--primary-color);
+        color: var(--primary-color);
     }
     .chart-wrap {
         position: relative;
         height: 300px;
     }
 
-    /* 凡例カラー */
     .legend-dot {
         display: inline-block;
         width: 10px; height: 10px;
         border-radius: 50%;
         margin-right: 4px;
         vertical-align: middle;
+    }
+
+    /* トースト */
+    #cmp-toast {
+        position: fixed;
+        bottom: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-size: var(--text-sm);
+        z-index: var(--z-tooltip);
+        box-shadow: var(--shadow-md);
+        max-width: 90vw;
+        text-align: center;
+        display: none;
+        color: #fff;
     }
 </style>
 {% endblock %}
@@ -297,8 +330,8 @@
 
     <!-- ヘッダー -->
     <div class="page-header">
-        <h1><i class="bi bi-bar-chart-line-fill" style="color:var(--primary);margin-right:8px;"></i>銘柄比較</h1>
-        <p>最大5銘柄の財務データ・指標を5年分で横並び比較</p>
+        <h1><i class="bi bi-bar-chart-line-fill"></i> 銘柄比較</h1>
+        <p>最大5銘柄の財務データ・指標を4年分で横並び比較</p>
     </div>
 
     <!-- 銘柄検索 -->
@@ -306,30 +339,28 @@
         <div class="search-row">
             <div class="search-input-wrap">
                 <input type="text" id="stock-search-input"
-                       placeholder="銘柄コード or 銘柄名で検索（例: 7203）"
+                       placeholder="銘柄コード or 銘柄名（例: 7203）"
                        autocomplete="off">
                 <div class="autocomplete-list" id="autocomplete-list"></div>
             </div>
             <button class="btn-add" id="btn-add-stock">
                 <i class="bi bi-plus-lg"></i> 追加
             </button>
-            <span id="stock-count-hint" style="color:var(--muted);font-size:0.8rem;">0 / 5 銘柄</span>
+            <span id="stock-count-hint" style="color:var(--text-secondary);font-size:0.8rem;">0 / 5 銘柄</span>
         </div>
-        <div class="chips-wrap" id="chips-wrap">
-            <!-- 選択済みチップ -->
-        </div>
+        <div class="chips-wrap" id="chips-wrap"></div>
     </div>
 
     <!-- ローディング -->
     <div id="loading-bar">
         <div class="spinner"></div>
-        <p style="color:var(--muted);font-size:0.875rem;margin:0;">データを取得中...</p>
+        <p>データを取得中...</p>
     </div>
 
     <!-- 空状態 -->
     <div id="empty-state">
         <i class="bi bi-search"></i>
-        <p style="font-size:1rem;margin:0 0 4px;">比較したい銘柄を追加してください</p>
+        <p style="font-size:1rem;margin:0 0 4px;color:var(--text-primary);">比較したい銘柄を追加してください</p>
         <p style="font-size:0.85rem;margin:0;">銘柄コード（例: 7203）または銘柄名で検索</p>
     </div>
 
@@ -347,9 +378,9 @@
             </div>
         </div>
 
-        <!-- 5年推移グラフ -->
+        <!-- 4年推移グラフ -->
         <div class="section-card">
-            <div class="section-title"><i class="bi bi-graph-up-arrow"></i>5年推移グラフ</div>
+            <div class="section-title"><i class="bi bi-graph-up-arrow"></i>4年推移グラフ</div>
             <div class="chart-tabs" id="chart-tabs">
                 <button class="chart-tab active" data-metric="revenue">売上高</button>
                 <button class="chart-tab" data-metric="operating_income">営業利益</button>
@@ -372,8 +403,10 @@
             </div>
         </div>
 
-    </div><!-- /comparison-section -->
+    </div>
 </div>
+
+<div id="cmp-toast"></div>
 {% endblock %}
 
 {% block extra_js %}
@@ -387,47 +420,38 @@
     const MAX_STOCKS = 5;
     const STOCK_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
-    const METRICS_LABELS = {
-        revenue:          '売上高',
-        operating_income: '営業利益',
-        eps:              'EPS',
-        operating_cf:     '営業CF',
-    };
+    // CSS 変数からテーマカラーを取得（ライト/ダーク共通）
+    function cssVar(name) {
+        return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    }
 
-    // 状態: code → data
-    const stocksData = {};
+    const stocksData  = {};
     let currentChartMetric = 'revenue';
-    let trendChart = null;
+    let trendChart    = null;
     let searchTimeout = null;
-    let selectedCode = null; // オートコンプリートで選択中
+    let selectedCode  = null;
 
-    // ============================================================
-    // DOM参照
-    // ============================================================
-    const searchInput     = document.getElementById('stock-search-input');
+    // DOM
+    const searchInput      = document.getElementById('stock-search-input');
     const autocompleteList = document.getElementById('autocomplete-list');
-    const btnAdd          = document.getElementById('btn-add-stock');
-    const chipsWrap       = document.getElementById('chips-wrap');
-    const stockCountHint  = document.getElementById('stock-count-hint');
-    const loadingBar      = document.getElementById('loading-bar');
-    const emptyState      = document.getElementById('empty-state');
-    const comparisonSec   = document.getElementById('comparison-section');
-    const chartTabs       = document.querySelectorAll('.chart-tab');
+    const btnAdd           = document.getElementById('btn-add-stock');
+    const chipsWrap        = document.getElementById('chips-wrap');
+    const stockCountHint   = document.getElementById('stock-count-hint');
+    const loadingBar       = document.getElementById('loading-bar');
+    const emptyState       = document.getElementById('empty-state');
+    const comparisonSec    = document.getElementById('comparison-section');
+    const chartTabs        = document.querySelectorAll('.chart-tab');
 
     // ============================================================
-    // ユーティリティ
+    // フォーマット
     // ============================================================
     function fmtOku(val) {
         if (val == null) return '<span class="badge-na">-</span>';
-        return val.toLocaleString('ja-JP', {maximumFractionDigits: 1}) + '億';
+        return val.toLocaleString('ja-JP', { maximumFractionDigits: 1 }) + '億';
     }
-    function fmtPct(val, decimals = 1) {
+    function fmtNum(val, dec = 1) {
         if (val == null) return '<span class="badge-na">-</span>';
-        return val.toFixed(decimals) + '%';
-    }
-    function fmtNum(val, decimals = 1) {
-        if (val == null) return '<span class="badge-na">-</span>';
-        return val.toFixed(decimals);
+        return val.toFixed(dec);
     }
 
     function colorRoe(val) {
@@ -451,7 +475,7 @@
         return `<span class="${cls}">${val.toFixed(1)}倍</span>`;
     }
 
-    // CAGR計算: (最終/初年度)^(1/年数) - 1
+    // CAGR: (最終 / 初年度)^(1/年数) - 1
     function calcCagr(arr) {
         const valid = arr.filter(v => v != null);
         if (valid.length < 2) return null;
@@ -460,28 +484,22 @@
         if (first <= 0) return null;
         return (Math.pow(last / first, 1 / (valid.length - 1)) - 1) * 100;
     }
-
     function cagrHtml(val) {
         if (val == null) return '<span class="badge-na">-</span>';
-        const cls = val >= 5 ? 'badge-good' : val >= 0 ? 'badge-mid' : 'badge-bad';
+        const cls  = val >= 5 ? 'badge-good' : val >= 0 ? 'badge-mid' : 'badge-bad';
         const sign = val >= 0 ? '+' : '';
         return `<span class="${cls}">${sign}${val.toFixed(1)}%</span>`;
     }
 
-    function getStockColor(idx) {
-        return STOCK_COLORS[idx % STOCK_COLORS.length];
-    }
+    function getStockColor(idx) { return STOCK_COLORS[idx % STOCK_COLORS.length]; }
 
     // ============================================================
-    // 銘柄検索（オートコンプリート）
+    // 銘柄検索オートコンプリート
     // ============================================================
     searchInput.addEventListener('input', function() {
         const q = this.value.trim();
         selectedCode = null;
-        if (q.length < 1) {
-            hideAutocomplete();
-            return;
-        }
+        if (q.length < 1) { hideAutocomplete(); return; }
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(() => fetchSuggestions(q), 250);
     });
@@ -489,14 +507,13 @@
     searchInput.addEventListener('keydown', function(e) {
         if (e.key === 'Enter') {
             e.preventDefault();
-            // 4桁数字なら直接追加
-            const val = this.value.trim();
+            const val  = this.value.trim();
             const code = selectedCode || (val.match(/^\d{4}$/) ? val : null);
             if (code) addStock(code);
         }
     });
 
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', e => {
         if (!e.target.closest('.search-input-wrap')) hideAutocomplete();
     });
 
@@ -517,7 +534,7 @@
             item.className = 'autocomplete-item';
             item.innerHTML = `<span class="ac-code">${c.code}</span>${c.name}<span class="ac-market">${c.market}</span>`;
             item.addEventListener('click', () => {
-                searchInput.value = c.code + ' ' + c.name;
+                searchInput.value = `${c.code} ${c.name}`;
                 selectedCode = c.code;
                 hideAutocomplete();
                 addStock(c.code);
@@ -533,40 +550,32 @@
     }
 
     // ============================================================
-    // 銘柄追加ボタン
+    // 銘柄追加
     // ============================================================
     btnAdd.addEventListener('click', () => {
-        const val = searchInput.value.trim();
+        const val  = searchInput.value.trim();
         const code = selectedCode || val.split(/\s/)[0];
         if (code) addStock(code);
     });
 
-    // ============================================================
-    // 銘柄追加メイン処理
-    // ============================================================
     async function addStock(code) {
         code = code.trim().toUpperCase();
         if (!code) return;
-        if (stocksData[code]) {
-            showToast(`${code} はすでに追加済みです`, 'warning');
-            return;
-        }
+        if (stocksData[code]) { showToast(`${code} はすでに追加済みです`, 'warning'); return; }
         if (Object.keys(stocksData).length >= MAX_STOCKS) {
-            showToast(`最大${MAX_STOCKS}銘柄まで追加できます`, 'warning');
-            return;
+            showToast(`最大${MAX_STOCKS}銘柄まで追加できます`, 'warning'); return;
         }
 
         searchInput.value = '';
         selectedCode = null;
 
-        // 仮チップ追加（ローディング中）
         const idx = Object.keys(stocksData).length;
         stocksData[code] = { loading: true };
         renderChips();
         showLoading(true);
 
         try {
-            const res = await fetch(`{% url 'stockdiary:api_stock_historical' stock_code='PLACEHOLDER' %}`.replace('PLACEHOLDER', code));
+            const res  = await fetch(`{% url 'stockdiary:api_stock_historical' stock_code='PLACEHOLDER' %}`.replace('PLACEHOLDER', code));
             const data = await res.json();
             if (!data.success) throw new Error(data.error || 'データ取得失敗');
             data._color = getStockColor(idx);
@@ -583,43 +592,38 @@
 
     function removeStock(code) {
         delete stocksData[code];
+        // 残った銘柄の色を再アサイン
+        Object.keys(stocksData).forEach((c, i) => { stocksData[c]._color = getStockColor(i); });
         renderChips();
         renderComparison();
     }
 
     // ============================================================
-    // チップ表示
+    // チップ
     // ============================================================
     function renderChips() {
         chipsWrap.innerHTML = '';
-        const codes = Object.keys(stocksData);
-        codes.forEach((code, i) => {
-            const d = stocksData[code];
+        Object.keys(stocksData).forEach((code, i) => {
+            const d     = stocksData[code];
             const color = d._color || getStockColor(i);
-            const chip = document.createElement('div');
-            chip.className = 'chip' + (d.loading ? ' chip-loading' : '');
-            chip.style.cssText = `color:${color};border-color:${color};background:${color}18;`;
+            const chip  = document.createElement('div');
+            chip.className = 'chip';
+            chip.style.cssText = `color:${color};border-color:${color};background:${color}20;`;
             chip.innerHTML = `
                 <span class="legend-dot" style="background:${color};"></span>
                 <span>${d.stock_name || code}</span>
-                ${d.loading ? '<span style="font-size:0.75rem;margin-left:2px;">...</span>' : ''}
+                ${d.loading ? '<span style="font-size:0.75rem;margin-left:2px;opacity:0.6;">…</span>' : ''}
                 <button class="chip-remove" style="color:${color};" title="削除">✕</button>
             `;
             chip.querySelector('.chip-remove').addEventListener('click', () => removeStock(code));
             chipsWrap.appendChild(chip);
         });
-        const count = codes.filter(c => !stocksData[c].loading).length;
-        const total = codes.length;
+        const total = Object.keys(stocksData).length;
         stockCountHint.textContent = `${total} / ${MAX_STOCKS} 銘柄`;
         btnAdd.disabled = total >= MAX_STOCKS;
     }
 
-    // ============================================================
-    // ローディング表示
-    // ============================================================
-    function showLoading(show) {
-        loadingBar.style.display = show ? 'block' : 'none';
-    }
+    function showLoading(show) { loadingBar.style.display = show ? 'block' : 'none'; }
 
     // ============================================================
     // 比較コンテンツ描画
@@ -633,7 +637,6 @@
         }
         emptyState.style.display = 'none';
         comparisonSec.style.display = 'block';
-
         renderCompareTable(codes);
         renderCagrTable(codes);
         renderTrendChart(codes, currentChartMetric);
@@ -646,88 +649,65 @@
         const thead = document.getElementById('compare-thead');
         const tbody = document.getElementById('compare-tbody');
 
-        // ヘッダー
         let thRow = '<tr><th>指標</th>';
         codes.forEach(c => {
             const d = stocksData[c];
-            const color = d._color;
-            thRow += `<th><span class="legend-dot" style="background:${color};"></span>${d.stock_name || c}<br><small style="color:var(--muted);font-weight:400;">${c}</small></th>`;
+            thRow += `<th><span class="legend-dot" style="background:${d._color};"></span>${d.stock_name || c}<br><small style="color:var(--text-secondary);font-weight:400;">${c}</small></th>`;
         });
-        thRow += '</tr>';
-        thead.innerHTML = thRow;
+        thead.innerHTML = thRow + '</tr>';
 
-        // 最新値を取得するヘルパー
-        function latest(arr) { if (!arr || !arr.length) return null; for (let i = arr.length-1; i>=0; i--) { if (arr[i] != null) return arr[i]; } return null; }
+        function latest(arr) {
+            if (!arr) return null;
+            for (let i = arr.length - 1; i >= 0; i--) { if (arr[i] != null) return arr[i]; }
+            return null;
+        }
 
-        // 各行のデータ定義
         const rows = [
-            {
-                label: '売上高（最新）',
-                fn: d => fmtOku(latest(d.revenue)),
-            },
-            {
-                label: '営業利益（最新）',
-                fn: d => fmtOku(latest(d.operating_income)),
-            },
+            { label: '売上高（最新）',   fn: d => fmtOku(latest(d.revenue)) },
+            { label: '営業利益（最新）', fn: d => fmtOku(latest(d.operating_income)) },
             {
                 label: '営業利益率（最新）',
                 fn: d => {
-                    const r = latest(d.revenue);
-                    const o = latest(d.operating_income);
-                    if (!r || !o) return '<span class="badge-na">-</span>';
-                    return colorOpm(o / r * 100);
-                },
+                    const r = latest(d.revenue), o = latest(d.operating_income);
+                    return (!r || !o) ? '<span class="badge-na">-</span>' : colorOpm(o / r * 100);
+                }
             },
             {
                 label: 'EPS（最新）',
-                fn: d => fmtNum(latest(d.eps), 1) !== '<span class="badge-na">-</span>' ? fmtNum(latest(d.eps), 1) + '円' : '<span class="badge-na">-</span>',
+                fn: d => {
+                    const v = latest(d.eps);
+                    return v != null ? `${fmtNum(v, 1)}円` : '<span class="badge-na">-</span>';
+                }
             },
-            {
-                label: 'ROE（最新）',
-                fn: d => colorRoe(latest(d.roe)),
-            },
-            {
-                label: '自己資本比率（最新）',
-                fn: d => colorEqRatio(latest(d.equity_ratio)),
-            },
-            { label: '─── バリュエーション ───', fn: () => '', separator: true },
-            {
-                label: 'PER',
-                fn: d => colorPer(d.per),
-            },
+            { label: 'ROE（最新）',        fn: d => colorRoe(latest(d.roe)) },
+            { label: '自己資本比率（最新）', fn: d => colorEqRatio(latest(d.equity_ratio)) },
+            { label: '── バリュエーション ──', separator: true },
+            { label: 'PER',        fn: d => colorPer(d.per) },
             {
                 label: 'PBR',
-                fn: d => {
-                    if (d.pbr == null) return '<span class="badge-na">-</span>';
-                    return `${d.pbr.toFixed(2)}倍`;
-                },
+                fn: d => d.pbr != null ? `${d.pbr.toFixed(2)}倍` : '<span class="badge-na">-</span>'
             },
             {
                 label: '配当利回り',
-                fn: d => {
-                    if (d.dividend_yield == null) return '<span class="badge-na">-</span>';
-                    return `${d.dividend_yield.toFixed(2)}%`;
-                },
+                fn: d => d.dividend_yield != null ? `${d.dividend_yield.toFixed(2)}%` : '<span class="badge-na">-</span>'
             },
         ];
 
-        let tbodyHtml = '';
+        let html = '';
         rows.forEach(row => {
             if (row.separator) {
-                tbodyHtml += `<tr><td colspan="${codes.length + 1}" style="color:var(--muted);font-size:0.75rem;padding:6px 12px;border-bottom:1px solid var(--border);">${row.label}</td></tr>`;
+                html += `<tr><td colspan="${codes.length + 1}" style="color:var(--text-secondary);font-size:0.75rem;padding:6px 12px;border-bottom:1px solid var(--border-light);">${row.label}</td></tr>`;
                 return;
             }
-            tbodyHtml += `<tr><td>${row.label}</td>`;
-            codes.forEach(c => {
-                tbodyHtml += `<td>${row.fn(stocksData[c])}</td>`;
-            });
-            tbodyHtml += '</tr>';
+            html += `<tr><td>${row.label}</td>`;
+            codes.forEach(c => { html += `<td>${row.fn(stocksData[c])}</td>`; });
+            html += '</tr>';
         });
-        tbody.innerHTML = tbodyHtml;
+        tbody.innerHTML = html;
     }
 
     // ============================================================
-    // CAGRテーブル
+    // CAGR テーブル
     // ============================================================
     function renderCagrTable(codes) {
         const thead = document.getElementById('cagr-thead');
@@ -738,62 +718,60 @@
             const d = stocksData[c];
             thRow += `<th><span class="legend-dot" style="background:${d._color};"></span>${d.stock_name || c}</th>`;
         });
-        thRow += '</tr>';
-        thead.innerHTML = thRow;
+        thead.innerHTML = thRow + '</tr>';
 
         const cagrRows = [
-            { label: '売上CAGR', key: 'revenue' },
+            { label: '売上CAGR',    key: 'revenue' },
             { label: '営業利益CAGR', key: 'operating_income' },
-            { label: 'EPS CAGR', key: 'eps' },
+            { label: 'EPS CAGR',    key: 'eps' },
             { label: '営業CF CAGR', key: 'operating_cf' },
         ];
 
-        let tbodyHtml = '';
+        let html = '';
         cagrRows.forEach(row => {
-            tbodyHtml += `<tr><td>${row.label}</td>`;
-            codes.forEach(c => {
-                const arr = stocksData[c][row.key];
-                const val = calcCagr(arr);
-                tbodyHtml += `<td>${cagrHtml(val)}</td>`;
-            });
-            tbodyHtml += '</tr>';
+            html += `<tr><td>${row.label}</td>`;
+            codes.forEach(c => { html += `<td>${cagrHtml(calcCagr(stocksData[c][row.key]))}</td>`; });
+            html += '</tr>';
         });
-        tbody.innerHTML = tbodyHtml;
+        tbody.innerHTML = html;
     }
 
     // ============================================================
-    // 推移グラフ
+    // 推移グラフ（CSS変数でテーマ対応）
     // ============================================================
     function renderTrendChart(codes, metric) {
         const ctx = document.getElementById('trend-chart').getContext('2d');
 
+        // CSS変数からグリッド・テキスト色を取得（ライト/ダーク自動対応）
+        const gridColor = cssVar('--border-primary') || '#334155';
+        const tickColor = cssVar('--text-secondary') || '#94a3b8';
+
         // 全銘柄の年度ユニオン
         const allYears = new Set();
-        codes.forEach(c => { (stocksData[c].years || []).forEach(y => allYears.add(y)); });
+        codes.forEach(c => (stocksData[c].years || []).forEach(y => allYears.add(y)));
         const years = Array.from(allYears).sort();
 
-        const datasets = codes.map((c, i) => {
-            const d = stocksData[c];
-            const colorArr = d.years || [];
-            const metricArr = d[metric] || [];
-            const pointData = years.map(y => {
-                const idx = colorArr.indexOf(y);
-                return idx >= 0 ? metricArr[idx] : null;
-            });
+        const datasets = codes.map(c => {
+            const d   = stocksData[c];
+            const yrs = d.years || [];
+            const arr = d[metric] || [];
             return {
                 label: d.stock_name || c,
-                data: pointData,
-                borderColor: d._color,
+                data: years.map(y => {
+                    const i = yrs.indexOf(y);
+                    return i >= 0 ? arr[i] : null;
+                }),
+                borderColor:     d._color,
                 backgroundColor: d._color + '22',
-                borderWidth: 2.5,
-                pointRadius: 4,
+                borderWidth:     2.5,
+                pointRadius:     4,
                 pointHoverRadius: 6,
-                tension: 0.3,
-                spanGaps: true,
+                tension:         0.3,
+                spanGaps:        true,
             };
         });
 
-        const unitLabel = (metric === 'eps') ? '円' : '億円';
+        const unitLabel = metric === 'eps' ? '円' : '億円';
 
         if (trendChart) trendChart.destroy();
         trendChart = new Chart(ctx, {
@@ -804,40 +782,36 @@
                 maintainAspectRatio: false,
                 interaction: { mode: 'index', intersect: false },
                 plugins: {
-                    legend: {
-                        labels: { color: '#94a3b8', font: { size: 12 } }
-                    },
+                    legend: { labels: { color: tickColor, font: { size: 12 } } },
                     tooltip: {
                         callbacks: {
                             label: ctx => {
                                 const v = ctx.raw;
                                 if (v == null) return `${ctx.dataset.label}: -`;
-                                return `${ctx.dataset.label}: ${v.toLocaleString('ja-JP', {maximumFractionDigits:1})}${unitLabel}`;
+                                return `${ctx.dataset.label}: ${v.toLocaleString('ja-JP', { maximumFractionDigits: 1 })}${unitLabel}`;
                             }
                         }
                     }
                 },
                 scales: {
                     x: {
-                        ticks: { color: '#94a3b8', font: { size: 11 } },
-                        grid: { color: '#334155' }
+                        ticks: { color: tickColor, font: { size: 11 } },
+                        grid:  { color: gridColor }
                     },
                     y: {
                         ticks: {
-                            color: '#94a3b8',
-                            font: { size: 11 },
-                            callback: v => v.toLocaleString('ja-JP', {maximumFractionDigits:0}) + unitLabel
+                            color: tickColor,
+                            font:  { size: 11 },
+                            callback: v => v.toLocaleString('ja-JP', { maximumFractionDigits: 0 }) + unitLabel
                         },
-                        grid: { color: '#334155' }
+                        grid: { color: gridColor }
                     }
                 }
             }
         });
     }
 
-    // ============================================================
     // グラフタブ切替
-    // ============================================================
     chartTabs.forEach(tab => {
         tab.addEventListener('click', function() {
             chartTabs.forEach(t => t.classList.remove('active'));
@@ -848,21 +822,26 @@
         });
     });
 
+    // ダークモード切替時にグラフを再描画
+    const observer = new MutationObserver(() => {
+        const codes = Object.keys(stocksData).filter(c => !stocksData[c].loading);
+        if (codes.length > 0) renderTrendChart(codes, currentChartMetric);
+    });
+    observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
     // ============================================================
-    // トースト通知
+    // トースト
     // ============================================================
+    let toastTimer = null;
     function showToast(msg, type = 'info') {
-        const toast = document.createElement('div');
-        const bg = type === 'error' ? '#ef4444' : type === 'warning' ? '#f59e0b' : '#3b82f6';
-        toast.style.cssText = `
-            position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
-            background:${bg};color:white;padding:10px 20px;border-radius:8px;
-            font-size:0.875rem;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.3);
-            max-width:90vw;text-align:center;
-        `;
+        const toast = document.getElementById('cmp-toast');
+        const bg = type === 'error' ? 'var(--danger-color)' : type === 'warning' ? 'var(--warning-color)' : 'var(--primary-color)';
+        toast.style.background = bg;
         toast.textContent = msg;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 3000);
+        toast.style.display = 'block';
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => { toast.style.display = 'none'; }, 3000);
     }
 
 })();
