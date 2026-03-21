@@ -434,6 +434,175 @@ def get_stock_metrics(request, stock_code):
 
 @login_required
 @require_GET
+def get_stock_historical(request, stock_code):
+    """
+    銘柄コードから5年分の財務履歴データを返す（株比較機能用）
+    売上高・営業利益・EPS・営業CF・自己資本比率・ROEを年次で取得
+    """
+    import yfinance as yf
+    import pandas as pd
+    from datetime import datetime
+
+    try:
+        ticker_symbol = f"{stock_code}.T" if (stock_code.isdigit() and len(stock_code) <= 4) else stock_code
+        ticker = yf.Ticker(ticker_symbol)
+
+        # 会社名取得
+        stock_dict = load_stock_data()
+        stock_info = stock_dict.get(stock_code, {})
+        stock_name = stock_info.get('name') if stock_info else None
+
+        def safe_float(val):
+            try:
+                f = float(val)
+                return None if pd.isna(f) else f
+            except Exception:
+                return None
+
+        def to_oku(val):
+            """円 → 億円"""
+            v = safe_float(val)
+            return round(v / 1e8, 1) if v is not None else None
+
+        years = []
+        revenue_list = []
+        operating_income_list = []
+        eps_list = []
+        operating_cf_list = []
+        equity_ratio_list = []
+        roe_list = []
+
+        try:
+            income_stmt = ticker.income_stmt      # 年次: columns=決算年(降順)
+            balance_sheet = ticker.balance_sheet  # 年次
+            cash_flow = ticker.cash_flow          # 年次
+
+            # 利用可能な年を古い順に並べる（最大5年）
+            cols = sorted(income_stmt.columns, reverse=False)[-5:]
+
+            for col in cols:
+                year_str = str(col.year)
+                years.append(year_str)
+
+                # 売上高
+                rev = to_oku(income_stmt.loc['Total Revenue', col]) if 'Total Revenue' in income_stmt.index else None
+                revenue_list.append(rev)
+
+                # 営業利益
+                oi = to_oku(income_stmt.loc['Operating Income', col]) if 'Operating Income' in income_stmt.index else None
+                operating_income_list.append(oi)
+
+                # EPS
+                eps_val = safe_float(income_stmt.loc['Basic EPS', col]) if 'Basic EPS' in income_stmt.index else None
+                eps_list.append(round(eps_val, 1) if eps_val is not None else None)
+
+                # 営業CF
+                if cash_flow is not None and not cash_flow.empty and col in cash_flow.columns:
+                    ocf = to_oku(cash_flow.loc['Operating Cash Flow', col]) if 'Operating Cash Flow' in cash_flow.index else None
+                else:
+                    ocf = None
+                operating_cf_list.append(ocf)
+
+                # 自己資本比率・ROE（バランスシート）
+                eq_ratio = None
+                roe_val = None
+                if balance_sheet is not None and not balance_sheet.empty and col in balance_sheet.columns:
+                    equity = safe_float(balance_sheet.loc['Stockholders Equity', col]) if 'Stockholders Equity' in balance_sheet.index else None
+                    total_assets = safe_float(balance_sheet.loc['Total Assets', col]) if 'Total Assets' in balance_sheet.index else None
+                    if equity and total_assets and total_assets > 0:
+                        eq_ratio = round(equity / total_assets * 100, 1)
+
+                    net_income = safe_float(income_stmt.loc['Net Income', col]) if 'Net Income' in income_stmt.index else None
+                    if net_income and equity and equity > 0:
+                        roe_val = round(net_income / equity * 100, 1)
+
+                equity_ratio_list.append(eq_ratio)
+                roe_list.append(roe_val)
+
+        except Exception as e:
+            print(f"Historical data error for {stock_code}: {e}")
+
+        # 最新指標（PER/PBR/配当利回り）は既存 get_stock_metrics と同じロジック
+        fi = ticker.fast_info
+        price = getattr(fi, 'last_price', None) or getattr(fi, 'lastPrice', None)
+        shares = getattr(fi, 'shares', None) or getattr(fi, 'sharesOutstanding', None)
+        per = pbr = dividend_yield = None
+
+        try:
+            inc = ticker.income_stmt
+            bs_q = ticker.quarterly_balance_sheet
+            if inc is not None and not inc.empty and bs_q is not None and not bs_q.empty:
+                latest_i = sorted(inc.columns, reverse=True)[0]
+                latest_b = sorted(bs_q.columns, reverse=True)[0]
+                annual_net = safe_float(inc.loc['Net Income', latest_i]) if 'Net Income' in inc.index else None
+                equity_latest = safe_float(bs_q.loc['Stockholders Equity', latest_b]) if 'Stockholders Equity' in bs_q.index else None
+                if price and shares and shares > 0:
+                    if annual_net and annual_net > 0:
+                        per = round(price / (annual_net / shares), 2)
+                    if equity_latest and equity_latest > 0:
+                        pbr = round(price / (equity_latest / shares), 2)
+        except Exception:
+            pass
+
+        if per is None or pbr is None:
+            try:
+                info = ticker.info
+                if per is None:
+                    raw = info.get('trailingPE') or info.get('forwardPE')
+                    per = round(raw, 2) if raw else None
+                if pbr is None:
+                    raw = info.get('priceToBook')
+                    pbr = round(raw, 2) if raw else None
+            except Exception:
+                pass
+
+        try:
+            divs = ticker.dividends
+            if divs is not None and len(divs) > 0:
+                one_year_ago = pd.Timestamp.now(tz=divs.index.tz) - pd.DateOffset(years=1)
+                annual_div = float(divs[divs.index >= one_year_ago].sum())
+                if annual_div > 0 and price and price > 0:
+                    dividend_yield = round(annual_div / price * 100, 2)
+        except Exception:
+            pass
+
+        if dividend_yield is None:
+            try:
+                raw = ticker.info.get('dividendYield')
+                dividend_yield = round(raw * 100, 2) if raw else None
+            except Exception:
+                pass
+
+        if not stock_name:
+            try:
+                stock_name = ticker.info.get('shortName') or ticker.info.get('longName') or stock_code
+            except Exception:
+                stock_name = stock_code
+
+        return JsonResponse({
+            'success': True,
+            'stock_code': stock_code,
+            'stock_name': stock_name,
+            'years': years,
+            'revenue': revenue_list,
+            'operating_income': operating_income_list,
+            'eps': eps_list,
+            'operating_cf': operating_cf_list,
+            'equity_ratio': equity_ratio_list,
+            'roe': roe_list,
+            'per': per,
+            'pbr': pbr,
+            'dividend_yield': dividend_yield,
+            'price': price,
+        })
+
+    except Exception as e:
+        print(f"get_stock_historical error: {e}")
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required
+@require_GET
 def search_stock(request):
     """
     銘柄検索API（オートコンプリート用）
