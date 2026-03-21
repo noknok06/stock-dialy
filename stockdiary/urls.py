@@ -4,6 +4,7 @@ from . import views
 from . import api
 from . import api_views  # 🔧 追加
 from . import views_mobile_ux  # 🆕 モバイルUX用ビュー
+from . import views_comparison  # 銘柄比較機能
 from django.contrib.auth.decorators import login_required
 
 app_name = 'stockdiary'
@@ -70,6 +71,7 @@ urlpatterns = [
     path('api/stock/info/<str:stock_code>/', api.get_stock_info, name='api_stock_info'),
     path('api/stock/price/<str:stock_code>/', api.get_stock_price, name='api_stock_price'),
     path('api/stock/metrics/<str:stock_code>/', api.get_stock_metrics, name='api_stock_metrics'),
+    path('api/stock/historical/<str:stock_code>/', api.get_stock_historical, name='api_stock_historical'),
     path('api/stock/search/', api.search_stock, name='search_stock'),  # 🔧 追加: 銘柄検索API
     path('api/create/', api.api_create_diary, name='api_create'),
     path('api/tab-content/<int:diary_id>/<str:tab_type>/', views.DiaryTabContentView.as_view(), name='api_tab_content'),
@@ -107,6 +109,7 @@ urlpatterns = [
     path('trade-upload/process/', views.process_trade_upload, name='process_trade_upload'),
     
     path('dashboard/', views.TradingDashboardView.as_view(), name='dashboard'),
+    path('compare/', views_comparison.StockComparisonView.as_view(), name='stock_comparison'),
 
     # ==========================================
     # 日記関連グラフ
