@@ -314,14 +314,17 @@ table.hub-table {
 }
 
 /* ---- 推移グラフ ---- */
-.chart-tabs {
+.metric-chips {
     display: flex;
     gap: 6px;
     flex-wrap: wrap;
-    margin-bottom: 14px;
+    margin-bottom: 12px;
 }
-.chart-tab {
-    padding: 6px 14px;
+.metric-chip {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 12px;
     border-radius: var(--radius-full);
     border: 1px solid var(--border-primary);
     background: transparent;
@@ -330,14 +333,70 @@ table.hub-table {
     cursor: pointer;
     transition: all var(--duration-150);
 }
-.chart-tab.active {
+.metric-chip input[type="checkbox"] { display: none; }
+.metric-chip:has(input:checked) {
     background: var(--primary-color);
     border-color: var(--primary-color);
     color: var(--color-on-primary);
     font-weight: var(--font-semibold);
 }
-.chart-tab:hover:not(.active) { border-color: var(--primary-color); color: var(--primary-color); }
-.trend-wrap { position: relative; height: 320px; }
+.metric-chip:not(:has(input:checked)):hover { border-color: var(--primary-color); color: var(--primary-color); }
+
+/* 銘柄カラー凡例 */
+.trend-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 10px;
+    min-height: 20px;
+}
+.trend-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+}
+.trend-legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* チャートグリッド */
+.trend-charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+@media (max-width: 768px) {
+    .trend-charts-grid { grid-template-columns: 1fr; }
+}
+.trend-chart-item {
+    background: var(--card-bg, var(--surface-elevated));
+    border: 1px solid var(--border-light, var(--border-primary));
+    border-radius: var(--radius-md, 8px);
+    padding: 12px;
+}
+.trend-chart-item h4 {
+    font-size: 0.78rem;
+    font-weight: var(--font-semibold);
+    color: var(--text-secondary);
+    margin: 0 0 8px;
+    letter-spacing: 0.02em;
+}
+.trend-chart-canvas-wrap {
+    position: relative;
+    height: 180px;
+}
+.trend-charts-empty {
+    text-align: center;
+    padding: 24px;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    grid-column: 1 / -1;
+}
 
 /* CAGR / NG */
 .ng-grid { display: flex; gap: 12px; flex-wrap: wrap; }
@@ -698,18 +757,21 @@ table.hub-table {
         <div class="hub-card">
             <div class="hub-card-title">
                 <i class="bi bi-graph-up-arrow"></i> 4年推移グラフ
+                <span class="hub-card-sub">指標を選択して表示/非表示を切り替え</span>
             </div>
-            <div class="chart-tabs" id="hub-chart-tabs">
-                <button class="chart-tab active" data-metric="revenue">売上高</button>
-                <button class="chart-tab" data-metric="operating_income">営業利益</button>
-                <button class="chart-tab" data-metric="eps">EPS</button>
-                <button class="chart-tab" data-metric="operating_cf">営業CF</button>
-                <button class="chart-tab" data-metric="roe">ROE</button>
-                <button class="chart-tab" data-metric="dividend_yield_history">配当利回り</button>
+            <!-- 銘柄カラー凡例 -->
+            <div id="trend-legend" class="trend-legend"></div>
+            <!-- 指標選択チップ -->
+            <div id="metric-chips" class="metric-chips">
+                <label class="metric-chip"><input type="checkbox" value="revenue" checked>売上高</label>
+                <label class="metric-chip"><input type="checkbox" value="operating_income" checked>営業利益</label>
+                <label class="metric-chip"><input type="checkbox" value="eps" checked>EPS</label>
+                <label class="metric-chip"><input type="checkbox" value="operating_cf" checked>営業CF</label>
+                <label class="metric-chip"><input type="checkbox" value="roe" checked>ROE</label>
+                <label class="metric-chip"><input type="checkbox" value="dividend_yield_history" checked>配当利回り</label>
             </div>
-            <div class="trend-wrap">
-                <canvas id="hub-trend-chart"></canvas>
-            </div>
+            <!-- 動的チャートグリッド -->
+            <div id="hub-trend-charts-grid" class="trend-charts-grid"></div>
         </div>
 
         <!-- ③ CAGR + NGパターン -->
@@ -799,9 +861,17 @@ table.hub-table {
     const MAX_STOCKS  = 5;
     const COLORS      = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6'];
     const stocksData  = {};
-    let currentMetric = 'revenue';
-    let trendChart    = null;
+    const trendCharts = {};  // { [metricKey]: Chart instance }
     let radarChart    = null;
+
+    const METRICS = [
+        { key: 'revenue',                label: '売上高',    unit: '億円' },
+        { key: 'operating_income',       label: '営業利益',  unit: '億円' },
+        { key: 'eps',                    label: 'EPS',      unit: '円'   },
+        { key: 'operating_cf',           label: '営業CF',   unit: '億円' },
+        { key: 'roe',                    label: 'ROE',      unit: '%'    },
+        { key: 'dividend_yield_history', label: '配当利回り', unit: '%'   },
+    ];
     let searchTO      = null;
     let selectedCode  = null;
 
@@ -1053,7 +1123,7 @@ table.hub-table {
         contentEl.style.display='block';
         renderCompareTable(codes);
         renderRadarChart(codes);
-        renderTrendChart(codes,currentMetric);
+        renderAllTrendCharts(codes);
         renderCagrTable(codes);
         renderNgSection(codes);
     }
@@ -1168,10 +1238,27 @@ table.hub-table {
     }
 
     // ============================================================
-    // ③ 推移グラフ
+    // ③ 推移グラフ（Small Multiples）
     // ============================================================
-    function renderTrendChart(codes,metric){
-        const ctx=document.getElementById('hub-trend-chart').getContext('2d');
+    function getActiveMetrics(){
+        const checked=new Set();
+        document.querySelectorAll('#metric-chips input:checked').forEach(cb=>checked.add(cb.value));
+        return METRICS.filter(m=>checked.has(m.key));
+    }
+
+    function renderSharedLegend(codes){
+        const el=document.getElementById('trend-legend');
+        if(!el) return;
+        el.innerHTML=codes.map(c=>{
+            const d=stocksData[c];
+            return `<span class="trend-legend-item">
+                <span class="trend-legend-dot" style="background:${d._color};"></span>
+                ${d.stock_name||c}
+            </span>`;
+        }).join('');
+    }
+
+    function buildTrendChart(canvas,codes,metric){
         const gridColor=cssVar('--border-primary')||'#334155';
         const tickColor=cssVar('--text-secondary')||'#94a3b8';
         const allYears=new Set();
@@ -1180,24 +1267,21 @@ table.hub-table {
         const datasets=codes.map(c=>{
             const d=stocksData[c];
             const yrs=d.years||[];
-            const arr=d[metric]||[];
+            const arr=d[metric.key]||[];
             return{
                 label:d.stock_name||c,
                 data:years.map(y=>{const i=yrs.indexOf(y);return i>=0?arr[i]:null;}),
                 borderColor:d._color,
                 backgroundColor:d._color+'22',
-                borderWidth:2.5,
-                pointRadius:4,
-                pointHoverRadius:6,
+                borderWidth:2,
+                pointRadius:3,
+                pointHoverRadius:5,
                 tension:0.3,
                 spanGaps:true,
             };
         });
-        const pctModes=['roe','dividend_yield_history'];
-        const isPct=pctModes.includes(metric);
-        const unitLabel=isPct?'%':metric==='eps'?'円':'億円';
-        if(trendChart) trendChart.destroy();
-        trendChart=new Chart(ctx,{
+        const unitLabel=metric.unit;
+        return new Chart(canvas,{
             type:'line',
             data:{labels:years,datasets},
             options:{
@@ -1205,7 +1289,7 @@ table.hub-table {
                 maintainAspectRatio:false,
                 interaction:{mode:'index',intersect:false},
                 plugins:{
-                    legend:{labels:{color:tickColor,font:{size:12}}},
+                    legend:{display:false},
                     tooltip:{callbacks:{label:ctx=>{
                         const v=ctx.raw;
                         if(v==null) return `${ctx.dataset.label}: -`;
@@ -1213,9 +1297,9 @@ table.hub-table {
                     }}}
                 },
                 scales:{
-                    x:{ticks:{color:tickColor,font:{size:11}},grid:{color:gridColor}},
+                    x:{ticks:{color:tickColor,font:{size:10}},grid:{color:gridColor}},
                     y:{
-                        ticks:{color:tickColor,font:{size:11},
+                        ticks:{color:tickColor,font:{size:10},
                             callback:v=>v.toLocaleString('ja-JP',{maximumFractionDigits:0})+unitLabel},
                         grid:{color:gridColor}
                     }
@@ -1224,14 +1308,84 @@ table.hub-table {
         });
     }
 
-    document.querySelectorAll('.chart-tab').forEach(tab=>{
-        tab.addEventListener('click',function(){
-            document.querySelectorAll('.chart-tab').forEach(t=>t.classList.remove('active'));
-            this.classList.add('active');
-            currentMetric=this.dataset.metric;
-            const codes=Object.keys(stocksData).filter(c=>!stocksData[c].loading);
-            if(codes.length>0) renderTrendChart(codes,currentMetric);
+    let _syncingTooltip=false;
+    function attachTooltipSync(){
+        const charts=Object.values(trendCharts);
+        charts.forEach(chart=>{
+            const canvas=chart.canvas;
+            canvas.addEventListener('mousemove',function(evt){
+                if(_syncingTooltip) return;
+                _syncingTooltip=true;
+                const pts=chart.getElementsAtEventForMode(evt,'index',{intersect:false},false);
+                if(pts.length){
+                    const dataIdx=pts[0].index;
+                    charts.forEach(other=>{
+                        if(other===chart) return;
+                        const activeEls=other.data.datasets.map((_,di)=>({datasetIndex:di,index:dataIdx}));
+                        other.tooltip.setActiveElements(activeEls,{x:0,y:0});
+                        other.update('none');
+                    });
+                }
+                _syncingTooltip=false;
+            });
+            canvas.addEventListener('mouseleave',function(){
+                if(_syncingTooltip) return;
+                _syncingTooltip=true;
+                charts.forEach(other=>{
+                    if(other===chart) return;
+                    other.tooltip.setActiveElements([],{x:0,y:0});
+                    other.update('none');
+                });
+                _syncingTooltip=false;
+            });
         });
+    }
+
+    function renderAllTrendCharts(codes){
+        const grid=document.getElementById('hub-trend-charts-grid');
+        if(!grid) return;
+        // 既存チャート破棄
+        Object.values(trendCharts).forEach(c=>c.destroy());
+        Object.keys(trendCharts).forEach(k=>delete trendCharts[k]);
+        grid.innerHTML='';
+
+        const activeMetrics=getActiveMetrics();
+        if(!activeMetrics.length){
+            grid.innerHTML='<div class="trend-charts-empty">指標を選択してください</div>';
+            renderSharedLegend(codes);
+            return;
+        }
+
+        activeMetrics.forEach(metric=>{
+            const item=document.createElement('div');
+            item.className='trend-chart-item';
+            item.dataset.metric=metric.key;
+            const wrap=document.createElement('div');
+            wrap.className='trend-chart-canvas-wrap';
+            const canvas=document.createElement('canvas');
+            const h4=document.createElement('h4');
+            h4.textContent=metric.label;
+            wrap.appendChild(canvas);
+            item.appendChild(h4);
+            item.appendChild(wrap);
+            grid.appendChild(item);
+            trendCharts[metric.key]=buildTrendChart(canvas,codes,metric);
+        });
+
+        renderSharedLegend(codes);
+        attachTooltipSync();
+    }
+
+    document.getElementById('metric-chips').addEventListener('change',function(e){
+        if(e.target.type!=='checkbox') return;
+        const checked=this.querySelectorAll('input:checked');
+        if(!checked.length){
+            e.target.checked=true;
+            showToast('少なくとも1つの指標を選択してください','warning');
+            return;
+        }
+        const codes=Object.keys(stocksData).filter(c=>!stocksData[c].loading);
+        if(codes.length>0) renderAllTrendCharts(codes);
     });
 
     // ============================================================
@@ -1430,7 +1584,7 @@ table.hub-table {
         const codes=Object.keys(stocksData).filter(c=>!stocksData[c].loading);
         if(!codes.length) return;
         renderRadarChart(codes);
-        renderTrendChart(codes,currentMetric);
+        renderAllTrendCharts(codes);
     });
     themeObserver.observe(document.body,{attributes:true,attributeFilter:['class']});
     themeObserver.observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
