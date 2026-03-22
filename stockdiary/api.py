@@ -1,4 +1,5 @@
 # stockdiary/api.py
+import re
 import traceback
 import requests
 from decimal import Decimal
@@ -49,6 +50,11 @@ def load_stock_data():
         return {}
 
 
+def is_japanese_stock(code):
+    """日本株コードか判定（例: 7203, 262A, 1234D など数字+任意1文字）"""
+    return bool(re.fullmatch(r'\d{3,4}[A-Z]?', code, re.IGNORECASE))
+
+
 @login_required
 @require_GET
 def get_stock_info(request, stock_code):
@@ -66,7 +72,7 @@ def get_stock_info(request, stock_code):
         # Yahoo Finance APIから詳細情報を取得
         try:
             # 日本株と米国株で分岐
-            is_us_stock = not stock_code.isdigit() or len(stock_code) > 4
+            is_us_stock = not is_japanese_stock(stock_code)
             ticker_symbol = stock_code if is_us_stock else f"{stock_code}.T"
 
             url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker_symbol}"
@@ -147,7 +153,7 @@ def get_stock_price(request, stock_code):
     """銘柄コードから現在株価を取得するAPIエンドポイント"""
     try:
         # 日本株と米国株で分岐
-        is_us_stock = not stock_code.isdigit() or len(stock_code) > 4
+        is_us_stock = not is_japanese_stock(stock_code)
         ticker_symbol = stock_code if is_us_stock else f"{stock_code}.T"
 
         # Yahoo Finance Chart APIを使用
@@ -344,7 +350,7 @@ def get_stock_metrics(request, stock_code):
     from datetime import datetime
 
     try:
-        ticker_symbol = f"{stock_code}.T" if (stock_code.isdigit() and len(stock_code) <= 4) else stock_code
+        ticker_symbol = f"{stock_code}.T" if is_japanese_stock(stock_code) else stock_code
         ticker = yf.Ticker(ticker_symbol)
 
         # --- 株価・時価総額: fast_info を優先（ticker.info より高速・正確）
@@ -444,7 +450,7 @@ def get_stock_historical(request, stock_code):
     from datetime import datetime
 
     try:
-        ticker_symbol = f"{stock_code}.T" if (stock_code.isdigit() and len(stock_code) <= 4) else stock_code
+        ticker_symbol = f"{stock_code}.T" if is_japanese_stock(stock_code) else stock_code
         ticker = yf.Ticker(ticker_symbol)
 
         # 会社名取得
