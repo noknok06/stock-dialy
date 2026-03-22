@@ -1308,28 +1308,35 @@ table.hub-table {
         });
     }
 
+    let _syncingTooltip=false;
     function attachTooltipSync(){
         const charts=Object.values(trendCharts);
         charts.forEach(chart=>{
             const canvas=chart.canvas;
             canvas.addEventListener('mousemove',function(evt){
-                const rect=canvas.getBoundingClientRect();
-                charts.forEach(other=>{
-                    if(other===chart) return;
-                    const pts=chart.getElementsAtEventForMode(evt,'index',{intersect:false},false);
-                    if(!pts.length) return;
+                if(_syncingTooltip) return;
+                _syncingTooltip=true;
+                const pts=chart.getElementsAtEventForMode(evt,'index',{intersect:false},false);
+                if(pts.length){
                     const dataIdx=pts[0].index;
-                    const activeEls=other.data.datasets.map((_,di)=>({datasetIndex:di,index:dataIdx}));
-                    other.tooltip.setActiveElements(activeEls,{x:0,y:0});
-                    other.update('none');
-                });
+                    charts.forEach(other=>{
+                        if(other===chart) return;
+                        const activeEls=other.data.datasets.map((_,di)=>({datasetIndex:di,index:dataIdx}));
+                        other.tooltip.setActiveElements(activeEls,{x:0,y:0});
+                        other.update('none');
+                    });
+                }
+                _syncingTooltip=false;
             });
             canvas.addEventListener('mouseleave',function(){
+                if(_syncingTooltip) return;
+                _syncingTooltip=true;
                 charts.forEach(other=>{
                     if(other===chart) return;
                     other.tooltip.setActiveElements([],{x:0,y:0});
                     other.update('none');
                 });
+                _syncingTooltip=false;
             });
         });
     }
@@ -1369,11 +1376,16 @@ table.hub-table {
         attachTooltipSync();
     }
 
-    document.querySelectorAll('#metric-chips input').forEach(cb=>{
-        cb.addEventListener('change',()=>{
-            const codes=Object.keys(stocksData).filter(c=>!stocksData[c].loading);
-            if(codes.length>0) renderAllTrendCharts(codes);
-        });
+    document.getElementById('metric-chips').addEventListener('change',function(e){
+        if(e.target.type!=='checkbox') return;
+        const checked=this.querySelectorAll('input:checked');
+        if(!checked.length){
+            e.target.checked=true;
+            showToast('少なくとも1つの指標を選択してください','warning');
+            return;
+        }
+        const codes=Object.keys(stocksData).filter(c=>!stocksData[c].loading);
+        if(codes.length>0) renderAllTrendCharts(codes);
     });
 
     // ============================================================
