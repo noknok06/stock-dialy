@@ -614,10 +614,16 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         context['notes'] = self.object.notes.all().order_by('-date')
         
         # 関連日記
-        all_related_diaries = StockDiary.objects.filter(
-            user=self.request.user,
-            stock_symbol=self.object.stock_symbol
-        ).order_by('first_purchase_date', 'created_at')
+        # 銘柄コードが空の場合は同一銘柄グループとして扱わない（空同士がまとめられるのを防ぐ）
+        if self.object.stock_symbol:
+            all_related_diaries = StockDiary.objects.filter(
+                user=self.request.user,
+                stock_symbol=self.object.stock_symbol
+            ).order_by('first_purchase_date', 'created_at')
+        else:
+            all_related_diaries = StockDiary.objects.filter(
+                id=self.object.id
+            )
 
         context['related_diaries'] = all_related_diaries.exclude(id=self.object.id)
         context['timeline_diaries'] = all_related_diaries

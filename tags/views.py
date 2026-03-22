@@ -29,6 +29,17 @@ class TagListView(LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
+
+        # 本モードに表示される銘柄数（投資理由ありのユニーク銘柄）をタグごとに計算
+        tag_book_counts = {}
+        for tag in context['tags']:
+            diaries = tag.stockdiary_set.filter(
+                reason__isnull=False
+            ).exclude(reason='').values('stock_symbol', 'stock_name')
+            unique_stocks = {(d['stock_symbol'], d['stock_name']) for d in diaries}
+            tag_book_counts[tag.id] = len(unique_stocks)
+        context['tag_book_counts'] = tag_book_counts
+
         # スピードダイアルのアクションを定義
         analytics_actions = [
             {

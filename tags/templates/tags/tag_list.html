@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load stockdiary_filters %}
 
 {% block title %}タグ管理 | カブログ{% endblock %}
 
@@ -1054,6 +1055,11 @@
           {% if diary_count > 0 %}
           <i class="bi bi-journal-text"></i>
           <span>{{ diary_count }}件の記録で使用中</span>
+          {% with book_count=tag_book_counts|get_item:tag.id %}
+          {% if book_count is not None %}
+          <br><small class="text-muted"><i class="bi bi-book"></i> 本モード: {{ book_count }}銘柄（投資理由あり）</small>
+          {% endif %}
+          {% endwith %}
           {% else %}
           <i class="bi bi-dash-circle"></i>
           <span>未使用</span>
