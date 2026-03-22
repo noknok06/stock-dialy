@@ -553,12 +553,29 @@ table.hub-table {
     gap: 8px;
     margin-bottom: 10px;
 }
+.ai-grades-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+.ai-grade-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+.ai-grade-label {
+    font-size: 0.62rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    letter-spacing: 0.01em;
+}
 .ai-grade-badge {
-    font-size: 1.1rem;
+    font-size: 1.0rem;
     font-weight: 900;
-    min-width: 32px;
-    height: 32px;
-    border-radius: 8px;
+    min-width: 30px;
+    height: 30px;
+    border-radius: 7px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -568,6 +585,11 @@ table.hub-table {
 .grade-B { background: #3b82f6; color: #fff; }
 .grade-C { background: #f59e0b; color: #fff; }
 .grade-D { background: var(--danger-color); color: #fff; }
+.ai-grade-sep {
+    font-size: 0.9rem;
+    color: var(--border-primary);
+    margin-top: 12px;
+}
 
 .ai-card-name { font-weight: var(--font-bold); font-size: 0.9rem; color: var(--text-primary); }
 .ai-card-code { font-size: 0.78rem; color: var(--text-secondary); }
@@ -1528,10 +1550,28 @@ table.hub-table {
                 <li><i class="bi bi-check-circle-fill ai-point-icon ai-point-good"></i>${t}</li>`).join('');
             const risks=(s.risks||[]).slice(0,2).map(t=>`
                 <li><i class="bi bi-exclamation-circle-fill ai-point-icon ai-point-risk"></i>${t}</li>`).join('');
+            const bg=s.business_grade||'B';
+            const vg=s.valuation_grade||'B';
+            const og=s.grade||'B';
             card.innerHTML=`
                 <div class="ai-card-header">
-                    <div class="ai-grade-badge grade-${s.grade||'B'}">${s.grade||'B'}</div>
-                    <div>
+                    <div class="ai-grades-row">
+                        <div class="ai-grade-cell">
+                            <span class="ai-grade-label">企業価値</span>
+                            <div class="ai-grade-badge grade-${bg}">${bg}</div>
+                        </div>
+                        <span class="ai-grade-sep">×</span>
+                        <div class="ai-grade-cell">
+                            <span class="ai-grade-label">株価評価</span>
+                            <div class="ai-grade-badge grade-${vg}">${vg}</div>
+                        </div>
+                        <span class="ai-grade-sep">=</span>
+                        <div class="ai-grade-cell">
+                            <span class="ai-grade-label">総合</span>
+                            <div class="ai-grade-badge grade-${og}">${og}</div>
+                        </div>
+                    </div>
+                    <div style="flex:1;min-width:0;">
                         <div class="ai-card-name">${d.stock_name||s.code}</div>
                         <div class="ai-card-code">${s.code}</div>
                     </div>

@@ -109,6 +109,14 @@ class GeminiStockAnalyzer:
 
 【分析銘柄】
 {stocks_desc}
+【3軸評価の定義（必ず遵守）】
+各銘柄を以下の3軸でS/A/B/C/Dの5段階に評価してください。
+
+① business_grade（企業価値）: ROE・営業利益率・売上/利益CAGR・自己資本比率など事業の質と成長力を評価。株価は考慮しない。
+② valuation_grade（株価評価）: PER・PBR・配当利回りなど現在の株価がファンダメンタルズ対比で割安か割高かを評価。
+  PER基準: 12倍以下→S, 12〜25倍→A, 25〜40倍→B, 40〜60倍→C, 60倍超→D
+③ grade（総合評価）: ①と②を総合判断。PER50倍超はS禁止。PER60倍超は最大B。
+
 以下のJSON形式（日本語）で回答してください。コードブロック（```）や余分な説明テキストは不要です。JSONのみを返してください。
 
 {{
@@ -118,7 +126,9 @@ class GeminiStockAnalyzer:
   "stocks": [
     {{
       "code": "銘柄コード",
-      "grade": "S/A/B/C/D（S:非常に優秀、A:優秀、B:標準、C:要注意、D:回避）",
+      "business_grade": "S/A/B/C/D（企業価値評価）",
+      "valuation_grade": "S/A/B/C/D（株価割安度評価）",
+      "grade": "S/A/B/C/D（総合評価）",
       "investment_appeal": "投資魅力度の説明（50〜80文字）",
       "strengths": ["強み1（30文字程度）", "強み2"],
       "risks": ["リスク1（30文字程度）", "リスク2"],
@@ -181,74 +191,111 @@ class GeminiStockAnalyzer:
         best_code = ''
         best_score = -1
 
+        grade_map = {4: 'S', 3: 'A', 2: 'B', 1: 'C', 0: 'D'}
+
+        def to_grade(score, thresholds):
+            """スコアをS/A/B/C/Dに変換。thresholds=(S最低, A最低, B最低, C最低)"""
+            s, a, b, c = thresholds
+            if score >= s: return 'S'
+            if score >= a: return 'A'
+            if score >= b: return 'B'
+            if score >= c: return 'C'
+            return 'D'
+
         for d in stocks_data:
             code = d.get('code', '')
             roe = self._latest(d.get('roe', []))
             per = d.get('per')
+            pbr = d.get('pbr')
             rev_cagr = self._calc_cagr(d.get('revenue', []))
             oi_cagr = self._calc_cagr(d.get('operating_income', []))
             eq_ratio = self._latest(d.get('equity_ratio', []))
             div_yield = d.get('dividend_yield')
 
-            score = 0
             strengths = []
             risks = []
 
+            # ── ① 企業価値スコア (0〜11点) ──────────────────
+            b_score = 0
             if roe is not None:
                 if roe >= 15:
-                    score += 3
-                    strengths.append(f'高ROE {roe}%: 資本効率に優れる')
+                    b_score += 3; strengths.append(f'高ROE {roe}%: 資本効率に優れる')
                 elif roe >= 10:
-                    score += 2
-                    strengths.append(f'ROE {roe}%: 良好な収益性')
+                    b_score += 2; strengths.append(f'ROE {roe}%: 良好な収益性')
                 elif roe < 5:
-                    risks.append(f'ROE {roe}%: 収益性の改善が必要')
-
-            if per is not None:
-                if per <= 12:
-                    score += 3
-                    strengths.append(f'PER {per}倍: 割安圏')
-                elif per <= 20:
-                    score += 2
-                    strengths.append(f'PER {per}倍: 適正水準')
-                elif per > 35:
-                    risks.append(f'PER {per}倍: 割高圏')
-                    score -= 1
+                    b_score -= 1; risks.append(f'ROE {roe}%: 収益性の改善が必要')
 
             if rev_cagr is not None:
                 if rev_cagr >= 10:
-                    score += 3
-                    strengths.append(f'売上CAGR +{rev_cagr}%: 高成長')
+                    b_score += 3; strengths.append(f'売上CAGR +{rev_cagr}%: 高成長')
                 elif rev_cagr >= 5:
-                    score += 2
-                    strengths.append(f'売上CAGR +{rev_cagr}%: 安定成長')
+                    b_score += 2; strengths.append(f'売上CAGR +{rev_cagr}%: 安定成長')
                 elif rev_cagr < 0:
-                    risks.append(f'売上CAGR {rev_cagr}%: 売上減少傾向')
+                    b_score -= 1; risks.append(f'売上CAGR {rev_cagr}%: 売上減少傾向')
+
+            if oi_cagr is not None and oi_cagr >= 10:
+                b_score += 1; strengths.append(f'営業利益CAGR +{oi_cagr}%: 利益成長')
 
             if eq_ratio is not None:
                 if eq_ratio >= 60:
-                    score += 2
-                    strengths.append(f'自己資本比率 {eq_ratio}%: 財務健全')
+                    b_score += 2; strengths.append(f'自己資本比率 {eq_ratio}%: 財務健全')
                 elif eq_ratio >= 40:
-                    score += 1
+                    b_score += 1
                 elif eq_ratio < 20:
-                    risks.append(f'自己資本比率 {eq_ratio}%: 財務に注意')
+                    b_score -= 1; risks.append(f'自己資本比率 {eq_ratio}%: 財務に注意')
+
+            business_grade = to_grade(b_score, (8, 6, 3, 1))
+
+            # ── ② 株価評価スコア ────────────────────────────
+            v_score = 0
+            if per is not None:
+                if per <= 12:
+                    v_score += 3; strengths.append(f'PER {per}倍: 割安圏')
+                elif per <= 25:
+                    v_score += 1; strengths.append(f'PER {per}倍: 適正水準')
+                elif per <= 40:
+                    v_score -= 1; risks.append(f'PER {per}倍: やや割高')
+                elif per <= 60:
+                    v_score -= 3; risks.append(f'PER {per}倍: 割高圏。下方リスク大')
+                else:
+                    v_score -= 5; risks.append(f'PER {per}倍: 極めて割高。期待値の剥落リスク大')
+
+            if pbr is not None:
+                if pbr <= 1:
+                    v_score += 1; strengths.append(f'PBR {pbr}倍: 解散価値以下')
+                elif pbr > 5:
+                    v_score -= 1; risks.append(f'PBR {pbr}倍: 高プレミアム')
 
             if div_yield is not None and div_yield >= 3:
-                score += 1
-                strengths.append(f'配当利回り {div_yield}%: 株主還元充実')
+                v_score += 1; strengths.append(f'配当利回り {div_yield}%: 株主還元充実')
 
-            grade = 'S' if score >= 9 else 'A' if score >= 7 else 'B' if score >= 4 else 'C' if score >= 2 else 'D'
+            valuation_grade = to_grade(v_score, (3, 1, -1, -3))
+
+            # ── ③ 総合スコア ─────────────────────────────────
+            total_score = b_score + v_score
+            grade = to_grade(total_score, (9, 7, 4, 2))
+            # PER制約を上書き適用
+            if per is not None:
+                if per > 60 and grade in ('S', 'A'):
+                    grade = 'B'
+                elif per > 50 and grade == 'S':
+                    grade = 'A'
+
             rec_map = {'S': '積極買い', 'A': '打診買い', 'B': '様子見', 'C': '様子見', 'D': '回避'}
 
-            if score > best_score:
-                best_score = score
+            if total_score > best_score:
+                best_score = total_score
                 best_code = code
 
             stocks_analysis.append({
                 'code': code,
+                'business_grade': business_grade,
+                'valuation_grade': valuation_grade,
                 'grade': grade,
-                'investment_appeal': f'財務スコア{score}点。{grade}評価の銘柄です。',
+                'investment_appeal': (
+                    f'企業価値{business_grade}・株価評価{valuation_grade}・総合{grade}。'
+                    f'財務スコア{b_score}点、バリュエーションスコア{v_score}点。'
+                ),
                 'strengths': strengths[:3] if strengths else ['データ分析中'],
                 'risks': risks[:2] if risks else ['特段のリスクなし'],
                 'recommendation': rec_map.get(grade, '様子見'),
@@ -256,13 +303,13 @@ class GeminiStockAnalyzer:
 
         return {
             'overall_summary': (
-                f'{len(stocks_data)}銘柄を財務スコアで自動評価しました。'
+                f'{len(stocks_data)}銘柄を企業価値・株価評価・総合の3軸で自動評価しました。'
                 'より詳細な見解はAI分析ボタンをご活用ください。'
             ),
             'top_pick': best_code,
-            'top_pick_reason': '財務スコアが最も高い銘柄です（自動計算）',
+            'top_pick_reason': '総合財務スコアが最も高い銘柄です（自動計算）',
             'stocks': stocks_analysis,
-            'comparison_insight': '財務指標のスコアリングによる相対評価です。業種特性を考慮した判断をお勧めします。',
+            'comparison_insight': '3軸スコアリングによる相対評価です。業種特性を考慮した判断をお勧めします。',
             'portfolio_note': 'リスク分散のため、異なる業種への投資も検討してください。',
             'api_success': False,
             'fallback_used': True,
