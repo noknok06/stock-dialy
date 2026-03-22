@@ -240,6 +240,17 @@
 @media (max-width: 1100px) {
     .two-col-grid { grid-template-columns: 1fr; }
 }
+@media (max-width: 640px) {
+    .hub-card-title {
+        flex-wrap: wrap;
+    }
+    .hub-card-sub {
+        display: block;
+        margin-left: 0;
+        margin-top: 4px;
+        width: 100%;
+    }
+}
 
 /* ---- 比較テーブル ---- */
 table.hub-table {
@@ -260,7 +271,7 @@ table.hub-table {
     text-align: left;
     color: var(--text-secondary);
     font-weight: var(--font-medium);
-    min-width: 140px;
+    min-width: 120px;
 }
 .hub-table thead th {
     background: var(--state-hover);
@@ -269,8 +280,26 @@ table.hub-table {
     font-size: 0.8rem;
     position: sticky;
     top: 0;
+    z-index: 2;
+}
+
+.hub-table td {
+    width: 20px;
+}
+
+/* 第1列（指標名）を横スクロール時に固定 */
+.hub-table td:first-child {
+    position: sticky;
+    left: 0;
+    background: var(--bg-primary);
+    z-index: 1;
+}
+.hub-table thead th:first-child {
+    background: var(--state-hover);
+    z-index: 3;
 }
 .hub-table tbody tr:hover td { background: var(--state-hover); }
+.hub-table tbody tr:hover td:first-child { background: var(--state-hover); }
 
 /* ---- バッジ ---- */
 .badge-good  { color: var(--success-color); font-weight: var(--font-bold); }
@@ -610,10 +639,6 @@ table.hub-table {
                 <i class="bi bi-plus-lg"></i> 追加
             </button>
             <span id="hub-count-hint" style="color:var(--text-secondary);font-size:0.82rem;">0 / 5 銘柄</span>
-            <a href="{% url 'stockdiary:stock_comparison' %}"
-               style="margin-left:auto;font-size:0.8rem;color:var(--text-secondary);">
-                <i class="bi bi-arrow-left-short"></i>通常比較に戻る
-            </a>
         </div>
         <div class="chips-wrap" id="hub-chips"></div>
     </div>
@@ -680,6 +705,7 @@ table.hub-table {
                 <button class="chart-tab" data-metric="eps">EPS</button>
                 <button class="chart-tab" data-metric="operating_cf">営業CF</button>
                 <button class="chart-tab" data-metric="roe">ROE</button>
+                <button class="chart-tab" data-metric="dividend_yield_history">配当利回り</button>
             </div>
             <div class="trend-wrap">
                 <canvas id="hub-trend-chart"></canvas>
@@ -1048,10 +1074,10 @@ table.hub-table {
         const rows=[
             {label:'売上高',            fn:d=>valueWithTrend(latest(d.revenue),d.revenue,fmtOku)},
             {label:'営業利益',           fn:d=>valueWithTrend(latest(d.operating_income),d.operating_income,fmtOku)},
-            {label:'営業利益率（最新）',  fn:d=>{const r=latest(d.revenue),o=latest(d.operating_income);return(!r||!o)?'<span class="badge-na">-</span>':colorOpm(o/r*100);}},
+            {label:'営業利益率',  fn:d=>{const r=latest(d.revenue),o=latest(d.operating_income);return(!r||!o)?'<span class="badge-na">-</span>':colorOpm(o/r*100);}},
             {label:'EPS（最新）',        fn:d=>{const v=latest(d.eps);return v!=null?`${fmtNum(v,1)}円`:'<span class="badge-na">-</span>';}},
             {label:'ROE（最新）',        fn:d=>colorRoe(latest(d.roe))},
-            {label:'自己資本比率（最新）',fn:d=>colorEq(latest(d.equity_ratio))},
+            {label:'自己資本比率',fn:d=>colorEq(latest(d.equity_ratio))},
             {label:'── バリュエーション ──',separator:true},
             {label:'PER',               fn:d=>colorPer(d.per)},
             {label:'PBR',               fn:d=>d.pbr!=null?`${d.pbr.toFixed(2)}倍`:'<span class="badge-na">-</span>'},
@@ -1167,9 +1193,9 @@ table.hub-table {
                 spanGaps:true,
             };
         });
-        const roeModes=['roe'];
-        const isRoe=roeModes.includes(metric);
-        const unitLabel=isRoe?'%':metric==='eps'?'円':'億円';
+        const pctModes=['roe','dividend_yield_history'];
+        const isPct=pctModes.includes(metric);
+        const unitLabel=isPct?'%':metric==='eps'?'円':'億円';
         if(trendChart) trendChart.destroy();
         trendChart=new Chart(ctx,{
             type:'line',

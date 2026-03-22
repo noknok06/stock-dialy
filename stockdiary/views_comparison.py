@@ -7,13 +7,16 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.generic import TemplateView
+from django.views.generic.base import RedirectView
+from django.urls import reverse_lazy
 
 logger = logging.getLogger(__name__)
 
 
-class StockComparisonView(LoginRequiredMixin, TemplateView):
-    """複数銘柄の財務データを横並びで比較するページ"""
-    template_name = 'stockdiary/comparison.html'
+class StockComparisonView(LoginRequiredMixin, RedirectView):
+    """旧銘柄比較ページ → investment-hub へ恒久リダイレクト"""
+    permanent = True
+    url = reverse_lazy('stockdiary:investment_hub')
 
 
 class InvestmentHubView(LoginRequiredMixin, TemplateView):

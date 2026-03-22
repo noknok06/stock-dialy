@@ -471,6 +471,7 @@ def get_stock_historical(request, stock_code):
         operating_cf_list = []
         equity_ratio_list = []
         roe_list = []
+        dividend_yield_history = []
 
         try:
             income_stmt = ticker.income_stmt      # 年次: columns=決算年(降順)
@@ -521,6 +522,23 @@ def get_stock_historical(request, stock_code):
 
         except Exception as e:
             print(f"Historical data error for {stock_code}: {e}")
+
+        # 年別配当利回り計算
+        try:
+            divs = ticker.dividends
+            price_hist = ticker.history(period="5y", interval="1mo")
+            for year_str in years:
+                year_int = int(year_str)
+                try:
+                    annual_div = float(divs[divs.index.year == year_int].sum()) if divs is not None and len(divs) > 0 else 0.0
+                    year_prices = price_hist[price_hist.index.year == year_int]['Close']
+                    year_end_price = float(year_prices.iloc[-1]) if len(year_prices) > 0 else None
+                    dy = round(annual_div / year_end_price * 100, 2) if annual_div > 0 and year_end_price and year_end_price > 0 else None
+                except Exception:
+                    dy = None
+                dividend_yield_history.append(dy)
+        except Exception:
+            dividend_yield_history = [None] * len(years)
 
         # 最新指標（PER/PBR/配当利回り）は既存 get_stock_metrics と同じロジック
         fi = ticker.fast_info
@@ -593,6 +611,7 @@ def get_stock_historical(request, stock_code):
             'per': per,
             'pbr': pbr,
             'dividend_yield': dividend_yield,
+            'dividend_yield_history': dividend_yield_history,
             'price': price,
         })
 
