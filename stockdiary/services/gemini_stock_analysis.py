@@ -109,6 +109,21 @@ class GeminiStockAnalyzer:
 
 【分析銘柄】
 {stocks_desc}
+【グレード評価基準（必ず遵守）】
+グレードはS/A/B/C/Dの5段階で評価します。バリュエーション（PER）は必ずグレードに反映してください。
+- S（非常に優秀）: 財務・成長・バリュエーションがすべて優れる。PERが50倍超の場合はS評価禁止。
+- A（優秀）: 成長性・収益性が高いが、PERが40倍超の場合はA以下を基本とする。
+- B（標準）: 平均的な水準。PERが30〜40倍の優良株はここが上限目安。
+- C（要注意）: 割高または業績に懸念。
+- D（回避）: 財務悪化・極度の割高。
+
+PER別の目安:
+  ・PER 12倍以下 → 割安。プラス評価。
+  ・PER 12〜25倍 → 適正。グレードに中立。
+  ・PER 25〜40倍 → やや割高。グレードを1段階抑制。
+  ・PER 40〜60倍 → 割高。ブランド・成長性があってもA止まり。
+  ・PER 60倍超  → 極めて割高。最大B評価。リスクとして必ず明記。
+
 以下のJSON形式（日本語）で回答してください。コードブロック（```）や余分な説明テキストは不要です。JSONのみを返してください。
 
 {{
@@ -118,7 +133,7 @@ class GeminiStockAnalyzer:
   "stocks": [
     {{
       "code": "銘柄コード",
-      "grade": "S/A/B/C/D（S:非常に優秀、A:優秀、B:標準、C:要注意、D:回避）",
+      "grade": "S/A/B/C/D",
       "investment_appeal": "投資魅力度の説明（50〜80文字）",
       "strengths": ["強み1（30文字程度）", "強み2"],
       "risks": ["リスク1（30文字程度）", "リスク2"],
@@ -208,12 +223,18 @@ class GeminiStockAnalyzer:
                 if per <= 12:
                     score += 3
                     strengths.append(f'PER {per}倍: 割安圏')
-                elif per <= 20:
+                elif per <= 25:
                     score += 2
                     strengths.append(f'PER {per}倍: 適正水準')
-                elif per > 35:
-                    risks.append(f'PER {per}倍: 割高圏')
+                elif per <= 40:
                     score -= 1
+                    risks.append(f'PER {per}倍: やや割高')
+                elif per <= 60:
+                    score -= 3
+                    risks.append(f'PER {per}倍: 割高圏。下方リスク大')
+                else:
+                    score -= 5
+                    risks.append(f'PER {per}倍: 極めて割高。期待値の剥落リスク大')
 
             if rev_cagr is not None:
                 if rev_cagr >= 10:
