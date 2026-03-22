@@ -8,29 +8,27 @@
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'css/3-components/components.css' %}?v={{ STATIC_VERSION }}">
 <link rel="stylesheet" href="{% static 'css/3-components/dark-mode-components.css' %}?v={{ STATIC_VERSION }}">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/marked@11.1.1/lib/marked.min.css">
 
 <style>
   /* ========== 本モード専用スタイル ========== */
 
   .book-container {
-    max-width: 900px;
+    max-width: 860px;
     margin: 0 auto;
-    padding: 2rem 1rem;
+    padding: 1.5rem 1rem 2rem;
   }
 
+  /* ヘッダー */
   .book-header {
     text-align: center;
-    margin-bottom: 2rem;
-    padding-bottom: 1.5rem;
-    border-bottom: 2px solid var(--border-light);
+    margin-bottom: 1.5rem;
   }
 
   .book-title {
-    font-size: 1.75rem;
+    font-size: 1.6rem;
     font-weight: 700;
     color: var(--text-100);
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -39,98 +37,148 @@
   }
 
   .book-title i {
-    font-size: 1.5rem;
+    font-size: 1.4rem;
     flex-shrink: 0;
+    color: var(--primary-200);
   }
 
   .book-subtitle {
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     color: var(--text-200);
   }
 
-  /* ページカード */
-  .page-card {
-    background: var(--bg-100);
-    border: 2px solid var(--border-light);
+  /* ========== スライドカルーセル ========== */
+
+  .book-viewport {
+    position: relative;
+    overflow: hidden;
     border-radius: var(--radius-lg);
-    padding: 2.5rem;
-    margin-bottom: 2rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-    display: none;
-    min-height: 500px;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: pan-y; /* allow vertical scroll, intercept horizontal */
+    cursor: grab;
+  }
+
+  .book-viewport:active {
+    cursor: grabbing;
+  }
+
+  .page-slide-track {
+    display: flex;
+    will-change: transform;
+    transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    align-items: flex-start;
+  }
+
+  .page-slide-track.no-transition {
+    transition: none !important;
+  }
+
+  /* ========== ページカード ========== */
+
+  .page-card {
+    flex: 0 0 100%;
+    min-width: 0;
+    background: var(--bg-100);
+    border: 1.5px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    padding: 2.25rem 2.5rem 3.5rem;
+    box-shadow:
+      0 2px 8px rgba(0, 0, 0, 0.06),
+      0 8px 24px rgba(0, 0, 0, 0.04);
+    position: relative;
+    min-height: 480px;
+    overflow: hidden;
+  }
+
+  /* 本の綴じ目（スパイン）装飾 */
+  .page-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 5px;
+    background: linear-gradient(
+      to right,
+      rgba(0, 0, 0, 0.12) 0%,
+      rgba(0, 0, 0, 0.04) 60%,
+      transparent 100%
+    );
+    border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+    pointer-events: none;
+  }
+
+  /* ページ番号フッター（本のように下中央）*/
+  .page-number-footer {
+    position: absolute;
+    bottom: 1rem;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--text-200);
+    opacity: 0.6;
+    font-style: italic;
+    letter-spacing: 0.05em;
+    pointer-events: none;
+  }
+
+  /* ページ内コンテンツ */
+  .page-inner {
     position: relative;
   }
 
-  .page-card.active {
-    display: block;
-    animation: fadeIn 0.4s ease-in-out;
-  }
-
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
   .page-header {
-    margin-bottom: 2rem;
+    margin-bottom: 1.75rem;
     padding-bottom: 1rem;
     border-bottom: 1px solid var(--border-light);
   }
 
   .page-stock-name {
-    font-size: 1.75rem;
+    font-size: 1.7rem;
     font-weight: 700;
     color: var(--text-100);
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.65rem;
     line-height: 1.35;
     word-wrap: break-word;
     overflow-wrap: break-word;
   }
 
   .page-stock-code {
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     color: var(--text-200);
-    margin: 0 0 0.75rem 0;
+    margin: 0 0 0.65rem 0;
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.3rem;
   }
 
   .page-stock-code i {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     flex-shrink: 0;
-  }
-
-  .page-stock-code span {
-    line-height: 1;
   }
 
   .page-sector {
     display: inline-block;
     background: var(--primary-100);
     color: var(--primary-200);
-    padding: 0.35rem 0.85rem;
-    border-radius: 16px;
-    font-size: 0.85rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: 14px;
+    font-size: 0.8rem;
     font-weight: 500;
     line-height: 1.4;
   }
 
   .page-content {
     font-size: 1.05rem;
-    line-height: 1.8;
+    line-height: 1.85;
     color: var(--text-100);
   }
 
   .page-content h1, .page-content h2, .page-content h3 {
     margin-top: 1.5rem;
-    margin-bottom: 1rem;
+    margin-bottom: 0.85rem;
     color: var(--text-100);
   }
 
@@ -216,81 +264,223 @@
     margin: 1rem 0;
   }
 
-  /* ページャー */
-  .book-pager {
+  /* ========== タップゾーン（デスクトップ） ========== */
+
+  .book-tap-zone {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 0.2s ease, background 0.2s ease;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    padding: 0;
+  }
+
+  .book-viewport:hover .book-tap-zone:not(:disabled) {
+    opacity: 1;
+  }
+
+  .book-tap-zone:not(:disabled):hover {
+    background: rgba(0, 0, 0, 0.04);
+  }
+
+  .book-tap-zone:disabled {
+    cursor: default;
+    pointer-events: none;
+  }
+
+  .book-tap-zone-left {
+    left: 0;
+    border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+  }
+
+  .book-tap-zone-right {
+    right: 0;
+    border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+  }
+
+  .book-tap-zone i {
+    font-size: 1.5rem;
+    color: var(--text-200);
+    text-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  }
+
+  /* ========== プログレスインジケーター ========== */
+
+  .book-progress {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 1.25rem 0 0.5rem;
+  }
+
+  .progress-dots {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .progress-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--border-light);
+    transition: all 0.25s ease;
+    cursor: pointer;
+    border: none;
+    padding: 0;
+    flex-shrink: 0;
+  }
+
+  .progress-dot:hover {
+    background: var(--text-200);
+    transform: scale(1.2);
+  }
+
+  .progress-dot.active {
+    background: var(--primary-200);
+    width: 22px;
+    border-radius: 4px;
+  }
+
+  .progress-bar-wrap {
+    flex: 1;
+    max-width: 200px;
+    height: 4px;
+    background: var(--border-light);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--gradient-primary);
+    border-radius: 2px;
+    transition: width 0.35s ease;
+    width: 0%;
+  }
+
+  .page-counter {
+    font-size: 0.875rem;
+    color: var(--text-200);
+    font-weight: 500;
+    min-width: 50px;
+    text-align: center;
+  }
+
+  .page-counter .current-num {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-100);
+  }
+
+  /* ========== ナビゲーションボタン（前/次） ========== */
+
+  .book-nav {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1.5rem 0;
-    margin-top: 2rem;
-    border-top: 2px solid var(--border-light);
+    padding-top: 0.5rem;
   }
 
-  .pager-btn {
+  .nav-btn {
     background: var(--gradient-primary);
     color: white;
     border: none;
-    padding: 0.75rem 1.5rem;
+    padding: 0.65rem 1.25rem;
     border-radius: var(--radius-md);
-    font-size: 1rem;
+    font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.4rem;
   }
 
-  .pager-btn:hover:not(:disabled) {
+  .nav-btn:hover:not(:disabled) {
     transform: translateY(-2px);
     box-shadow: var(--shadow-lg);
   }
 
-  .pager-btn:disabled {
-    opacity: 0.4;
+  .nav-btn:disabled {
+    opacity: 0.35;
     cursor: not-allowed;
   }
 
-  .pager-info {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--text-100);
+  /* ========== スワイプヒント ========== */
+
+  .swipe-hint {
+    position: fixed;
+    bottom: 5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.75);
+    color: white;
+    padding: 0.65rem 1.25rem;
+    border-radius: 2rem;
+    font-size: 0.8rem;
+    z-index: 1000;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    opacity: 0;
+    animation: hintFadeInOut 2.5s ease-in-out 0.6s forwards;
+    white-space: nowrap;
   }
 
-  .pager-info .current-page {
-    color: var(--accent-200);
-    font-size: 1.3rem;
+  .swipe-hint i {
+    font-size: 1rem;
+    animation: swipeAnim 1.2s ease-in-out infinite;
   }
 
-  /* キーボードショートカットヒント */
+  @keyframes swipeAnim {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(-6px); }
+  }
+
+  @keyframes hintFadeInOut {
+    0% { opacity: 0; transform: translateX(-50%) translateY(6px); }
+    15% { opacity: 1; transform: translateX(-50%) translateY(0); }
+    75% { opacity: 1; transform: translateX(-50%) translateY(0); }
+    100% { opacity: 0; transform: translateX(-50%) translateY(-4px); }
+  }
+
+  /* キーボードショートカットヒント（デスクトップ） */
   .keyboard-hint {
     position: fixed;
     bottom: 2rem;
     right: 2rem;
     background: rgba(0, 0, 0, 0.8);
     color: white;
-    padding: 1rem 1.5rem;
+    padding: 0.75rem 1.25rem;
     border-radius: var(--radius-md);
-    font-size: 0.875rem;
+    font-size: 0.8rem;
     z-index: 1000;
+    pointer-events: none;
     opacity: 0;
-    animation: fadeInOut 3s ease-in-out;
-  }
-
-  @keyframes fadeInOut {
-    0%, 100% { opacity: 0; }
-    10%, 90% { opacity: 1; }
+    animation: hintFadeInOut 2.5s ease-in-out 0.6s forwards;
   }
 
   .keyboard-hint kbd {
     background: rgba(255, 255, 255, 0.2);
-    padding: 0.2rem 0.5rem;
+    padding: 0.15rem 0.4rem;
     border-radius: 4px;
     font-family: monospace;
-    margin: 0 0.25rem;
+    margin: 0 0.2rem;
   }
 
-  /* 空の状態 */
+  /* ========== 空の状態 ========== */
+
   .empty-state {
     text-align: center;
     padding: 4rem 2rem;
@@ -316,27 +506,23 @@
     margin-bottom: 2rem;
   }
 
-  /* ダークモード */
+  /* ========== ダークモード ========== */
+
   .dark-mode .page-card,
   [data-theme="dark"] .page-card {
     background: var(--dm-card);
     border-color: var(--dm-border);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.2);
   }
 
-  .dark-mode .book-header,
-  [data-theme="dark"] .book-header {
-    border-bottom-color: var(--dm-border);
-  }
-
-  .dark-mode .book-title,
-  [data-theme="dark"] .book-title {
-    color: var(--dm-text);
-  }
-
-  .dark-mode .book-subtitle,
-  [data-theme="dark"] .book-subtitle {
-    color: var(--dm-text-secondary);
+  .dark-mode .page-card::before,
+  [data-theme="dark"] .page-card::before {
+    background: linear-gradient(
+      to right,
+      rgba(255, 255, 255, 0.06) 0%,
+      rgba(255, 255, 255, 0.02) 60%,
+      transparent 100%
+    );
   }
 
   .dark-mode .page-header,
@@ -358,26 +544,6 @@
   [data-theme="dark"] .page-sector {
     background: var(--dm-primary-bg);
     color: var(--dm-primary-text);
-  }
-
-  .dark-mode .book-pager,
-  [data-theme="dark"] .book-pager {
-    border-top-color: var(--dm-border);
-  }
-
-  .dark-mode .pager-info,
-  [data-theme="dark"] .pager-info {
-    color: var(--dm-text);
-  }
-
-  .dark-mode .pager-info .current-page,
-  [data-theme="dark"] .pager-info .current-page {
-    color: var(--accent-200);
-  }
-
-  .dark-mode .pager-btn,
-  [data-theme="dark"] .pager-btn {
-    background: var(--gradient-primary);
   }
 
   .dark-mode .page-content,
@@ -423,6 +589,58 @@
     color: var(--dm-text-secondary);
   }
 
+  .dark-mode .page-content table th,
+  .dark-mode .page-content table td,
+  [data-theme="dark"] .page-content table th,
+  [data-theme="dark"] .page-content table td {
+    border-color: var(--dm-border);
+  }
+
+  .dark-mode .page-content table th,
+  [data-theme="dark"] .page-content table th {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .dark-mode .page-content hr,
+  [data-theme="dark"] .page-content hr {
+    border-top-color: var(--dm-border);
+  }
+
+  .dark-mode .page-number-footer,
+  [data-theme="dark"] .page-number-footer {
+    color: var(--dm-text-secondary);
+  }
+
+  .dark-mode .book-tap-zone:not(:disabled):hover,
+  [data-theme="dark"] .book-tap-zone:not(:disabled):hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .dark-mode .progress-dot,
+  [data-theme="dark"] .progress-dot {
+    background: var(--dm-border);
+  }
+
+  .dark-mode .progress-dot.active,
+  [data-theme="dark"] .progress-dot.active {
+    background: var(--primary-200);
+  }
+
+  .dark-mode .progress-bar-wrap,
+  [data-theme="dark"] .progress-bar-wrap {
+    background: var(--dm-border);
+  }
+
+  .dark-mode .page-counter,
+  [data-theme="dark"] .page-counter {
+    color: var(--dm-text-secondary);
+  }
+
+  .dark-mode .page-counter .current-num,
+  [data-theme="dark"] .page-counter .current-num {
+    color: var(--dm-text);
+  }
+
   .dark-mode .empty-state,
   [data-theme="dark"] .empty-state {
     background: var(--dm-card);
@@ -443,197 +661,68 @@
     color: var(--dm-text-secondary);
   }
 
-  .dark-mode .page-content table th,
-  .dark-mode .page-content table td,
-  [data-theme="dark"] .page-content table th,
-  [data-theme="dark"] .page-content table td {
-    border-color: var(--dm-border);
-  }
+  /* ========== レスポンシブ ========== */
 
-  .dark-mode .page-content table th,
-  [data-theme="dark"] .page-content table th {
-    background: rgba(255, 255, 255, 0.05);
-  }
-
-  .dark-mode .page-content hr,
-  [data-theme="dark"] .page-content hr {
-    border-top-color: var(--dm-border);
-  }
-
-  /* レスポンシブ */
   @media (max-width: 768px) {
     .book-container {
-      padding: 1rem 0.75rem;
-    }
-
-    .book-header {
-      margin-bottom: 1.5rem;
-      padding-bottom: 1rem;
+      padding: 1rem 0.5rem 1.5rem;
     }
 
     .book-title {
-      font-size: 1.35rem;
-      gap: 0.4rem;
-      flex-wrap: wrap;
-    }
-
-    .book-title i {
       font-size: 1.25rem;
     }
 
+    .book-title i {
+      font-size: 1.15rem;
+    }
+
     .book-subtitle {
-      font-size: 0.85rem;
+      font-size: 0.82rem;
     }
 
     .page-card {
-      padding: 1.25rem;
-      min-height: 350px;
-      margin-bottom: 1.5rem;
-    }
-
-    .page-header {
-      margin-bottom: 1.25rem;
-      padding-bottom: 0.75rem;
+      padding: 1.25rem 1.25rem 3rem;
+      min-height: 380px;
     }
 
     .page-stock-name {
-      font-size: 1.2rem;
-      line-height: 1.4;
-      margin-bottom: 0.6rem;
-    }
-
-    .page-stock-code {
-      font-size: 0.875rem;
-      margin-bottom: 0.65rem;
-      gap: 0.3rem;
-    }
-
-    .page-stock-code i {
-      font-size: 0.75rem;
-    }
-
-    .page-sector {
-      font-size: 0.75rem;
-      padding: 0.3rem 0.7rem;
+      font-size: 1.25rem;
     }
 
     .page-content {
       font-size: 1rem;
-      line-height: 1.7;
+      line-height: 1.75;
     }
 
-    .page-content h1 {
-      font-size: 1.5rem;
-    }
+    .page-content h1 { font-size: 1.4rem; }
+    .page-content h2 { font-size: 1.2rem; }
+    .page-content h3 { font-size: 1.05rem; }
 
-    .page-content h2 {
-      font-size: 1.3rem;
-    }
-
-    .page-content h3 {
-      font-size: 1.15rem;
-    }
-
-    .book-pager {
-      padding: 1rem 0;
-      margin-top: 1.5rem;
-      gap: 0.5rem;
-    }
-
-    .pager-btn {
-      padding: 0.6rem 1rem;
-      font-size: 0.85rem;
-      gap: 0.3rem;
-    }
-
-    .pager-btn i {
-      font-size: 1rem;
-    }
-
-    .pager-info {
-      font-size: 1rem;
-    }
-
-    .pager-info .current-page {
-      font-size: 1.2rem;
-    }
-
-    .empty-state {
-      padding: 3rem 1.5rem;
-    }
-
-    .empty-state-icon {
-      font-size: 3rem;
-    }
-
-    .empty-state-title {
-      font-size: 1.25rem;
-    }
-
-    .empty-state-text {
-      font-size: 0.9rem;
+    .book-tap-zone {
+      display: none; /* スマホではタップゾーン非表示、スワイプで操作 */
     }
 
     .keyboard-hint {
       display: none;
     }
+
+    .nav-btn .btn-label {
+      display: none;
+    }
   }
 
   @media (max-width: 480px) {
-    .book-container {
-      padding: 0.75rem 0.5rem;
-    }
-
-    .book-title {
-      font-size: 1.15rem;
-    }
-
-    .book-title i {
-      font-size: 1rem;
-    }
-
     .page-card {
-      padding: 1rem;
-    }
-
-    .page-header {
-      margin-bottom: 1rem;
-      padding-bottom: 0.6rem;
+      padding: 1rem 1rem 2.75rem;
+      min-height: 320px;
     }
 
     .page-stock-name {
-      font-size: 1.05rem;
-      line-height: 1.35;
-      margin-bottom: 0.5rem;
-    }
-
-    .page-stock-code {
-      font-size: 0.8rem;
-      margin-bottom: 0.55rem;
-      gap: 0.25rem;
-    }
-
-    .page-stock-code i {
-      font-size: 0.7rem;
-    }
-
-    .page-sector {
-      font-size: 0.7rem;
-      padding: 0.25rem 0.6rem;
-      border-radius: 12px;
-    }
-
-    .pager-btn {
-      padding: 0.5rem 0.75rem;
-      font-size: 0.8rem;
-    }
-
-    .pager-info {
-      font-size: 0.9rem;
-    }
-
-    .pager-info .current-page {
       font-size: 1.1rem;
+    }
+
+    .page-number-footer {
+      font-size: 0.7rem;
     }
   }
 </style>
@@ -642,59 +731,92 @@
 {% block content %}
 <div class="book-container">
   <!-- ヘッダー -->
-  <div class="page-header mb-4 book-header">
-    <h1 class="page-title book-title">
-      <i class="bi bi-book"></i>
+  <div class="book-header">
+    <h1 class="book-title">
+      <i class="bi bi-book-half"></i>
       <span>{{ tag.name }}</span>
     </h1>
-    <p class="page-subtitle book-subtitle">{{ total_pages }}件の銘柄</p>
+    <p class="book-subtitle">{{ total_pages }}件の銘柄の投資理由</p>
   </div>
 
   {% if diaries %}
-    <!-- ページコンテンツ -->
-    <div id="book-pages">
-      {% for diary in diaries %}
-      <div class="page-card {% if forloop.first %}active{% endif %}" data-page="{{ forloop.counter }}">
-        <div class="page-header">
-          <h2 class="page-stock-name">{{ diary.stock_name }}</h2>
-          {% if diary.stock_symbol %}
-          <p class="page-stock-code">
-            <i class="bi bi-tag"></i><span>{{ diary.stock_symbol }}</span>
-          </p>
-          {% endif %}
-          {% if diary.sector %}
-          <span class="page-sector">{{ diary.sector }}</span>
-          {% endif %}
-        </div>
-
-        <div class="page-content markdown-content" id="content-{{ forloop.counter }}">
-          {{ diary.reason }}
-        </div>
-      </div>
-      {% endfor %}
-    </div>
-
-    <!-- ページャー -->
-    <div class="book-pager">
-      <button class="pager-btn" id="prevBtn" disabled>
+    <!-- ビューポート（スライドカルーセル） -->
+    <div class="book-viewport" id="bookViewport">
+      <!-- タップゾーン（デスクトップ） -->
+      <button class="book-tap-zone book-tap-zone-left" id="tapLeft" disabled aria-label="前のページ">
         <i class="bi bi-chevron-left"></i>
-        <span class="d-none d-sm-inline">前のページ</span>
+      </button>
+      <button class="book-tap-zone book-tap-zone-right" id="tapRight" aria-label="次のページ">
+        <i class="bi bi-chevron-right"></i>
       </button>
 
-      <div class="pager-info">
-        <span class="current-page" id="currentPage">1</span>
-        <span class="text-muted"> / {{ total_pages }}</span>
+      <!-- スライドトラック -->
+      <div class="page-slide-track" id="slideTrack">
+        {% for diary in diaries %}
+        <div class="page-card" data-page="{{ forloop.counter }}">
+          <div class="page-inner">
+            <div class="page-header">
+              <h2 class="page-stock-name">{{ diary.stock_name }}</h2>
+              {% if diary.stock_symbol %}
+              <p class="page-stock-code">
+                <i class="bi bi-tag"></i>
+                <span>{{ diary.stock_symbol }}</span>
+              </p>
+              {% endif %}
+              {% if diary.sector %}
+              <span class="page-sector">{{ diary.sector }}</span>
+              {% endif %}
+            </div>
+
+            <div class="page-content markdown-content" id="content-{{ forloop.counter }}">
+              {{ diary.reason }}
+            </div>
+          </div>
+
+          <!-- 本のようなページ番号フッター -->
+          <div class="page-number-footer">
+            — {{ forloop.counter }} —
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- プログレスインジケーター + ナビ -->
+    <div class="book-progress">
+      <button class="nav-btn" id="prevBtn" disabled>
+        <i class="bi bi-chevron-left"></i>
+        <span class="btn-label">前へ</span>
+      </button>
+
+      {% if total_pages <= 12 %}
+      <div class="progress-dots" id="progressDots" role="tablist" aria-label="ページ選択"></div>
+      {% else %}
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="progressBarFill"></div>
+      </div>
+      {% endif %}
+
+      <div class="page-counter">
+        <span class="current-num" id="currentPageNum">1</span>
+        <span> / {{ total_pages }}</span>
       </div>
 
-      <button class="pager-btn" id="nextBtn">
-        <span class="d-none d-sm-inline">次のページ</span>
+      <button class="nav-btn" id="nextBtn" {% if total_pages <= 1 %}disabled{% endif %}>
+        <span class="btn-label">次へ</span>
         <i class="bi bi-chevron-right"></i>
       </button>
     </div>
 
-    <!-- キーボードショートカットヒント -->
-    <div class="keyboard-hint" id="keyboardHint">
-      <kbd>←</kbd> 前のページ / <kbd>→</kbd> 次のページ
+    <!-- スワイプヒント（モバイル） -->
+    <div class="swipe-hint d-md-none" id="swipeHint" aria-hidden="true">
+      <i class="bi bi-arrow-left-right"></i>
+      スワイプでページを捲る
+    </div>
+
+    <!-- キーボードヒント（デスクトップ） -->
+    <div class="keyboard-hint d-none d-md-flex" id="keyboardHint" aria-hidden="true">
+      <kbd>←</kbd> 前のページ &nbsp;/&nbsp; <kbd>→</kbd> 次のページ
     </div>
 
   {% else %}
@@ -723,108 +845,203 @@
 
 <script>
 {% if diaries %}
-// ページめくり機能
-const totalPages = {{ total_pages }};
-let currentPage = 1;
+(function () {
+  'use strict';
 
-const prevBtn = document.getElementById('prevBtn');
-const nextBtn = document.getElementById('nextBtn');
-const currentPageSpan = document.getElementById('currentPage');
-const pages = document.querySelectorAll('.page-card');
+  const TOTAL = {{ total_pages }};
+  let currentIdx = 0; // 0-indexed
 
-// marked.js の設定
-marked.setOptions({
-  breaks: true,
-  gfm: true,
-  headerIds: false,
-  mangle: false
-});
+  const slideTrack = document.getElementById('slideTrack');
+  const viewport   = document.getElementById('bookViewport');
+  const prevBtn    = document.getElementById('prevBtn');
+  const nextBtn    = document.getElementById('nextBtn');
+  const tapLeft    = document.getElementById('tapLeft');
+  const tapRight   = document.getElementById('tapRight');
+  const currentNumEl = document.getElementById('currentPageNum');
 
-// マークダウンをレンダリング
-pages.forEach((page, index) => {
-  const contentDiv = document.getElementById(`content-${index + 1}`);
-  if (contentDiv) {
-    const rawContent = contentDiv.textContent.trim();
-    // 空でない場合のみパース
-    if (rawContent) {
-      contentDiv.innerHTML = marked.parse(rawContent);
+  // ── marked.js セットアップ ──────────────────────────────
+  marked.setOptions({ breaks: true, gfm: true, headerIds: false, mangle: false });
+
+  document.querySelectorAll('.markdown-content').forEach(el => {
+    const raw = el.textContent.trim();
+    if (raw) el.innerHTML = marked.parse(raw);
+  });
+
+  // ── ドット / プログレスバー セットアップ ──────────────
+  const dotsContainer  = document.getElementById('progressDots');
+  const progressBarFill = document.getElementById('progressBarFill');
+
+  if (dotsContainer && TOTAL > 1) {
+    for (let i = 0; i < TOTAL; i++) {
+      const btn = document.createElement('button');
+      btn.className = 'progress-dot' + (i === 0 ? ' active' : '');
+      btn.setAttribute('role', 'tab');
+      btn.setAttribute('aria-label', `ページ ${i + 1}`);
+      btn.dataset.idx = i;
+      btn.addEventListener('click', () => goTo(i));
+      dotsContainer.appendChild(btn);
     }
   }
-});
 
-function showPage(pageNum) {
-  // 範囲チェック
-  if (pageNum < 1 || pageNum > totalPages) return;
-
-  // すべてのページを非表示
-  pages.forEach(page => page.classList.remove('active'));
-
-  // 指定されたページを表示
-  const targetPage = document.querySelector(`[data-page="${pageNum}"]`);
-  if (targetPage) {
-    targetPage.classList.add('active');
-    currentPage = pageNum;
-    currentPageSpan.textContent = pageNum;
-
-    // ボタンの有効/無効を更新
-    prevBtn.disabled = (pageNum === 1);
-    nextBtn.disabled = (pageNum === totalPages);
+  function updateIndicator(idx) {
+    if (dotsContainer) {
+      dotsContainer.querySelectorAll('.progress-dot').forEach((d, i) => {
+        d.classList.toggle('active', i === idx);
+      });
+    }
+    if (progressBarFill) {
+      progressBarFill.style.width = `${((idx + 1) / TOTAL) * 100}%`;
+    }
   }
-}
 
-// ボタンクリックイベント
-prevBtn.addEventListener('click', () => showPage(currentPage - 1));
-nextBtn.addEventListener('click', () => showPage(currentPage + 1));
-
-// キーボードショートカット
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'ArrowLeft') {
-    e.preventDefault();
-    showPage(currentPage - 1);
-  } else if (e.key === 'ArrowRight') {
-    e.preventDefault();
-    showPage(currentPage + 1);
+  // ── ページ表示 ──────────────────────────────────────────
+  function getViewportWidth() {
+    return viewport.offsetWidth;
   }
-});
 
-// タッチイベント用の変数
-let touchStartX = 0;
-let touchEndX = 0;
-const swipeThreshold = 50; // スワイプと判定する最小距離（ピクセル）
+  function goTo(idx, animated = true) {
+    if (idx < 0 || idx >= TOTAL) return;
+    if (!animated) {
+      slideTrack.classList.add('no-transition');
+    } else {
+      slideTrack.classList.remove('no-transition');
+    }
 
-// タッチイベントリスナー
-const bookPages = document.getElementById('book-pages');
-if (bookPages) {
-  bookPages.addEventListener('touchstart', (e) => {
-    touchStartX = e.changedTouches[0].screenX;
+    const w = getViewportWidth();
+    slideTrack.style.transform = `translateX(${-idx * w}px)`;
+    currentIdx = idx;
+
+    // UI更新
+    currentNumEl.textContent = idx + 1;
+    prevBtn.disabled = idx === 0;
+    nextBtn.disabled = idx === TOTAL - 1;
+    if (tapLeft)  tapLeft.disabled  = idx === 0;
+    if (tapRight) tapRight.disabled = idx === TOTAL - 1;
+    updateIndicator(idx);
+
+    // ページ先頭へスクロール（既にトップ付近なら無視）
+    if (!animated) return;
+    const rect = viewport.getBoundingClientRect();
+    if (rect.top < -50) {
+      viewport.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  // 初期位置（transitionなし）
+  goTo(0, false);
+  // no-transition クラスを素早く外す
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      slideTrack.classList.remove('no-transition');
+    });
+  });
+
+  // ── ボタン / タップゾーン ───────────────────────────────
+  prevBtn.addEventListener('click', () => goTo(currentIdx - 1));
+  nextBtn.addEventListener('click', () => goTo(currentIdx + 1));
+  if (tapLeft)  tapLeft.addEventListener('click',  () => goTo(currentIdx - 1));
+  if (tapRight) tapRight.addEventListener('click', () => goTo(currentIdx + 1));
+
+  // ── キーボード ──────────────────────────────────────────
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowLeft')  { e.preventDefault(); goTo(currentIdx - 1); }
+    if (e.key === 'ArrowRight') { e.preventDefault(); goTo(currentIdx + 1); }
+  });
+
+  // ── タッチ（スワイプ / フリック） ───────────────────────
+  let touchStartX  = 0;
+  let touchStartY  = 0;
+  let touchStartTs = 0;
+  let trackBaseX   = 0;  // タッチ開始時点のトラック位置(px)
+  let isHoriz      = null; // null=未判定, true=水平, false=垂直
+  let dragging     = false;
+
+  const SWIPE_PX   = 60;   // 確定スワイプ距離 (px)
+  const FLICK_VEL  = 0.35; // フリック判定速度 (px/ms)
+  const EDGE_RESIST = 0.25; // エッジ抵抗係数
+
+  viewport.addEventListener('touchstart', e => {
+    const t = e.touches[0];
+    touchStartX  = t.clientX;
+    touchStartY  = t.clientY;
+    touchStartTs = e.timeStamp;
+    trackBaseX   = -currentIdx * getViewportWidth();
+    isHoriz      = null;
+    dragging     = false;
+    slideTrack.classList.add('no-transition');
   }, { passive: true });
 
-  bookPages.addEventListener('touchend', (e) => {
-    touchEndX = e.changedTouches[0].screenX;
-    handleSwipe();
+  viewport.addEventListener('touchmove', e => {
+    const t      = e.touches[0];
+    const deltaX = t.clientX - touchStartX;
+    const deltaY = t.clientY - touchStartY;
+
+    // 方向判定
+    if (isHoriz === null) {
+      if (Math.abs(deltaX) > 8 || Math.abs(deltaY) > 8) {
+        isHoriz = Math.abs(deltaX) > Math.abs(deltaY);
+      }
+      return; // まだ判定できない
+    }
+
+    if (!isHoriz) return; // 縦スクロールはブラウザに任せる
+
+    e.preventDefault(); // 横スワイプ中は縦スクロール抑制
+    dragging = true;
+
+    const w = getViewportWidth();
+    let newX = trackBaseX + deltaX;
+
+    // 両端でゴムバンド抵抗
+    if (newX > 0) {
+      newX = deltaX * EDGE_RESIST;
+    } else if (newX < -(TOTAL - 1) * w) {
+      const over = newX + (TOTAL - 1) * w;
+      newX = -(TOTAL - 1) * w + over * EDGE_RESIST;
+    }
+
+    slideTrack.style.transform = `translateX(${newX}px)`;
+  }, { passive: false });
+
+  viewport.addEventListener('touchend', e => {
+    slideTrack.classList.remove('no-transition');
+
+    if (!dragging) return;
+    dragging = false;
+
+    const deltaX   = e.changedTouches[0].clientX - touchStartX;
+    const elapsed  = e.timeStamp - touchStartTs;
+    const velocity = Math.abs(deltaX) / Math.max(elapsed, 1); // px/ms
+
+    const isFlick    = velocity > FLICK_VEL;
+    const isBigSwipe = Math.abs(deltaX) > SWIPE_PX;
+
+    if ((deltaX < 0) && (isBigSwipe || isFlick) && currentIdx < TOTAL - 1) {
+      goTo(currentIdx + 1);
+    } else if ((deltaX > 0) && (isBigSwipe || isFlick) && currentIdx > 0) {
+      goTo(currentIdx - 1);
+    } else {
+      goTo(currentIdx); // スナップバック
+    }
   }, { passive: true });
-}
 
-function handleSwipe() {
-  const swipeDistance = touchEndX - touchStartX;
+  // ── ウィンドウリサイズ対応 ──────────────────────────────
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      slideTrack.classList.add('no-transition');
+      const w = getViewportWidth();
+      slideTrack.style.transform = `translateX(${-currentIdx * w}px)`;
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          slideTrack.classList.remove('no-transition');
+        });
+      });
+    }, 100);
+  });
 
-  // 左スワイプ（次のページ）
-  if (swipeDistance < -swipeThreshold) {
-    showPage(currentPage + 1);
-  }
-  // 右スワイプ（前のページ）
-  else if (swipeDistance > swipeThreshold) {
-    showPage(currentPage - 1);
-  }
-}
-
-// キーボードヒントを表示
-setTimeout(() => {
-  const hint = document.getElementById('keyboardHint');
-  if (hint) {
-    hint.style.animation = 'fadeInOut 3s ease-in-out';
-  }
-}, 500);
+})();
 {% endif %}
 </script>
 {% endblock %}
