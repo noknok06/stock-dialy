@@ -27,9 +27,9 @@ def search_company(request):
         
         # 証券コードまたは企業名で検索
         companies = CompanyMaster.objects.filter(
-            Q(code__istartswith=query) | 
+            Q(code__istartswith=query) |
             Q(name__icontains=query)
-        ).values('code', 'name', 'market', 'industry')[:limit]
+        ).values('code', 'name', 'market', 'industry_name_33')[:limit]
         
         return JsonResponse({
             'success': True,
@@ -69,8 +69,8 @@ def get_company_info(request, code):
                 'code': company.code,
                 'name': company.name,
                 'market': company.market,
-                'industry': company.industry,
-                'sector': company.sector,
+                'industry': company.industry_name_33,
+                'sector': company.industry_name_17,
                 'unit': company.unit
             }
         })

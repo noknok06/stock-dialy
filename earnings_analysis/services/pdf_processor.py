@@ -1,7 +1,6 @@
 # earnings_analysis/services/pdf_processor.py
 
 import requests
-import fitz  # PyMuPDF
 from typing import Dict, Optional
 from django.conf import settings
 import os
