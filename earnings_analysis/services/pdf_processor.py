@@ -7,9 +7,22 @@ import os
 import hashlib
 import logging
 try:
-    import pymupdf as fitz  # 新しいバージョン
-except ImportError:
-    import fitz  # 古いバージョン
+    import pymupdf as fitz  # 新しいバージョン (pip install pymupdf)
+    if not hasattr(fitz, 'open'):
+        raise ImportError('pymupdf is broken')
+except (ImportError, AttributeError):
+    try:
+        import fitz
+        if not hasattr(fitz, 'open'):
+            raise ImportError(
+                'fitz module has no open(). '
+                'The stub package fitz==0.0.1.dev2 is installed instead of PyMuPDF. '
+                'Run: pip install pymupdf'
+            )
+    except ImportError as e:
+        raise ImportError(
+            'PyMuPDF is not installed. Run: pip install pymupdf'
+        ) from e
 logger = logging.getLogger('earnings_analysis.tdnet')
 
 
