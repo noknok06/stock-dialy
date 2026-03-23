@@ -549,9 +549,15 @@ table.hub-table {
 .ai-stock-card:hover { box-shadow: var(--shadow-md); }
 .ai-card-header {
     display: flex;
-    align-items: center;
+    flex-direction: column;
     gap: 8px;
     margin-bottom: 10px;
+}
+.ai-card-header-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    min-width: 0;
 }
 .ai-grades-row {
     display: flex;
@@ -591,10 +597,11 @@ table.hub-table {
     margin-top: 12px;
 }
 
-.ai-card-name { font-weight: var(--font-bold); font-size: 0.9rem; color: var(--text-primary); }
+.ai-card-name { font-weight: var(--font-bold); font-size: 0.9rem; color: var(--text-primary); word-break: break-all; overflow-wrap: anywhere; }
 .ai-card-code { font-size: 0.78rem; color: var(--text-secondary); }
 .ai-rec-tag {
-    margin-left: auto;
+    white-space: nowrap;
+    flex-shrink: 0;
     padding: 3px 9px;
     border-radius: var(--radius-full);
     font-size: 0.73rem;
@@ -1555,6 +1562,13 @@ table.hub-table {
             const og=s.grade||'B';
             card.innerHTML=`
                 <div class="ai-card-header">
+                    <div class="ai-card-header-top">
+                        <div style="flex:1;min-width:0;">
+                            <div class="ai-card-name">${d.stock_name||s.code}</div>
+                            <div class="ai-card-code">${s.code}</div>
+                        </div>
+                        <span class="ai-rec-tag ${recClass}">${s.recommendation||'様子見'}</span>
+                    </div>
                     <div class="ai-grades-row">
                         <div class="ai-grade-cell">
                             <span class="ai-grade-label">企業価値</span>
@@ -1571,11 +1585,6 @@ table.hub-table {
                             <div class="ai-grade-badge grade-${og}">${og}</div>
                         </div>
                     </div>
-                    <div style="flex:1;min-width:0;">
-                        <div class="ai-card-name">${d.stock_name||s.code}</div>
-                        <div class="ai-card-code">${s.code}</div>
-                    </div>
-                    <span class="ai-rec-tag ${recClass}">${s.recommendation||'様子見'}</span>
                 </div>
                 <p class="ai-appeal">${s.investment_appeal||''}</p>
                 <ul class="ai-point-list">${strengths}${risks}</ul>`;
