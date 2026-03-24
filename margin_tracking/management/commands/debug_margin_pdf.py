@@ -21,6 +21,8 @@ class Command(BaseCommand):
                             help='対象日付（YYYY-MM-DD形式）')
         parser.add_argument('--dump-rows', type=int, default=3,
                             help='各テーブルの先頭N行を表示（デフォルト:3）')
+        parser.add_argument('--page', type=int, default=2,
+                            help='詳細テキストダンプするページ番号（1始まり、デフォルト:2）')
 
     def handle(self, *args, **options):
         try:
@@ -61,6 +63,9 @@ class Command(BaseCommand):
             total_table_rows = 0
             total_text_rows = 0
 
+            import re
+            dump_page = options['page'] - 1  # 0始まりに変換
+
             for page_num in range(total_pages):
                 page = doc[page_num]
                 self.stdout.write(f"\n--- ページ {page_num + 1}/{total_pages} ---")
@@ -81,16 +86,60 @@ class Command(BaseCommand):
                         self.stdout.write(f"    ... 残り {len(rows) - dump_n} 行")
                 total_table_rows += page_table_rows
 
-                # テキスト行数（比較用）
+                # テキスト: wordsモード
                 words = page.get_text("words")
-                import re
-                # 5桁コードで始まる行を数える
                 five_digit_lines = set()
                 for w in words:
                     if re.match(r'^\d{5}$', w[4]):
-                        five_digit_lines.add(round(w[1]))  # Y座標でユニーク化
-                self.stdout.write(f"  テキスト中の5桁コード行: {len(five_digit_lines)} 行")
+                        five_digit_lines.add(round(w[1]))
+                self.stdout.write(f"  テキスト中の5桁コード行(words): {len(five_digit_lines)} 行")
                 total_text_rows += len(five_digit_lines)
+
+                # 指定ページの詳細ダンプ
+                if page_num == dump_page:
+                    self.stdout.write(f"\n{'='*60}")
+                    self.stdout.write(f"  ページ {page_num+1} 詳細ダンプ")
+                    self.stdout.write(f"{'='*60}")
+
+                    # --- get_text("text") ---
+                    raw_text = page.get_text("text")
+                    self.stdout.write(f"\n[get_text('text')] 先頭800文字:")
+                    self.stdout.write(repr(raw_text[:800]))
+
+                    # --- 全wordsの先頭20個 ---
+                    self.stdout.write(f"\n[get_text('words')] 先頭20単語:")
+                    for w in words[:20]:
+                        self.stdout.write(f"  x={w[0]:.1f} y={w[1]:.1f} text={repr(w[4])}")
+
+                    # --- 5桁数字がテキスト内に存在するか（wordsではなくraw_textで検索）---
+                    five_in_text = re.findall(r'\d{5}', raw_text)
+                    self.stdout.write(f"\n[raw_textの5桁数字] {len(five_in_text)} 個: {five_in_text[:20]}")
+
+                    # --- 4桁数字 ---
+                    four_in_text = re.findall(r'\b\d{4}\b', raw_text)
+                    self.stdout.write(f"[raw_textの4桁数字] {len(four_in_text)} 個: {four_in_text[:20]}")
+
+                    # --- 全数値パターン ---
+                    nums = re.findall(r'[\d,]+', raw_text)
+                    self.stdout.write(f"[raw_textの数値] {len(nums)} 個（先頭30）: {nums[:30]}")
+
+                    # --- get_text("dict") 最初のブロック ---
+                    d = page.get_text("dict")
+                    blocks = d.get("blocks", [])
+                    self.stdout.write(f"\n[get_text('dict')] blocks数: {len(blocks)}")
+                    for bi, block in enumerate(blocks[:5]):
+                        btype = block.get("type", "?")
+                        if btype == 0:  # text block
+                            lines = block.get("lines", [])
+                            self.stdout.write(f"  block[{bi}] text: {len(lines)} lines")
+                            for li, line in enumerate(lines[:3]):
+                                spans = line.get("spans", [])
+                                span_texts = [s.get("text","") for s in spans]
+                                fonts = [s.get("font","") for s in spans]
+                                self.stdout.write(f"    line[{li}] font={fonts} text={span_texts}")
+                        else:
+                            self.stdout.write(f"  block[{bi}] type={btype} (image/other)")
+                    self.stdout.write(f"{'='*60}\n")
 
             doc.close()
             self.stdout.write(f"\n=== サマリー ===")
