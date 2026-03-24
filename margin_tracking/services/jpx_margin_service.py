@@ -89,41 +89,45 @@ class JPXMarginPDFParser:
             page = doc[page_num]
             records = self._parse_page(page, page_num)
             all_records.extend(records)
-            logger.info(f"  ページ {page_num + 1}/{total_pages}: {len(records)} 件")
 
         doc.close()
         logger.info(f"PDF解析完了: {total_pages} ページ / {len(all_records)} 件")
         return all_records
 
     def _parse_page(self, page, page_num: int) -> List[Dict]:
-        """1ページ分のデータを解析する"""
-        records = []
+        """
+        1ページ分のデータを解析する。
 
-        # まずfind_tables()を試みる（PyMuPDF >= 1.23）
-        # find_tables() は TableFinder オブジェクトを返す。
-        # .tables 属性がリストなので直接使う（list()変換は不要）
+        テーブル解析とテキスト解析を両方実行し、より多くの件数を返す方を採用する。
+        find_tables() は JPX PDF の複雑なレイアウトで一部しか取れない場合があるため、
+        テキストベース解析を常に実行して比較する。
+        """
+        table_records: List[Dict] = []
+        text_records: List[Dict] = []
+
+        # テーブル解析（PyMuPDF >= 1.23）
         try:
             finder = page.find_tables()
             table_list = getattr(finder, 'tables', None) or []
-            logger.debug(f"ページ {page_num}: テーブル {len(table_list)} 個検出")
-            if table_list:
-                for table in table_list:
-                    table_records = self._extract_from_table(table)
-                    records.extend(table_records)
-                    logger.debug(
-                        f"  テーブル抽出: {len(table_records)} 件"
-                        f"（行数 {len(table.extract()) if hasattr(table, 'extract') else '?'}）"
-                    )
-                if records:
-                    logger.debug(f"ページ {page_num}: テーブル解析 {len(records)} 件")
-                    return records
+            for table in table_list:
+                table_records.extend(self._extract_from_table(table))
+            logger.debug(
+                f"ページ {page_num}: テーブル={len(table_list)}個 → {len(table_records)} 件"
+            )
         except (AttributeError, TypeError):
-            pass  # find_tables()が使えない古いバージョン
+            pass
 
-        # フォールバック: テキスト行ベースの解析
-        records = self._parse_page_text(page, page_num)
-        logger.debug(f"ページ {page_num}: テキスト解析 {len(records)} 件（フォールバック）")
-        return records
+        # テキスト行ベース解析（常に実行）
+        text_records = self._parse_page_text(page, page_num)
+        logger.debug(f"ページ {page_num}: テキスト → {len(text_records)} 件")
+
+        # より多くの件数を返す方を採用
+        if len(table_records) >= len(text_records):
+            logger.info(f"  ページ {page_num + 1}: テーブル解析採用 {len(table_records)} 件")
+            return table_records
+        else:
+            logger.info(f"  ページ {page_num + 1}: テキスト解析採用 {len(text_records)} 件（テーブル={len(table_records)}）")
+            return text_records
 
     def _extract_from_table(self, table) -> List[Dict]:
         """PyMuPDFのTableオブジェクトからデータを抽出する"""
