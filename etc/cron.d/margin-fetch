@@ -1,0 +1,13 @@
+# JPX 信用取引残高データ 週次取得
+# 毎週金曜日 07:00 (サーバーのローカルタイム) に実行
+# JPXは木曜日申込分データを公開するため、金曜朝に取得する
+#
+# 設定手順:
+#   sudo cp /var/www/django/stock-dialy/etc/cron.d/margin-fetch /etc/cron.d/
+#   sudo chmod 644 /etc/cron.d/margin-fetch
+#
+# ログ確認:
+#   tail -f /var/www/django/stock-dialy/logs/margin_fetch.log
+
+# 分  時  日  月  曜日  ユーザー  コマンド
+0    7   *   *   5     naoki    cd /var/www/django/stock-dialy && /var/www/django/stock-dialy/venv/bin/python manage.py fetch_margin_data --weeks 2 >> /var/www/django/stock-dialy/logs/margin_fetch.log 2>&1

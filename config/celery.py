@@ -39,7 +39,7 @@ app.conf.update(
         'earnings_analysis.tasks.analyze_financial': {'queue': 'financial'},
         'earnings_analysis.tasks.cleanup_expired_sessions': {'queue': 'cleanup'},
     },
-    
+
     # 定期タスク設定（オプション）
     beat_schedule={
         'cleanup-expired-sessions': {
