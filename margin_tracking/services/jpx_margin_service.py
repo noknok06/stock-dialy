@@ -384,8 +384,16 @@ class JPXMarginService:
         log.save(update_fields=['status', 'pdf_url', 'error_message'])
 
         # PDF取得
-        pdf_path = self._download_pdf(pdf_url)
+        pdf_path, not_found = self._download_pdf(pdf_url)
         if not pdf_path:
+            if not_found:
+                # 404 = JPXが当該週のデータを未公開（祝日・休場等）。正常扱い。
+                log.status = 'failed'
+                log.error_message = 'PDF未公開 (404)'
+                log.completed_at = timezone.now()
+                log.save(update_fields=['status', 'error_message', 'completed_at'])
+                return {'success': False, 'created': 0, 'updated': 0, 'total': 0,
+                        'pdf_url': pdf_url, 'error': None, 'not_found': True}
             error_msg = f"PDFダウンロード失敗: {pdf_url}"
             logger.error(error_msg)
             log.status = 'failed'
@@ -393,7 +401,7 @@ class JPXMarginService:
             log.completed_at = timezone.now()
             log.save(update_fields=['status', 'error_message', 'completed_at'])
             return {'success': False, 'created': 0, 'updated': 0, 'total': 0,
-                    'pdf_url': pdf_url, 'error': error_msg}
+                    'pdf_url': pdf_url, 'error': error_msg, 'not_found': False}
 
         # PDF解析
         try:
@@ -450,8 +458,15 @@ class JPXMarginService:
             'error': None,
         }
 
-    def _download_pdf(self, url: str) -> Optional[str]:
-        """PDFをダウンロードして一時ファイルパスを返す"""
+    def _download_pdf(self, url: str) -> Tuple[Optional[str], bool]:
+        """
+        PDFをダウンロードして一時ファイルパスを返す。
+
+        Returns:
+            (path, not_found)
+            - path: ダウンロード済みの一時ファイルパス。失敗時はNone。
+            - not_found: True = 404（未公開）。False = その他エラー。
+        """
         try:
             headers = {
                 'User-Agent': (
@@ -469,17 +484,17 @@ class JPXMarginService:
                 f.write(response.content)
 
             logger.info(f"PDFダウンロード完了: {len(response.content)} bytes -> {path}")
-            return path
+            return path, False
 
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == 404:
-                logger.warning(f"PDF未公開 (404): {url}")
-            else:
-                logger.error(f"PDFダウンロードHTTPエラー: {e}")
-            return None
+                logger.info(f"PDF未公開 (404): {url}")
+                return None, True  # 未公開は正常扱い
+            logger.error(f"PDFダウンロードHTTPエラー: {e}")
+            return None, False
         except requests.exceptions.RequestException as e:
             logger.error(f"PDFダウンロードエラー: {e}")
-            return None
+            return None, False
 
     def _save_records(
         self, records: List[Dict], record_date: date, force: bool

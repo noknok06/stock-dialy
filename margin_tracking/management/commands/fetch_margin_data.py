@@ -100,6 +100,7 @@ class Command(BaseCommand):
         total_updated = 0
         success_count = 0
         fail_count = 0
+        not_found_count = 0
 
         for i, target_date in enumerate(target_dates):
             if i > 0:
@@ -114,6 +115,14 @@ class Command(BaseCommand):
                     self.style.WARNING(f"    スキップ（取得済み）: {target_date}")
                 )
                 success_count += 1
+                continue
+
+            if result.get('not_found'):
+                # 404 = 未公開週（祝日・休場等）。エラーではなく正常スキップ。
+                not_found_count += 1
+                self.stdout.write(
+                    f"    未公開（404）: {target_date}  ※JPX未掲載のため正常"
+                )
                 continue
 
             if result['success']:
@@ -137,14 +146,13 @@ class Command(BaseCommand):
         # 結果サマリー
         self.stdout.write('')
         self.stdout.write(self.style.MIGRATE_HEADING('=== 取得完了 ==='))
-        self.stdout.write(f"  成功: {success_count}週  失敗: {fail_count}週")
+        self.stdout.write(f"  取得成功: {success_count}週  未公開(404): {not_found_count}週  エラー: {fail_count}週")
         self.stdout.write(f"  合計新規: {total_created}件  合計更新: {total_updated}件")
 
         if fail_count > 0:
             self.stdout.write(
-                self.style.WARNING(
-                    f"{fail_count}週分の取得に失敗しました。"
-                    "未公開のデータは404エラーになります（正常）。"
+                self.style.ERROR(
+                    f"{fail_count}週分でエラーが発生しました。ログを確認してください。"
                 )
             )
 

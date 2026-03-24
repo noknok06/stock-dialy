@@ -1,0 +1,15 @@
+[Unit]
+Description=JPX 信用取引残高データ 週次取得タイマー
+Requires=margin-fetch.service
+
+[Timer]
+# 毎週金曜日 07:00 (JST) に実行
+# JPXは木曜申込分データを翌週に公開するため金曜朝に取得
+OnCalendar=Fri *-*-* 07:00:00
+TimeZone=Asia/Tokyo
+
+# システム起動後に実行タイミングを逃していた場合は即時実行
+Persistent=true
+
+[Install]
+WantedBy=timers.target
