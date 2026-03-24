@@ -1300,6 +1300,196 @@ body {
         transition-duration: 0.01ms !important;
     }
 }
+
+/* ==================== */
+/* 株価突破ポテンシャル */
+/* ==================== */
+
+.breakout-signal-section {
+    margin: 1.5rem 0;
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    border: 2px solid transparent;
+}
+
+.breakout-high {
+    background: linear-gradient(135deg, #fefce8, #fef9c3);
+    border-color: #fbbf24;
+}
+.breakout-medium {
+    background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+    border-color: #34d399;
+}
+.breakout-low {
+    background: linear-gradient(135deg, var(--primary-50), var(--primary-100));
+    border-color: var(--primary-300);
+}
+
+.breakout-header {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    padding: 1rem 1.25rem;
+}
+
+.breakout-icon {
+    font-size: 1.75rem;
+    flex-shrink: 0;
+}
+
+.breakout-title-block {
+    flex: 1;
+    min-width: 0;
+}
+
+.breakout-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.75rem;
+    border-radius: 9999px;
+    font-weight: 700;
+    font-size: 0.8125rem;
+    margin-bottom: 0.25rem;
+}
+.breakout-badge-high  { background: #fef08a; color: #92400e; }
+.breakout-badge-medium { background: #bbf7d0; color: #065f46; }
+.breakout-badge-low   { background: var(--primary-100); color: var(--primary-700); }
+
+.breakout-subtitle {
+    font-size: 0.8rem;
+    color: var(--gray-600);
+}
+
+/* リング状スコア */
+.breakout-score-ring {
+    position: relative;
+    width: 56px;
+    height: 56px;
+    flex-shrink: 0;
+}
+.breakout-ring-svg {
+    width: 56px;
+    height: 56px;
+    transform: rotate(-90deg);
+}
+.ring-bg {
+    fill: none;
+    stroke: #e5e7eb;
+    stroke-width: 3;
+}
+.ring-fill {
+    fill: none;
+    stroke-width: 3;
+    stroke-linecap: round;
+    transition: stroke-dasharray 1s ease-out;
+}
+.ring-high   { stroke: #f59e0b; }
+.ring-medium { stroke: #10b981; }
+.ring-low    { stroke: var(--primary-500); }
+.ring-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-weight: 700;
+    font-size: 0.875rem;
+    color: var(--gray-800);
+}
+
+/* 検出パターン */
+.breakout-patterns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    padding: 0 1.25rem 0.75rem;
+}
+.breakout-pattern-tag {
+    padding: 0.2rem 0.65rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: white;
+    border: 1px solid var(--gray-300);
+    color: var(--gray-700);
+}
+
+/* キーシグナル */
+.breakout-signals {
+    margin: 0 1.25rem 1rem;
+    background: rgba(255,255,255,0.7);
+    border-radius: var(--radius-lg);
+    padding: 0.875rem 1rem;
+}
+.breakout-signals-title {
+    font-weight: 700;
+    font-size: 0.8125rem;
+    color: var(--gray-700);
+    margin-bottom: 0.5rem;
+}
+.breakout-signal-list {
+    margin: 0;
+    padding-left: 1.25rem;
+    font-size: 0.8125rem;
+    color: var(--gray-700);
+    line-height: 1.7;
+}
+
+/* Gemini 分析 */
+.breakout-gemini {
+    margin: 0 1.25rem 1rem;
+}
+.breakout-gemini-title {
+    font-weight: 700;
+    font-size: 0.875rem;
+    color: var(--gray-800);
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+.breakout-ai-badge {
+    font-size: 0.7rem;
+    background: var(--info-100);
+    color: var(--info-500);
+    padding: 0.1rem 0.5rem;
+    border-radius: 9999px;
+    font-weight: 600;
+}
+.breakout-gemini-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 0.625rem;
+}
+.breakout-gemini-item {
+    background: white;
+    border-radius: var(--radius-lg);
+    padding: 0.75rem;
+    border-left: 3px solid #f59e0b;
+}
+.breakout-medium .breakout-gemini-item { border-left-color: #10b981; }
+.breakout-low    .breakout-gemini-item { border-left-color: var(--primary-400); }
+.breakout-gemini-item-title {
+    font-weight: 700;
+    font-size: 0.8125rem;
+    color: var(--gray-800);
+    margin-bottom: 0.3rem;
+}
+.breakout-gemini-item-desc {
+    font-size: 0.775rem;
+    color: var(--gray-600);
+    line-height: 1.6;
+}
+
+/* 免責注記 */
+.breakout-disclaimer {
+    margin: 0 1.25rem 1rem;
+    font-size: 0.725rem;
+    color: var(--gray-500);
+    padding: 0.5rem 0.75rem;
+    background: rgba(255,255,255,0.5);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--gray-200);
+}
 </style>
 {% endblock %}
 
@@ -1589,7 +1779,83 @@ body {
                             </div>
                             
                             {# 評価基準はポップオーバーで提供 #}
-                            
+
+                            {# ========== 株価突破ポテンシャルセクション ========== #}
+                            {% with bd=session.analysis_result.breakout_detection %}
+                            {% if bd.detected %}
+                            <div class="breakout-signal-section breakout-{{ bd.level|lower }}">
+                                <div class="breakout-header">
+                                    <div class="breakout-icon">
+                                        {% if bd.level == "HIGH" %}⚡{% elif bd.level == "MEDIUM" %}💡{% else %}🔎{% endif %}
+                                    </div>
+                                    <div class="breakout-title-block">
+                                        <div class="breakout-badge breakout-badge-{{ bd.level|lower }}">
+                                            突破シグナル:
+                                            {% if bd.level == "HIGH" %}強{% elif bd.level == "MEDIUM" %}中{% else %}弱{% endif %}
+                                        </div>
+                                        <div class="breakout-subtitle">稀有な高収益パターンを検出 — 現在株価を突き抜ける可能性</div>
+                                    </div>
+                                    <div class="breakout-score-ring">
+                                        <svg viewBox="0 0 36 36" class="breakout-ring-svg">
+                                            <path class="ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                                            <path class="ring-fill ring-{{ bd.level|lower }}"
+                                                  stroke-dasharray="{{ bd.score }}, 100"
+                                                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                                        </svg>
+                                        <div class="ring-text">{{ bd.score }}</div>
+                                    </div>
+                                </div>
+
+                                {# 検出パターン一覧 #}
+                                {% if bd.patterns %}
+                                <div class="breakout-patterns">
+                                    {% for p in bd.patterns %}
+                                    <span class="breakout-pattern-tag">{{ p.icon }} {{ p.name }}</span>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+
+                                {# キーシグナル #}
+                                {% if bd.key_signals %}
+                                <div class="breakout-signals">
+                                    <div class="breakout-signals-title">
+                                        <i class="fas fa-bolt me-1"></i>検出シグナル
+                                    </div>
+                                    <ul class="breakout-signal-list">
+                                        {% for sig in bd.key_signals %}
+                                        <li>{{ sig }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                                {% endif %}
+
+                                {# Gemini による突破要因分析 #}
+                                {% if bd.gemini_analysis %}
+                                <div class="breakout-gemini">
+                                    <div class="breakout-gemini-title">
+                                        <i class="fas fa-brain me-1"></i>
+                                        市場が見落としている可能性のある要因
+                                        <span class="breakout-ai-badge">AI分析</span>
+                                    </div>
+                                    <div class="breakout-gemini-grid">
+                                        {% for item in bd.gemini_analysis %}
+                                        <div class="breakout-gemini-item">
+                                            <div class="breakout-gemini-item-title">{{ item.title }}</div>
+                                            <div class="breakout-gemini-item-desc">{{ item.description }}</div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                <div class="breakout-disclaimer">
+                                    <i class="fas fa-exclamation-circle me-1"></i>
+                                    本シグナルはAI分析に基づく参考情報です。投資判断は必ずご自身の責任で行ってください。
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% endwith %}
+
                             {# ========== 専門家考察セクション（新規追加）========== #}
                             {% if ai.expert_commentary %}
                                 <div class="expert-commentary">

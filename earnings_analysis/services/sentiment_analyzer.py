@@ -21,6 +21,7 @@ from .xbrl_extractor import EDINETXBRLService
 from .gemini_insights import GeminiInsightsGenerator
 
 from .ai_expert_analyzer import AIExpertAnalyzer
+from .breakout_detector import BreakoutDetector
 
 logger = logging.getLogger(__name__)
 
@@ -1019,7 +1020,19 @@ class TransparentSentimentAnalyzer:
                         # トップレベルにもAIスコアを追加（テンプレートでのアクセス用）
                         basic_result['ai_overall_score'] = ai_result.get('overall_score')
                         basic_result['ai_sentiment_label'] = ai_result.get('sentiment_label')
-                        
+
+                        # 株価突破ポテンシャル検出
+                        try:
+                            breakout_result = BreakoutDetector().detect_and_analyze(
+                                basic_result['ai_expert_analysis'],
+                                document_info
+                            )
+                            basic_result['breakout_detection'] = breakout_result
+                            if breakout_result.get('detected'):
+                                logger.info(f"★ 突破シグナル検出: level={breakout_result.get('level')}, score={breakout_result.get('score')}")
+                        except Exception as _bd_err:
+                            logger.warning(f"突破ポテンシャル検出エラー（スキップ）: {_bd_err}")
+
                         logger.info(f"★ AI分析成功: グレード={ai_result.get('investment_grade')}, スコア={ai_result.get('overall_score')}")
                         
                     else:
@@ -1279,9 +1292,22 @@ class TransparentSentimentAnalyzer:
                             'expert_commentary': ai_result.get('expert_commentary', {}),
                             'metadata': ai_result.get('analysis_metadata', {})
                         }
-                        
+
                         basic_result['ai_overall_score'] = ai_result.get('overall_score')
                         basic_result['ai_sentiment_label'] = ai_result.get('sentiment_label')
+
+                        # 株価突破ポテンシャル検出
+                        try:
+                            breakout_result = BreakoutDetector().detect_and_analyze(
+                                basic_result['ai_expert_analysis'],
+                                document_info
+                            )
+                            basic_result['breakout_detection'] = breakout_result
+                            if breakout_result.get('detected'):
+                                logger.info(f"★ 突破シグナル検出: level={breakout_result.get('level')}, score={breakout_result.get('score')}")
+                        except Exception as _bd_err:
+                            logger.warning(f"突破ポテンシャル検出エラー（スキップ）: {_bd_err}")
+
                     else:
                         ai_analysis_success = False
                         ai_analysis_error_type = ai_status.get('error_type', 'unknown')
