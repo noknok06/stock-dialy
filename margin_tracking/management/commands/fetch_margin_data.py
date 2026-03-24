@@ -1,21 +1,24 @@
 """
 JPX 信用取引残高データ取得コマンド
 
+JPXの公開日は木曜が多いが固定ではないため、
+過去N日分を日次で総当たりチェックして取得する。
+
 使い方:
-  # 直近の木曜日（最新週）のデータを取得
+  # 過去40日分をチェック（デフォルト）
   python manage.py fetch_margin_data
 
-  # 特定日付を指定
+  # チェック日数を変更
+  python manage.py fetch_margin_data --days 60
+
+  # 特定日付のみ
   python manage.py fetch_margin_data --date 2026-03-19
 
-  # 直近N週分をまとめて取得（過去データ一括取得）
-  python manage.py fetch_margin_data --weeks 10
-
-  # 開始・終了日を指定して範囲取得
+  # 開始・終了日範囲指定
   python manage.py fetch_margin_data --start-date 2025-01-01 --end-date 2025-12-31
 
   # 既存データを強制上書き
-  python manage.py fetch_margin_data --weeks 4 --force
+  python manage.py fetch_margin_data --days 14 --force
 """
 
 import time
@@ -26,34 +29,30 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def get_thursdays_in_range(start_date: date, end_date: date):
-    """指定期間内のすべての木曜日を返す（古い順）"""
-    thursdays = []
-    # 最初の木曜日を探す
+def get_dates_in_range(start_date: date, end_date: date):
+    """指定期間内の全日付を返す（古い順）"""
+    dates = []
     current = start_date
-    while current.weekday() != 3:  # 3 = 木曜日
-        current += timedelta(days=1)
-
     while current <= end_date:
-        thursdays.append(current)
-        current += timedelta(weeks=1)
-    return thursdays
+        dates.append(current)
+        current += timedelta(days=1)
+    return dates
 
 
 class Command(BaseCommand):
-    help = 'JPX信用取引残高データを取得してDBに保存する（週次・過去データ対応）'
+    help = 'JPX信用取引残高データを取得してDBに保存する（日次・過去データ対応）'
 
     def add_arguments(self, parser):
         parser.add_argument(
             '--date',
             type=str,
-            help='取得対象の申込日（YYYY-MM-DD形式）。木曜日を指定してください。',
+            help='取得対象の申込日（YYYY-MM-DD形式）。',
         )
         parser.add_argument(
-            '--weeks',
+            '--days',
             type=int,
-            default=1,
-            help='直近N週分のデータを取得（デフォルト: 1）。--date未指定時に有効。',
+            default=40,
+            help='過去N日分をチェック（デフォルト: 40）。--date未指定時に有効。',
         )
         parser.add_argument(
             '--start-date',
@@ -73,8 +72,8 @@ class Command(BaseCommand):
         parser.add_argument(
             '--delay',
             type=float,
-            default=2.0,
-            help='複数週取得時のリクエスト間隔（秒）。デフォルト: 2.0',
+            default=1.0,
+            help='複数日取得時のリクエスト間隔（秒）。デフォルト: 1.0',
         )
 
     def handle(self, *args, **options):
@@ -91,7 +90,7 @@ class Command(BaseCommand):
 
         self.stdout.write(
             self.style.MIGRATE_HEADING(
-                f"取得対象: {len(target_dates)}週分 "
+                f"取得対象: {len(target_dates)}日分 "
                 f"({target_dates[0]} 〜 {target_dates[-1]})"
             )
         )
@@ -106,23 +105,19 @@ class Command(BaseCommand):
             if i > 0:
                 time.sleep(delay)
 
-            self.stdout.write(f"  [{i+1}/{len(target_dates)}] {target_date} 取得中...")
+            self.stdout.write(f"  [{i+1}/{len(target_dates)}] {target_date} チェック中...", ending='\r')
+            self.stdout.flush()
 
             result = service.fetch_and_save(target_date, force=force)
 
             if result.get('skipped'):
-                self.stdout.write(
-                    self.style.WARNING(f"    スキップ（取得済み）: {target_date}")
-                )
+                # 取得済みは表示なしでスキップ（大量になるため）
                 success_count += 1
                 continue
 
             if result.get('not_found'):
-                # 404 = 未公開週（祝日・休場等）。エラーではなく正常スキップ。
+                # 404 = 未公開日。通常の日は大半が404なので表示しない。
                 not_found_count += 1
-                self.stdout.write(
-                    f"    未公開（404）: {target_date}  ※JPX未掲載のため正常"
-                )
                 continue
 
             if result['success']:
@@ -131,7 +126,8 @@ class Command(BaseCommand):
                 success_count += 1
                 self.stdout.write(
                     self.style.SUCCESS(
-                        f"    完了: 新規={result['created']} 更新={result['updated']} "
+                        f"  [{i+1}/{len(target_dates)}] {target_date} "
+                        f"取得完了: 新規={result['created']} 更新={result['updated']} "
                         f"合計={result['total']}件"
                     )
                 )
@@ -139,20 +135,26 @@ class Command(BaseCommand):
                 fail_count += 1
                 self.stdout.write(
                     self.style.ERROR(
-                        f"    失敗: {result.get('error', '不明なエラー')}"
+                        f"  [{i+1}/{len(target_dates)}] {target_date} "
+                        f"失敗: {result.get('error', '不明なエラー')}"
                     )
                 )
 
         # 結果サマリー
         self.stdout.write('')
         self.stdout.write(self.style.MIGRATE_HEADING('=== 取得完了 ==='))
-        self.stdout.write(f"  取得成功: {success_count}週  未公開(404): {not_found_count}週  エラー: {fail_count}週")
+        self.stdout.write(
+            f"  チェック: {len(target_dates)}日  "
+            f"データあり: {success_count}日  "
+            f"未公開(404): {not_found_count}日  "
+            f"エラー: {fail_count}日"
+        )
         self.stdout.write(f"  合計新規: {total_created}件  合計更新: {total_updated}件")
 
         if fail_count > 0:
             self.stdout.write(
                 self.style.ERROR(
-                    f"{fail_count}週分でエラーが発生しました。ログを確認してください。"
+                    f"{fail_count}日分でエラーが発生しました。ログを確認してください。"
                 )
             )
 
@@ -164,13 +166,6 @@ class Command(BaseCommand):
                 d = datetime.strptime(options['date'], '%Y-%m-%d').date()
             except ValueError:
                 raise CommandError(f"日付形式が不正です: {options['date']} (YYYY-MM-DD形式で指定)")
-            if d.weekday() != 3:
-                self.stdout.write(
-                    self.style.WARNING(
-                        f"警告: {d} は木曜日ではありません（weekday={d.weekday()}）。"
-                        "JPXの申込日は通常木曜日です。処理は続行します。"
-                    )
-                )
             return [d]
 
         # 開始・終了日範囲指定
@@ -184,21 +179,13 @@ class Command(BaseCommand):
                 raise CommandError(f"日付形式が不正です: {e}")
             if start > end:
                 raise CommandError('--start-date は --end-date より前の日付を指定してください。')
-            dates = get_thursdays_in_range(start, end)
-            if not dates:
-                raise CommandError(f"{start} 〜 {end} の期間に木曜日がありません。")
-            return dates
+            return get_dates_in_range(start, end)
 
-        # 直近N週分（デフォルト）
-        weeks = options.get('weeks', 1)
-        if weeks < 1:
-            raise CommandError('--weeks は1以上の整数を指定してください。')
+        # 過去N日分（デフォルト）
+        days = options.get('days', 40)
+        if days < 1:
+            raise CommandError('--days は1以上の整数を指定してください。')
 
         today = date.today()
-        # 直近の木曜日を求める
-        days_since_thursday = (today.weekday() - 3) % 7
-        last_thursday = today - timedelta(days=days_since_thursday)
-
-        dates = [last_thursday - timedelta(weeks=i) for i in range(weeks)]
-        dates.sort()  # 古い順
+        dates = [today - timedelta(days=i) for i in range(days - 1, -1, -1)]
         return dates

@@ -1,5 +1,5 @@
 [Unit]
-Description=JPX 信用取引残高データ週次取得 (stock-dialy)
+Description=JPX 信用取引残高データ日次取得 (stock-dialy)
 After=network.target
 
 [Service]
@@ -9,8 +9,8 @@ Group=naoki
 WorkingDirectory=/var/www/django/stock-dialy
 Environment="DJANGO_SETTINGS_MODULE=config.settings"
 
-# 直近2週分を取得（前週が未取得の場合もカバー）
-ExecStart=/var/www/django/stock-dialy/venv/bin/python manage.py fetch_margin_data --weeks 2
+# 過去40日分をチェック（未取得の日があれば取得）
+ExecStart=/var/www/django/stock-dialy/venv/bin/python manage.py fetch_margin_data --days 40
 
 # ログはjournaldに出力 (journalctl -u margin-fetch で確認可能)
 StandardOutput=journal
