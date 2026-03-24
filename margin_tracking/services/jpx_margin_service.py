@@ -46,20 +46,13 @@ def build_jpx_pdf_url(record_date: date) -> str:
     return JPX_MARGIN_PDF_BASE_URL.format(date=date_str)
 
 
-def get_recent_thursdays(weeks: int = 10) -> List[date]:
+def get_recent_dates(days: int = 40) -> List[date]:
     """
-    直近N週分の木曜日（申込日）リストを返す。
-    JPXは毎週木曜日の申込分データを公開する。
+    直近N日分の日付リストを返す（古い順）。
+    JPXの公開日は木曜が多いが固定ではないため、毎日総当たりで確認する。
     """
     today = date.today()
-    # 直近の木曜日を求める（木曜=3）
-    days_since_thursday = (today.weekday() - 3) % 7
-    last_thursday = today - timedelta(days=days_since_thursday)
-
-    thursdays = []
-    for i in range(weeks):
-        thursdays.append(last_thursday - timedelta(weeks=i))
-    return thursdays
+    return [today - timedelta(days=i) for i in range(days - 1, -1, -1)]
 
 
 class JPXMarginPDFParser:
@@ -104,10 +97,12 @@ class JPXMarginPDFParser:
         records = []
 
         # まずfind_tables()を試みる（PyMuPDF >= 1.23）
+        # find_tables() は TableFinder オブジェクトを返す（len()不可）
         try:
-            tables = page.find_tables()
-            if tables and len(tables) > 0:
-                for table in tables:
+            finder = page.find_tables()
+            table_list = list(finder)  # TableFinder → list に変換
+            if table_list:
+                for table in table_list:
                     table_records = self._extract_from_table(table)
                     records.extend(table_records)
                 if records:
