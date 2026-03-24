@@ -61,8 +61,8 @@ class TDNETReportGeneratorService:
                     'processed_pages': pdf_result['processed_pages']
                 },
                 pdf_url=pdf_url,
-                pdf_cached=True,
-                pdf_file_path=pdf_path,
+                pdf_cached=False,   # テキスト抽出後にPDFは破棄済み
+                pdf_file_path='',   # ファイルは保存しない
                 is_processed=False,
                 report_generated=False,
             )

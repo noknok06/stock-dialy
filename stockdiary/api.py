@@ -673,3 +673,4 @@ def search_stock(request):
             'success': False,
             'error': str(e)
         }, status=500)
+

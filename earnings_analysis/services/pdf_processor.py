@@ -29,37 +29,32 @@ class PDFProcessor:
     
     def download_pdf(self, pdf_url: str) -> Optional[str]:
         """
-        PDFをダウンロード
-        
+        PDFを一時ファイルとしてダウンロード（テキスト抽出後に破棄される）
+
         Args:
             pdf_url: PDF URL
-        
+
         Returns:
-            ダウンロードしたPDFのローカルパス or None
+            ダウンロードしたPDFの一時ローカルパス or None
         """
         try:
             logger.info(f"PDFダウンロード開始: {pdf_url}")
-            
+
             # URLからファイル名を生成（ハッシュ化）
             url_hash = hashlib.md5(pdf_url.encode()).hexdigest()
             local_path = os.path.join(self.cache_dir, f"{url_hash}.pdf")
-            
-            # 既にダウンロード済みならそれを返す
-            if os.path.exists(local_path):
-                logger.info(f"キャッシュヒット: {local_path}")
-                return local_path
-            
-            # PDFをダウンロード
+
+            # PDFをダウンロード（キャッシュしない）
             response = requests.get(pdf_url, timeout=60)
             response.raise_for_status()
-            
-            # ファイル保存
+
+            # 一時ファイル保存
             with open(local_path, 'wb') as f:
                 f.write(response.content)
-            
+
             logger.info(f"PDFダウンロード完了: {len(response.content)} bytes -> {local_path}")
             return local_path
-            
+
         except requests.exceptions.RequestException as e:
             logger.error(f"PDFダウンロードエラー: {e}")
             return None
@@ -153,15 +148,23 @@ class PDFProcessor:
         
         # テキスト抽出
         result = self.extract_text_from_pdf(pdf_path, max_pages)
-        
+
+        # テキスト抽出後に一時ファイルを破棄（成否に関わらず）
+        try:
+            if os.path.exists(pdf_path):
+                os.remove(pdf_path)
+                logger.info(f"一時PDFファイルを削除: {pdf_path}")
+        except Exception as del_err:
+            logger.warning(f"一時PDFファイル削除失敗（処理は継続）: {del_err}")
+
         if result['success']:
-            result['pdf_path'] = pdf_path
+            result['pdf_path'] = None  # ファイルは破棄済み
             return result
         else:
             return {
                 'success': False,
                 'text': '',
-                'pdf_path': pdf_path,
+                'pdf_path': None,
                 'pages': 0,
                 'error': result['error']
             }
