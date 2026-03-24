@@ -1,0 +1,245 @@
+{% load humanize %}
+<style>
+.margin-widget {
+  padding: 0.25rem 0;
+}
+
+.margin-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.margin-stat-item {
+  background: var(--bg-secondary, #f8f9fa);
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  text-align: center;
+}
+
+.margin-stat-label {
+  font-size: 0.68rem;
+  color: var(--text-secondary, #6c757d);
+  margin-bottom: 0.2rem;
+}
+
+.margin-stat-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary, #212529);
+}
+
+.margin-ratio-high { color: #dc3545; }
+.margin-ratio-low  { color: #198754; }
+.margin-ratio-mid  { color: var(--text-primary, #212529); }
+
+.margin-chart-container {
+  position: relative;
+  height: 180px;
+  margin-bottom: 0.5rem;
+}
+
+.margin-no-data {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-secondary, #6c757d);
+  font-size: 0.85rem;
+}
+
+/* ダークモード */
+.dark-mode .margin-stat-item,
+[data-theme="dark"] .margin-stat-item {
+  background-color: rgba(71, 85, 105, 0.3);
+}
+
+.dark-mode .margin-stat-label,
+[data-theme="dark"] .margin-stat-label {
+  color: var(--dm-muted-foreground, #94a3b8);
+}
+
+.dark-mode .margin-stat-value,
+[data-theme="dark"] .margin-stat-value {
+  color: var(--dm-foreground, #e2e8f0);
+}
+
+@media (max-width: 576px) {
+  .margin-stat-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.375rem;
+  }
+  .margin-stat-value { font-size: 0.9rem; }
+}
+</style>
+
+<div class="margin-widget">
+  {% if has_data %}
+    {% if latest %}
+    <!-- 最新値サマリー -->
+    <div class="margin-stat-grid">
+      <div class="margin-stat-item">
+        <div class="margin-stat-label">信用倍率</div>
+        <div class="margin-stat-value
+          {% if latest.margin_ratio %}
+            {% if latest.margin_ratio >= 3 %}margin-ratio-high
+            {% elif latest.margin_ratio <= 1 %}margin-ratio-low
+            {% else %}margin-ratio-mid{% endif %}
+          {% endif %}">
+          {% if latest.margin_ratio %}
+            {{ latest.margin_ratio }}倍
+          {% else %}
+            -
+          {% endif %}
+        </div>
+      </div>
+      <div class="margin-stat-item">
+        <div class="margin-stat-label">買い残高</div>
+        <div class="margin-stat-value">
+          {{ latest.long_balance|intcomma }}
+        </div>
+      </div>
+      <div class="margin-stat-item">
+        <div class="margin-stat-label">売り残高</div>
+        <div class="margin-stat-value">
+          {{ latest.short_balance|intcomma }}
+        </div>
+      </div>
+    </div>
+    <div style="font-size:0.7rem; color: var(--text-secondary, #6c757d); text-align:right; margin-bottom:0.5rem;">
+      最終更新: {{ latest.record_date }}申込分
+    </div>
+    {% endif %}
+
+    <!-- チャート -->
+    <div class="margin-chart-container">
+      <canvas id="marginRatioChart-{{ stock_code }}"></canvas>
+    </div>
+
+    <script>
+    (function() {
+      const ctx = document.getElementById('marginRatioChart-{{ stock_code }}');
+      if (!ctx) return;
+
+      const labels = {{ chart_labels }};
+      const ratios = {{ chart_margin_ratios }};
+      const shorts = {{ chart_short_balances }};
+      const longs  = {{ chart_long_balances }};
+
+      // 有効なデータのみ
+      const validRatios = ratios.map(v => (v === null ? NaN : v));
+
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
+        || document.body.classList.contains('dark-mode');
+
+      const gridColor  = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+      const textColor  = isDark ? '#94a3b8' : '#6c757d';
+
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: '信用倍率',
+              data: validRatios,
+              borderColor: '#f59e0b',
+              backgroundColor: 'rgba(245,158,11,0.1)',
+              borderWidth: 2,
+              pointRadius: 2,
+              pointHoverRadius: 4,
+              tension: 0.3,
+              fill: true,
+              yAxisID: 'y',
+            },
+            {
+              label: '買い残',
+              data: longs,
+              borderColor: '#3b82f6',
+              backgroundColor: 'transparent',
+              borderWidth: 1.5,
+              pointRadius: 1,
+              tension: 0.3,
+              yAxisID: 'y2',
+              borderDash: [],
+            },
+            {
+              label: '売り残',
+              data: shorts,
+              borderColor: '#ef4444',
+              backgroundColor: 'transparent',
+              borderWidth: 1.5,
+              pointRadius: 1,
+              tension: 0.3,
+              yAxisID: 'y2',
+              borderDash: [4, 3],
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: {
+              display: true,
+              labels: {
+                color: textColor,
+                font: { size: 10 },
+                boxWidth: 12,
+                padding: 8,
+              },
+            },
+            tooltip: {
+              callbacks: {
+                label: function(ctx) {
+                  const v = ctx.parsed.y;
+                  if (isNaN(v)) return null;
+                  if (ctx.datasetIndex === 0) return `信用倍率: ${v.toFixed(2)}倍`;
+                  if (ctx.datasetIndex === 1) return `買い残: ${v.toLocaleString()}`;
+                  if (ctx.datasetIndex === 2) return `売り残: ${v.toLocaleString()}`;
+                  return `${ctx.dataset.label}: ${v}`;
+                },
+              },
+            },
+          },
+          scales: {
+            x: {
+              ticks: { color: textColor, font: { size: 9 }, maxTicksLimit: 8 },
+              grid: { color: gridColor },
+            },
+            y: {
+              position: 'left',
+              title: { display: true, text: '信用倍率', color: textColor, font: { size: 9 } },
+              ticks: {
+                color: textColor,
+                font: { size: 9 },
+                callback: v => v.toFixed(1) + '倍',
+              },
+              grid: { color: gridColor },
+            },
+            y2: {
+              position: 'right',
+              title: { display: true, text: '残高', color: textColor, font: { size: 9 } },
+              ticks: {
+                color: textColor,
+                font: { size: 9 },
+                callback: v => v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v,
+              },
+              grid: { drawOnChartArea: false },
+            },
+          },
+        },
+      });
+    })();
+    </script>
+
+  {% else %}
+    <div class="margin-no-data">
+      <i class="bi bi-bar-chart-line" style="font-size:1.5rem; display:block; margin-bottom:0.5rem;"></i>
+      信用倍率データがありません
+      <div style="font-size:0.75rem; margin-top:0.25rem;">
+        管理コマンド <code>fetch_margin_data</code> でデータを取得してください
+      </div>
+    </div>
+  {% endif %}
+</div>

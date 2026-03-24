@@ -79,6 +79,9 @@ urlpatterns = [
     path('security/', include('security.urls')),
     path('contact/', include('contact.urls')),
     
+    # 信用倍率
+    path('margin/', include('margin_tracking.urls', namespace='margin_tracking')),
+
     # APIエンドポイント（将来的な拡張用）
     # path('api/v1/earnings/', include('earnings_analysis.urls')),  # API専用
     path('offline/', TemplateView.as_view(template_name='offline.html'), name='offline'),

@@ -1,5 +1,6 @@
 import os
 from celery import Celery
+from celery.schedules import crontab
 from django.conf import settings
 
 # Django設定モジュールを指定
@@ -38,13 +39,20 @@ app.conf.update(
         'earnings_analysis.tasks.analyze_sentiment': {'queue': 'sentiment'},
         'earnings_analysis.tasks.analyze_financial': {'queue': 'financial'},
         'earnings_analysis.tasks.cleanup_expired_sessions': {'queue': 'cleanup'},
+        'margin_tracking.tasks.fetch_weekly_margin_data': {'queue': 'default'},
     },
-    
+
     # 定期タスク設定（オプション）
     beat_schedule={
         'cleanup-expired-sessions': {
             'task': 'earnings_analysis.tasks.cleanup_expired_sessions',
             'schedule': 3600.0,  # 1時間ごと
+        },
+        # 毎週金曜日 07:00 (JST) に信用倍率データを取得
+        # 木曜日申込分のデータがJPXに公開されるタイミングを想定
+        'fetch-weekly-margin-data': {
+            'task': 'margin_tracking.tasks.fetch_weekly_margin_data',
+            'schedule': crontab(hour=7, minute=0, day_of_week=5),  # 金曜日 07:00
         },
     },
 )
