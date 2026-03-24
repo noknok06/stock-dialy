@@ -673,3 +673,41 @@ def search_stock(request):
             'success': False,
             'error': str(e)
         }, status=500)
+
+
+# ---------------------------------------------------------------------------
+# 信用倍率 API
+# ---------------------------------------------------------------------------
+
+@require_GET
+def get_margin_ratio(request, stock_code: str):
+    """
+    信用倍率の履歴データを返す。
+    未取得・期限切れの場合は yfinance から取得して DB に保存する。
+
+    GET /api/stock/margin-ratio/<stock_code>/
+    Response: {"success": bool, "history": [...], "note": str}
+    """
+    try:
+        from common.services.margin_ratio_service import MarginRatioService
+        svc = MarginRatioService()
+
+        # 最新データを取得（必要に応じて yfinance から取得）
+        svc.get_or_fetch(stock_code)
+
+        # 直近 52 週分の履歴を返す
+        history = svc.get_history(stock_code, weeks=52)
+
+        return JsonResponse({
+            "success": True,
+            "stock_code": stock_code,
+            "history": history,
+            "note": (
+                "信用倍率（margin_ratio）は東証週次データが必要です。"
+                "現在は yfinance の short_ratio（空売りカバー日数）を参考値として表示しています。"
+            ),
+        })
+
+    except Exception as e:
+        print(traceback.format_exc())
+        return JsonResponse({"success": False, "error": str(e)}, status=500)

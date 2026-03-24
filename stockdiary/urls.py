@@ -72,7 +72,8 @@ urlpatterns = [
     path('api/stock/price/<str:stock_code>/', api.get_stock_price, name='api_stock_price'),
     path('api/stock/metrics/<str:stock_code>/', api.get_stock_metrics, name='api_stock_metrics'),
     path('api/stock/historical/<str:stock_code>/', api.get_stock_historical, name='api_stock_historical'),
-    path('api/stock/search/', api.search_stock, name='search_stock'),  # 🔧 追加: 銘柄検索API
+    path('api/stock/search/', api.search_stock, name='search_stock'),
+    path('api/stock/margin-ratio/<str:stock_code>/', api.get_margin_ratio, name='api_margin_ratio'),
     path('api/create/', api.api_create_diary, name='api_create'),
     path('api/tab-content/<int:diary_id>/<str:tab_type>/', views.DiaryTabContentView.as_view(), name='api_tab_content'),
 

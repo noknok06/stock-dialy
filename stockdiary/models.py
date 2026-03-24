@@ -506,3 +506,48 @@ class NotificationLog(models.Model):
         indexes = [
             models.Index(fields=['user', 'is_read', '-sent_at']),
         ]
+
+
+class MarginRatioData(models.Model):
+    """信用倍率履歴データ（週次）"""
+
+    stock_symbol = models.CharField(
+        max_length=20, db_index=True, verbose_name='証券コード'
+    )
+    date = models.DateField(db_index=True, verbose_name='基準日')
+
+    # 信用倍率 = 信用買い残 / 信用売り残
+    margin_ratio = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True,
+        verbose_name='信用倍率'
+    )
+    # 信用買い残（単元株数）
+    margin_buy_balance = models.BigIntegerField(
+        null=True, blank=True, verbose_name='信用買い残'
+    )
+    # 信用売り残（単元株数）
+    margin_sell_balance = models.BigIntegerField(
+        null=True, blank=True, verbose_name='信用売り残'
+    )
+    # 参考指標: yfinance shortRatio（空売りカバー日数）
+    short_ratio = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True,
+        verbose_name='空売り比率(参考)'
+    )
+    data_source = models.CharField(
+        max_length=50, default='yfinance', verbose_name='データソース'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = '信用倍率データ'
+        verbose_name_plural = '信用倍率データ'
+        unique_together = ['stock_symbol', 'date']
+        ordering = ['-date']
+        indexes = [
+            models.Index(fields=['stock_symbol', '-date']),
+        ]
+
+    def __str__(self):
+        return f"{self.stock_symbol} {self.date} 信用倍率={self.margin_ratio}"

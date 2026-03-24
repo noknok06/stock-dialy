@@ -1201,6 +1201,42 @@ body {
             </div>
         </div>
 
+        <!-- 信用倍率トレンド -->
+        {% if company.securities_code %}
+        <div class="card sidebar-card animate-fade-in-up delay-2" id="margin-ratio-card">
+            <div class="card-header">
+                <h6>
+                    <i class="fas fa-balance-scale" style="color: var(--primary-500);"></i>
+                    信用倍率
+                </h6>
+            </div>
+            <div class="card-body" style="padding: 1rem;">
+                <div id="margin-ratio-loading" style="text-align:center; color: var(--gray-400); font-size: 0.8rem; padding: 1rem 0;">
+                    <i class="fas fa-spinner fa-spin me-1"></i>データ読み込み中...
+                </div>
+                <div id="margin-ratio-content" style="display:none;">
+                    <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <div>
+                            <div style="font-size: 0.75rem; color: var(--gray-500);">最新値</div>
+                            <div id="margin-ratio-latest" style="font-size: 1.5rem; font-weight: 700; color: var(--gray-800);">—</div>
+                            <div id="margin-ratio-date" style="font-size: 0.7rem; color: var(--gray-400);"></div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-size: 0.75rem; color: var(--gray-500);">短期参考値</div>
+                            <div id="short-ratio-latest" style="font-size: 1.1rem; font-weight: 600; color: var(--gray-700);">—</div>
+                            <div style="font-size: 0.7rem; color: var(--gray-400);">空売りカバー日数</div>
+                        </div>
+                    </div>
+                    <canvas id="margin-ratio-chart" height="120"></canvas>
+                    <div id="margin-ratio-note" style="margin-top: 0.5rem; font-size: 0.7rem; color: var(--gray-400); line-height: 1.4;"></div>
+                </div>
+                <div id="margin-ratio-empty" style="display:none; text-align:center; color: var(--gray-400); font-size: 0.8rem; padding: 1rem 0;">
+                    データなし
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         <!-- 関連企業 -->
         {% if related_companies %}
             <div class="card sidebar-card animate-fade-in-up delay-2">
@@ -1351,6 +1387,122 @@ body {
 {% endblock %}
 
 {% block extra_js %}
+{% if company.securities_code %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+(function() {
+    const stockCode = "{{ company.securities_code }}";
+    const apiUrl = `/diary/api/stock/margin-ratio/${stockCode}/`;
+
+    let marginChart = null;
+
+    function renderMarginChart(history) {
+        const labels = history.map(d => d.date);
+        const marginData = history.map(d => d.margin_ratio);
+        const shortData  = history.map(d => d.short_ratio);
+
+        const hasMargin = marginData.some(v => v !== null);
+        const hasShort  = shortData.some(v => v !== null);
+
+        if (!hasMargin && !hasShort) return false;
+
+        const ctx = document.getElementById('margin-ratio-chart').getContext('2d');
+        const datasets = [];
+
+        if (hasMargin) {
+            datasets.push({
+                label: '信用倍率',
+                data: marginData,
+                borderColor: '#f59e0b',
+                backgroundColor: 'rgba(245,158,11,0.1)',
+                tension: 0.3,
+                pointRadius: 2,
+                fill: true,
+            });
+        }
+        if (hasShort) {
+            datasets.push({
+                label: '空売りカバー日数(参考)',
+                data: shortData,
+                borderColor: '#6088C6',
+                backgroundColor: 'rgba(96,136,198,0.08)',
+                tension: 0.3,
+                pointRadius: 2,
+                fill: false,
+                borderDash: [4, 3],
+            });
+        }
+
+        marginChart = new Chart(ctx, {
+            type: 'line',
+            data: { labels, datasets },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { labels: { font: { size: 10 }, boxWidth: 12 } },
+                    tooltip: { mode: 'index', intersect: false },
+                },
+                scales: {
+                    x: {
+                        ticks: { font: { size: 9 }, maxTicksLimit: 8, maxRotation: 0 },
+                        grid: { display: false },
+                    },
+                    y: {
+                        ticks: { font: { size: 9 } },
+                        beginAtZero: false,
+                    },
+                },
+            },
+        });
+        return true;
+    }
+
+    fetch(apiUrl)
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('margin-ratio-loading').style.display = 'none';
+
+            if (!data.success || !data.history || data.history.length === 0) {
+                document.getElementById('margin-ratio-empty').style.display = 'block';
+                return;
+            }
+
+            const history = data.history;
+            const latest  = history[history.length - 1];
+
+            // 最新値表示
+            const mrEl = document.getElementById('margin-ratio-latest');
+            const srEl = document.getElementById('short-ratio-latest');
+            const dtEl = document.getElementById('margin-ratio-date');
+
+            if (latest.margin_ratio !== null) {
+                mrEl.textContent = parseFloat(latest.margin_ratio).toFixed(2) + '倍';
+            } else {
+                mrEl.textContent = '—';
+            }
+            if (latest.short_ratio !== null) {
+                srEl.textContent = parseFloat(latest.short_ratio).toFixed(1) + '日';
+            } else {
+                srEl.textContent = '—';
+            }
+            dtEl.textContent = latest.date;
+
+            document.getElementById('margin-ratio-note').textContent = data.note || '';
+
+            const rendered = renderMarginChart(history);
+            if (rendered || latest.margin_ratio !== null || latest.short_ratio !== null) {
+                document.getElementById('margin-ratio-content').style.display = 'block';
+            } else {
+                document.getElementById('margin-ratio-empty').style.display = 'block';
+            }
+        })
+        .catch(() => {
+            document.getElementById('margin-ratio-loading').style.display = 'none';
+            document.getElementById('margin-ratio-empty').style.display = 'block';
+        });
+})();
+</script>
+{% endif %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // ツールチップ初期化
