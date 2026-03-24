@@ -82,14 +82,17 @@ class JPXMarginPDFParser:
             logger.error(f"PDFオープン失敗: {pdf_path} - {e}")
             return []
 
+        total_pages = len(doc)
+        logger.info(f"PDF解析開始: {total_pages} ページ")
         all_records = []
-        for page_num in range(len(doc)):
+        for page_num in range(total_pages):
             page = doc[page_num]
             records = self._parse_page(page, page_num)
             all_records.extend(records)
+            logger.info(f"  ページ {page_num + 1}/{total_pages}: {len(records)} 件")
 
         doc.close()
-        logger.info(f"PDF解析完了: {len(all_records)}件のデータを取得")
+        logger.info(f"PDF解析完了: {total_pages} ページ / {len(all_records)} 件")
         return all_records
 
     def _parse_page(self, page, page_num: int) -> List[Dict]:
@@ -97,21 +100,29 @@ class JPXMarginPDFParser:
         records = []
 
         # まずfind_tables()を試みる（PyMuPDF >= 1.23）
-        # find_tables() は TableFinder オブジェクトを返す（len()不可）
+        # find_tables() は TableFinder オブジェクトを返す。
+        # .tables 属性がリストなので直接使う（list()変換は不要）
         try:
             finder = page.find_tables()
-            table_list = list(finder)  # TableFinder → list に変換
+            table_list = getattr(finder, 'tables', None) or []
+            logger.debug(f"ページ {page_num}: テーブル {len(table_list)} 個検出")
             if table_list:
                 for table in table_list:
                     table_records = self._extract_from_table(table)
                     records.extend(table_records)
+                    logger.debug(
+                        f"  テーブル抽出: {len(table_records)} 件"
+                        f"（行数 {len(table.extract()) if hasattr(table, 'extract') else '?'}）"
+                    )
                 if records:
+                    logger.debug(f"ページ {page_num}: テーブル解析 {len(records)} 件")
                     return records
-        except AttributeError:
+        except (AttributeError, TypeError):
             pass  # find_tables()が使えない古いバージョン
 
         # フォールバック: テキスト行ベースの解析
         records = self._parse_page_text(page, page_num)
+        logger.debug(f"ページ {page_num}: テキスト解析 {len(records)} 件（フォールバック）")
         return records
 
     def _extract_from_table(self, table) -> List[Dict]:
@@ -189,29 +200,34 @@ class JPXMarginPDFParser:
         # 制御文字・余分な空白を除去
         stock_name = re.sub(r'[\x00-\x1f\x7f]', '', stock_name).strip()
 
-        # 合計欄: 最後から3番目・2番目の数値が売り残・買い残
-        # 末尾から数値セルを探す
-        numeric_vals = []
+        # 合計欄: 末尾から整数の売り残・買い残を探す
+        # 注意: 末尾の「信用倍率」列は小数（例: 2.54）または「―」
+        #       小数はスキップ、空欄/Noneはスキップ、非数値セルで終了
+        int_vals = []
         for v in reversed(values):
-            s = str(v).strip().replace(',', '').replace('―', '').replace('-', '')
+            s = str(v).strip().replace(',', '')
+            # 空・欠損・記号はスキップ
+            if s in ('', 'None', 'nan', '―', '-', '△'):
+                continue
+            # 整数（コンマ区切りを除いた後）
             if re.match(r'^\d+$', s):
-                numeric_vals.append(int(s))
-            elif s == '' or s in ('None', 'nan', '△'):
-                numeric_vals.append(None)
-            else:
-                # 数値でないセルに当たったら終了
-                break
+                int_vals.append(int(s))
+                if len(int_vals) >= 2:
+                    break  # 買残・売残の2つが揃ったら終了
+                continue
+            # 小数（信用倍率など）はスキップして続行
+            if re.match(r'^\d+\.\d+$', s):
+                continue
+            # それ以外の文字列は合計欄を過ぎたと判断して終了
+            break
 
-        # 末尾3つのうち: [倍率, 買残高, 売残高] の逆順
-        # 倍率は小数の場合があるので、整数のみを取り出す
-        # 末尾から整数値を2つ以上取れれば買残・売残とみなす
-        int_vals = [v for v in numeric_vals if v is not None]
         if len(int_vals) < 2:
             return None
 
-        # 最後2つの整数値: 買残高, 売残高（逆順なのでリバース）
-        long_balance = int_vals[0]   # 最後から1番目（逆順だと先頭）
-        short_balance = int_vals[1]  # 最後から2番目
+        # int_vals[0] = 買残高（末尾から最初に見つかった整数）
+        # int_vals[1] = 売残高（2番目に見つかった整数）
+        long_balance = int_vals[0]
+        short_balance = int_vals[1]
 
         if short_balance < 0 or long_balance < 0:
             return None
