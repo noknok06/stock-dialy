@@ -1645,7 +1645,7 @@ table.hub-table {
         let rows = '';
         codesWithData.forEach(c => {
             const d = stocksData[c];
-            const latest = marginData[c].data[0];
+            const latest = marginData[c].data.at(-1);
             const judgment = latest.margin_ratio >= 3 ? '<span class="badge-good">買い優勢</span>'
                            : latest.margin_ratio <= 0.5 ? '<span class="badge-bad">売り優勢</span>'
                            : '<span class="badge-mid">中立</span>';
@@ -1685,14 +1685,14 @@ table.hub-table {
         const cfDanger   = ngAlerts.some(a => a.level === 'danger' && a.msg.includes('CF'));
 
         // ③ 信用倍率シグナル
-        // data は新しい順（index 0 = 最新）→ reverseして古い順にしてtrendArrowsへ
+        // data は古い順（index 0 = 最古、at(-1) = 最新）
         let marginSignal = 'no_data';
         let marginLatest = null;
         let marginArrow  = '→';
         const mData = marginData[code];
         if (mData && mData.data && mData.data.length >= 2) {
-            marginLatest = mData.data[0].margin_ratio;
-            const ratios  = mData.data.map(r => r.margin_ratio).reverse();
+            marginLatest = mData.data.at(-1).margin_ratio;
+            const ratios  = mData.data.map(r => r.margin_ratio); // 古い順のままtrendArrowsへ
             const mArrows = trendArrows(ratios);
             marginArrow   = mArrows.length ? mArrows[mArrows.length - 1] : '→';
 
@@ -1845,7 +1845,7 @@ table.hub-table {
                     per:d.per??null,
                     pbr:d.pbr??null,
                     dividend_yield:d.dividend_yield??null,
-                    margin_current: marginData[c]?.data?.[0]?.margin_ratio ?? null,
+                    margin_current: marginData[c]?.data?.at(-1)?.margin_ratio ?? null,
                     margin_trend: (marginData[c]?.data ?? []).map(x=>x.margin_ratio),
                 };
             })
