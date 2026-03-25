@@ -71,7 +71,7 @@ def setup_margin_fetch_schedule():
         name='信用倍率データ日次取得',
         func=func,
         schedule_type=Schedule.CRON,
-        cron='30 7 * * *',   # 毎日 07:30 (サーバー時刻 = JST)
+        cron='0 15 * * *',   # 毎日 15:00 (サーバー時刻 = JST)
         repeats=-1,           # 無限繰り返し
     )
     logger.info("信用倍率取得スケジュール登録完了: 毎日 07:30")
