@@ -850,7 +850,20 @@ table.hub-table {
             </div>
         </div>
 
-        <!-- ⑤ AI 分析セクション（SuperUser のみ表示） -->
+        <!-- ⑤ 買い時分析シグナル -->
+        <div class="hub-card" id="buy-signal-section" style="display:none;">
+            <div class="hub-card-title">
+                <i class="bi bi-bullseye"></i> 買い時分析シグナル
+                <span class="hub-card-sub">売上・利益成長率 × 信用倍率（需給）を統合した複合判定</span>
+            </div>
+            <div id="buy-signal-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px;margin-bottom:12px;"></div>
+            <div class="disclaimer" style="margin-top:0;">
+                <i class="bi bi-exclamation-triangle-fill" style="color:var(--warning-color);"></i>
+                本シグナルはファンダメンタルズ・需給データによる参考指標です。最終的な投資判断はご自身の責任で行ってください。
+            </div>
+        </div>
+
+        <!-- ⑥ AI 分析セクション（SuperUser のみ表示） -->
         {% if user.is_superuser %}
         <div class="ai-section">
             <div class="ai-section-header">
@@ -1133,6 +1146,7 @@ table.hub-table {
         delete stocksData[code];
         delete marginData[code];
         renderMarginSection();
+        renderBuySignalSection();
         Object.keys(stocksData).forEach((c,i)=>{if(!stocksData[c].loading)stocksData[c]._color=getColor(i);});
         renderChips();
         renderAll();
@@ -1183,6 +1197,7 @@ table.hub-table {
         renderCagrTable(codes);
         renderNgSection(codes);
         renderMarginSection();
+        renderBuySignalSection();
     }
 
     // ============================================================
@@ -1516,6 +1531,7 @@ table.hub-table {
             }
         } catch (e) { marginData[code] = null; }
         renderMarginSection();
+        renderBuySignalSection();
     }
 
     function colorMargin(v) {
@@ -1642,6 +1658,163 @@ table.hub-table {
             </tr>`;
         });
         tbody.innerHTML = rows;
+    }
+
+    // ============================================================
+    // ⑤ 買い時分析シグナル
+    // ============================================================
+
+    // 成長・利益の質・信用倍率を統合してシグナルを生成
+    function analyzeBuySignal(code) {
+        const d = stocksData[code];
+        if (!d || d.loading) return null;
+
+        // ① 成長スコア
+        const revCagr = calcCagr(d.revenue);
+        const oiCagr  = calcCagr(d.operating_income);
+        let growthLevel = 'none';
+        if (revCagr != null && revCagr > 5 && oiCagr != null && oiCagr > 5) {
+            growthLevel = 'strong';
+        } else if ((revCagr != null && revCagr > 0) || (oiCagr != null && oiCagr > 0)) {
+            growthLevel = 'moderate';
+        }
+
+        // ② 利益の質（CF裏付けチェック）
+        const ngAlerts   = detectNg(d);
+        const cfBad      = ngAlerts.some(a => a.msg.includes('CF'));
+        const cfDanger   = ngAlerts.some(a => a.level === 'danger' && a.msg.includes('CF'));
+
+        // ③ 信用倍率シグナル
+        // data は新しい順（index 0 = 最新）→ reverseして古い順にしてtrendArrowsへ
+        let marginSignal = 'no_data';
+        let marginLatest = null;
+        let marginArrow  = '→';
+        const mData = marginData[code];
+        if (mData && mData.data && mData.data.length >= 2) {
+            marginLatest = mData.data[0].margin_ratio;
+            const ratios  = mData.data.map(r => r.margin_ratio).reverse();
+            const mArrows = trendArrows(ratios);
+            marginArrow   = mArrows.length ? mArrows[mArrows.length - 1] : '→';
+
+            if (marginLatest <= 0.5 && growthLevel !== 'none') {
+                marginSignal = 'contrarian';   // 成長企業なのに売り優勢 → 逆張り候補
+            } else if (marginLatest <= 2 && marginArrow === '↑') {
+                marginSignal = 'improving';    // 低水準から上昇 → 需給好転
+            } else if (marginLatest >= 3 && marginArrow === '↑') {
+                marginSignal = 'momentum';     // 高水準で継続上昇 → モメンタム
+            } else if (marginLatest >= 3 && marginArrow === '↓') {
+                marginSignal = 'weakening';    // 高水準から下落 → 需給悪化リスク
+            } else {
+                marginSignal = 'neutral';
+            }
+        }
+
+        // ④ 総合シグナル判定
+        let overall, label, icon, bgColor;
+        if (growthLevel === 'none') {
+            overall = 'pass';       label = '見送り推奨';       icon = '⚫'; bgColor = 'rgba(108,117,125,0.08)';
+        } else if (growthLevel === 'strong' && !cfBad && marginSignal === 'contrarian') {
+            overall = 'contrarian'; label = '逆張り候補';       icon = '🔵'; bgColor = 'rgba(13,202,240,0.08)';
+        } else if (growthLevel === 'strong' && !cfBad &&
+                   (marginSignal === 'improving' || marginSignal === 'momentum')) {
+            overall = 'buy';        label = '買い検討';         icon = '🟢'; bgColor = 'rgba(25,135,84,0.08)';
+        } else if (cfDanger) {
+            overall = 'check_cf';   label = 'CF確認後に判断';   icon = '🟠'; bgColor = 'rgba(253,126,20,0.08)';
+        } else if (growthLevel === 'strong' || (growthLevel === 'moderate' && marginSignal === 'momentum')) {
+            overall = 'watch';      label = '成長継続・様子見'; icon = '🟡'; bgColor = 'rgba(255,193,7,0.08)';
+        } else {
+            overall = 'neutral';    label = '様子見';           icon = '⚪'; bgColor = 'rgba(108,117,125,0.06)';
+        }
+
+        return { code, revCagr, oiCagr, growthLevel, cfBad, cfDanger,
+                 marginSignal, marginLatest, marginArrow, overall, label, icon, bgColor };
+    }
+
+    // 成長レベルの表示テキスト・バッジ
+    function growthBadge(level, cagr, label) {
+        if (cagr == null) return `<span class="badge-na">${label}: -</span>`;
+        const s = cagr >= 0 ? '+' : '';
+        const cls = cagr > 5 ? 'badge-good' : cagr > 0 ? 'badge-mid' : 'badge-bad';
+        return `<span class="${cls}">${label}: ${s}${cagr.toFixed(1)}%</span>`;
+    }
+
+    function marginSignalText(sig, latest, arrow) {
+        if (sig === 'no_data') return '<span class="badge-na">信用倍率: データなし</span>';
+        const arrowHtml = arrow === '↑' ? '<span style="color:var(--success-color);">↑</span>'
+                        : arrow === '↓' ? '<span style="color:var(--danger-color);">↓</span>'
+                        : '<span style="color:var(--text-secondary);">→</span>';
+        const valStr = latest != null ? `${parseFloat(latest).toFixed(2)}倍${arrowHtml}` : '-';
+        const labels = {
+            contrarian: `<span class="badge-mid">逆張り候補 ${valStr}</span>`,
+            improving:  `<span class="badge-good">需給好転 ${valStr}</span>`,
+            momentum:   `<span class="badge-good">モメンタム ${valStr}</span>`,
+            weakening:  `<span class="badge-bad">需給悪化リスク ${valStr}</span>`,
+            neutral:    `<span class="badge-mid">中立 ${valStr}</span>`,
+        };
+        return labels[sig] || `<span class="badge-na">${valStr}</span>`;
+    }
+
+    function buySignalInterpretation(sig) {
+        const map = {
+            buy:        '成長力が確認でき、信用需給も改善中。株価のタイミングを見て検討を。',
+            contrarian: '業績は成長しているが売り方が多い。売り枯れからの反発に期待できる局面。',
+            check_cf:   '利益は成長しているがキャッシュフローが伴っていない。CF改善を確認後に判断を。',
+            watch:      '業績成長は続いているが需給シグナルが揃っていない。継続観察推奨。',
+            neutral:    '現時点では買いを急ぐ材料が少ない。引き続き業績・需給の動向を注視。',
+            pass:       '売上・利益ともに成長が確認できない。業績回復を確認してから再検討を。',
+        };
+        return map[sig.overall] || '';
+    }
+
+    function renderBuySignalSection() {
+        const section = document.getElementById('buy-signal-section');
+        const grid    = document.getElementById('buy-signal-grid');
+        if (!section || !grid) return;
+
+        const codes = Object.keys(stocksData).filter(c => !stocksData[c].loading);
+        if (codes.length === 0) { section.style.display = 'none'; return; }
+
+        section.style.display = 'block';
+        grid.innerHTML = '';
+
+        codes.forEach(c => {
+            const sig = analyzeBuySignal(c);
+            if (!sig) return;
+            const d   = stocksData[c];
+
+            const cfRow = sig.cfDanger
+                ? `<div style="margin-top:4px;"><span class="badge-bad">利益の質: CF乖離（2期連続）</span></div>`
+                : sig.cfBad
+                ? `<div style="margin-top:4px;"><span class="badge-mid">利益の質: CF要確認</span></div>`
+                : `<div style="margin-top:4px;"><span class="badge-good">利益の質: CF裏付けあり</span></div>`;
+
+            const card = document.createElement('div');
+            card.style.cssText = `
+                border: 1px solid var(--border-primary);
+                border-radius: var(--radius-sm);
+                padding: 14px 16px;
+                background: ${sig.bgColor};
+            `;
+            card.innerHTML = `
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+                    <span class="legend-dot" style="background:${d._color};flex-shrink:0;"></span>
+                    <span style="font-weight:var(--font-bold);font-size:0.9rem;">${d.stock_name || c}</span>
+                    <span style="color:var(--text-secondary);font-size:0.8rem;">${c}</span>
+                    <span style="margin-left:auto;font-size:1.1rem;" title="${sig.label}">${sig.icon}</span>
+                    <span style="font-weight:var(--font-bold);font-size:0.85rem;">${sig.label}</span>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">
+                    ${growthBadge(sig.growthLevel, sig.revCagr, '売上CAGR')}
+                    ${growthBadge(sig.growthLevel, sig.oiCagr,  '利益CAGR')}
+                </div>
+                ${cfRow}
+                <div style="margin-top:6px;">${marginSignalText(sig.marginSignal, sig.marginLatest, sig.marginArrow)}</div>
+                <div style="margin-top:10px;font-size:0.78rem;color:var(--text-secondary);line-height:1.55;border-top:1px solid var(--border-light);padding-top:8px;">
+                    ${buySignalInterpretation(sig)}
+                </div>
+            `;
+            grid.appendChild(card);
+        });
     }
 
     // ============================================================
