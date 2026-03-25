@@ -406,22 +406,23 @@ def get_stock_metrics(request, stock_code):
             except Exception:
                 pass
 
-        # --- 配当利回り: ticker.dividends から直近1年合計で計算
+        # --- 配当利回り: ticker.info の dividendYield を優先（Yahoo Finance 表示値と一致）
         try:
-            divs = ticker.dividends
-            if divs is not None and len(divs) > 0:
-                one_year_ago = pd.Timestamp.now(tz=divs.index.tz) - pd.DateOffset(years=1)
-                annual_div   = float(divs[divs.index >= one_year_ago].sum())
-                if annual_div > 0 and price and price > 0:
-                    dividend_yield = round(annual_div / price * 100, 2)
+            raw = ticker.info.get('dividendYield') or ticker.info.get('trailingAnnualDividendYield')
+            if raw:
+                dividend_yield = round(raw * 100, 2)
         except Exception:
             pass
 
-        # 配当が取得できなかった場合は ticker.info にフォールバック
+        # ticker.info が取得できない場合は ticker.dividends から直近1年合計で計算
         if dividend_yield is None:
             try:
-                raw = ticker.info.get('dividendYield')
-                dividend_yield = round(raw * 100, 2) if raw else None
+                divs = ticker.dividends
+                if divs is not None and len(divs) > 0:
+                    one_year_ago = pd.Timestamp.now(tz=divs.index.tz) - pd.DateOffset(years=1)
+                    annual_div   = float(divs[divs.index >= one_year_ago].sum())
+                    if annual_div > 0 and price and price > 0:
+                        dividend_yield = round(annual_div / price * 100, 2)
             except Exception:
                 pass
 
@@ -580,20 +581,22 @@ def get_stock_historical(request, stock_code):
             except Exception:
                 pass
 
+        # 配当利回り: ticker.info の dividendYield を優先（Yahoo Finance 表示値と一致）
         try:
-            divs = ticker.dividends
-            if divs is not None and len(divs) > 0:
-                one_year_ago = pd.Timestamp.now(tz=divs.index.tz) - pd.DateOffset(years=1)
-                annual_div = float(divs[divs.index >= one_year_ago].sum())
-                if annual_div > 0 and price and price > 0:
-                    dividend_yield = round(annual_div / price * 100, 2)
+            raw = ticker.info.get('dividendYield') or ticker.info.get('trailingAnnualDividendYield')
+            if raw:
+                dividend_yield = round(raw * 100, 2)
         except Exception:
             pass
 
         if dividend_yield is None:
             try:
-                raw = ticker.info.get('dividendYield')
-                dividend_yield = round(raw * 100, 2) if raw else None
+                divs = ticker.dividends
+                if divs is not None and len(divs) > 0:
+                    one_year_ago = pd.Timestamp.now(tz=divs.index.tz) - pd.DateOffset(years=1)
+                    annual_div = float(divs[divs.index >= one_year_ago].sum())
+                    if annual_div > 0 and price and price > 0:
+                        dividend_yield = round(annual_div / price * 100, 2)
             except Exception:
                 pass
 
