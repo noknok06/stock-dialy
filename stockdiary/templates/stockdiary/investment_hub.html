@@ -828,7 +828,29 @@ table.hub-table {
             </div>
         </div>
 
-        <!-- ④ AI 分析セクション（SuperUser のみ表示） -->
+        <!-- ④ 信用倍率トレンド（週次） -->
+        <div class="hub-card" id="margin-section" style="display:none;">
+            <div class="hub-card-title">
+                <i class="bi bi-bar-chart-steps"></i> 信用倍率トレンド（週次）
+                <span class="hub-card-sub">買残÷売残 ｜ 2倍超＝買い優勢 / 0.5倍未満＝売り優勢</span>
+            </div>
+            <div id="margin-legend" class="trend-legend" style="margin-bottom:8px;"></div>
+            <div style="position:relative;height:220px;margin-bottom:16px;">
+                <canvas id="hub-margin-chart"></canvas>
+            </div>
+            <div style="overflow-x:auto;">
+                <table class="hub-table">
+                    <thead id="hub-margin-thead"></thead>
+                    <tbody id="hub-margin-tbody"></tbody>
+                </table>
+            </div>
+            <div id="margin-no-data" style="display:none;text-align:center;
+                 color:var(--text-secondary);padding:16px;font-size:0.85rem;">
+                <i class="bi bi-info-circle"></i> 信用倍率データが取得できませんでした（ETF・海外株など対象外の可能性があります）
+            </div>
+        </div>
+
+        <!-- ⑤ AI 分析セクション（SuperUser のみ表示） -->
         {% if user.is_superuser %}
         <div class="ai-section">
             <div class="ai-section-header">
@@ -892,6 +914,8 @@ table.hub-table {
     const stocksData  = {};
     const trendCharts = {};  // { [metricKey]: Chart instance }
     let radarChart    = null;
+    const marginData  = {};  // { [code]: APIレスポンス | null }
+    let marginChart   = null;
 
     const METRICS = [
         { key: 'revenue',                label: '売上高',    unit: '億円' },
@@ -1103,9 +1127,12 @@ table.hub-table {
             renderChips();
             renderAll();
         }
+        fetchMarginData(code);
     }
     function removeStock(code){
         delete stocksData[code];
+        delete marginData[code];
+        renderMarginSection();
         Object.keys(stocksData).forEach((c,i)=>{if(!stocksData[c].loading)stocksData[c]._color=getColor(i);});
         renderChips();
         renderAll();
@@ -1155,6 +1182,7 @@ table.hub-table {
         renderAllTrendCharts(codes);
         renderCagrTable(codes);
         renderNgSection(codes);
+        renderMarginSection();
     }
 
     // ============================================================
@@ -1476,6 +1504,147 @@ table.hub-table {
     }
 
     // ============================================================
+    // ⑤ 信用倍率トレンド
+    // ============================================================
+    async function fetchMarginData(code) {
+        try {
+            const res = await fetch(`/margin/api/${code}/?weeks=13`);
+            if (!res.ok) { marginData[code] = null; }
+            else {
+                const d = await res.json();
+                marginData[code] = d.count > 0 ? d : null;
+            }
+        } catch (e) { marginData[code] = null; }
+        renderMarginSection();
+    }
+
+    function colorMargin(v) {
+        if (v == null) return '<span class="badge-na">-</span>';
+        const c = v >= 3 ? 'badge-good' : v <= 0.5 ? 'badge-bad' : 'badge-mid';
+        return `<span class="${c}">${parseFloat(v).toFixed(2)}倍</span>`;
+    }
+
+    function renderMarginSection() {
+        const section  = document.getElementById('margin-section');
+        const noData   = document.getElementById('margin-no-data');
+        const thead    = document.getElementById('hub-margin-thead');
+        const tbody    = document.getElementById('hub-margin-tbody');
+        const legendEl = document.getElementById('margin-legend');
+        if (!section) return;
+
+        // 現在選択中の全コード
+        const codes = Object.keys(stocksData).filter(c => !stocksData[c].loading);
+        if (codes.length === 0) { section.style.display = 'none'; return; }
+
+        // データがある銘柄だけ
+        const codesWithData = codes.filter(c => marginData[c] != null);
+        section.style.display = 'block';
+
+        if (codesWithData.length === 0) {
+            document.querySelector('#margin-section canvas').parentElement.style.display = 'none';
+            thead.innerHTML = '';
+            tbody.innerHTML = '';
+            legendEl.innerHTML = '';
+            noData.style.display = 'block';
+            return;
+        }
+        noData.style.display = 'none';
+        document.querySelector('#margin-section canvas').parentElement.style.display = 'block';
+
+        // 凡例
+        legendEl.innerHTML = codesWithData.map(c => {
+            const d = stocksData[c];
+            return `<div class="trend-legend-item">
+                <span class="legend-dot" style="background:${d._color};"></span>
+                <span>${d.stock_name || c}</span>
+            </div>`;
+        }).join('');
+
+        // Chart.js ライン
+        const canvas = document.getElementById('hub-margin-chart');
+        const ctx = canvas.getContext('2d');
+        if (marginChart) { marginChart.destroy(); marginChart = null; }
+
+        // 全銘柄の日付を統合してソート（昇順）
+        const allDatesSet = new Set();
+        codesWithData.forEach(c => {
+            (marginData[c].data || []).forEach(row => allDatesSet.add(row.date));
+        });
+        const allDates = Array.from(allDatesSet).sort();
+
+        const datasets = codesWithData.map(c => {
+            const color = stocksData[c]._color;
+            const dataMap = {};
+            (marginData[c].data || []).forEach(row => { dataMap[row.date] = row.margin_ratio; });
+            return {
+                label: stocksData[c].stock_name || c,
+                data: allDates.map(dt => dataMap[dt] ?? null),
+                borderColor: color,
+                backgroundColor: color + '22',
+                borderWidth: 2,
+                fill: false,
+                tension: 0.3,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                spanGaps: false,
+            };
+        });
+
+        marginChart = new Chart(ctx, {
+            type: 'line',
+            data: { labels: allDates, datasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { intersect: false, mode: 'index' },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        ticks: {
+                            callback: v => v.toFixed(2) + '倍',
+                            font: { size: 11 },
+                            color: cssVar('--text-secondary'),
+                        },
+                        grid: { color: 'rgba(0,0,0,0.05)' },
+                    },
+                    x: {
+                        ticks: { font: { size: 11 }, color: cssVar('--text-secondary'), maxRotation: 45 },
+                        grid: { color: 'rgba(0,0,0,0.05)' },
+                    },
+                },
+                plugins: {
+                    legend: { display: codesWithData.length > 1 },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + '倍' : '-'}`,
+                        },
+                    },
+                },
+            },
+        });
+
+        // テーブル（最新週のデータ）
+        let th = '<tr><th>銘柄</th><th>最新信用倍率</th><th>買残（千株）</th><th>売残（千株）</th><th>判定</th></tr>';
+        thead.innerHTML = th;
+        let rows = '';
+        codesWithData.forEach(c => {
+            const d = stocksData[c];
+            const latest = marginData[c].data[0];
+            const judgment = latest.margin_ratio >= 3 ? '<span class="badge-good">買い優勢</span>'
+                           : latest.margin_ratio <= 0.5 ? '<span class="badge-bad">売り優勢</span>'
+                           : '<span class="badge-mid">中立</span>';
+            rows += `<tr>
+                <td><span class="legend-dot" style="background:${d._color};"></span>${d.stock_name || c}</td>
+                <td>${colorMargin(latest.margin_ratio)}</td>
+                <td>${latest.long_balance != null ? latest.long_balance.toLocaleString('ja-JP') : '-'}</td>
+                <td>${latest.short_balance != null ? latest.short_balance.toLocaleString('ja-JP') : '-'}</td>
+                <td>${judgment}</td>
+            </tr>`;
+        });
+        tbody.innerHTML = rows;
+    }
+
+    // ============================================================
     // ⑥ AI 分析（SuperUser のみ）
     // ============================================================
     if(btnAI) btnAI.addEventListener('click', async function(){
@@ -1503,6 +1672,8 @@ table.hub-table {
                     per:d.per??null,
                     pbr:d.pbr??null,
                     dividend_yield:d.dividend_yield??null,
+                    margin_current: marginData[c]?.data?.[0]?.margin_ratio ?? null,
+                    margin_trend: (marginData[c]?.data ?? []).map(x=>x.margin_ratio),
                 };
             })
         };
