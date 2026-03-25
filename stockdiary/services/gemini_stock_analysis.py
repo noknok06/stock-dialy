@@ -94,14 +94,25 @@ class GeminiStockAnalyzer:
             rev_cagr = self._calc_cagr(rev)
             oi_cagr = self._calc_cagr(oi)
 
+            margin_current = d.get('margin_current')
+            margin_trend = d.get('margin_trend', [])
+
             def fmt(v, suffix=''):
                 return f"{v}{suffix}" if v is not None else "データなし"
+
+            if margin_current is not None:
+                level = "買い優勢（高水準）" if margin_current >= 3 else \
+                        "売り優勢（低水準）" if margin_current <= 0.5 else "中立水準"
+                margin_str = f"{margin_current:.2f}倍 ({level})"
+            else:
+                margin_str = "データなし"
 
             stocks_desc += f"""
 ■ {name}（{code}）
   ROE: {fmt(roe, '%')} | 営業利益率: {fmt(opm, '%')} | 自己資本比率: {fmt(eq_ratio, '%')}
   PER: {fmt(per, '倍')} | PBR: {fmt(pbr, '倍')} | 配当利回り: {fmt(div_yield, '%')}
   売上CAGR(4年): {fmt(rev_cagr, '%')} | 営業利益CAGR: {fmt(oi_cagr, '%')}
+  信用倍率（最新）: {margin_str}
 """
 
         n = len(stocks_data)
@@ -116,6 +127,10 @@ class GeminiStockAnalyzer:
 ② valuation_grade（株価評価）: PER・PBR・配当利回りなど現在の株価がファンダメンタルズ対比で割安か割高かを評価。
   PER基準: 12倍以下→S, 12〜25倍→A, 25〜40倍→B, 40〜60倍→C, 60倍超→D
 ③ grade（総合評価）: ①と②を総合判断。PER50倍超はS禁止。PER60倍超は最大B。
+
+【信用倍率の解釈（参考指標）】
+信用倍率は需給指標であり企業価値とは独立していますが、短期的な需給環境の参考として strengths/risks に言及してください。
+2倍以上＝買い需要旺盛（短期的に強気センチメント）、0.5倍以下＝売り圧力が強い状況。評価グレードへの直接反映は不要。
 
 以下のJSON形式（日本語）で回答してください。コードブロック（```）や余分な説明テキストは不要です。JSONのみを返してください。
 
@@ -212,8 +227,16 @@ class GeminiStockAnalyzer:
             eq_ratio = self._latest(d.get('equity_ratio', []))
             div_yield = d.get('dividend_yield')
 
+            margin_current = d.get('margin_current')
             strengths = []
             risks = []
+
+            # ── 信用倍率（需給指標、スコアには加算しない） ──────
+            if margin_current is not None:
+                if margin_current >= 3:
+                    strengths.append(f'信用倍率 {margin_current:.2f}倍: 買い需要が旺盛')
+                elif margin_current <= 0.5:
+                    risks.append(f'信用倍率 {margin_current:.2f}倍: 売り圧力に注意')
 
             # ── ① 企業価値スコア (0〜11点) ──────────────────
             b_score = 0
