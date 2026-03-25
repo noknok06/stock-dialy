@@ -6,16 +6,26 @@ JPX 信用取引残高 PDF 取得・解析サービス
   URL形式: syumatsu{YYYYMMDD}00.pdf
   例: syumatsu2026031900.pdf (2026年3月19日申込分)
 
-PDFの構造:
-  - 銘柄コード: 5桁（末尾1桁は不要。先頭4桁が証券コード）
-  - 合計欄: 売り残高・買い残高・信用倍率
-  - 信用倍率 = 買い残高 / 売り残高
+PDFの実際の構造（横向きA3 / 1値1行形式）:
+  各ページは横向きで、銘柄ごとにデータが縦に並ぶ。
+  get_text("text") で取得すると以下の順序で1行ずつ出力される:
+
+    B                         ← 市場区分（B=東証等）
+    大和ハウス工業　普通株式    ← 銘柄名
+    19250                     ← 5桁コード（先頭4桁が証券コード）
+    JP3505000004              ← ISINコード
+    70,200                    ← [0] 合計 売残高  ← 取得
+    15,200                    ← [1] 合計 売前週比
+    265,000                   ← [2] 合計 買残高  ← 取得
+    15,900                    ← [3] 合計 買前週比
+    48,000                    ← [4] 一般信用 売残高
+    ...（残り8値）
 
 取得するデータ:
   - 銘柄コード（4桁）
   - 銘柄名
-  - 合計の売り残高
-  - 合計の買い残高
+  - 合計の売り残高（nums[0]）
+  - 合計の買い残高（nums[2]）
 """
 
 import re
@@ -58,8 +68,14 @@ def get_recent_dates(days: int = 40) -> List[date]:
 class JPXMarginPDFParser:
     """
     JPX 信用取引残高PDFのパーサー。
-    PyMuPDFを使ってPDFからテーブルデータを抽出する。
+
+    PDFは横向き（landscape）で、各銘柄のデータが縦方向に1値1行で格納されている。
+    PyMuPDF の get_text("text") でページ全体のテキストを取得し、
+    5桁コードを起点にして前後の行から銘柄名・残高を抽出する。
     """
+
+    # 各銘柄の数値列数（合計売前週比〜制度信用買前週比まで12列）
+    _NUM_COLS = 12
 
     def parse_pdf_file(self, pdf_path: str) -> List[Dict]:
         """
@@ -87,262 +103,121 @@ class JPXMarginPDFParser:
         all_records = []
         for page_num in range(total_pages):
             page = doc[page_num]
-            records = self._parse_page(page, page_num)
+            records = self._parse_page(page)
             all_records.extend(records)
+            if records:
+                logger.debug(f"  ページ {page_num + 1}: {len(records)} 件")
 
         doc.close()
         logger.info(f"PDF解析完了: {total_pages} ページ / {len(all_records)} 件")
         return all_records
 
-    def _parse_page(self, page, page_num: int) -> List[Dict]:
+    def _parse_page(self, page) -> List[Dict]:
         """
-        1ページ分のデータを解析する。
+        1ページ分のテキストを解析する。
 
-        テーブル解析とテキスト解析を両方実行し、より多くの件数を返す方を採用する。
-        find_tables() は JPX PDF の複雑なレイアウトで一部しか取れない場合があるため、
-        テキストベース解析を常に実行して比較する。
+        get_text("text") でページ全テキストを取得し、行単位でパースする。
+        各銘柄レコードは以下の行順序で出現する:
+          [市場区分 1文字] [銘柄名] [5桁コード] [ISIN] [数値×12]
         """
-        table_records: List[Dict] = []
-        text_records: List[Dict] = []
-
-        # テーブル解析（PyMuPDF >= 1.23）
-        try:
-            finder = page.find_tables()
-            table_list = getattr(finder, 'tables', None) or []
-            for table in table_list:
-                table_records.extend(self._extract_from_table(table))
-            logger.debug(
-                f"ページ {page_num}: テーブル={len(table_list)}個 → {len(table_records)} 件"
-            )
-        except (AttributeError, TypeError):
-            pass
-
-        # テキスト行ベース解析（常に実行）
-        text_records = self._parse_page_text(page, page_num)
-        logger.debug(f"ページ {page_num}: テキスト → {len(text_records)} 件")
-
-        # より多くの件数を返す方を採用
-        if len(table_records) >= len(text_records):
-            logger.info(f"  ページ {page_num + 1}: テーブル解析採用 {len(table_records)} 件")
-            return table_records
-        else:
-            logger.info(f"  ページ {page_num + 1}: テキスト解析採用 {len(text_records)} 件（テーブル={len(table_records)}）")
-            return text_records
-
-    def _extract_from_table(self, table) -> List[Dict]:
-        """PyMuPDFのTableオブジェクトからデータを抽出する"""
-        records = []
-        try:
-            df = table.to_pandas()
-            records = self._extract_from_dataframe(df)
-        except Exception:
-            # pandasが使えない場合はセルデータを直接処理
-            try:
-                rows = table.extract()
-                records = self._extract_from_rows(rows)
-            except Exception as e:
-                logger.debug(f"テーブル抽出エラー: {e}")
-        return records
-
-    def _extract_from_dataframe(self, df) -> List[Dict]:
-        """DataFrameから信用残高データを抽出する"""
-        records = []
-        # 列数チェック: 銘柄コード+銘柄名+各市場(5列)×複数市場+合計(3列)
-        # 合計は最後の3列: 売り残高, 買い残高, 信用倍率
-        if len(df.columns) < 5:
-            return records
-
-        for _, row in df.iterrows():
-            record = self._extract_from_row_values(list(row.values))
-            if record:
-                records.append(record)
-        return records
-
-    def _extract_from_rows(self, rows: List) -> List[Dict]:
-        """生のセルデータ行リストからデータを抽出する"""
-        records = []
-        for row in rows:
-            if row is None:
-                continue
-            record = self._extract_from_row_values(row)
-            if record:
-                records.append(record)
-        return records
-
-    def _extract_from_row_values(self, values: List) -> Optional[Dict]:
-        """
-        1行分のセル値リストからデータを抽出する。
-
-        JPXのPDF列構造（典型例）:
-          [0] 銘柄コード(5桁)
-          [1] 銘柄名
-          [2-6]  東証: 売前週比, 売残高, 買前週比, 買残高, 倍率
-          [7-11] 名証: 同上
-          [12-16] 福証: 同上
-          [17-21] 札証: 同上
-          [22] 合計: 売残高
-          [23] 合計: 買残高
-          [24] 合計: 信用倍率
-        """
-        if not values or len(values) < 5:
-            return None
-
-        # 銘柄コード（先頭セル）
-        raw_code = str(values[0]).strip() if values[0] else ''
-        code_match = re.match(r'^(\d{4})\d$', raw_code)
-        if not code_match:
-            # 5桁でない場合、4桁の証券コードの可能性も確認
-            code4_match = re.match(r'^(\d{4})$', raw_code)
-            if not code4_match:
-                return None
-            stock_code = raw_code
-        else:
-            stock_code = code_match.group(1)
-
-        # 銘柄名（2番目のセル）
-        stock_name = str(values[1]).strip() if len(values) > 1 and values[1] else ''
-        # 制御文字・余分な空白を除去
-        stock_name = re.sub(r'[\x00-\x1f\x7f]', '', stock_name).strip()
-
-        # 合計欄: 末尾から整数の売り残・買い残を探す
-        # 注意: 末尾の「信用倍率」列は小数（例: 2.54）または「―」
-        #       小数はスキップ、空欄/Noneはスキップ、非数値セルで終了
-        int_vals = []
-        for v in reversed(values):
-            s = str(v).strip().replace(',', '')
-            # 空・欠損・記号はスキップ
-            if s in ('', 'None', 'nan', '―', '-', '△'):
-                continue
-            # 整数（コンマ区切りを除いた後）
-            if re.match(r'^\d+$', s):
-                int_vals.append(int(s))
-                if len(int_vals) >= 2:
-                    break  # 買残・売残の2つが揃ったら終了
-                continue
-            # 小数（信用倍率など）はスキップして続行
-            if re.match(r'^\d+\.\d+$', s):
-                continue
-            # それ以外の文字列は合計欄を過ぎたと判断して終了
-            break
-
-        if len(int_vals) < 2:
-            return None
-
-        # int_vals[0] = 買残高（末尾から最初に見つかった整数）
-        # int_vals[1] = 売残高（2番目に見つかった整数）
-        long_balance = int_vals[0]
-        short_balance = int_vals[1]
-
-        if short_balance < 0 or long_balance < 0:
-            return None
-
-        return {
-            'stock_code': stock_code,
-            'stock_name': stock_name,
-            'short_balance': short_balance,
-            'long_balance': long_balance,
-        }
-
-    def _parse_page_text(self, page, page_num: int) -> List[Dict]:
-        """
-        テキスト抽出ベースのフォールバックパーサー。
-        ページの各行を解析して信用残高データを抽出する。
-        """
-        records = []
-        # "words" モードで単語と座標を取得
-        words = page.get_text("words")  # [(x0, y0, x1, y1, word, block, line, word_idx), ...]
-
-        if not words:
-            return records
-
-        # Y座標でグループ化（同じ行の単語をまとめる）
-        lines = self._group_words_by_line(words)
-
-        for line_words in lines:
-            record = self._parse_text_line(line_words)
-            if record:
-                records.append(record)
-
-        return records
-
-    def _group_words_by_line(self, words: List) -> List[List]:
-        """Y座標が近い単語を同じ行としてグループ化する"""
-        if not words:
+        raw_text = page.get_text("text")
+        if not raw_text:
             return []
 
-        # Y0座標でソート
-        sorted_words = sorted(words, key=lambda w: (round(w[1] / 3), w[0]))
+        lines = [ln.strip() for ln in raw_text.split('\n')]
+        records = []
+        i = 0
+        n = len(lines)
 
-        lines = []
-        current_line = [sorted_words[0]]
-        current_y = sorted_words[0][1]
+        while i < n:
+            # 5桁コード行を探す
+            if not re.match(r'^\d{5}$', lines[i]):
+                i += 1
+                continue
 
-        for word in sorted_words[1:]:
-            if abs(word[1] - current_y) < 3:  # 3pt以内は同一行
-                current_line.append(word)
-            else:
-                lines.append(current_line)
-                current_line = [word]
-                current_y = word[1]
-        lines.append(current_line)
+            stock_code = lines[i][:4]  # 先頭4桁が証券コード
 
-        return lines
+            # 銘柄名: コードの直前の行を逆方向に探す
+            stock_name = self._find_stock_name(lines, i)
 
-    def _parse_text_line(self, line_words: List) -> Optional[Dict]:
+            i += 1  # 5桁コードの次へ
+
+            # ISINコード（JP...）をスキップ
+            if i < n and re.match(r'^JP[A-Z0-9]+$', lines[i]):
+                i += 1
+
+            # 数値を最大12個収集
+            nums, i = self._collect_nums(lines, i, n)
+
+            # nums[0]=合計売残高, nums[2]=合計買残高
+            if len(nums) >= 3 and nums[0] is not None and nums[2] is not None:
+                records.append({
+                    'stock_code': stock_code,
+                    'stock_name': stock_name,
+                    'short_balance': nums[0],
+                    'long_balance': nums[2],
+                })
+
+        return records
+
+    def _find_stock_name(self, lines: List[str], code_idx: int) -> str:
+        """5桁コード行の直前から銘柄名を探す（逆方向）"""
+        j = code_idx - 1
+        while j >= 0:
+            line = lines[j]
+            # 空行・1文字市場区分・ISINコード・数値行はスキップ
+            if (not line
+                    or re.match(r'^[A-Za-z]$', line)
+                    or re.match(r'^JP[A-Z0-9]+$', line)
+                    or re.match(r'^\d', line)):
+                j -= 1
+                continue
+            # 制御文字除去して返す
+            return re.sub(r'[\x00-\x1f\x7f]', '', line).strip()
+        return ''
+
+    def _collect_nums(self, lines: List[str], start: int, end: int) -> Tuple[List, int]:
         """
-        1行分の単語リストから銘柄コードと残高データを抽出する。
-        先頭に5桁コードがある行のみ処理する。
+        start行目から数値を最大 _NUM_COLS 個収集する。
+
+        対応フォーマット:
+          正の整数: 70,200 → 70200
+          変化量（負）: ▲ 3,200 → -3200（不使用だが収集）
+          欠損: ―, -, 0
+        非数値行に当たったら収集終了。
         """
-        if not line_words:
-            return None
+        nums: List[Optional[int]] = []
+        i = start
+        while i < end and len(nums) < self._NUM_COLS:
+            val = lines[i]
 
-        # X座標でソート
-        sorted_words = sorted(line_words, key=lambda w: w[0])
-        texts = [w[4] for w in sorted_words]
+            # ▲ NNN または ▲NNN（負の変化量）
+            if '▲' in val:
+                clean = val.replace('▲', '').replace(',', '').strip()
+                if re.match(r'^\d+$', clean):
+                    nums.append(-int(clean))
+                    i += 1
+                    continue
+                # ▲だけで数字がない → 次の行が数値の場合がある
+                i += 1
+                continue
 
-        if not texts:
-            return None
+            clean = val.replace(',', '')
+            if re.match(r'^\d+$', clean):
+                nums.append(int(clean))
+                i += 1
+                continue
 
-        # 先頭が5桁の数字であること
-        raw_code = texts[0]
-        code_match = re.match(r'^(\d{4})\d$', raw_code)
-        if not code_match:
-            return None
-        stock_code = code_match.group(1)
+            # 欠損記号
+            if val in ('―', '-', '－', ''):
+                nums.append(None)
+                i += 1
+                continue
 
-        # 銘柄名（数字以外の連続テキスト）
-        stock_name = ''
-        name_parts = []
-        for t in texts[1:]:
-            if re.match(r'^[\d,]+$', t) or t in ('―', '-', '△'):
-                break
-            name_parts.append(t)
-        stock_name = ''.join(name_parts)
+            # 数値でも欠損でもない → 次の銘柄の開始または列見出し
+            break
 
-        # 数値を後ろから収集（合計欄 = 最後の整数群）
-        numbers = []
-        for t in texts:
-            clean = t.replace(',', '').replace('△', '-')
-            if re.match(r'^-?\d+$', clean):
-                numbers.append(int(clean))
-
-        if len(numbers) < 2:
-            return None
-
-        # 最後の2整数値が合計欄の買残・売残
-        long_balance = numbers[-1]
-        short_balance = numbers[-2]
-
-        if short_balance < 0 or long_balance < 0:
-            return None
-
-        return {
-            'stock_code': stock_code,
-            'stock_name': stock_name,
-            'short_balance': short_balance,
-            'long_balance': long_balance,
-        }
-
+        return nums, i
 
 class JPXMarginService:
     """
