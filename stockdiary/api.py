@@ -407,12 +407,13 @@ def get_stock_metrics(request, stock_code):
                 pass
 
         # --- 配当利回り: ticker.info の dividendYield を優先（Yahoo Finance 表示値と一致）
-        # dividendYield は小数（0.054）で返ることもあればパーセント（5.4）で返ることもある
-        # > 1 の場合はすでにパーセント形式とみなして ×100 しない
+        # yfinance の dividendYield は小数（0.054=5.4%）またはパーセント（5.4=5.4%）で返る
+        # 現実的な配当利回りは 0〜30% なので、raw > 0.3 はパーセント形式と判断
+        # raw <= 0.3 は小数形式（0.054 など）なので ×100 する
         try:
             raw = ticker.info.get('dividendYield')
             if raw:
-                dividend_yield = round(raw if raw > 1 else raw * 100, 2)
+                dividend_yield = round(raw if raw > 0.3 else raw * 100, 2)
         except Exception:
             pass
 
@@ -584,12 +585,13 @@ def get_stock_historical(request, stock_code):
                 pass
 
         # 配当利回り: ticker.info の dividendYield を優先（Yahoo Finance 表示値と一致）
-        # dividendYield は小数（0.054）で返ることもあればパーセント（5.4）で返ることもある
-        # > 1 の場合はすでにパーセント形式とみなして ×100 しない
+        # yfinance の dividendYield は小数（0.054=5.4%）またはパーセント（5.4=5.4%）で返る
+        # 現実的な配当利回りは 0〜30% なので、raw > 0.3 はパーセント形式と判断
+        # raw <= 0.3 は小数形式（0.054 など）なので ×100 する
         try:
             raw = ticker.info.get('dividendYield')
             if raw:
-                dividend_yield = round(raw if raw > 1 else raw * 100, 2)
+                dividend_yield = round(raw if raw > 0.3 else raw * 100, 2)
         except Exception:
             pass
 

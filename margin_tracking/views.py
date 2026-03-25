@@ -43,7 +43,7 @@ def margin_data_api(request, stock_code):
             'date': rec.record_date.strftime('%Y-%m-%d'),
             'short_balance': rec.short_balance,
             'long_balance': rec.long_balance,
-            'margin_ratio': float(rec.margin_ratio) if rec.margin_ratio is not None else None,
+            'margin_ratio': round(rec.long_balance / rec.short_balance, 2) if rec.short_balance and rec.short_balance > 0 else None,
         })
 
     return JsonResponse({
