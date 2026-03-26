@@ -397,10 +397,27 @@ class JPXMarginService:
             logger.error(f"PDFダウンロードエラー: {e}")
             return None, False
 
+    @staticmethod
+    def _compute_margin_ratio(short_balance, long_balance):
+        """信用倍率を計算する（short_balance が 0 以下の場合は None）。"""
+        from decimal import Decimal, InvalidOperation, ROUND_HALF_EVEN
+        if not short_balance or short_balance <= 0:
+            return None
+        try:
+            ratio = Decimal(str(long_balance)) / Decimal(str(short_balance))
+            return ratio.quantize(Decimal('0.01'), rounding=ROUND_HALF_EVEN)
+        except InvalidOperation:
+            return None
+
     def _save_records(
         self, records: List[Dict], record_date: date, force: bool
     ) -> Tuple[int, int]:
-        """抽出したレコードをDBに保存する。重複は更新する。"""
+        """抽出したレコードをDBに保存する。重複は更新する。
+
+        Django 4.x の update_or_create は update_fields=set(defaults) で save() を
+        呼ぶため、defaults に含まれないフィールドは DB 更新されない。
+        margin_ratio を defaults に含めることで確実に更新されるようにする。
+        """
         from margin_tracking.models import MarginData
 
         created_count = 0
@@ -408,10 +425,14 @@ class JPXMarginService:
 
         for rec in records:
             stock_code = rec['stock_code']
+            margin_ratio = self._compute_margin_ratio(
+                rec['short_balance'], rec['long_balance']
+            )
             defaults = {
                 'stock_name': rec.get('stock_name', ''),
                 'short_balance': rec['short_balance'],
                 'long_balance': rec['long_balance'],
+                'margin_ratio': margin_ratio,
             }
 
             if force:
