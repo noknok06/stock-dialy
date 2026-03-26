@@ -77,6 +77,8 @@ vim .env   # 各変数を実際の値に書き換える
 | `EMAIL_HOST_PASSWORD` | Gmail アプリパスワード | Google アカウント → セキュリティ → アプリパスワード |
 | `GEMINI_API_KEY` | Google Gemini API キー | Google AI Studio |
 | `EDINET_API_KEY` | EDINET API キー | 金融庁 EDINET |
+| `GOOGLE_CLIENT_ID` | Google OAuth クライアント ID | Google Cloud Console → 認証情報 |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth クライアントシークレット | 同上 |
 | `VAPID_PUBLIC_KEY` | Web Push 公開鍵 | 下記コマンドで生成 |
 | `VAPID_PRIVATE_KEY` | Web Push 秘密鍵 | 下記コマンドで生成 |
 | `VAPID_ADMIN_EMAIL` | Push 通知管理メール | 任意のメールアドレス |
@@ -185,10 +187,10 @@ python manage.py update_company_master
 source venv/bin/activate
 export DJANGO_SETTINGS_MODULE=config.settings
 
-# 静的ファイル収集
+# 静的ファイル収集（出力先: staticfiles/）
 python manage.py collectstatic --noinput
 
-# メディアディレクトリ作成
+# メディア・ログディレクトリ作成
 mkdir -p /var/www/django/stock-dialy/media
 mkdir -p /var/www/django/stock-dialy/logs
 
@@ -296,6 +298,20 @@ for s in Schedule.objects.all():
 
 # [ ] タイマー一覧確認
 sudo systemctl list-timers
+```
+
+---
+
+## 本番環境: Gunicorn 起動
+
+nginx + Gunicorn 構成を使う場合（systemd での管理を推奨）:
+
+```bash
+/var/www/django/stock-dialy/venv/bin/gunicorn config.wsgi \
+    --bind 127.0.0.1:8000 \
+    --workers 4 \
+    --max-requests 1000 \
+    --timeout 60
 ```
 
 ---
