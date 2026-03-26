@@ -23,6 +23,8 @@ class Command(BaseCommand):
                             help='各テーブルの先頭N行を表示（デフォルト:3）')
         parser.add_argument('--page', type=int, default=2,
                             help='詳細テキストダンプするページ番号（1始まり、デフォルト:2）')
+        parser.add_argument('--stock-code', type=str, default=None,
+                            help='特定銘柄コード（4桁）の前後の生テキスト行を表示')
 
     def handle(self, *args, **options):
         try:
@@ -140,6 +142,30 @@ class Command(BaseCommand):
                         else:
                             self.stdout.write(f"  block[{bi}] type={btype} (image/other)")
                     self.stdout.write(f"{'='*60}\n")
+
+            # --stock-code が指定された場合、その銘柄の周辺行を全ページから抽出
+            target_code = options.get('stock_code')
+            if target_code:
+                self.stdout.write(f"\n{'='*60}")
+                self.stdout.write(f"  銘柄コード {target_code} の生テキスト行ダンプ")
+                self.stdout.write(f"{'='*60}")
+                found = False
+                for page_num in range(len(doc)):
+                    page = doc[page_num]
+                    raw_text = page.get_text("text")
+                    page_lines = [ln.strip() for ln in raw_text.split('\n')]
+                    for idx, line in enumerate(page_lines):
+                        # 先頭4桁が対象コードの5桁コード行を探す
+                        if re.match(r'^\d{5}$', line) and line[:4] == target_code:
+                            found = True
+                            self.stdout.write(f"\n[ページ {page_num+1}] 行 {idx}: {repr(line)}")
+                            start = max(0, idx - 5)
+                            self.stdout.write(f"  --- 前後の行 (行{start}〜{min(idx+20, len(page_lines)-1)}) ---")
+                            for j in range(start, min(idx + 20, len(page_lines))):
+                                marker = " <-- 5桁コード" if j == idx else ""
+                                self.stdout.write(f"  [{j:4d}] {repr(page_lines[j])}{marker}")
+                if not found:
+                    self.stdout.write(f"  銘柄コード {target_code} は見つかりませんでした")
 
             doc.close()
             self.stdout.write(f"\n=== サマリー ===")

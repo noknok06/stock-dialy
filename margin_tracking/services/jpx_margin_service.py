@@ -182,7 +182,7 @@ class JPXMarginPDFParser:
 
         対応フォーマット:
           正の整数: 70,200 → 70200
-          変化量（負）: ▲ 3,200 → -3200（不使用だが収集）
+          変化量（負）: ▲3,200 or △3,200 → -3200（不使用だが収集）
           欠損: ―, -, 0
         非数値行に当たったら収集終了。
         """
@@ -191,14 +191,15 @@ class JPXMarginPDFParser:
         while i < end and len(nums) < self._NUM_COLS:
             val = lines[i]
 
-            # ▲ NNN または ▲NNN（負の変化量）
-            if '▲' in val:
-                clean = val.replace('▲', '').replace(',', '').strip()
+            # ▲NNN または △NNN（負の変化量）
+            # ▲ (U+25B2, 黒三角) と △ (U+25B3, 白三角) の両方に対応
+            if '▲' in val or '△' in val:
+                clean = val.replace('▲', '').replace('△', '').replace(',', '').strip()
                 if re.match(r'^\d+$', clean):
                     nums.append(-int(clean))
                     i += 1
                     continue
-                # ▲だけで数字がない → 次の行が数値の場合がある
+                # 記号だけで数字がない → 次の行が数値の場合がある
                 i += 1
                 continue
 
