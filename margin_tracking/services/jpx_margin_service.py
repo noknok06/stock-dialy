@@ -191,15 +191,25 @@ class JPXMarginPDFParser:
         while i < end and len(nums) < self._NUM_COLS:
             val = lines[i]
 
-            # ▲NNN または △NNN（負の変化量）
-            # ▲ (U+25B2, 黒三角) と △ (U+25B3, 白三角) の両方に対応
+            # ▲ (U+25B2, 黒三角) または △ (U+25B3, 白三角) を含む行
+            # パターン1: "138,288,700 ▲ 11,491,400" → 正の数と負の数が同一行
+            # パターン2: "▲ 3,200"                  → 負の数のみ
+            # パターン3: "▲" (単独)                  → 次行に数値
             if '▲' in val or '△' in val:
-                clean = val.replace('▲', '').replace('△', '').replace(',', '').strip()
-                if re.match(r'^\d+$', clean):
-                    nums.append(-int(clean))
-                    i += 1
-                    continue
-                # 記号だけで数字がない → 次の行が数値の場合がある
+                tri = '▲' if '▲' in val else '△'
+                parts = val.split(tri, 1)
+                pre = parts[0].replace(',', '').strip()
+                post = parts[1].replace(',', '').strip() if len(parts) > 1 else ''
+
+                if pre and re.match(r'^\d+$', pre):
+                    # パターン1: 三角の前にも数値あり → 正の数として追加
+                    nums.append(int(pre))
+                    if len(nums) < self._NUM_COLS and re.match(r'^\d+$', post):
+                        nums.append(-int(post))
+                elif re.match(r'^\d+$', post):
+                    # パターン2: 三角＋数値 → 負の数
+                    nums.append(-int(post))
+                # パターン3: 数字なし → 次行に数値がある場合も含め何も追加せずスキップ
                 i += 1
                 continue
 
