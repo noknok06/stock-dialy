@@ -129,8 +129,8 @@ class GeminiStockAnalyzer:
 ③ grade（総合評価）: ①と②を総合判断。PER50倍超はS禁止。PER60倍超は最大B。
 
 【信用倍率の解釈（参考指標）】
-信用倍率は需給指標であり企業価値とは独立していますが、短期的な需給環境の参考として strengths/risks に言及してください。
-2倍以上＝買い需要旺盛（短期的に強気センチメント）、0.5倍以下＝売り圧力が強い状況。評価グレードへの直接反映は不要。
+信用倍率は「買い残高÷売り残高」の需給指標です。評価グレードへの直接反映は不要ですが、strengths/risks に言及してください。
+【正しい解釈】高倍率（3倍以上）＝買い残過多→将来の売り圧力リスク（risks に記載）。低倍率（1倍以下）＝売り残優勢→将来の買い戻し需要・需給好転の可能性（strengths に記載）。
 
 以下のJSON形式（日本語）で回答してください。コードブロック（```）や余分な説明テキストは不要です。JSONのみを返してください。
 
@@ -234,9 +234,9 @@ class GeminiStockAnalyzer:
             # ── 信用倍率（需給指標、スコアには加算しない） ──────
             if margin_current is not None:
                 if margin_current >= 3:
-                    strengths.append(f'信用倍率 {margin_current:.2f}倍: 買い需要が旺盛')
-                elif margin_current <= 0.5:
-                    risks.append(f'信用倍率 {margin_current:.2f}倍: 売り圧力に注意')
+                    risks.append(f'信用倍率 {margin_current:.2f}倍: 買い残過多・将来の売り圧力に注意')
+                elif margin_current <= 1.0:
+                    strengths.append(f'信用倍率 {margin_current:.2f}倍: 売り残優勢・短期的な買い戻し余地あり')
 
             # ── ① 企業価値スコア (0〜11点) ──────────────────
             b_score = 0
