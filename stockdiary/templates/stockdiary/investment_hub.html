@@ -1536,7 +1536,7 @@ table.hub-table {
 
     function colorMargin(v) {
         if (v == null) return '<span class="badge-na">-</span>';
-        const c = v >= 3 ? 'badge-good' : v <= 0.5 ? 'badge-bad' : 'badge-mid';
+        const c = v >= 3 ? 'badge-bad' : v <= 1.0 ? 'badge-good' : 'badge-mid';
         return `<span class="${c}">${parseFloat(v).toFixed(2)}倍</span>`;
     }
 
@@ -1646,8 +1646,8 @@ table.hub-table {
         codesWithData.forEach(c => {
             const d = stocksData[c];
             const latest = marginData[c].data.at(-1);
-            const judgment = latest.margin_ratio >= 3 ? '<span class="badge-good">買い優勢</span>'
-                           : latest.margin_ratio <= 0.5 ? '<span class="badge-bad">売り優勢</span>'
+            const judgment = latest.margin_ratio >= 3 ? '<span class="badge-bad">買い残過多・売り圧力リスク</span>'
+                           : latest.margin_ratio <= 1.0 ? '<span class="badge-good">売り残優勢・買い戻し余地</span>'
                            : '<span class="badge-mid">中立</span>';
             rows += `<tr>
                 <td><span class="legend-dot" style="background:${d._color};"></span>${d.stock_name || c}</td>
@@ -1696,14 +1696,14 @@ table.hub-table {
             const mArrows = trendArrows(ratios);
             marginArrow   = mArrows.length ? mArrows[mArrows.length - 1] : '→';
 
-            if (marginLatest <= 0.5 && growthLevel !== 'none') {
-                marginSignal = 'contrarian';   // 成長企業なのに売り優勢 → 逆張り候補
-            } else if (marginLatest <= 2 && marginArrow === '↑') {
-                marginSignal = 'improving';    // 低水準から上昇 → 需給好転
-            } else if (marginLatest >= 3 && marginArrow === '↑') {
-                marginSignal = 'momentum';     // 高水準で継続上昇 → モメンタム
-            } else if (marginLatest >= 3 && marginArrow === '↓') {
-                marginSignal = 'weakening';    // 高水準から下落 → 需給悪化リスク
+            // 信用倍率の正しい解釈:
+            // 高倍率=買い残過多→将来の売り圧力(ネガティブ) / 低倍率=売り残優勢→将来の買い戻し余地(ポジティブ)
+            if (marginLatest >= 3) {
+                marginSignal = marginArrow === '↑' ? 'overheated'  // 買い残急増・売り圧力蓄積
+                                                   : 'unwinding';   // 解消売り進行中
+            } else if (marginLatest <= 1.0) {
+                marginSignal = marginArrow === '↑' ? 'short_covering'  // ショートカバー進行
+                                                   : 'buy_back';        // 売り残優勢・買い戻し余地大
             } else {
                 marginSignal = 'neutral';
             }
@@ -1712,18 +1712,21 @@ table.hub-table {
         // ④ 総合シグナル判定
         let overall, label, icon, bgColor;
         if (growthLevel === 'none') {
-            overall = 'pass';       label = '見送り推奨';       icon = '⚫'; bgColor = 'rgba(108,117,125,0.08)';
-        } else if (growthLevel === 'strong' && !cfBad && marginSignal === 'contrarian') {
-            overall = 'contrarian'; label = '逆張り候補';       icon = '🔵'; bgColor = 'rgba(13,202,240,0.08)';
+            overall = 'pass';             label = '見送り推奨';           icon = '⚫'; bgColor = 'rgba(108,117,125,0.08)';
         } else if (growthLevel === 'strong' && !cfBad &&
-                   (marginSignal === 'improving' || marginSignal === 'momentum')) {
-            overall = 'buy';        label = '買い検討';         icon = '🟢'; bgColor = 'rgba(25,135,84,0.08)';
+                   (marginSignal === 'buy_back' || marginSignal === 'short_covering')) {
+            overall = 'buy';              label = '買い検討';             icon = '🟢'; bgColor = 'rgba(25,135,84,0.08)';
         } else if (cfDanger) {
-            overall = 'check_cf';   label = 'CF確認後に判断';   icon = '🟠'; bgColor = 'rgba(253,126,20,0.08)';
-        } else if (growthLevel === 'strong' || (growthLevel === 'moderate' && marginSignal === 'momentum')) {
-            overall = 'watch';      label = '成長継続・様子見'; icon = '🟡'; bgColor = 'rgba(255,193,7,0.08)';
+            overall = 'check_cf';         label = 'CF確認後に判断';       icon = '🟠'; bgColor = 'rgba(253,126,20,0.08)';
+        } else if (marginSignal === 'overheated') {
+            overall = 'overheated_watch'; label = '需給過熱・タイミング注意'; icon = '🟡'; bgColor = 'rgba(255,193,7,0.08)';
+        } else if (growthLevel === 'strong') {
+            overall = 'watch';            label = '成長継続・様子見';     icon = '🟡'; bgColor = 'rgba(255,193,7,0.08)';
+        } else if (growthLevel === 'moderate' &&
+                   (marginSignal === 'buy_back' || marginSignal === 'short_covering')) {
+            overall = 'watch';            label = '成長継続・様子見';     icon = '🟡'; bgColor = 'rgba(255,193,7,0.08)';
         } else {
-            overall = 'neutral';    label = '様子見';           icon = '⚪'; bgColor = 'rgba(108,117,125,0.06)';
+            overall = 'neutral';          label = '様子見';               icon = '⚪'; bgColor = 'rgba(108,117,125,0.06)';
         }
 
         return { code, revCagr, oiCagr, growthLevel, cfBad, cfDanger,
@@ -1745,23 +1748,23 @@ table.hub-table {
                         : '<span style="color:var(--text-secondary);">→</span>';
         const valStr = latest != null ? `${parseFloat(latest).toFixed(2)}倍${arrowHtml}` : '-';
         const labels = {
-            contrarian: `<span class="badge-mid">逆張り候補 ${valStr}</span>`,
-            improving:  `<span class="badge-good">需給好転 ${valStr}</span>`,
-            momentum:   `<span class="badge-good">モメンタム ${valStr}</span>`,
-            weakening:  `<span class="badge-bad">需給悪化リスク ${valStr}</span>`,
-            neutral:    `<span class="badge-mid">中立 ${valStr}</span>`,
+            overheated:     `<span class="badge-bad">買い残過熱・売り圧力リスク ${valStr}</span>`,
+            unwinding:      `<span class="badge-mid">解消売り進行中 ${valStr}</span>`,
+            buy_back:       `<span class="badge-good">売り残優勢・買い戻し余地 ${valStr}</span>`,
+            short_covering: `<span class="badge-good">ショートカバー進行 ${valStr}</span>`,
+            neutral:        `<span class="badge-mid">中立 ${valStr}</span>`,
         };
         return labels[sig] || `<span class="badge-na">${valStr}</span>`;
     }
 
     function buySignalInterpretation(sig) {
         const map = {
-            buy:        '成長力が確認でき、信用需給も改善中。株価のタイミングを見て検討を。',
-            contrarian: '業績は成長しているが売り方が多い。売り枯れからの反発に期待できる局面。',
-            check_cf:   '利益は成長しているがキャッシュフローが伴っていない。CF改善を確認後に判断を。',
-            watch:      '業績成長は続いているが需給シグナルが揃っていない。継続観察推奨。',
-            neutral:    '現時点では買いを急ぐ材料が少ない。引き続き業績・需給の動向を注視。',
-            pass:       '売上・利益ともに成長が確認できない。業績回復を確認してから再検討を。',
+            buy:              '業績成長＋売り残優勢。ショートカバーが株価を後押しする局面。タイミングを見て検討を。',
+            overheated_watch: '業績は良好だが買い残が高水準で売り圧力が蓄積。需給解消を確認してから検討を。',
+            check_cf:         '利益は成長しているがキャッシュフローが伴っていない。CF改善を確認後に判断を。',
+            watch:            '業績成長は続いているが需給シグナルが揃っていない。継続観察推奨。',
+            neutral:          '現時点では買いを急ぐ材料が少ない。引き続き業績・需給の動向を注視。',
+            pass:             '売上・利益ともに成長が確認できない。業績回復を確認してから再検討を。',
         };
         return map[sig.overall] || '';
     }
