@@ -803,6 +803,29 @@ table.hub-table {
             <div id="hub-trend-charts-grid" class="trend-charts-grid"></div>
         </div>
 
+
+        <!-- ④ 信用倍率トレンド（週次） -->
+        <div class="hub-card" id="margin-section" style="display:none;">
+            <div class="hub-card-title">
+                <i class="bi bi-bar-chart-steps"></i> 信用倍率トレンド（週次）
+                <span class="hub-card-sub">買残÷売残 ｜ 2倍超＝買い優勢 / 0.5倍未満＝売り優勢</span>
+            </div>
+            <div id="margin-legend" class="trend-legend" style="margin-bottom:8px;"></div>
+            <div style="position:relative;height:220px;margin-bottom:16px;">
+                <canvas id="hub-margin-chart"></canvas>
+            </div>
+            <div style="overflow-x:auto;">
+                <table class="hub-table">
+                    <thead id="hub-margin-thead"></thead>
+                    <tbody id="hub-margin-tbody"></tbody>
+                </table>
+            </div>
+            <div id="margin-no-data" style="display:none;text-align:center;
+                 color:var(--text-secondary);padding:16px;font-size:0.85rem;">
+                <i class="bi bi-info-circle"></i> 信用倍率データが取得できませんでした（ETF・海外株など対象外の可能性があります）
+            </div>
+        </div>
+        
         <!-- ③ CAGR + NGパターン -->
         <div class="two-col-grid">
 
@@ -825,28 +848,6 @@ table.hub-table {
                     <span class="hub-card-sub">4年データから自動検出</span>
                 </div>
                 <div class="ng-grid" id="hub-ng-grid"></div>
-            </div>
-        </div>
-
-        <!-- ④ 信用倍率トレンド（週次） -->
-        <div class="hub-card" id="margin-section" style="display:none;">
-            <div class="hub-card-title">
-                <i class="bi bi-bar-chart-steps"></i> 信用倍率トレンド（週次）
-                <span class="hub-card-sub">買残÷売残 ｜ 2倍超＝買い優勢 / 0.5倍未満＝売り優勢</span>
-            </div>
-            <div id="margin-legend" class="trend-legend" style="margin-bottom:8px;"></div>
-            <div style="position:relative;height:220px;margin-bottom:16px;">
-                <canvas id="hub-margin-chart"></canvas>
-            </div>
-            <div style="overflow-x:auto;">
-                <table class="hub-table">
-                    <thead id="hub-margin-thead"></thead>
-                    <tbody id="hub-margin-tbody"></tbody>
-                </table>
-            </div>
-            <div id="margin-no-data" style="display:none;text-align:center;
-                 color:var(--text-secondary);padding:16px;font-size:0.85rem;">
-                <i class="bi bi-info-circle"></i> 信用倍率データが取得できませんでした（ETF・海外株など対象外の可能性があります）
             </div>
         </div>
 

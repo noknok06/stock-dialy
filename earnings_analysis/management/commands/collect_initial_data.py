@@ -291,19 +291,17 @@ class Command(BaseCommand):
                 raise
     
     def _collect_date_data_safe(self, document_service, target_date):
-        """安全な日次データ収集"""
         date_str = target_date.isoformat()
         
-        # Step1: BatchExecutionを安全に取得・作成
-        batch_execution = self._get_or_create_batch_safe(target_date)
-        
-        if batch_execution.status == 'SUCCESS':
-            return batch_execution.processed_count
-        
-        # Step2: 処理中状態に更新
-        batch_execution.status = 'RUNNING'
-        batch_execution.started_at = timezone.now()
-        batch_execution.save(update_fields=['status', 'started_at'])
+        with transaction.atomic():
+            batch_execution = self._get_or_create_batch_safe(target_date)
+
+            if batch_execution.status == 'SUCCESS':
+                return batch_execution.processed_count
+
+            batch_execution.status = 'RUNNING'
+            batch_execution.started_at = timezone.now()
+            batch_execution.save(update_fields=['status', 'started_at'])
         
         try:
             # Step3: API呼び出し（トランザクション外）
