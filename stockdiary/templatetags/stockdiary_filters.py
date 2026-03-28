@@ -529,6 +529,33 @@ def intcomma_float(value, decimal_places=0):
         return "0"
 
 
+def _ensure_block_spacing(text: str) -> str:
+    """
+    Python-Markdown はリスト行・テーブル行の前に空行を要求する。
+    前の行が非空かつ非ブロック行の場合に空行を自動挿入する。
+    例: news-search スキルが生成する「▶ 見出し\n- リスト」形式に対応。
+    """
+    lines = text.split('\n')
+    result = []
+    for i, line in enumerate(lines):
+        if i > 0:
+            stripped = line.lstrip()
+            prev_stripped = result[-1].lstrip()
+            is_list_line = bool(re.match(r'^[-*+] |^\d+\. ', stripped))
+            is_table_line = stripped.startswith('|')
+            prev_is_block = (
+                not prev_stripped                                          # 空行
+                or bool(re.match(r'^[-*+] |^\d+\. ', prev_stripped))      # リスト継続
+                or prev_stripped.startswith('|')                          # テーブル継続
+                or prev_stripped.startswith('#')                          # 見出し
+                or prev_stripped.startswith('>')                          # 引用
+            )
+            if (is_list_line or is_table_line) and not prev_is_block:
+                result.append('')  # 空行を挿入
+        result.append(line)
+    return '\n'.join(result)
+
+
 @register.filter(name='render_markdown')
 @stringfilter
 def render_markdown(value):
@@ -541,6 +568,9 @@ def render_markdown(value):
     """
     if not value:
         return ''
+
+    # リスト・テーブル前の空行を補完（Python-Markdown の要件を満たすため）
+    value = _ensure_block_spacing(value)
 
     # MarkdownをHTMLに変換
     html = markdown.markdown(
