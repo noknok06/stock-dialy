@@ -431,6 +431,19 @@ table.hub-table {
 .ng-alert-item.level-warning { color: var(--warning-color); }
 .ng-alert-item.level-ok      { color: var(--success-color); }
 
+/* ---- 買いシグナルカード ---- */
+.bsc-card { border:1px solid var(--border-primary); border-left-width:5px; border-radius:var(--radius-sm); overflow:hidden; background:var(--bg-primary); }
+.bsc-header { display:flex; align-items:center; gap:8px; padding:11px 14px; border-bottom:1px solid var(--border-light); flex-wrap:wrap; }
+.bsc-name { font-weight:var(--font-bold); font-size:0.9rem; }
+.bsc-code { color:var(--text-secondary); font-size:0.78rem; }
+.bsc-verdict { margin-left:auto; padding:3px 11px; border-radius:var(--radius-full); font-size:0.8rem; font-weight:var(--font-bold); white-space:nowrap; color:#fff; }
+.bsc-signals { padding:10px 14px; display:flex; flex-direction:column; gap:7px; }
+.bsc-signal-row { display:flex; align-items:center; gap:8px; font-size:0.82rem; }
+.bsc-signal-icon { font-size:1rem; flex-shrink:0; }
+.bsc-signal-label { color:var(--text-secondary); font-size:0.75rem; width:58px; flex-shrink:0; }
+.bsc-signal-value { flex:1; font-weight:600; }
+.bsc-note { padding:7px 14px 11px; font-size:0.77rem; color:var(--text-secondary); line-height:1.55; border-top:1px solid var(--border-light); }
+
 .legend-dot {
     display: inline-block;
     width: 10px; height: 10px;
@@ -984,7 +997,7 @@ table.hub-table {
         <!-- 免責事項 -->
         <div class="disclaimer">
             <i class="bi bi-exclamation-triangle-fill" style="color:var(--warning-color);"></i>
-            <strong>免責事項:</strong> 本ページの情報はYahoo Finance等のデータを基にした参考情報です。
+            <strong>免責事項:</strong> 
             AI分析も含め、投資判断の最終的な責任はご自身にあります。必ず最新情報を確認の上、自己責任で投資判断を行ってください。
         </div>
 
@@ -1939,41 +1952,86 @@ table.hub-table {
         window.updateSpeedDial?.();
         grid.innerHTML = '';
 
+        const VERDICT_COLOR = {
+            buy:              '#16a34a',
+            watch:            '#ca8a04',
+            overheated_watch: '#d97706',
+            check_cf:         '#ea580c',
+            neutral:          '#64748b',
+            pass:             '#94a3b8',
+        };
+
         codes.forEach(c => {
             const sig = analyzeBuySignal(c);
             if (!sig) return;
             const d   = stocksData[c];
+            const signalColor = VERDICT_COLOR[sig.overall] || '#64748b';
 
-            const cfRow = sig.cfDanger
-                ? `<div style="margin-top:4px;"><span class="badge-bad">利益の質: CF乖離（2期連続）</span></div>`
-                : sig.cfBad
-                ? `<div style="margin-top:4px;"><span class="badge-mid">利益の質: CF要確認</span></div>`
-                : `<div style="margin-top:4px;"><span class="badge-good">利益の質: CF裏付けあり</span></div>`;
+            // 成長性
+            const growthIcon  = sig.growthLevel==='strong'  ? 'bi-check-circle-fill'
+                              : sig.growthLevel==='moderate' ? 'bi-dash-circle-fill'
+                              :                                'bi-x-circle-fill';
+            const growthColor = sig.growthLevel==='strong'  ? 'var(--success-color)'
+                              : sig.growthLevel==='moderate' ? 'var(--warning-color)'
+                              :                                'var(--danger-color)';
+            const revStr = sig.revCagr!=null ? `売上${sig.revCagr>=0?'+':''}${sig.revCagr.toFixed(1)}%` : '売上-';
+            const oiStr  = sig.oiCagr !=null ? `利益${sig.oiCagr >=0?'+':''}${sig.oiCagr.toFixed(1)}%`  : '利益-';
+
+            // 利益の質
+            const cfIcon  = sig.cfDanger ? 'bi-x-circle-fill'
+                          : sig.cfBad    ? 'bi-exclamation-circle-fill'
+                          :                'bi-check-circle-fill';
+            const cfColor = sig.cfDanger ? 'var(--danger-color)'
+                          : sig.cfBad    ? 'var(--warning-color)'
+                          :                'var(--success-color)';
+            const cfText  = sig.cfDanger ? 'CF乖離（2期連続）'
+                          : sig.cfBad    ? 'CF要確認'
+                          :                'CF裏付けあり';
+
+            // 需給
+            const M_ICON  = {buy_back:'bi-check-circle-fill', short_covering:'bi-check-circle-fill',
+                             neutral:'bi-dash-circle-fill',   unwinding:'bi-dash-circle-fill',
+                             overheated:'bi-x-circle-fill',   no_data:'bi-question-circle'};
+            const M_COLOR = {buy_back:'var(--success-color)', short_covering:'var(--success-color)',
+                             neutral:'var(--warning-color)',  unwinding:'var(--warning-color)',
+                             overheated:'var(--danger-color)',no_data:'var(--text-secondary)'};
+            const M_TEXT  = {buy_back:'売り残優勢・買い戻し余地', short_covering:'ショートカバー進行',
+                             neutral:'中立',                  unwinding:'解消売り進行中',
+                             overheated:'買い残過熱・売り圧力',no_data:'データなし'};
+            const mIcon  = M_ICON [sig.marginSignal] || 'bi-question-circle';
+            const mColor = M_COLOR[sig.marginSignal] || 'var(--text-secondary)';
+            const mText  = M_TEXT [sig.marginSignal] || '-';
+            const mVal   = sig.marginLatest!=null
+                ? ` ${parseFloat(sig.marginLatest).toFixed(2)}倍${sig.marginArrow}` : '';
 
             const card = document.createElement('div');
-            card.style.cssText = `
-                border: 1px solid var(--border-primary);
-                border-radius: var(--radius-sm);
-                padding: 14px 16px;
-                background: ${sig.bgColor};
-            `;
+            card.className = 'bsc-card';
+            card.style.borderLeftColor = signalColor;
             card.innerHTML = `
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
-                    <span class="legend-dot" style="background:${d._color};flex-shrink:0;"></span>
-                    <span style="font-weight:var(--font-bold);font-size:0.9rem;">${d.stock_name || c}</span>
-                    <span style="color:var(--text-secondary);font-size:0.8rem;">${c}</span>
-                    <span style="margin-left:auto;font-size:1.1rem;" title="${sig.label}">${sig.icon}</span>
-                    <span style="font-weight:var(--font-bold);font-size:0.85rem;">${sig.label}</span>
-                </div>
-                <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">
-                    ${growthBadge(sig.growthLevel, sig.revCagr, '売上CAGR')}
-                    ${growthBadge(sig.growthLevel, sig.oiCagr,  '利益CAGR')}
-                </div>
-                ${cfRow}
-                <div style="margin-top:6px;">${marginSignalText(sig.marginSignal, sig.marginLatest, sig.marginArrow)}</div>
-                <div style="margin-top:10px;font-size:0.78rem;color:var(--text-secondary);line-height:1.55;border-top:1px solid var(--border-light);padding-top:8px;">
-                    ${buySignalInterpretation(sig)}
-                </div>
+<div class="bsc-header">
+    <span class="legend-dot" style="background:${d._color};flex-shrink:0;"></span>
+    <span class="bsc-name">${d.stock_name||c}</span>
+    <span class="bsc-code">${c}</span>
+    <span class="bsc-verdict" style="background:${signalColor}">${sig.label}</span>
+</div>
+<div class="bsc-signals">
+    <div class="bsc-signal-row">
+        <i class="bi ${growthIcon} bsc-signal-icon" style="color:${growthColor}"></i>
+        <span class="bsc-signal-label">成長性</span>
+        <span class="bsc-signal-value" style="color:${growthColor}">${revStr}&ensp;${oiStr}</span>
+    </div>
+    <div class="bsc-signal-row">
+        <i class="bi ${cfIcon} bsc-signal-icon" style="color:${cfColor}"></i>
+        <span class="bsc-signal-label">利益の質</span>
+        <span class="bsc-signal-value" style="color:${cfColor}">${cfText}</span>
+    </div>
+    <div class="bsc-signal-row">
+        <i class="bi ${mIcon} bsc-signal-icon" style="color:${mColor}"></i>
+        <span class="bsc-signal-label">需給</span>
+        <span class="bsc-signal-value" style="color:${mColor}">${mText}${mVal}</span>
+    </div>
+</div>
+<div class="bsc-note">${buySignalInterpretation(sig)}</div>
             `;
             grid.appendChild(card);
         });
