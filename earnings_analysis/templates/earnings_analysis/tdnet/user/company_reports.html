@@ -239,6 +239,170 @@ body {
 .empty-text {
   font-size: 15px;
 }
+
+/* ===== 予想信頼性スコア ===== */
+.reliability-card {
+  background: linear-gradient(145deg, #1a1a2e 0%, #12121f 100%);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.reliability-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.reliability-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #94a3b8;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.reliability-main {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.grade-circle {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-weight: 800;
+  font-size: 26px;
+  line-height: 1;
+  border: 2px solid currentColor;
+}
+
+.reliability-stats {
+  flex: 1;
+}
+
+.reliability-score-line {
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.reliability-score-sub {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.reliability-signal {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 6px;
+}
+
+/* 信頼性グリッド（3列統計） */
+.reliability-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.reliability-stat {
+  background: rgba(255,255,255,0.04);
+  border-radius: 10px;
+  padding: 10px 8px;
+  text-align: center;
+}
+
+.reliability-stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+  margin-bottom: 3px;
+}
+
+.reliability-stat-label {
+  font-size: 10px;
+  color: #64748b;
+}
+
+/* 年別達成率テーブル */
+.forecast-table-wrap {
+  overflow-x: auto;
+  margin-bottom: 10px;
+}
+
+.forecast-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  min-width: 320px;
+}
+
+.forecast-table th {
+  color: #64748b;
+  font-weight: 500;
+  padding: 6px 8px;
+  text-align: center;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  white-space: nowrap;
+}
+
+.forecast-table td {
+  padding: 7px 8px;
+  text-align: center;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  color: #cbd5e1;
+}
+
+.forecast-table td:first-child {
+  font-weight: 600;
+  color: #a5b4fc;
+}
+
+.rate-cell.exceeded { color: #4ade80; font-weight: 600; }
+.rate-cell.beat     { color: #86efac; }
+.rate-cell.met      { color: #94a3b8; }
+.rate-cell.miss     { color: #fb923c; }
+.rate-cell.big-miss { color: #f87171; font-weight: 600; }
+
+/* 信頼性理由テキスト */
+.reliability-reason {
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.6;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+/* データなしバナー */
+.no-forecast-banner {
+  background: rgba(71, 85, 105, 0.15);
+  border: 1px dashed rgba(71, 85, 105, 0.4);
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 20px;
+  text-align: center;
+}
 </style>
 {% endblock %}
 
@@ -256,6 +420,186 @@ body {
     <div class="company-name-big">{{ company_name }}</div>
     <div class="report-count"><strong>{{ reports|length }}</strong> 件のレポート</div>
   </div>
+
+  <!-- ===== 予想信頼性スコア ===== -->
+  {% if forecast_reliability %}
+  <div class="reliability-card">
+    <div class="reliability-header">
+      <span style="font-size:16px;">🎯</span>
+      <span class="reliability-title">業績予想 信頼性スコア</span>
+    </div>
+
+    <div class="reliability-main">
+      <!-- グレードサークル -->
+      <div class="grade-circle" style="color: {{ forecast_reliability.grade_color }}; border-color: {{ forecast_reliability.grade_color }};">
+        {{ forecast_reliability.grade }}
+      </div>
+
+      <div class="reliability-stats">
+        <div class="reliability-score-line">{{ forecast_reliability.reliability_score }}<span style="font-size:14px;color:#64748b;font-weight:400;">点</span></div>
+        <div class="reliability-score-sub">
+          {{ forecast_reliability.years_tracked }}年追跡 ·
+          {% if forecast_reliability.forecast_tendency == 'very_conservative' %}超保守的予想
+          {% elif forecast_reliability.forecast_tendency == 'conservative' %}保守的予想
+          {% elif forecast_reliability.forecast_tendency == 'accurate' %}予想精度高
+          {% elif forecast_reliability.forecast_tendency == 'optimistic' %}やや楽観的
+          {% elif forecast_reliability.forecast_tendency == 'very_optimistic' %}過楽観的
+          {% else %}傾向不明{% endif %}
+          {% if forecast_reliability.recent_trend == 'improving' %} · 📈改善中
+          {% elif forecast_reliability.recent_trend == 'declining' %} · 📉悪化中
+          {% endif %}
+        </div>
+        <!-- 投資シグナル -->
+        <div class="reliability-signal" style="background: {{ forecast_reliability.signal_color }}22; color: {{ forecast_reliability.signal_color }};">
+          {% if forecast_reliability.investment_signal == 'strong_positive' %}🚀 予想超過が常態
+          {% elif forecast_reliability.investment_signal == 'positive' %}📈 予想信頼できる
+          {% elif forecast_reliability.investment_signal == 'neutral' %}➡️ 標準的
+          {% elif forecast_reliability.investment_signal == 'caution' %}⚠️ 達成に注意
+          {% elif forecast_reliability.investment_signal == 'warning' %}🔴 予想精度低
+          {% else %}📊 データ集積中{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- 3列統計 -->
+    <div class="reliability-grid">
+      <div class="reliability-stat">
+        <div class="reliability-stat-value" style="color:#4ade80;">{{ forecast_reliability.beat_count }}回</div>
+        <div class="reliability-stat-label">予想超過</div>
+      </div>
+      <div class="reliability-stat">
+        <div class="reliability-stat-value" style="color:#94a3b8;">{{ forecast_reliability.met_count }}回</div>
+        <div class="reliability-stat-label">ほぼ達成</div>
+      </div>
+      <div class="reliability-stat">
+        <div class="reliability-stat-value" style="color:#fb923c;">{{ forecast_reliability.miss_count }}回</div>
+        <div class="reliability-stat-label">未達</div>
+      </div>
+    </div>
+
+    <!-- 年別達成率テーブル -->
+    {% if forecast_records %}
+    <div class="forecast-table-wrap">
+      <table class="forecast-table">
+        <thead>
+          <tr>
+            <th>年度</th>
+            <th>営業利益<br>達成率</th>
+            <th>純利益<br>達成率</th>
+            <th>売上<br>達成率</th>
+            <th>判定</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for rec in forecast_records %}
+          <tr>
+            <td>{{ rec.fiscal_year }}年</td>
+            <td class="rate-cell
+              {% if rec.achievement_rate_operating_income %}
+                {% if rec.achievement_rate_operating_income >= 120 %}exceeded
+                {% elif rec.achievement_rate_operating_income >= 105 %}beat
+                {% elif rec.achievement_rate_operating_income >= 95 %}met
+                {% elif rec.achievement_rate_operating_income >= 80 %}miss
+                {% else %}big-miss{% endif %}
+              {% endif %}
+            ">
+              {% if rec.achievement_rate_operating_income %}{{ rec.achievement_rate_operating_income|floatformat:1 }}%{% else %}—{% endif %}
+            </td>
+            <td class="rate-cell
+              {% if rec.achievement_rate_net_income %}
+                {% if rec.achievement_rate_net_income >= 120 %}exceeded
+                {% elif rec.achievement_rate_net_income >= 105 %}beat
+                {% elif rec.achievement_rate_net_income >= 95 %}met
+                {% elif rec.achievement_rate_net_income >= 80 %}miss
+                {% else %}big-miss{% endif %}
+              {% endif %}
+            ">
+              {% if rec.achievement_rate_net_income %}{{ rec.achievement_rate_net_income|floatformat:1 }}%{% else %}—{% endif %}
+            </td>
+            <td class="rate-cell
+              {% if rec.achievement_rate_net_sales %}
+                {% if rec.achievement_rate_net_sales >= 120 %}exceeded
+                {% elif rec.achievement_rate_net_sales >= 105 %}beat
+                {% elif rec.achievement_rate_net_sales >= 95 %}met
+                {% elif rec.achievement_rate_net_sales >= 80 %}miss
+                {% else %}big-miss{% endif %}
+              {% endif %}
+            ">
+              {% if rec.achievement_rate_net_sales %}{{ rec.achievement_rate_net_sales|floatformat:1 }}%{% else %}—{% endif %}
+            </td>
+            <td>
+              {% if rec.has_actual %}
+                {% with label=rec.achievement_label %}
+                  {% if label.0 == 'exceeded' %}🟢大幅超過
+                  {% elif label.0 == 'beat' %}🟩超過
+                  {% elif label.0 == 'met' %}⬜達成
+                  {% elif label.0 == 'miss' %}🟧未達
+                  {% else %}🔴大幅未達{% endif %}
+                {% endwith %}
+              {% else %}
+                <span style="color:#475569">未確定</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+
+    <!-- 判断理由 -->
+    {% if forecast_reliability.investment_signal_reason %}
+    <div class="reliability-reason">
+      {{ forecast_reliability.investment_signal_reason }}
+    </div>
+    {% endif %}
+  </div>
+
+  {% elif forecast_records %}
+  <!-- 予想データはあるが信頼性スコア未算出（実績未確定） -->
+  <div class="reliability-card">
+    <div class="reliability-header">
+      <span style="font-size:16px;">🎯</span>
+      <span class="reliability-title">業績予想 信頼性スコア</span>
+    </div>
+    <div class="no-forecast-banner">
+      予想データは登録済みですが、実績確定が{{ forecast_records|length }}件のみです。<br>
+      3年以上の実績データが揃うと信頼性スコアが算出されます。
+    </div>
+    {% if forecast_records %}
+    <div class="forecast-table-wrap">
+      <table class="forecast-table">
+        <thead>
+          <tr>
+            <th>年度</th>
+            <th>営業利益達成率</th>
+            <th>純利益達成率</th>
+            <th>状態</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for rec in forecast_records %}
+          <tr>
+            <td>{{ rec.fiscal_year }}年</td>
+            <td>{% if rec.achievement_rate_operating_income %}{{ rec.achievement_rate_operating_income|floatformat:1 }}%{% else %}—{% endif %}</td>
+            <td>{% if rec.achievement_rate_net_income %}{{ rec.achievement_rate_net_income|floatformat:1 }}%{% else %}—{% endif %}</td>
+            <td>{% if rec.has_actual %}✅確定{% else %}<span style="color:#475569">予想のみ</span>{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+  </div>
+
+  {% else %}
+  <!-- 予想データ未登録 -->
+  <div class="no-forecast-banner">
+    📊 業績予想データ未登録 —
+    <a href="{% url 'copomo:api-forecast-list' company_code=company_code %}" style="color:#a5b4fc;">API</a>
+    から予想値・実績値を登録すると、過去の予想達成率と信頼性スコアが表示されます。
+  </div>
+  {% endif %}
 
   <!-- レポート一覧 -->
   {% if reports %}

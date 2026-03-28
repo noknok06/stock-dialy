@@ -5,6 +5,11 @@ from . import views
 from .views import ui, sentiment_ui, sentiment, financial_ui, financial
 
 from .views import tdnet_admin, tdnet_ui
+from .views.forecast import (
+    ForecastReliabilityAPIView,
+    ForecastReliabilityRecalcView,
+    EarningsForecastListAPIView,
+)
 app_name = 'copomo'
 
 urlpatterns = [
@@ -139,9 +144,25 @@ urlpatterns = [
          name='tdnet-report-detail'),
     
     # 企業別レポート
-    path('tdnet-reports/company/<str:company_code>/', 
-         tdnet_ui.CompanyTDNETReportListView.as_view(), 
-         name='tdnet-company-reports'),    
+    path('tdnet-reports/company/<str:company_code>/',
+         tdnet_ui.CompanyTDNETReportListView.as_view(),
+         name='tdnet-company-reports'),
+
+    # ===== 予想信頼性スコア API =====
+    # 企業の予想実績一覧・登録
+    path('api/forecast/<str:company_code>/',
+         EarningsForecastListAPIView.as_view(),
+         name='api-forecast-list'),
+
+    # 信頼性スコア取得（キャッシュあり）
+    path('api/forecast/reliability/<str:company_code>/',
+         ForecastReliabilityAPIView.as_view(),
+         name='api-forecast-reliability'),
+
+    # 信頼性スコア強制再計算
+    path('api/forecast/reliability/<str:company_code>/recalc/',
+         ForecastReliabilityRecalcView.as_view(),
+         name='api-forecast-reliability-recalc'),
 ]
 
 # 開発環境用のデバッグURL

@@ -4,6 +4,7 @@ from django.views.generic import ListView, DetailView
 from django.shortcuts import get_object_or_404
 from django.db.models import Count, Q, Avg
 from ..models import TDNETReport, TDNETDisclosure
+from ..models.forecast import EarningsForecast, ForecastReliabilityScore
 import logging
 
 logger = logging.getLogger('earnings_analysis.tdnet')
@@ -169,12 +170,37 @@ class CompanyTDNETReportListView(ListView):
         context['page_title'] = f'{context["company_name"]}のレポート'
         context['report_types'] = TDNETReport.REPORT_TYPE_CHOICES
         context['current_type'] = self.request.GET.get('type', '')
-        
+
         # 平均スコアを計算
         reports = self.get_queryset()
         if reports.exists():
             context['avg_score'] = reports.aggregate(
                 avg=Avg('overall_score')
             )['avg']
-        
+
+        # 予想信頼性スコアを取得
+        try:
+            reliability = ForecastReliabilityScore.objects.get(
+                company_code=self.company_code
+            )
+            context['forecast_reliability'] = reliability
+
+            # 年別実績チャート用データ（最大7年）
+            yearly_records = EarningsForecast.objects.filter(
+                company_code=self.company_code,
+                has_actual=True,
+                period_type='annual',
+            ).order_by('-fiscal_year')[:7]
+
+            context['forecast_records'] = list(reversed(list(yearly_records)))
+        except ForecastReliabilityScore.DoesNotExist:
+            context['forecast_reliability'] = None
+            # 予想のみ登録されている場合でも一覧は表示
+            context['forecast_records'] = list(
+                EarningsForecast.objects.filter(
+                    company_code=self.company_code,
+                    period_type='annual',
+                ).order_by('fiscal_year')[:7]
+            )
+
         return context

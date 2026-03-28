@@ -14,10 +14,14 @@ from .tdnet import (
     TDNETReport,
     TDNETReportSection,
 )
+from .forecast import (
+    EarningsForecast,
+    ForecastReliabilityScore,
+)
 
 __all__ = [
     'Company',
-    'DocumentMetadata', 
+    'DocumentMetadata',
     'BatchExecution',
     'SentimentAnalysisSession',
     'SentimentAnalysisHistory',
@@ -28,4 +32,6 @@ __all__ = [
     'TDNETDisclosure',
     'TDNETReport',
     'TDNETReportSection',
+    'EarningsForecast',
+    'ForecastReliabilityScore',
 ]
