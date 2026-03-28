@@ -694,6 +694,85 @@ table.hub-table {
     display: none;
     color: #fff;
 }
+
+/* ---- スピードダイヤル ---- */
+.speed-dial {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 999;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+}
+.speed-dial-toggle {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    color: #fff;
+    border: none; cursor: pointer;
+    box-shadow: 0 4px 16px rgba(var(--primary-rgb), 0.4);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.25rem;
+    transition: transform 0.25s, box-shadow 0.25s;
+    flex-shrink: 0;
+}
+.speed-dial-toggle:hover {
+    box-shadow: 0 6px 20px rgba(var(--primary-rgb), 0.55);
+    transform: scale(1.06);
+}
+.speed-dial-toggle.open { transform: rotate(45deg) scale(1.06); }
+.speed-dial-items {
+    display: flex; flex-direction: column; gap: 8px;
+    align-items: flex-end;
+    overflow: hidden; max-height: 0;
+    transition: max-height 0.35s ease;
+    pointer-events: none;
+}
+.speed-dial-items.open { max-height: 520px; pointer-events: auto; }
+.speed-dial-item {
+    display: flex; align-items: center; gap: 8px;
+    cursor: pointer;
+    opacity: 0; transform: translateY(12px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.speed-dial-items.open .speed-dial-item { opacity: 1; transform: translateY(0); }
+.speed-dial-items.open .speed-dial-item:nth-child(7) { transition-delay: 0ms; }
+.speed-dial-items.open .speed-dial-item:nth-child(6) { transition-delay: 30ms; }
+.speed-dial-items.open .speed-dial-item:nth-child(5) { transition-delay: 60ms; }
+.speed-dial-items.open .speed-dial-item:nth-child(4) { transition-delay: 90ms; }
+.speed-dial-items.open .speed-dial-item:nth-child(3) { transition-delay: 120ms; }
+.speed-dial-items.open .speed-dial-item:nth-child(2) { transition-delay: 150ms; }
+.speed-dial-items.open .speed-dial-item:nth-child(1) { transition-delay: 180ms; }
+.speed-dial-item-label {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-sm);
+    padding: 4px 10px;
+    font-size: 0.78rem; font-weight: 600;
+    color: var(--text-primary); white-space: nowrap;
+    box-shadow: var(--card-shadow);
+}
+.speed-dial-item-btn {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: var(--card-shadow); font-size: 1rem;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    flex-shrink: 0;
+}
+.speed-dial-item:hover .speed-dial-item-btn {
+    background: var(--primary-color);
+    color: #fff; border-color: var(--primary-color);
+}
+.speed-dial-item.sd-disabled {
+    opacity: 0.35; cursor: not-allowed; pointer-events: none;
+}
 </style>
 {% endblock %}
 
@@ -752,7 +831,7 @@ table.hub-table {
     <div id="hub-content">
 
         <!-- ① 2カラム: 財務テーブル + レーダーチャート -->
-        <div class="two-col-grid">
+        <div class="two-col-grid" id="section-finance">
 
             <!-- 財務指標比較テーブル -->
             <div class="hub-card">
@@ -783,7 +862,7 @@ table.hub-table {
         </div>
 
         <!-- ② 4年推移グラフ -->
-        <div class="hub-card">
+        <div class="hub-card" id="section-trend">
             <div class="hub-card-title">
                 <i class="bi bi-graph-up-arrow"></i> 4年推移グラフ
                 <span class="hub-card-sub">指標を選択して表示/非表示を切り替え</span>
@@ -827,7 +906,7 @@ table.hub-table {
         </div>
         
         <!-- ③ CAGR + NGパターン -->
-        <div class="two-col-grid">
+        <div class="two-col-grid" id="section-cagr">
 
             <div class="hub-card">
                 <div class="hub-card-title">
@@ -913,6 +992,45 @@ table.hub-table {
 </div><!-- /hub-container -->
 
 <div id="hub-toast"></div>
+
+<!-- スピードダイヤル -->
+<div class="speed-dial" id="speed-dial">
+    <div class="speed-dial-items" id="speed-dial-items">
+        {% if user.is_superuser %}
+        <div class="speed-dial-item sd-content-item sd-disabled" data-target=".ai-section">
+            <span class="speed-dial-item-label">AI分析</span>
+            <button class="speed-dial-item-btn" tabindex="-1"><i class="bi bi-robot"></i></button>
+        </div>
+        {% endif %}
+        <div class="speed-dial-item sd-content-item sd-disabled" id="sd-buy-signal" data-target="#buy-signal-section">
+            <span class="speed-dial-item-label">買いシグナル</span>
+            <button class="speed-dial-item-btn" tabindex="-1"><i class="bi bi-bullseye"></i></button>
+        </div>
+        <div class="speed-dial-item sd-content-item sd-disabled" data-target="#section-cagr">
+            <span class="speed-dial-item-label">CAGR・リスク</span>
+            <button class="speed-dial-item-btn" tabindex="-1"><i class="bi bi-percent"></i></button>
+        </div>
+        <div class="speed-dial-item sd-content-item sd-disabled" id="sd-margin" data-target="#margin-section">
+            <span class="speed-dial-item-label">信用倍率</span>
+            <button class="speed-dial-item-btn" tabindex="-1"><i class="bi bi-bar-chart-steps"></i></button>
+        </div>
+        <div class="speed-dial-item sd-content-item sd-disabled" data-target="#section-trend">
+            <span class="speed-dial-item-label">推移グラフ</span>
+            <button class="speed-dial-item-btn" tabindex="-1"><i class="bi bi-graph-up-arrow"></i></button>
+        </div>
+        <div class="speed-dial-item sd-content-item sd-disabled" data-target="#section-finance">
+            <span class="speed-dial-item-label">財務比較</span>
+            <button class="speed-dial-item-btn" tabindex="-1"><i class="bi bi-table"></i></button>
+        </div>
+        <div class="speed-dial-item" data-target=".search-section">
+            <span class="speed-dial-item-label">銘柄選択</span>
+            <button class="speed-dial-item-btn" tabindex="-1"><i class="bi bi-search"></i></button>
+        </div>
+    </div>
+    <button class="speed-dial-toggle" id="speed-dial-toggle" title="セクション移動">
+        <i class="bi bi-layout-sidebar-inset-reverse"></i>
+    </button>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -1192,6 +1310,7 @@ table.hub-table {
         }
         emptyEl.style.display='none';
         contentEl.style.display='block';
+        window.updateSpeedDial?.();
         renderCompareTable(codes);
         renderRadarChart(codes);
         renderAllTrendCharts(codes);
@@ -1551,11 +1670,12 @@ table.hub-table {
 
         // 現在選択中の全コード
         const codes = Object.keys(stocksData).filter(c => !stocksData[c].loading);
-        if (codes.length === 0) { section.style.display = 'none'; return; }
+        if (codes.length === 0) { section.style.display = 'none'; window.updateSpeedDial?.(); return; }
 
         // データがある銘柄だけ
         const codesWithData = codes.filter(c => marginData[c] != null);
         section.style.display = 'block';
+        window.updateSpeedDial?.();
 
         if (codesWithData.length === 0) {
             document.querySelector('#margin-section canvas').parentElement.style.display = 'none';
@@ -1776,9 +1896,10 @@ table.hub-table {
         if (!section || !grid) return;
 
         const codes = Object.keys(stocksData).filter(c => !stocksData[c].loading);
-        if (codes.length === 0) { section.style.display = 'none'; return; }
+        if (codes.length === 0) { section.style.display = 'none'; window.updateSpeedDial?.(); return; }
 
         section.style.display = 'block';
+        window.updateSpeedDial?.();
         grid.innerHTML = '';
 
         codes.forEach(c => {
@@ -2000,6 +2121,56 @@ table.hub-table {
         toastTimer=setTimeout(()=>{el.style.display='none';},3200);
     }
 
+})();
+
+// ============================================================
+// スピードダイヤル
+// ============================================================
+(function () {
+    const toggle = document.getElementById('speed-dial-toggle');
+    const items  = document.getElementById('speed-dial-items');
+    if (!toggle || !items) return;
+    let isOpen = false;
+
+    function open()  { isOpen = true;  items.classList.add('open');    toggle.classList.add('open'); }
+    function close() { isOpen = false; items.classList.remove('open'); toggle.classList.remove('open'); }
+
+    toggle.addEventListener('click', () => isOpen ? close() : open());
+
+    // アイテムクリック → スムーズスクロール
+    items.querySelectorAll('.speed-dial-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const target = document.querySelector(item.dataset.target);
+            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            close();
+        });
+    });
+
+    // 外側クリックで閉じる
+    document.addEventListener('click', e => {
+        if (isOpen && !document.getElementById('speed-dial').contains(e.target)) close();
+    });
+
+    // コンテンツ系アイテムの有効/無効を更新
+    window.updateSpeedDial = function () {
+        const hubContent = document.getElementById('hub-content');
+        const contentVisible = hubContent && hubContent.style.display === 'block';
+        document.querySelectorAll('.sd-content-item').forEach(item => {
+            item.classList.toggle('sd-disabled', !contentVisible);
+        });
+        // 条件表示セクションの個別制御
+        if (contentVisible) {
+            const marginEl  = document.getElementById('margin-section');
+            const buyEl     = document.getElementById('buy-signal-section');
+            const marginVisible = marginEl && marginEl.style.display !== 'none';
+            const buyVisible    = buyEl    && buyEl.style.display    !== 'none';
+            document.getElementById('sd-margin')?.classList.toggle('sd-disabled', !marginVisible);
+            document.getElementById('sd-buy-signal')?.classList.toggle('sd-disabled', !buyVisible);
+        }
+    };
+
+    // 初期化
+    window.updateSpeedDial();
 })();
 </script>
 {% endblock %}
