@@ -73,6 +73,8 @@ urlpatterns = [
     path('api/stock/metrics/<str:stock_code>/', api.get_stock_metrics, name='api_stock_metrics'),
     path('api/stock/historical/<str:stock_code>/', api.get_stock_historical, name='api_stock_historical'),
     path('api/stock/search/', api.search_stock, name='search_stock'),
+    path('api/industry/list/',   api.get_industry_list,   name='api_industry_list'),
+    path('api/industry/stocks/', api.get_industry_stocks, name='api_industry_stocks'),
 path('api/create/', api.api_create_diary, name='api_create'),
     path('api/tab-content/<int:diary_id>/<str:tab_type>/', views.DiaryTabContentView.as_view(), name='api_tab_content'),
 

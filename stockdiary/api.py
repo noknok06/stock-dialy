@@ -762,3 +762,41 @@ def search_stock(request):
             'error': str(e)
         }, status=500)
 
+
+@login_required
+@require_GET
+def get_industry_list(request):
+    """業種一覧API（33業種）"""
+    industries = (
+        CompanyMaster.objects
+        .values('industry_code_33', 'industry_name_33')
+        .exclude(industry_name_33='')
+        .exclude(industry_name_33='-')
+        .filter(industry_code_33__regex=r'^\d+$')
+        .distinct()
+        .order_by('industry_code_33')
+    )
+    return JsonResponse({
+        'industries': [
+            {'code': i['industry_code_33'], 'name': i['industry_name_33']}
+            for i in industries
+        ]
+    })
+
+
+@login_required
+@require_GET
+def get_industry_stocks(request):
+    """業種別銘柄一覧API"""
+    code = request.GET.get('industry_code', '').strip()
+    limit = int(request.GET.get('limit', 100))
+    if not code:
+        return JsonResponse({'error': 'industry_code required'}, status=400)
+    companies = list(
+        CompanyMaster.objects
+        .filter(industry_code_33=code)
+        .values('code', 'name', 'market')
+        .order_by('code')[:limit]
+    )
+    return JsonResponse({'companies': companies, 'count': len(companies)})
+

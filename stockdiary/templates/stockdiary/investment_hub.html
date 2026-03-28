@@ -444,6 +444,21 @@ table.hub-table {
 .bsc-signal-value { flex:1; font-weight:600; }
 .bsc-note { padding:7px 14px 11px; font-size:0.77rem; color:var(--text-secondary); line-height:1.55; border-top:1px solid var(--border-light); }
 
+/* ---- 業種ブラウザ ---- */
+#industry-browse-btn { display:inline-flex; align-items:center; gap:5px; padding:6px 14px; border-radius:var(--radius-full); font-size:0.82rem; border:1px solid var(--border-primary); background:var(--bg-secondary); cursor:pointer; color:var(--text-primary); transition:all .15s; }
+#industry-browse-btn:hover, #industry-browse-btn.active { background:var(--accent-color,var(--primary-color)); color:#fff; border-color:var(--accent-color,var(--primary-color)); }
+#industry-panel { margin-top:8px; border:1px solid var(--border-primary); border-radius:var(--radius-sm); padding:14px; background:var(--bg-secondary); }
+.industry-category-list { display:flex; flex-wrap:wrap; gap:6px; }
+.industry-chip { padding:4px 12px; border-radius:var(--radius-full); font-size:0.8rem; cursor:pointer; border:1px solid var(--border-primary); background:var(--bg-primary); color:var(--text-primary); transition:all .15s; }
+.industry-chip:hover { border-color:var(--primary-color); color:var(--primary-color); }
+.industry-chip.active { background:var(--primary-color); color:#fff; border-color:var(--primary-color); }
+.industry-stock-list { margin-top:10px; border-top:1px solid var(--border-light); padding-top:10px; max-height:220px; overflow-y:auto; display:flex; flex-direction:column; gap:3px; }
+.industry-stock-item { display:flex; align-items:center; justify-content:space-between; padding:5px 6px; border-radius:4px; font-size:0.83rem; }
+.industry-stock-item:hover { background:var(--bg-primary); }
+.btn-industry-add { padding:2px 10px; font-size:0.75rem; border-radius:var(--radius-full); border:1px solid var(--primary-color); background:transparent; color:var(--primary-color); cursor:pointer; white-space:nowrap; }
+.btn-industry-add:hover:not(:disabled) { background:var(--primary-color); color:#fff; }
+.btn-industry-add:disabled { opacity:.45; cursor:not-allowed; border-color:var(--border-primary); color:var(--text-secondary); }
+
 .legend-dot {
     display: inline-block;
     width: 10px; height: 10px;
@@ -819,6 +834,15 @@ table.hub-table {
                 <i class="bi bi-plus-lg"></i> 追加
             </button>
             <span id="hub-count-hint" style="color:var(--text-secondary);font-size:0.82rem;">0 / 5 銘柄</span>
+            <button id="industry-browse-btn" title="業種から銘柄を探す">
+                <i class="bi bi-grid-3x3-gap-fill"></i> 業種から探す
+            </button>
+        </div>
+        <div id="industry-panel" style="display:none">
+            <div id="industry-category-list" class="industry-category-list">
+                <span style="font-size:0.8rem;color:var(--text-secondary)">読み込み中...</span>
+            </div>
+            <div id="industry-stock-list" class="industry-stock-list" style="display:none"></div>
         </div>
         <div class="chips-wrap" id="hub-chips"></div>
     </div>
@@ -1057,6 +1081,9 @@ table.hub-table {
     const MAX_STOCKS  = 5;
     const COLORS      = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6'];
     const stocksData  = {};
+    window._hubStocksData = stocksData;
+    window._hubMaxStocks  = MAX_STOCKS;
+    window._hubAddStock   = (code) => addStock(code);  // 業種ブラウザ用（遅延参照）
     const trendCharts = {};  // { [metricKey]: Chart instance }
     let radarChart    = null;
     const marginData  = {};  // { [code]: APIレスポンス | null }
@@ -1135,9 +1162,24 @@ table.hub-table {
 
     // ---- CAGR ----
     function calcCagr(arr) {
-        const v = (arr||[]).filter(x=>x!=null);
-        if (v.length<2||v[0]<=0) return null;
-        return (Math.pow(v[v.length-1]/v[0],1/(v.length-1))-1)*100;
+        const v = (arr||[]).filter(x => x != null);
+        if (v.length < 2) return null;
+        // 先頭が ≤0（赤字期）の場合は最初の正値を起点にする
+        let startIdx = 0;
+        if (v[0] <= 0) {
+            startIdx = v.findIndex(x => x > 0);
+            if (startIdx < 0 || startIdx >= v.length - 1) return null;
+        }
+        const start   = v[startIdx];
+        const end     = v[v.length - 1];
+        const periods = (v.length - 1) - startIdx;
+        if (periods <= 0 || start <= 0 || end <= 0) return null;
+        return (Math.pow(end / start, 1 / periods) - 1) * 100;
+    }
+    // CAGR 計算時に赤字→黒字の回復局面かを判定するフラグ
+    function isRecoveryCagr(arr) {
+        const v = (arr||[]).filter(x => x != null);
+        return v.length >= 2 && v[0] <= 0 && v.findIndex(x => x > 0) > 0;
     }
 
     // ---- Trend arrows ----
@@ -1843,11 +1885,15 @@ table.hub-table {
         // ① 成長スコア
         const revCagr = calcCagr(d.revenue);
         const oiCagr  = calcCagr(d.operating_income);
+        // 赤字→黒字の回復局面フラグ（CAGR の分母が赤字起点）
+        const oiRecovery  = isRecoveryCagr(d.operating_income);
+        const revRecovery = isRecoveryCagr(d.revenue);
+        const hasRecovery = oiRecovery || revRecovery;
         let growthLevel = 'none';
         if (revCagr != null && revCagr > 5 && oiCagr != null && oiCagr > 5) {
-            growthLevel = 'strong';
+            growthLevel = hasRecovery ? 'recovery' : 'strong';
         } else if ((revCagr != null && revCagr > 0) || (oiCagr != null && oiCagr > 0)) {
-            growthLevel = 'moderate';
+            growthLevel = hasRecovery ? 'recovery' : 'moderate';
         }
 
         // ② 利益の質（CF裏付けチェック）
@@ -1883,25 +1929,28 @@ table.hub-table {
         // ④ 総合シグナル判定
         let overall, label, icon, bgColor;
         if (growthLevel === 'none') {
-            overall = 'pass';             label = '見送り推奨';           icon = '⚫'; bgColor = 'rgba(108,117,125,0.08)';
+            overall = 'pass';             label = '見送り推奨';               icon = '⚫'; bgColor = 'rgba(108,117,125,0.08)';
         } else if (growthLevel === 'strong' && !cfBad &&
                    (marginSignal === 'buy_back' || marginSignal === 'short_covering')) {
-            overall = 'buy';              label = '買い検討';             icon = '🟢'; bgColor = 'rgba(25,135,84,0.08)';
+            overall = 'buy';              label = '買い検討';                 icon = '🟢'; bgColor = 'rgba(25,135,84,0.08)';
         } else if (cfDanger) {
-            overall = 'check_cf';         label = 'CF確認後に判断';       icon = '🟠'; bgColor = 'rgba(253,126,20,0.08)';
+            overall = 'check_cf';         label = 'CF確認後に判断';           icon = '🟠'; bgColor = 'rgba(253,126,20,0.08)';
         } else if (marginSignal === 'overheated') {
             overall = 'overheated_watch'; label = '需給過熱・タイミング注意'; icon = '🟡'; bgColor = 'rgba(255,193,7,0.08)';
+        } else if (growthLevel === 'recovery' && !cfDanger && marginSignal !== 'overheated') {
+            overall = 'recovery_watch';   label = '業績回復中・様子見';       icon = '🔵'; bgColor = 'rgba(2,132,199,0.08)';
         } else if (growthLevel === 'strong') {
-            overall = 'watch';            label = '成長継続・様子見';     icon = '🟡'; bgColor = 'rgba(255,193,7,0.08)';
+            overall = 'watch';            label = '成長継続・様子見';         icon = '🟡'; bgColor = 'rgba(255,193,7,0.08)';
         } else if (growthLevel === 'moderate' &&
                    (marginSignal === 'buy_back' || marginSignal === 'short_covering')) {
-            overall = 'watch';            label = '成長継続・様子見';     icon = '🟡'; bgColor = 'rgba(255,193,7,0.08)';
+            overall = 'watch';            label = '成長継続・様子見';         icon = '🟡'; bgColor = 'rgba(255,193,7,0.08)';
         } else {
-            overall = 'neutral';          label = '様子見';               icon = '⚪'; bgColor = 'rgba(108,117,125,0.06)';
+            overall = 'neutral';          label = '様子見';                   icon = '⚪'; bgColor = 'rgba(108,117,125,0.06)';
         }
 
-        return { code, revCagr, oiCagr, growthLevel, cfBad, cfDanger,
-                 marginSignal, marginLatest, marginArrow, overall, label, icon, bgColor };
+        return { code, revCagr, oiCagr, growthLevel, hasRecovery, oiRecovery, revRecovery,
+                 cfBad, cfDanger, marginSignal, marginLatest, marginArrow,
+                 overall, label, icon, bgColor };
     }
 
     // 成長レベルの表示テキスト・バッジ
@@ -1933,6 +1982,7 @@ table.hub-table {
             buy:              '業績成長＋売り残優勢。ショートカバーが株価を後押しする局面。タイミングを見て検討を。',
             overheated_watch: '業績は良好だが買い残が高水準で売り圧力が蓄積。需給解消を確認してから検討を。',
             check_cf:         '利益は成長しているがキャッシュフローが伴っていない。CF改善を確認後に判断を。',
+            recovery_watch:   '赤字解消後の業績回復局面。回復の持続性とCF・需給の安定を確認してから判断を。',
             watch:            '業績成長は続いているが需給シグナルが揃っていない。継続観察推奨。',
             neutral:          '現時点では買いを急ぐ材料が少ない。引き続き業績・需給の動向を注視。',
             pass:             '売上・利益ともに成長が確認できない。業績回復を確認してから再検討を。',
@@ -1957,6 +2007,7 @@ table.hub-table {
             watch:            '#ca8a04',
             overheated_watch: '#d97706',
             check_cf:         '#ea580c',
+            recovery_watch:   '#0284c7',
             neutral:          '#64748b',
             pass:             '#94a3b8',
         };
@@ -1967,15 +2018,21 @@ table.hub-table {
             const d   = stocksData[c];
             const signalColor = VERDICT_COLOR[sig.overall] || '#64748b';
 
-            // 成長性
-            const growthIcon  = sig.growthLevel==='strong'  ? 'bi-check-circle-fill'
+            // 成長性（回復局面を区別）
+            const growthIcon  = (sig.growthLevel==='strong' || sig.growthLevel==='recovery') ? 'bi-check-circle-fill'
                               : sig.growthLevel==='moderate' ? 'bi-dash-circle-fill'
                               :                                'bi-x-circle-fill';
-            const growthColor = sig.growthLevel==='strong'  ? 'var(--success-color)'
-                              : sig.growthLevel==='moderate' ? 'var(--warning-color)'
-                              :                                'var(--danger-color)';
-            const revStr = sig.revCagr!=null ? `売上${sig.revCagr>=0?'+':''}${sig.revCagr.toFixed(1)}%` : '売上-';
-            const oiStr  = sig.oiCagr !=null ? `利益${sig.oiCagr >=0?'+':''}${sig.oiCagr.toFixed(1)}%`  : '利益-';
+            const growthColor = sig.growthLevel==='strong'   ? 'var(--success-color)'
+                              : sig.growthLevel==='recovery'  ? '#0284c7'
+                              : sig.growthLevel==='moderate'  ? 'var(--warning-color)'
+                              :                                 'var(--danger-color)';
+            const recSuffix = '（回復期）';
+            const revStr = sig.revCagr!=null
+                ? `売上${sig.revCagr>=0?'+':''}${sig.revCagr.toFixed(1)}%${sig.revRecovery ? recSuffix : ''}`
+                : '売上-';
+            const oiStr  = sig.oiCagr !=null
+                ? `利益${sig.oiCagr>=0?'+':''}${sig.oiCagr.toFixed(1)}%${sig.oiRecovery ? recSuffix : ''}`
+                : '利益-';
 
             // 利益の質
             const cfIcon  = sig.cfDanger ? 'bi-x-circle-fill'
@@ -2031,7 +2088,15 @@ table.hub-table {
         <span class="bsc-signal-value" style="color:${mColor}">${mText}${mVal}</span>
     </div>
 </div>
-<div class="bsc-note">${buySignalInterpretation(sig)}</div>
+<div class="bsc-note">
+    ${buySignalInterpretation(sig)}
+    ${(()=>{
+        const per = d.per;
+        const perNote = (per!=null && per>0 && per<15)
+            ? `<span style="color:var(--primary-color);font-size:0.74rem"> ／ PER${per.toFixed(1)}倍（割安圏）</span>` : '';
+        return `<span style="color:var(--text-secondary);font-size:0.72rem;display:block;margin-top:4px">※ 成長CAGR・CF・需給に特化。バリュエーションはAI分析を参照${perNote}</span>`;
+    })()}
+</div>
             `;
             grid.appendChild(card);
         });
@@ -2266,6 +2331,72 @@ table.hub-table {
 
     // 初期化
     window.updateSpeedDial();
+})();
+
+// ---- 業種ブラウザ ----
+(function(){
+    const btn       = document.getElementById('industry-browse-btn');
+    const panel     = document.getElementById('industry-panel');
+    const catList   = document.getElementById('industry-category-list');
+    const stockList = document.getElementById('industry-stock-list');
+    if (!btn) return;
+    let loaded = false;
+
+    btn.addEventListener('click', () => {
+        const open = panel.style.display !== 'none';
+        panel.style.display = open ? 'none' : 'block';
+        btn.classList.toggle('active', !open);
+        if (!open && !loaded) loadCategories();
+    });
+
+    async function loadCategories() {
+        try {
+            const data = await fetch('{% url "stockdiary:api_industry_list" %}').then(r => r.json());
+            catList.innerHTML = '';
+            data.industries.forEach(ind => {
+                const chip = document.createElement('button');
+                chip.className = 'industry-chip';
+                chip.textContent = ind.name;
+                chip.dataset.code = ind.code;
+                chip.addEventListener('click', () => loadStocks(ind.code, ind.name, chip));
+                catList.appendChild(chip);
+            });
+            loaded = true;
+        } catch(e) {
+            catList.innerHTML = '<span style="color:var(--danger-color);font-size:0.8rem">読み込みに失敗しました</span>';
+        }
+    }
+
+    async function loadStocks(code, name, chipEl) {
+        catList.querySelectorAll('.industry-chip').forEach(c => c.classList.remove('active'));
+        chipEl.classList.add('active');
+        stockList.style.display = 'flex';
+        stockList.innerHTML = `<span style="font-size:0.8rem;color:var(--text-secondary)">${name} 読み込み中...</span>`;
+        try {
+            const data = await fetch(
+                `{% url "stockdiary:api_industry_stocks" %}?industry_code=${encodeURIComponent(code)}&limit=100`
+            ).then(r => r.json());
+            const already = new Set(Object.keys(window._hubStocksData || {}));
+            const full = Object.keys(window._hubStocksData || {}).length >= window._hubMaxStocks;
+            stockList.innerHTML =
+                `<div style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:4px">${name}（${data.count}銘柄）</div>` +
+                data.companies.map(c => {
+                    const added    = already.has(c.code);
+                    const disabled = added || full;
+                    return `<div class="industry-stock-item">
+                        <span>
+                            <span style="color:var(--text-secondary);font-size:0.78rem;margin-right:6px">${c.code}</span>
+                            ${c.name}
+                        </span>
+                        <button class="btn-industry-add" ${disabled ? 'disabled' : ''} onclick="window._hubAddStock('${c.code}')">
+                            ${added ? '追加済' : full ? '上限' : '+ 追加'}
+                        </button>
+                    </div>`;
+                }).join('');
+        } catch(e) {
+            stockList.innerHTML = '<span style="color:var(--danger-color);font-size:0.8rem">読み込みに失敗しました</span>';
+        }
+    }
 })();
 </script>
 {% endblock %}
