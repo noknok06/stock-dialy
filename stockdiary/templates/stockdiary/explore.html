@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load humanize %}
+{% load stockdiary_filters %}
 
 {% block title %}探索・全文検索 - カブログ{% endblock %}
 
@@ -368,8 +369,8 @@ mark.q-highlight {
 
           <!-- 投資理由の抜粋 -->
           {% if diary.reason %}
-          <div class="explore-card-excerpt">
-            {{ diary.reason|truncatechars:180 }}
+          <div class="explore-card-excerpt markdown-content">
+            {{ diary.reason|render_markdown|truncatechars_html:300 }}
           </div>
           {% endif %}
 

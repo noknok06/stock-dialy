@@ -1695,7 +1695,7 @@
                 メモ
               </div>
               {% if diary.memo %}
-              <div class="memo-content">{{ diary.memo|linebreaks }}</div>
+              <div class="memo-content markdown-content">{{ diary.memo|render_markdown }}</div>
               {% else %}
               <p class="text-muted mb-0">メモはありません</p>
               {% endif %}
