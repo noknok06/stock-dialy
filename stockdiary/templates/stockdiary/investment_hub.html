@@ -1107,6 +1107,18 @@ table.hub-table {
         const s = v>=0?'+':'';
         return `<span class="${c}">${s}${v.toFixed(1)}%</span>`;
     }
+    function colorFcfYield(v) {
+        if (v == null) return '<span class="badge-na">-</span>';
+        const c = v>=5?'badge-good':v>=0?'badge-mid':'badge-bad';
+        const mark = v>=5?' <span style="font-size:0.7rem">✓割安</span>':'';
+        return `<span class="${c}">${v.toFixed(1)}%${mark}</span>`;
+    }
+    function benchmarkBadge(actual, bench) {
+        if (actual == null || bench == null) return '';
+        const diff = actual - bench;
+        const c = diff >= 0 ? 'var(--success-color)' : 'var(--danger-color)';
+        return ` <small style="color:${c}">${diff >= 0 ? '▲' : '▼'}業種${bench.toFixed(1)}%</small>`;
+    }
 
     // ---- CAGR ----
     function calcCagr(arr) {
@@ -1283,9 +1295,10 @@ table.hub-table {
             const chip=document.createElement('div');
             chip.className='chip';
             chip.style.cssText=`color:${color};border-color:${color};background:${color}20;`;
+            const industryLabel=d.industry_name?`<span style="font-size:0.65rem;color:var(--text-secondary)">${d.industry_name}</span> `:'';
             chip.innerHTML=`
                 <span class="legend-dot" style="background:${color};"></span>
-                <span>${d.stock_name||code}</span>
+                ${industryLabel}<span>${d.stock_name||code}</span>
                 ${d.loading?'<span style="font-size:0.73rem;opacity:0.6;">…</span>':''}
                 <button class="chip-remove" style="color:${color};" title="削除">✕</button>`;
             chip.querySelector('.chip-remove').addEventListener('click',()=>removeStock(code));
@@ -1336,14 +1349,38 @@ table.hub-table {
         const rows=[
             {label:'売上高',            fn:d=>valueWithTrend(latest(d.revenue),d.revenue,fmtOku)},
             {label:'営業利益',           fn:d=>valueWithTrend(latest(d.operating_income),d.operating_income,fmtOku)},
-            {label:'営業利益率',  fn:d=>{const r=latest(d.revenue),o=latest(d.operating_income);return(!r||!o)?'<span class="badge-na">-</span>':colorOpm(o/r*100);}},
+            {label:'営業利益率',  fn:d=>{const r=latest(d.revenue),o=latest(d.operating_income);if(!r||!o)return'<span class="badge-na">-</span>';const opm=o/r*100;const bench=d.industry_benchmarks?.operating_margin?.median;return colorOpm(opm)+benchmarkBadge(opm,bench);}},
             {label:'EPS（最新）',        fn:d=>{const v=latest(d.eps);return v!=null?`${fmtNum(v,1)}円`:'<span class="badge-na">-</span>';}},
-            {label:'ROE（最新）',        fn:d=>colorRoe(latest(d.roe))},
+            {label:'ROE（最新）',        fn:d=>{const v=latest(d.roe);const bench=d.industry_benchmarks?.roe?.median;return colorRoe(v)+benchmarkBadge(v,bench);}},
             {label:'自己資本比率',fn:d=>colorEq(latest(d.equity_ratio))},
+            {label:'── 規模・FCF ──',separator:true},
+            {label:'時価総額',fn:d=>{
+                if(d.market_cap_oku==null)return'<span class="badge-na">-</span>';
+                const sc=d.market_cap_size==='大型'?'#6366f1':d.market_cap_size==='中型'?'#0ea5e9':'#94a3b8';
+                return`${fmtNum(d.market_cap_oku,0)}億 <span style="font-size:0.7rem;padding:1px 5px;border-radius:4px;background:${sc}22;color:${sc}">${d.market_cap_size||''}</span>`;
+            }},
+            {label:'FCF（最新）',fn:d=>{const v=latest(d.fcf);if(v==null)return'<span class="badge-na">-</span>';const c=v>=0?'badge-good':'badge-bad';return`<span class="${c}">${fmtOku(v)}</span>`;}},
+            {label:'FCF利回り',fn:d=>colorFcfYield(d.fcf_yield)},
             {label:'── バリュエーション ──',separator:true},
             {label:'PER',               fn:d=>colorPer(d.per)},
             {label:'PBR',               fn:d=>d.pbr!=null?`${d.pbr.toFixed(2)}倍`:'<span class="badge-na">-</span>'},
             {label:'配当利回り',          fn:d=>d.dividend_yield!=null?`${d.dividend_yield.toFixed(2)}%`:'<span class="badge-na">-</span>'},
+            {label:'── テクニカル ──',separator:true},
+            {label:'52週 高値/安値',fn:d=>{
+                if(d.week52_high==null)return'<span class="badge-na">-</span>';
+                const pct=d.pct_from_52w_high;
+                const pc=pct!=null&&pct<=-30?'var(--success-color)':pct!=null&&pct<=-15?'var(--warning-color)':'var(--text-secondary)';
+                const ps=pct!=null?`高値比 <span style="color:${pc}">${pct.toFixed(1)}%</span>`:'';
+                return`${fmtNum(d.week52_high,0)} / ${fmtNum(d.week52_low,0)}<br><small>${ps}</small>`;
+            }},
+            {label:'移動平均',fn:d=>{
+                const p=d.price;
+                return[['25',d.ma25],['75',d.ma75],['200',d.ma200]].map(([n,ma])=>{
+                    if(ma==null||p==null)return`<span style="color:var(--text-secondary);font-size:0.75rem">MA${n}?</span>`;
+                    const ab=p>ma;
+                    return`<span style="color:${ab?'var(--success-color)':'var(--danger-color)'};font-size:0.75rem">MA${n}${ab?'↑':'↓'}</span>`;
+                }).join(' ');
+            }},
         ];
 
         let html='';

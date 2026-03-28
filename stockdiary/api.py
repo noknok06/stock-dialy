@@ -479,6 +479,7 @@ def get_stock_historical(request, stock_code):
         operating_income_list = []
         eps_list = []
         operating_cf_list = []
+        fcf_list = []
         equity_ratio_list = []
         roe_list = []
         dividend_yield_history = []
@@ -513,6 +514,16 @@ def get_stock_historical(request, stock_code):
                 else:
                     ocf = None
                 operating_cf_list.append(ocf)
+
+                # FCF = 営業CF + 設備投資（CapEx は yfinance でマイナス値のため加算）
+                capex = None
+                if cash_flow is not None and not cash_flow.empty and col in cash_flow.columns:
+                    for capex_key in ['Capital Expenditure', 'Capital Expenditures']:
+                        if capex_key in cash_flow.index:
+                            capex = to_oku(cash_flow.loc[capex_key, col])
+                            break
+                fcf = round(ocf + capex, 1) if ocf is not None and capex is not None else None
+                fcf_list.append(fcf)
 
                 # 自己資本比率・ROE（バランスシート）
                 eq_ratio = None
@@ -555,6 +566,61 @@ def get_stock_historical(request, stock_code):
         price = getattr(fi, 'last_price', None) or getattr(fi, 'lastPrice', None)
         shares = getattr(fi, 'shares', None) or getattr(fi, 'sharesOutstanding', None)
         per = pbr = dividend_yield = None
+
+        # 時価総額・規模分類
+        market_cap = getattr(fi, 'market_cap', None) or getattr(fi, 'marketCap', None)
+        market_cap_oku = round(market_cap / 100_000_000, 0) if market_cap else None
+        market_cap_size = (
+            '大型' if market_cap_oku and market_cap_oku >= 10000 else
+            '中型' if market_cap_oku and market_cap_oku >= 1000 else
+            '小型' if market_cap_oku else None
+        )
+
+        # FCF利回り（最新年のFCF / 時価総額）
+        latest_fcf = next((f for f in reversed(fcf_list) if f is not None), None)
+        fcf_yield = round(latest_fcf * 1e8 / market_cap * 100, 2) \
+            if latest_fcf and market_cap and market_cap > 0 else None
+
+        # 52週高値/安値（fast_info から取得）
+        week52_high = getattr(fi, 'year_high', None) or getattr(fi, 'yearHigh', None)
+        week52_low  = getattr(fi, 'year_low',  None) or getattr(fi, 'yearLow',  None)
+        pct_from_52w_high = round((price - week52_high) / week52_high * 100, 1) \
+            if price and week52_high and week52_high > 0 else None
+
+        # 移動平均（25/75/200日）— 1年間の日次データから計算
+        ma25 = ma75 = ma200 = None
+        try:
+            daily_hist = ticker.history(period="1y")
+            if not daily_hist.empty:
+                closes = daily_hist['Close'].dropna()
+                def _ma(n):
+                    return round(float(closes.rolling(n).mean().iloc[-1]), 0) if len(closes) >= n else None
+                ma25  = _ma(25)
+                ma75  = _ma(75)
+                ma200 = _ma(200)
+        except Exception:
+            pass
+
+        # 業種コード・業種名（CompanyMaster DB）と業種ベンチマーク（IndustryBenchmark DB）
+        industry_code = industry_name = None
+        industry_benchmarks = {}
+        try:
+            cm = CompanyMaster.objects.filter(code=stock_code) \
+                .values('industry_code_33', 'industry_name_33').first()
+            if cm:
+                industry_code = cm['industry_code_33']
+                industry_name = cm['industry_name_33']
+            if industry_code:
+                from analysis_template.models import IndustryBenchmark
+                for ib in IndustryBenchmark.objects.filter(
+                    industry_code=industry_code
+                ).select_related('metric_definition'):
+                    industry_benchmarks[ib.metric_definition.name] = {
+                        'median':  float(ib.median_value)  if ib.median_value  is not None else None,
+                        'average': float(ib.average_value) if ib.average_value is not None else None,
+                    }
+        except Exception:
+            pass
 
         try:
             inc = ticker.income_stmt
@@ -621,6 +687,7 @@ def get_stock_historical(request, stock_code):
             'operating_income': operating_income_list,
             'eps': eps_list,
             'operating_cf': operating_cf_list,
+            'fcf': fcf_list,
             'equity_ratio': equity_ratio_list,
             'roe': roe_list,
             'per': per,
@@ -628,6 +695,18 @@ def get_stock_historical(request, stock_code):
             'dividend_yield': dividend_yield,
             'dividend_yield_history': dividend_yield_history,
             'price': price,
+            'market_cap_oku':      market_cap_oku,
+            'market_cap_size':     market_cap_size,
+            'fcf_yield':           fcf_yield,
+            'week52_high':         week52_high,
+            'week52_low':          week52_low,
+            'pct_from_52w_high':   pct_from_52w_high,
+            'ma25':                ma25,
+            'ma75':                ma75,
+            'ma200':               ma200,
+            'industry_code':       industry_code,
+            'industry_name':       industry_name,
+            'industry_benchmarks': industry_benchmarks,
         })
 
     except Exception as e:
