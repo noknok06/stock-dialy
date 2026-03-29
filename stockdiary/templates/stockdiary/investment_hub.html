@@ -917,6 +917,8 @@ table.hub-table {
             </div>
             <!-- 動的チャートグリッド -->
             <div id="hub-trend-charts-grid" class="trend-charts-grid"></div>
+            <!-- 会社予想パネル -->
+            <div id="hub-forecast-panel" style="display:none;margin-top:16px;"></div>
         </div>
 
 
@@ -1542,19 +1544,38 @@ table.hub-table {
         }).join('');
     }
 
+    // 予想データを持つメトリクスキー
+    const FORECAST_METRIC_KEYS = ['revenue', 'operating_income', 'eps'];
+
     function buildTrendChart(canvas,codes,metric){
         const gridColor=cssVar('--border-primary')||'#334155';
         const tickColor=cssVar('--text-secondary')||'#94a3b8';
         const allYears=new Set();
         codes.forEach(c=>(stocksData[c].years||[]).forEach(y=>allYears.add(y)));
         const years=Array.from(allYears).sort();
+
+        // 予想ラベル取得（このメトリクスに対応した予想があるか）
+        let forecastLabel=null;
+        if(FORECAST_METRIC_KEYS.includes(metric.key)){
+            for(const c of codes){
+                const fc=stocksData[c].forecast;
+                if(fc && fc[metric.key]!=null){forecastLabel=fc.label||null;break;}
+            }
+        }
+        const allLabels=forecastLabel?[...years,forecastLabel]:years;
+        const lastActualYear=years[years.length-1];
+
+        // 実績データセット
         const datasets=codes.map(c=>{
             const d=stocksData[c];
             const yrs=d.years||[];
             const arr=d[metric.key]||[];
             return{
                 label:d.stock_name||c,
-                data:years.map(y=>{const i=yrs.indexOf(y);return i>=0?arr[i]:null;}),
+                data:allLabels.map(lbl=>{
+                    if(lbl===forecastLabel) return null;
+                    const i=yrs.indexOf(lbl);return i>=0?arr[i]:null;
+                }),
                 borderColor:d._color,
                 backgroundColor:d._color+'22',
                 borderWidth:2,
@@ -1564,10 +1585,43 @@ table.hub-table {
                 spanGaps:true,
             };
         });
+
+        // 予想データセット（破線）
+        if(forecastLabel){
+            codes.forEach(c=>{
+                const d=stocksData[c];
+                const fc=d.forecast;
+                if(!fc||fc[metric.key]==null) return;
+                const yrs=d.years||[];
+                const arr=d[metric.key]||[];
+                const lastIdx=yrs.indexOf(lastActualYear);
+                const lastActualVal=lastIdx>=0?arr[lastIdx]:null;
+                const fcVal=fc[metric.key];
+                const fcData=allLabels.map(lbl=>{
+                    if(lbl===forecastLabel) return fcVal;
+                    if(lbl===lastActualYear) return lastActualVal;
+                    return null;
+                });
+                datasets.push({
+                    label:`${d.stock_name||c}（予）`,
+                    data:fcData,
+                    borderColor:d._color,
+                    backgroundColor:'transparent',
+                    borderWidth:2,
+                    borderDash:[5,4],
+                    pointRadius:allLabels.map(lbl=>lbl===forecastLabel?5:0),
+                    pointStyle:allLabels.map(lbl=>lbl===forecastLabel?'rectRot':'circle'),
+                    pointHoverRadius:5,
+                    tension:0,
+                    spanGaps:false,
+                });
+            });
+        }
+
         const unitLabel=metric.unit;
         return new Chart(canvas,{
             type:'line',
-            data:{labels:years,datasets},
+            data:{labels:allLabels,datasets},
             options:{
                 responsive:true,
                 maintainAspectRatio:false,
@@ -1658,6 +1712,76 @@ table.hub-table {
 
         renderSharedLegend(codes);
         attachTooltipSync();
+        renderForecastPanel(codes);
+    }
+
+    function renderForecastPanel(codes){
+        const panel=document.getElementById('hub-forecast-panel');
+        if(!panel) return;
+
+        // 予想データを持つ銘柄だけ抽出
+        const fcCodes=codes.filter(c=>{
+            const fc=stocksData[c].forecast;
+            return fc&&(fc.revenue!=null||fc.operating_income!=null||fc.eps!=null);
+        });
+        if(!fcCodes.length){panel.style.display='none';panel.innerHTML='';return;}
+
+        function arrow(last,fc){
+            if(last==null||fc==null) return '';
+            const pct=((fc-last)/Math.abs(last)*100).toFixed(1);
+            const up=fc>=last;
+            return `<span style="color:${up?'var(--accent-color,#22d3ee)':'var(--danger-color,#f87171)'};font-size:0.8rem;">
+                ${up?'▲':'▼'}${Math.abs(pct)}%</span>`;
+        }
+
+        let html=`<div style="font-size:0.78rem;font-weight:600;color:var(--text-secondary);
+            text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">
+            <i class="bi bi-calendar-check"></i> 会社予想（次期）
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;">`;
+
+        fcCodes.forEach(c=>{
+            const d=stocksData[c];
+            const fc=d.forecast;
+            const rel=fc.reliability;
+            const yrs=d.years||[];
+            const lastRev=(d.revenue||[]).filter(v=>v!=null).slice(-1)[0];
+            const lastOI=(d.operating_income||[]).filter(v=>v!=null).slice(-1)[0];
+            const lastEPS=(d.eps||[]).filter(v=>v!=null).slice(-1)[0];
+
+            const gradeColor=rel?(rel.grade_color||'#64748b'):'#64748b';
+            const signalColor=rel?(rel.signal_color||'#64748b'):'#64748b';
+            const grade=rel?rel.grade:'';
+            const signal=rel?rel.signal:'';
+            const signalLabel=rel?({'strong_buy':'強買','buy':'買','hold':'中立','sell':'売','strong_sell':'強売'}[signal]||signal):'';
+
+            html+=`<div style="background:var(--bg-card,#1e293b);border:1px solid var(--border-primary,#334155);
+                border-left:3px solid ${d._color};border-radius:8px;padding:10px 12px;
+                min-width:160px;flex:1 1 160px;max-width:260px;">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+                    <span style="width:8px;height:8px;border-radius:50%;background:${d._color};flex-shrink:0;"></span>
+                    <span style="font-weight:600;font-size:0.85rem;">${d.stock_name||c}</span>
+                    <span style="font-size:0.72rem;color:var(--text-secondary);">${fc.label||''}</span>
+                    ${grade?`<span style="margin-left:auto;font-size:0.72rem;font-weight:700;
+                        color:${gradeColor};border:1px solid ${gradeColor};border-radius:4px;
+                        padding:1px 5px;">${grade}</span>`:''}
+                </div>
+                <div style="font-size:0.78rem;color:var(--text-secondary);line-height:1.8;">
+                    ${fc.revenue!=null?`<div>売上高: <b style="color:var(--text-primary)">${fc.revenue.toLocaleString('ja-JP')}億</b> ${arrow(lastRev,fc.revenue)}</div>`:''}
+                    ${fc.operating_income!=null?`<div>営業利益: <b style="color:var(--text-primary)">${fc.operating_income.toLocaleString('ja-JP')}億</b> ${arrow(lastOI,fc.operating_income)}</div>`:''}
+                    ${fc.eps!=null?`<div>EPS: <b style="color:var(--text-primary)">${fc.eps.toLocaleString('ja-JP')}円</b> ${arrow(lastEPS,fc.eps)}</div>`:''}
+                </div>
+                ${signalLabel?`<div style="margin-top:6px;">
+                    <span style="font-size:0.72rem;background:${signalColor}22;color:${signalColor};
+                        border-radius:4px;padding:2px 6px;font-weight:600;">${signalLabel}</span>
+                    ${rel&&rel.avg_achievement_rate!=null?`<span style="font-size:0.7rem;color:var(--text-secondary);margin-left:6px;">達成率avg ${rel.avg_achievement_rate.toFixed(0)}%</span>`:''}
+                </div>`:''}
+            </div>`;
+        });
+
+        html+='</div>';
+        panel.innerHTML=html;
+        panel.style.display='block';
     }
 
     document.getElementById('metric-chips').addEventListener('change',function(e){

@@ -410,16 +410,20 @@ class TDNETReportGeneratorService:
             # 開示日の翌年度を来期として登録
             fiscal_year_forecast = disclosure_date.year + 1
 
+            # 決算短信PDFの数値は百万円単位 → 円単位に変換（XBRLと統一）
+            def _to_yen(v):
+                return v * Decimal('1000000') if v is not None else None
+
             EarningsForecast.objects.update_or_create(
                 company_code=company_code,
                 fiscal_year=fiscal_year_forecast,
                 period_type='annual',
                 defaults={
                     'company_name': company_name,
-                    'forecast_net_sales': net_sales,
-                    'forecast_operating_income': operating_income,
-                    'forecast_ordinary_income': ordinary_income,
-                    'forecast_net_income': net_income,
+                    'forecast_net_sales': _to_yen(net_sales),
+                    'forecast_operating_income': _to_yen(operating_income),
+                    'forecast_ordinary_income': _to_yen(ordinary_income),
+                    'forecast_net_income': _to_yen(net_income),
                     'forecast_announced_date': disclosure_date.date()
                         if hasattr(disclosure_date, 'date') else disclosure_date,
                     'source': 'tdnet',

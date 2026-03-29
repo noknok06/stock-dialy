@@ -678,6 +678,47 @@ def get_stock_historical(request, stock_code):
             except Exception:
                 stock_name = stock_code
 
+        # 会社予想（EarningsForecast）を取得して forecast フィールドに追加
+        forecast_data = None
+        try:
+            from earnings_analysis.models.forecast import EarningsForecast, ForecastReliabilityScore
+            latest_year = max(int(y) for y in years) if years else None
+            if latest_year:
+                fc = EarningsForecast.objects.filter(
+                    company_code=stock_code,
+                    fiscal_year=latest_year + 1,
+                    period_type='annual',
+                ).first()
+                if fc and (fc.forecast_net_sales or fc.forecast_operating_income):
+                    def _fc_oku(v):
+                        return round(float(v) / 1e8, 1) if v is not None else None
+                    forecast_data = {
+                        'label': f'{latest_year + 1}予',
+                        'fiscal_year': latest_year + 1,
+                        'revenue': _fc_oku(fc.forecast_net_sales),
+                        'operating_income': _fc_oku(fc.forecast_operating_income),
+                        'eps': round(float(fc.forecast_eps), 1) if fc.forecast_eps else None,
+                        'source': fc.source,
+                        'reliability': None,
+                    }
+                    try:
+                        rs = ForecastReliabilityScore.objects.get(company_code=stock_code)
+                        forecast_data['reliability'] = {
+                            'score': rs.reliability_score,
+                            'grade': rs.grade,
+                            'signal': rs.investment_signal,
+                            'tendency': rs.forecast_tendency,
+                            'signal_color': rs.signal_color,
+                            'grade_color': rs.grade_color,
+                            'years_tracked': rs.years_tracked,
+                            'avg_achievement_rate': float(rs.avg_achievement_rate) if rs.avg_achievement_rate else None,
+                            'reason': rs.investment_signal_reason,
+                        }
+                    except ForecastReliabilityScore.DoesNotExist:
+                        pass
+        except Exception as e:
+            print(f"Forecast fetch error for {stock_code}: {e}")
+
         return JsonResponse({
             'success': True,
             'stock_code': stock_code,
@@ -707,6 +748,7 @@ def get_stock_historical(request, stock_code):
             'industry_code':       industry_code,
             'industry_name':       industry_name,
             'industry_benchmarks': industry_benchmarks,
+            'forecast':            forecast_data,
         })
 
     except Exception as e:
