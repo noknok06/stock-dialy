@@ -362,19 +362,31 @@ class TDNETReportGeneratorService:
 
     def _extract_and_save_forecast_from_pdf(self, text: str, company_code: str,
                                              company_name: str, disclosure_date) -> None:
-        """PDFテキストから次期業績予想を regex で抽出し EarningsForecast に保存する。
+        """PDFテキストから業績予想を regex で抽出し EarningsForecast に保存する。
 
-        標準的な決算短信には「次期の業績予想」セクションが定型フォーマットで記載される。
+        ・通期業績予想（Q1〜Q3・本決算）→ 今期の通期予想として保存
+        ・来期業績予想（本決算）         → 翌期予想として保存
         Geminiを使わない補完手段のため失敗してもレポート生成には影響しない。
+
+        3月決算を基準とした fiscal_year 推定:
+          通期セクション: 4〜12月開示 → year+1、1〜3月開示 → year
+          来期セクション: 常に year+1（本決算は5〜6月開示が大半）
         """
         import re
         from decimal import Decimal
         from ..models.forecast import EarningsForecast
         from .forecast_reliability_service import ForecastReliabilityService
 
-        SECTION_MARKERS = ['次期の業績予想', '来期業績予想', '翌期業績予想', '次期業績予想',
-                           '来期の業績予想', '翌期の業績予想']
-        # 売上高 営業利益 経常利益 純利益 の4列数値が続く行を検出
+        # 通期（今期）セクションと来期セクションを別々に定義
+        CURRENT_YEAR_MARKERS = [
+            '通期業績予想', '通期の業績予想', '業績予想（通期）',
+            '連結業績予想', '当期業績予想', '年間業績予想',
+        ]
+        NEXT_YEAR_MARKERS = [
+            '次期の業績予想', '来期業績予想', '翌期業績予想', '次期業績予想',
+            '来期の業績予想', '翌期の業績予想',
+        ]
+        # 売上高 営業利益 経常利益 純利益 の4列数値行を検出
         NUMBER_ROW = re.compile(r'([\d,]{4,})\s+([-\d,]+)\s+([-\d,]+)\s+([-\d,]+)')
 
         def _clean_num(s: str) -> Optional[Decimal]:
@@ -383,54 +395,67 @@ class TDNETReportGeneratorService:
             except Exception:
                 return None
 
-        try:
-            # 予想セクションを探す
-            section_text = None
-            for marker in SECTION_MARKERS:
+        def _fiscal_year_current(dt) -> int:
+            """3月決算前提: 4〜12月開示 → 翌年3月期, 1〜3月開示 → 当年3月期"""
+            month = dt.month if hasattr(dt, 'month') else dt.month
+            return dt.year + 1 if 4 <= month <= 12 else dt.year
+
+        def _fiscal_year_next(dt) -> int:
+            return dt.year + 1
+
+        def _find_section(markers):
+            for marker in markers:
                 idx = text.find(marker)
                 if idx != -1:
-                    section_text = text[idx:idx + 600]
-                    break
+                    return text[idx:idx + 600]
+            return None
 
-            if not section_text:
-                return
-
+        def _save(section_text, fiscal_year, label):
             m = NUMBER_ROW.search(section_text)
             if not m:
-                return
-
-            net_sales = _clean_num(m.group(1))
+                return False
+            net_sales        = _clean_num(m.group(1))
             operating_income = _clean_num(m.group(2))
-            ordinary_income = _clean_num(m.group(3))
-            net_income = _clean_num(m.group(4))
-
+            ordinary_income  = _clean_num(m.group(3))
+            net_income       = _clean_num(m.group(4))
             if net_sales is None and operating_income is None:
-                return
-
-            # 開示日の翌年度を来期として登録
-            fiscal_year_forecast = disclosure_date.year + 1
-
-            # 決算短信PDFの数値は百万円単位 → 円単位に変換（XBRLと統一）
+                return False
+            # 百万円 → 円（XBRLと単位統一）
             def _to_yen(v):
                 return v * Decimal('1000000') if v is not None else None
-
             EarningsForecast.objects.update_or_create(
                 company_code=company_code,
-                fiscal_year=fiscal_year_forecast,
+                fiscal_year=fiscal_year,
                 period_type='annual',
                 defaults={
                     'company_name': company_name,
-                    'forecast_net_sales': _to_yen(net_sales),
-                    'forecast_operating_income': _to_yen(operating_income),
-                    'forecast_ordinary_income': _to_yen(ordinary_income),
-                    'forecast_net_income': _to_yen(net_income),
-                    'forecast_announced_date': disclosure_date.date()
+                    'forecast_net_sales':         _to_yen(net_sales),
+                    'forecast_operating_income':  _to_yen(operating_income),
+                    'forecast_ordinary_income':   _to_yen(ordinary_income),
+                    'forecast_net_income':        _to_yen(net_income),
+                    'forecast_announced_date':    disclosure_date.date()
                         if hasattr(disclosure_date, 'date') else disclosure_date,
                     'source': 'tdnet',
                 }
             )
-            ForecastReliabilityService().calculate_reliability(company_code)
-            logger.info(f"PDFから来期予想抽出・保存: {company_code} FY{fiscal_year_forecast}")
+            logger.info(f"PDF予想保存({label}): {company_code} FY{fiscal_year}")
+            return True
+
+        try:
+            saved = False
+
+            # 来期予想セクションを先に試す（本決算のみ存在）
+            next_text = _find_section(NEXT_YEAR_MARKERS)
+            if next_text:
+                saved = _save(next_text, _fiscal_year_next(disclosure_date), '来期')
+
+            # 通期予想セクション（Q1〜Q3、または本決算にも存在）
+            cur_text = _find_section(CURRENT_YEAR_MARKERS)
+            if cur_text:
+                saved = _save(cur_text, _fiscal_year_current(disclosure_date), '通期') or saved
+
+            if saved:
+                ForecastReliabilityService().calculate_reliability(company_code)
 
         except Exception as e:
             logger.warning(f"PDF予想抽出エラー ({company_code}): {e}")

@@ -679,6 +679,8 @@ def get_stock_historical(request, stock_code):
                 stock_name = stock_code
 
         # 会社予想（EarningsForecast）を取得して forecast フィールドに追加
+        # yfinance の最新年度 +1 を基本として探すが、見つからない場合は最新年度自体も試す
+        # （例: yfinance が FY2025 まで返す場合 → FY2026 を優先、なければ FY2025 を確認）
         forecast_data = None
         try:
             from earnings_analysis.models.forecast import EarningsForecast, ForecastReliabilityScore
@@ -686,15 +688,15 @@ def get_stock_historical(request, stock_code):
             if latest_year:
                 fc = EarningsForecast.objects.filter(
                     company_code=stock_code,
-                    fiscal_year=latest_year + 1,
+                    fiscal_year__in=[latest_year + 1, latest_year],
                     period_type='annual',
-                ).first()
+                ).order_by('-fiscal_year').first()
                 if fc and (fc.forecast_net_sales or fc.forecast_operating_income):
                     def _fc_oku(v):
                         return round(float(v) / 1e8, 1) if v is not None else None
                     forecast_data = {
-                        'label': f'{latest_year + 1}予',
-                        'fiscal_year': latest_year + 1,
+                        'label': f'{fc.fiscal_year}予',
+                        'fiscal_year': fc.fiscal_year,
                         'revenue': _fc_oku(fc.forecast_net_sales),
                         'operating_income': _fc_oku(fc.forecast_operating_income),
                         'eps': round(float(fc.forecast_eps), 1) if fc.forecast_eps else None,
