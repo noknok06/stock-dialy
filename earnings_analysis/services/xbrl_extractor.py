@@ -603,6 +603,48 @@ class XBRLFinancialExtractor:
             'total_assets': ['TotalAssets', 'Assets', '資産合計'],
             'total_liabilities': ['TotalLiabilities', 'Liabilities', '負債合計'],
             'net_assets': ['NetAssets', 'TotalEquity', '純資産合計'],
+            # 来期業績予想（決算短信XBRLのEDINETタクソノミ標準要素）
+            'forecast_net_sales': [
+                'ForecastNetSales',
+                'ForecastOfNetSales',
+                'ForecastNetSalesConsolidated',
+                'ForecastOfNetSalesConsolidated',
+                '来期売上高',
+                '翌期売上高',
+                '次期売上高予想',
+            ],
+            'forecast_operating_income': [
+                'ForecastOperatingIncome',
+                'ForecastOfOperatingIncome',
+                'ForecastOperatingIncomeConsolidated',
+                'ForecastOfOperatingIncomeConsolidated',
+                '来期営業利益',
+                '翌期営業利益',
+            ],
+            'forecast_ordinary_income': [
+                'ForecastOrdinaryIncome',
+                'ForecastOfOrdinaryIncome',
+                'ForecastOrdinaryIncomeConsolidated',
+                '来期経常利益',
+                '翌期経常利益',
+            ],
+            'forecast_net_income': [
+                'ForecastProfit',
+                'ForecastNetIncome',
+                'ForecastProfitAttributableToOwnersOfParent',
+                'ForecastProfitAttributableToOwnersOfParentConsolidated',
+                'ForecastOfProfit',
+                'ForecastOfProfitAttributableToOwnersOfParent',
+                '来期当期純利益',
+                '翌期純利益',
+            ],
+            'forecast_eps': [
+                'ForecastBasicEarningsLossPerShare',
+                'ForecastEarningsPerShare',
+                'ForecastBasicEarningsPerShare',
+                '来期1株当たり当期純利益',
+                '翌期EPS',
+            ],
         }
         
         self.namespaces = {

@@ -43,7 +43,12 @@ class TDNETReportGeneratorService:
             
             extracted_text = pdf_result['text']
             pdf_path = pdf_result['pdf_path']
-            
+
+            # PDFテキストから次期業績予想を抽出して EarningsForecast に保存（Gemini不使用）
+            self._extract_and_save_forecast_from_pdf(
+                extracted_text, company_code, company_name, timezone.now()
+            )
+
             disclosure_id = f"MANUAL-{company_code}-{timezone.now().strftime('%Y%m%d%H%M%S')}"
             
             disclosure = TDNETDisclosure.objects.create(
@@ -344,13 +349,84 @@ class TDNETReportGeneratorService:
             report = TDNETReport.objects.filter(report_id=report_id).first()
             if not report:
                 return {'success': False, 'report': None, 'message': 'レポートが見つかりません'}
-            
+
             if report.status != 'published':
                 return {'success': True, 'report': report, 'message': '既に非公開です'}
-            
+
             report.unpublish()
             return {'success': True, 'report': report, 'message': 'レポートを非公開にしました'}
-            
+
         except Exception as e:
             logger.error(f"レポート非公開エラー: {e}")
             return {'success': False, 'report': None, 'message': str(e)}
+
+    def _extract_and_save_forecast_from_pdf(self, text: str, company_code: str,
+                                             company_name: str, disclosure_date) -> None:
+        """PDFテキストから次期業績予想を regex で抽出し EarningsForecast に保存する。
+
+        標準的な決算短信には「次期の業績予想」セクションが定型フォーマットで記載される。
+        Geminiを使わない補完手段のため失敗してもレポート生成には影響しない。
+        """
+        import re
+        from decimal import Decimal
+        from ..models.forecast import EarningsForecast
+        from .forecast_reliability_service import ForecastReliabilityService
+
+        SECTION_MARKERS = ['次期の業績予想', '来期業績予想', '翌期業績予想', '次期業績予想',
+                           '来期の業績予想', '翌期の業績予想']
+        # 売上高 営業利益 経常利益 純利益 の4列数値が続く行を検出
+        NUMBER_ROW = re.compile(r'([\d,]{4,})\s+([-\d,]+)\s+([-\d,]+)\s+([-\d,]+)')
+
+        def _clean_num(s: str) -> Optional[Decimal]:
+            try:
+                return Decimal(s.replace(',', ''))
+            except Exception:
+                return None
+
+        try:
+            # 予想セクションを探す
+            section_text = None
+            for marker in SECTION_MARKERS:
+                idx = text.find(marker)
+                if idx != -1:
+                    section_text = text[idx:idx + 600]
+                    break
+
+            if not section_text:
+                return
+
+            m = NUMBER_ROW.search(section_text)
+            if not m:
+                return
+
+            net_sales = _clean_num(m.group(1))
+            operating_income = _clean_num(m.group(2))
+            ordinary_income = _clean_num(m.group(3))
+            net_income = _clean_num(m.group(4))
+
+            if net_sales is None and operating_income is None:
+                return
+
+            # 開示日の翌年度を来期として登録
+            fiscal_year_forecast = disclosure_date.year + 1
+
+            EarningsForecast.objects.update_or_create(
+                company_code=company_code,
+                fiscal_year=fiscal_year_forecast,
+                period_type='annual',
+                defaults={
+                    'company_name': company_name,
+                    'forecast_net_sales': net_sales,
+                    'forecast_operating_income': operating_income,
+                    'forecast_ordinary_income': ordinary_income,
+                    'forecast_net_income': net_income,
+                    'forecast_announced_date': disclosure_date.date()
+                        if hasattr(disclosure_date, 'date') else disclosure_date,
+                    'source': 'tdnet',
+                }
+            )
+            ForecastReliabilityService().calculate_reliability(company_code)
+            logger.info(f"PDFから来期予想抽出・保存: {company_code} FY{fiscal_year_forecast}")
+
+        except Exception as e:
+            logger.warning(f"PDF予想抽出エラー ({company_code}): {e}")

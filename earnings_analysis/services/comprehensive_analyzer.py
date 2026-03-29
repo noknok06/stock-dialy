@@ -484,14 +484,86 @@ class ComprehensiveAnalysisService:
             financial_record.extraction_confidence = 0.8  # 基本信頼度
             
             financial_record.save()
-            
+
             logger.info(f"財務データ保存完了: {document.doc_id} - 完全性{financial_record.data_completeness:.1%}")
+
+            # XBRL から取得した実績・予想を EarningsForecast に同期
+            self._sync_forecast_from_xbrl(document, financial_data)
+
             return financial_record
-            
+
         except Exception as e:
             logger.error(f"財務データ保存エラー: {document.doc_id} - {e}")
             return None
-    
+
+    def _sync_forecast_from_xbrl(self, document, financial_data: Dict):
+        """XBRLから取得した当期実績・来期予想を EarningsForecast に同期する。
+
+        - 当期 (fiscal_year=X): actual_* フィールドを更新
+        - 翌期 (fiscal_year=X+1): forecast_* フィールドを新規登録
+        失敗しても既存の財務データ保存には影響しない。
+        """
+        from ..models.forecast import EarningsForecast
+        from .forecast_reliability_service import ForecastReliabilityService
+        from decimal import Decimal
+
+        try:
+            company_code = getattr(document, 'securities_code', None)
+            if not company_code or not getattr(document, 'period_end', None):
+                return
+
+            fiscal_year_actual = document.period_end.year
+            fiscal_year_forecast = fiscal_year_actual + 1
+
+            def _d(val):
+                return Decimal(str(val)) if val is not None else None
+
+            # 当期実績を EarningsForecast に反映
+            EarningsForecast.objects.update_or_create(
+                company_code=company_code,
+                fiscal_year=fiscal_year_actual,
+                period_type='annual',
+                defaults={
+                    'company_name': document.company_name,
+                    'actual_net_sales': _d(financial_data.get('net_sales')),
+                    'actual_operating_income': _d(financial_data.get('operating_income')),
+                    'actual_ordinary_income': _d(financial_data.get('ordinary_income')),
+                    'actual_net_income': _d(financial_data.get('net_income')),
+                    'actual_announced_date': document.period_end,
+                    'source': 'edinet',
+                }
+            )
+
+            # 来期予想が XBRL に含まれていれば翌期レコードに保存
+            has_forecast = any(
+                financial_data.get(k) for k in
+                ['forecast_net_sales', 'forecast_operating_income', 'forecast_net_income']
+            )
+            if has_forecast:
+                EarningsForecast.objects.update_or_create(
+                    company_code=company_code,
+                    fiscal_year=fiscal_year_forecast,
+                    period_type='annual',
+                    defaults={
+                        'company_name': document.company_name,
+                        'forecast_net_sales': _d(financial_data.get('forecast_net_sales')),
+                        'forecast_operating_income': _d(financial_data.get('forecast_operating_income')),
+                        'forecast_ordinary_income': _d(financial_data.get('forecast_ordinary_income')),
+                        'forecast_net_income': _d(financial_data.get('forecast_net_income')),
+                        'forecast_eps': _d(financial_data.get('forecast_eps')),
+                        'forecast_announced_date': document.period_end,
+                        'source': 'edinet',
+                    }
+                )
+                logger.info(f"来期予想保存: {company_code} FY{fiscal_year_forecast}")
+
+            # 信頼性スコアを再計算
+            ForecastReliabilityService().calculate_reliability(company_code)
+
+        except Exception as e:
+            logger.warning(f"EarningsForecast同期エラー ({getattr(document, 'doc_id', '?')}): {e}")
+
+
     def _integrate_analysis_results(self, sentiment_result: Dict, financial_result: Dict, 
                                 document_info: Dict) -> Dict[str, Any]:
         """分析結果の統合"""
