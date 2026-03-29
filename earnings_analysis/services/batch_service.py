@@ -262,7 +262,7 @@ class BatchService:
                 file_date=target_date,
                 legal_status='1',
                 xbrl_flag=True,
-                doc_type_code__in=['120', '160', '030']  # 有価証券報告書、半期報告書、有価証券届出書
+                doc_type_code__in=['120', '140', '160', '030']  # 有価証券報告書、四半期報告書、半期報告書、有価証券届出書
             )[:10]  # 一度に最大10件まで
             
             for document in target_documents:
