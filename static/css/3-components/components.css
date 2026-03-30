@@ -319,6 +319,9 @@
 
 .form-input-improved {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   padding: 0.625rem 0.875rem;
   border: 1px solid var(--bg-300);
   border-radius: var(--radius-sm);
@@ -326,6 +329,14 @@
   color: var(--text-100);
   font-size: 0.9375rem;
   transition: all 0.2s ease;
+}
+
+/* iOS Safari: input[type="date"] が width:100% を無視して
+   内部最小幅で描画される問題を修正 */
+input[type="date"].form-input-improved {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
 }
 
 .form-input-improved:focus {
