@@ -3107,33 +3107,33 @@ window.showReportModal = function(el) {
     <div class="bottom-sheet-body">
       <form method="post" action="{% url 'stockdiary:add_transaction' diary.id %}" id="addForm">
         {% csrf_token %}
-        <div class="row g-3">
-          <div class="col-12">
-            <label class="form-label-improved">取引日<span class="text-danger ms-1">*</span></label>
-            <input type="date" class="form-input-improved" name="transaction_date"
-                   value="{% now 'Y-m-d' %}" required>
-          </div>
-          <div class="col-12">
-            <label class="form-label-improved">取引種別<span class="text-danger ms-1">*</span></label>
-            <select class="form-input-improved" name="transaction_type" required>
-              <option value="buy">購入</option>
-              <option value="sell">売却</option>
-            </select>
-          </div>
-          <div class="col-6">
+        <div class="mb-3">
+          <label class="form-label-improved">取引日<span class="text-danger ms-1">*</span></label>
+          <input type="date" class="form-input-improved" name="transaction_date"
+                 value="{% now 'Y-m-d' %}" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label-improved">取引種別<span class="text-danger ms-1">*</span></label>
+          <select class="form-input-improved" name="transaction_type" required>
+            <option value="buy">購入</option>
+            <option value="sell">売却</option>
+          </select>
+        </div>
+        <div class="d-flex gap-2 mb-3">
+          <div class="flex-grow-1">
             <label class="form-label-improved">単価（円）<span class="text-danger ms-1">*</span></label>
             <input type="number" class="form-input-improved" name="price"
                    step="0.01" min="0.01" placeholder="例: 1000.00" required>
           </div>
-          <div class="col-6">
+          <div class="flex-grow-1">
             <label class="form-label-improved">数量（株）<span class="text-danger ms-1">*</span></label>
             <input type="number" class="form-input-improved" name="quantity"
                    step="1" min="1" placeholder="例: 100" required>
           </div>
-          <div class="col-12">
-            <label class="form-label-improved">メモ（任意）</label>
-            <textarea class="form-input-improved" name="memo" rows="2" maxlength="500"></textarea>
-          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label-improved">メモ（任意）</label>
+          <textarea class="form-input-improved" name="memo" rows="2" maxlength="500"></textarea>
         </div>
         <div class="form-actions-improved mt-3">
           <button type="submit" class="btn btn-primary">
@@ -3166,22 +3166,20 @@ window.showReportModal = function(el) {
           <i class="bi bi-info-circle me-2"></i>
           株式分割の情報を登録します。「適用」すると分割日以前の取引が自動調整されます。
         </div>
-        <div class="row g-3">
-          <div class="col-12">
-            <label class="form-label-improved">分割実行日<span class="text-danger ms-1">*</span></label>
-            <input type="date" class="form-input-improved" name="split_date"
-                   value="{% now 'Y-m-d' %}" required>
-          </div>
-          <div class="col-12">
-            <label class="form-label-improved">分割比率<span class="text-danger ms-1">*</span></label>
-            <input type="number" class="form-input-improved" name="split_ratio"
-                   step="0.0001" min="0.0001" placeholder="例: 2.0" required>
-            <small class="form-text-improved">1株が何株になるか（例: 1→2株なら「2.0」）</small>
-          </div>
-          <div class="col-12">
-            <label class="form-label-improved">メモ（任意）</label>
-            <textarea class="form-input-improved" name="memo" rows="2" maxlength="500"></textarea>
-          </div>
+        <div class="mb-3">
+          <label class="form-label-improved">分割実行日<span class="text-danger ms-1">*</span></label>
+          <input type="date" class="form-input-improved" name="split_date"
+                 value="{% now 'Y-m-d' %}" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label-improved">分割比率<span class="text-danger ms-1">*</span></label>
+          <input type="number" class="form-input-improved" name="split_ratio"
+                 step="0.0001" min="0.0001" placeholder="例: 2.0" required>
+          <small class="form-text-improved">1株が何株になるか（例: 1→2株なら「2.0」）</small>
+        </div>
+        <div class="mb-3">
+          <label class="form-label-improved">メモ（任意）</label>
+          <textarea class="form-input-improved" name="memo" rows="2" maxlength="500"></textarea>
         </div>
         <div class="form-actions-improved mt-3">
           <button type="submit" class="btn btn-primary">

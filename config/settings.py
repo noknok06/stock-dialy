@@ -741,4 +741,4 @@ Q_CLUSTER = {
     'orm': 'default',      # Redis不要: Django ORM (PostgreSQL) をブローカーとして使用
 }
 
-STATIC_VERSION = '1.2.0'
+STATIC_VERSION = '1.2.2'
