@@ -3108,17 +3108,17 @@ window.showReportModal = function(el) {
       <form method="post" action="{% url 'stockdiary:add_transaction' diary.id %}" id="addForm">
         {% csrf_token %}
         <div class="row g-3">
-          <div class="col-6">
+          <div class="col-12">
+            <label class="form-label-improved">取引日<span class="text-danger ms-1">*</span></label>
+            <input type="date" class="form-input-improved" name="transaction_date"
+                   value="{% now 'Y-m-d' %}" required>
+          </div>
+          <div class="col-12">
             <label class="form-label-improved">取引種別<span class="text-danger ms-1">*</span></label>
             <select class="form-input-improved" name="transaction_type" required>
               <option value="buy">購入</option>
               <option value="sell">売却</option>
             </select>
-          </div>
-          <div class="col-6">
-            <label class="form-label-improved">取引日<span class="text-danger ms-1">*</span></label>
-            <input type="date" class="form-input-improved" name="transaction_date"
-                   value="{% now 'Y-m-d' %}" required>
           </div>
           <div class="col-6">
             <label class="form-label-improved">単価（円）<span class="text-danger ms-1">*</span></label>
@@ -3167,12 +3167,12 @@ window.showReportModal = function(el) {
           株式分割の情報を登録します。「適用」すると分割日以前の取引が自動調整されます。
         </div>
         <div class="row g-3">
-          <div class="col-6">
+          <div class="col-12">
             <label class="form-label-improved">分割実行日<span class="text-danger ms-1">*</span></label>
             <input type="date" class="form-input-improved" name="split_date"
                    value="{% now 'Y-m-d' %}" required>
           </div>
-          <div class="col-6">
+          <div class="col-12">
             <label class="form-label-improved">分割比率<span class="text-danger ms-1">*</span></label>
             <input type="number" class="form-input-improved" name="split_ratio"
                    step="0.0001" min="0.0001" placeholder="例: 2.0" required>
