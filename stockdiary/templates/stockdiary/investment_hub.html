@@ -801,6 +801,53 @@ table.hub-table {
 .speed-dial-item.sd-disabled {
     opacity: 0.35; cursor: not-allowed; pointer-events: none;
 }
+
+/* ── 指標ツールチップ ── */
+.metric-hint {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: help;
+}
+.metric-hint .tip-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 1px solid currentColor;
+    font-size: 9px;
+    font-style: normal;
+    opacity: 0.45;
+    flex-shrink: 0;
+    line-height: 1;
+}
+.metric-hint .tip-box {
+    display: none;
+    position: absolute;
+    left: 0;
+    top: calc(100% + 6px);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 0.72rem;
+    line-height: 1.6;
+    white-space: normal;
+    min-width: 200px;
+    max-width: 260px;
+    z-index: 200;
+    box-shadow: var(--shadow-md);
+    pointer-events: none;
+    font-weight: 400;
+}
+@media (hover: hover) {
+    .metric-hint:hover .tip-box { display: block; }
+}
+.metric-hint.tip-open .tip-box { display: block; }
 </style>
 {% endblock %}
 
@@ -1401,34 +1448,39 @@ table.hub-table {
         });
         thead.innerHTML=th+'</tr>';
 
+        function labelHtml(row){
+            if(!row.tip) return row.label;
+            return `<span class="metric-hint">${row.label}<i class="tip-icon">?</i><span class="tip-box">${row.tip}</span></span>`;
+        }
+
         const rows=[
-            {label:'売上高',            fn:d=>valueWithTrend(latest(d.revenue),d.revenue,fmtOku)},
-            {label:'営業利益',           fn:d=>valueWithTrend(latest(d.operating_income),d.operating_income,fmtOku)},
-            {label:'営業利益率',  fn:d=>{const r=latest(d.revenue),o=latest(d.operating_income);if(!r||!o)return'<span class="badge-na">-</span>';const opm=o/r*100;const bench=d.industry_benchmarks?.operating_margin?.median;return colorOpm(opm)+benchmarkBadge(opm,bench);}},
-            {label:'EPS（最新）',        fn:d=>{const v=latest(d.eps);return v!=null?`${fmtNum(v,1)}円`:'<span class="badge-na">-</span>';}},
-            {label:'ROE（最新）',        fn:d=>{const v=latest(d.roe);const bench=d.industry_benchmarks?.roe?.median;return colorRoe(v)+benchmarkBadge(v,bench);}},
-            {label:'自己資本比率',fn:d=>colorEq(latest(d.equity_ratio))},
+            {label:'売上高',tip:'企業が本業で得た総収入。規模感と成長トレンドを確認する基本指標。',            fn:d=>valueWithTrend(latest(d.revenue),d.revenue,fmtOku)},
+            {label:'営業利益',tip:'売上から製造費・販管費を引いた本業の利益。収益力の核心。',           fn:d=>valueWithTrend(latest(d.operating_income),d.operating_income,fmtOku)},
+            {label:'営業利益率',tip:'売上高に占める営業利益の割合。15%超で高収益、5%未満は要注意。',  fn:d=>{const r=latest(d.revenue),o=latest(d.operating_income);if(!r||!o)return'<span class="badge-na">-</span>';const opm=o/r*100;const bench=d.industry_benchmarks?.operating_margin?.median;return colorOpm(opm)+benchmarkBadge(opm,bench);}},
+            {label:'EPS（最新）',tip:'1株当たり純利益。株主への還元余力や企業の稼ぐ力を示す。',        fn:d=>{const v=latest(d.eps);return v!=null?`${fmtNum(v,1)}円`:'<span class="badge-na">-</span>';}},
+            {label:'ROE（最新）',tip:'自己資本に対する純利益の割合（株主資本利益率）。15%超が優秀とされる。',        fn:d=>{const v=latest(d.roe);const bench=d.industry_benchmarks?.roe?.median;return colorRoe(v)+benchmarkBadge(v,bench);}},
+            {label:'自己資本比率',tip:'総資産に占める自己資本の割合。50%超で財務健全、30%未満は要注意。',fn:d=>colorEq(latest(d.equity_ratio))},
             {label:'── 規模・FCF ──',separator:true},
-            {label:'時価総額',fn:d=>{
+            {label:'時価総額',tip:'株価×発行済株式数。企業規模の目安。大型（1兆円超）・中型・小型に分類。',fn:d=>{
                 if(d.market_cap_oku==null)return'<span class="badge-na">-</span>';
                 const sc=d.market_cap_size==='大型'?'#6366f1':d.market_cap_size==='中型'?'#0ea5e9':'#94a3b8';
                 return`${fmtNum(d.market_cap_oku,0)}億 <span style="font-size:0.7rem;padding:1px 5px;border-radius:4px;background:${sc}22;color:${sc}">${d.market_cap_size||''}</span>`;
             }},
-            {label:'FCF（最新）',fn:d=>{const v=latest(d.fcf);if(v==null)return'<span class="badge-na">-</span>';const c=v>=0?'badge-good':'badge-bad';return`<span class="${c}">${fmtOku(v)}</span>`;}},
-            {label:'FCF利回り',fn:d=>colorFcfYield(d.fcf_yield)},
+            {label:'FCF（最新）',tip:'営業CF－設備投資。プラスなら事業で現金を生み出せている証拠。',fn:d=>{const v=latest(d.fcf);if(v==null)return'<span class="badge-na">-</span>';const c=v>=0?'badge-good':'badge-bad';return`<span class="${c}">${fmtOku(v)}</span>`;}},
+            {label:'FCF利回り',tip:'時価総額に対するFCFの割合。高いほど実質的な稼ぎが割安であることを示す。',fn:d=>colorFcfYield(d.fcf_yield)},
             {label:'── バリュエーション ──',separator:true},
-            {label:'PER',               fn:d=>colorPer(d.per)},
-            {label:'PBR',               fn:d=>d.pbr!=null?`${d.pbr.toFixed(2)}倍`:'<span class="badge-na">-</span>'},
-            {label:'配当利回り',          fn:d=>d.dividend_yield!=null?`${d.dividend_yield.toFixed(2)}%`:'<span class="badge-na">-</span>'},
+            {label:'PER',tip:'株価収益率（株価÷EPS）。何年分の利益で株価を回収できるかを示す。25倍超は割高傾向。',               fn:d=>colorPer(d.per)},
+            {label:'PBR',tip:'株価純資産倍率（株価÷1株純資産）。1倍未満は解散価値以下とされる。',               fn:d=>d.pbr!=null?`${d.pbr.toFixed(2)}倍`:'<span class="badge-na">-</span>'},
+            {label:'配当利回り',tip:'株価に対する年間配当金の割合。高いほど配当収入が多いが、業績悪化による高騰に注意。',          fn:d=>d.dividend_yield!=null?`${d.dividend_yield.toFixed(2)}%`:'<span class="badge-na">-</span>'},
             {label:'── テクニカル ──',separator:true},
-            {label:'52週 高値/安値',fn:d=>{
+            {label:'52週 高値/安値',tip:'過去1年間の最高値と最安値。現在株価の相対的な位置感を把握するための目安。',fn:d=>{
                 if(d.week52_high==null)return'<span class="badge-na">-</span>';
                 const pct=d.pct_from_52w_high;
                 const pc=pct!=null&&pct<=-30?'var(--success-color)':pct!=null&&pct<=-15?'var(--warning-color)':'var(--text-secondary)';
                 const ps=pct!=null?`高値比 <span style="color:${pc}">${pct.toFixed(1)}%</span>`:'';
                 return`${fmtNum(d.week52_high,0)} / ${fmtNum(d.week52_low,0)}<br><small>${ps}</small>`;
             }},
-            {label:'移動平均',fn:d=>{
+            {label:'移動平均',tip:'過去25・75・200日の平均株価。現在株価がこれより上なら上昇トレンド、下なら下降トレンドの目安。',fn:d=>{
                 const p=d.price;
                 return[['25',d.ma25],['75',d.ma75],['200',d.ma200]].map(([n,ma])=>{
                     if(ma==null||p==null)return`<span style="color:var(--text-secondary);font-size:0.75rem">MA${n}?</span>`;
@@ -1444,7 +1496,7 @@ table.hub-table {
                 html+=`<tr><td colspan="${codes.length+1}" style="color:var(--text-secondary);font-size:0.74rem;padding:6px 12px;border-bottom:1px solid var(--border-light);">${row.label}</td></tr>`;
                 return;
             }
-            html+=`<tr><td>${row.label}</td>`;
+            html+=`<tr><td>${labelHtml(row)}</td>`;
             codes.forEach(c=>{html+=`<td>${row.fn(stocksData[c])}</td>`;});
             html+='</tr>';
         });
@@ -1684,15 +1736,20 @@ table.hub-table {
             th+=`<th><span class="legend-dot" style="background:${d._color};"></span>${d.stock_name||c}</th>`;
         });
         thead.innerHTML=th+'</tr>';
+        function cagrLabelHtml(row){
+            if(!row.tip) return row.label;
+            return `<span class="metric-hint">${row.label}<i class="tip-icon">?</i><span class="tip-box">${row.tip}</span></span>`;
+        }
+
         const cagrRows=[
-            {label:'売上CAGR',      key:'revenue'},
-            {label:'営業利益CAGR',   key:'operating_income'},
-            {label:'EPS CAGR',      key:'eps'},
-            {label:'営業CF CAGR',   key:'operating_cf'},
+            {label:'売上CAGR',      tip:'売上高の年平均成長率。複数年の成長ペースを1つの数値で表す。',key:'revenue'},
+            {label:'営業利益CAGR',   tip:'営業利益の年平均成長率。売上成長より速ければ収益性改善の証拠。',key:'operating_income'},
+            {label:'EPS CAGR',      tip:'1株利益の年平均成長率。株主価値の拡大ペースを示す。',key:'eps'},
+            {label:'営業CF CAGR',   tip:'営業キャッシュフローの年平均成長率。実際に稼ぐ現金の増加速度。',key:'operating_cf'},
         ];
         let html='';
         cagrRows.forEach(row=>{
-            html+=`<tr><td>${row.label}</td>`;
+            html+=`<tr><td>${cagrLabelHtml(row)}</td>`;
             codes.forEach(c=>{html+=`<td>${colorCagr(calcCagr(stocksData[c][row.key]))}</td>`;});
             html+='</tr>';
         });
@@ -2282,6 +2339,19 @@ table.hub-table {
     }
 
 })();
+
+// ============================================================
+// 指標ツールチップ — モバイルタップで開閉
+// ============================================================
+document.addEventListener('click', function(e) {
+    const hint = e.target.closest('.metric-hint');
+    document.querySelectorAll('.metric-hint.tip-open').forEach(el => {
+        if (el !== hint) el.classList.remove('tip-open');
+    });
+    if (hint) {
+        hint.classList.toggle('tip-open');
+    }
+});
 
 // ============================================================
 // スピードダイヤル
