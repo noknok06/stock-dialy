@@ -804,7 +804,6 @@ table.hub-table {
 
 /* ── 指標ツールチップ ── */
 .metric-hint {
-    position: relative;
     display: inline-flex;
     align-items: center;
     gap: 4px;
@@ -824,11 +823,9 @@ table.hub-table {
     flex-shrink: 0;
     line-height: 1;
 }
-.metric-hint .tip-box {
+#metric-tooltip {
     display: none;
-    position: absolute;
-    left: 0;
-    top: calc(100% + 6px);
+    position: fixed;
     background: var(--bg-secondary);
     color: var(--text-primary);
     border: 1px solid var(--border-primary);
@@ -837,21 +834,17 @@ table.hub-table {
     font-size: 0.72rem;
     line-height: 1.6;
     white-space: normal;
-    min-width: 200px;
     max-width: 260px;
-    z-index: 200;
+    z-index: 9999;
     box-shadow: var(--shadow-md);
     pointer-events: none;
     font-weight: 400;
 }
-@media (hover: hover) {
-    .metric-hint:hover .tip-box { display: block; }
-}
-.metric-hint.tip-open .tip-box { display: block; }
 </style>
 {% endblock %}
 
 {% block content %}
+<div id="metric-tooltip"></div>
 <div class="hub-container">
 
     <!-- ヘッダー -->
@@ -1450,7 +1443,7 @@ table.hub-table {
 
         function labelHtml(row){
             if(!row.tip) return row.label;
-            return `<span class="metric-hint">${row.label}<i class="tip-icon">?</i><span class="tip-box">${row.tip}</span></span>`;
+            return `<span class="metric-hint" data-tip="${row.tip}">${row.label}<i class="tip-icon">?</i></span>`;
         }
 
         const rows=[
@@ -1738,7 +1731,7 @@ table.hub-table {
         thead.innerHTML=th+'</tr>';
         function cagrLabelHtml(row){
             if(!row.tip) return row.label;
-            return `<span class="metric-hint">${row.label}<i class="tip-icon">?</i><span class="tip-box">${row.tip}</span></span>`;
+            return `<span class="metric-hint" data-tip="${row.tip}">${row.label}<i class="tip-icon">?</i></span>`;
         }
 
         const cagrRows=[
@@ -2341,17 +2334,78 @@ table.hub-table {
 })();
 
 // ============================================================
-// 指標ツールチップ — モバイルタップで開閉
+// 指標ツールチップ — hover (PC) / tap (mobile)
 // ============================================================
-document.addEventListener('click', function(e) {
-    const hint = e.target.closest('.metric-hint');
-    document.querySelectorAll('.metric-hint.tip-open').forEach(el => {
-        if (el !== hint) el.classList.remove('tip-open');
-    });
-    if (hint) {
-        hint.classList.toggle('tip-open');
+(function(){
+    const tip = document.getElementById('metric-tooltip');
+    let activeHint = null;
+
+    function showTip(hint) {
+        const text = hint.dataset.tip;
+        if (!text) return;
+        tip.textContent = text;
+        tip.style.display = 'block';
+        positionTip(hint);
+        activeHint = hint;
     }
-});
+
+    function hideTip() {
+        tip.style.display = 'none';
+        activeHint = null;
+    }
+
+    function positionTip(hint) {
+        const rect = hint.getBoundingClientRect();
+        const margin = 8;
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const tipW = Math.min(260, vw - margin * 2);
+
+        tip.style.maxWidth = tipW + 'px';
+        tip.style.display = 'block';
+
+        const tipH = tip.offsetHeight;
+
+        // 左右: 要素左端基準、右端はみ出し防止
+        let left = rect.left;
+        if (left + tipW > vw - margin) left = vw - tipW - margin;
+        if (left < margin) left = margin;
+
+        // 上下: 下に収まれば下、なければ上
+        let top;
+        if (rect.bottom + tipH + margin <= vh) {
+            top = rect.bottom + 6;
+        } else {
+            top = rect.top - tipH - 6;
+        }
+
+        tip.style.left = left + 'px';
+        tip.style.top = top + 'px';
+    }
+
+    // PC: hover
+    document.addEventListener('mouseover', function(e) {
+        const hint = e.target.closest('.metric-hint');
+        if (hint) showTip(hint);
+    });
+    document.addEventListener('mouseout', function(e) {
+        if (e.target.closest('.metric-hint')) hideTip();
+    });
+
+    // Mobile: tap
+    document.addEventListener('click', function(e) {
+        const hint = e.target.closest('.metric-hint');
+        if (hint) {
+            if (activeHint === hint) {
+                hideTip();
+            } else {
+                showTip(hint);
+            }
+        } else {
+            hideTip();
+        }
+    });
+})();
 
 // ============================================================
 // スピードダイヤル
