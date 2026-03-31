@@ -2339,6 +2339,8 @@ table.hub-table {
 (function(){
     const tip = document.getElementById('metric-tooltip');
     let activeHint = null;
+    // pointer:fine = マウス/トラックパッド、hover:hover = ホバー対応
+    const hasHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 
     function showTip(hint) {
         const text = hint.dataset.tip;
@@ -2362,7 +2364,6 @@ table.hub-table {
         const tipW = Math.min(260, vw - margin * 2);
 
         tip.style.maxWidth = tipW + 'px';
-        tip.style.display = 'block';
 
         const tipH = tip.offsetHeight;
 
@@ -2383,28 +2384,31 @@ table.hub-table {
         tip.style.top = top + 'px';
     }
 
-    // PC: hover
-    document.addEventListener('mouseover', function(e) {
-        const hint = e.target.closest('.metric-hint');
-        if (hint) showTip(hint);
-    });
-    document.addEventListener('mouseout', function(e) {
-        if (e.target.closest('.metric-hint')) hideTip();
-    });
-
-    // Mobile: tap
-    document.addEventListener('click', function(e) {
-        const hint = e.target.closest('.metric-hint');
-        if (hint) {
-            if (activeHint === hint) {
-                hideTip();
+    if (hasHover) {
+        // PC（マウス）: hover で表示
+        document.addEventListener('mouseover', function(e) {
+            const hint = e.target.closest('.metric-hint');
+            if (hint) showTip(hint);
+        });
+        document.addEventListener('mouseout', function(e) {
+            if (e.target.closest('.metric-hint')) hideTip();
+        });
+    } else {
+        // モバイル（タッチ）: tap で開閉
+        // click のみ使用し、合成 mouseover/mouseout によるチラつきを回避
+        document.addEventListener('click', function(e) {
+            const hint = e.target.closest('.metric-hint');
+            if (hint) {
+                if (activeHint === hint) {
+                    hideTip();
+                } else {
+                    showTip(hint);
+                }
             } else {
-                showTip(hint);
+                hideTip();
             }
-        } else {
-            hideTip();
-        }
-    });
+        });
+    }
 })();
 
 // ============================================================
