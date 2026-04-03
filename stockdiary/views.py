@@ -682,20 +682,6 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
 
         return context
 
-@login_required
-@require_GET
-def diary_modal_view(request, pk):
-    """日記のモーダルプレビュー用部分テンプレートを返す"""
-    diary = get_object_or_404(StockDiary, pk=pk, user=request.user)
-    notes = diary.notes.all().order_by('-date')[:3]
-    mention_map = get_mention_map(request.user)
-    return render(request, 'stockdiary/partials/diary_modal_content.html', {
-        'diary': diary,
-        'notes': notes,
-        'mention_map': mention_map,
-    })
-
-
 class StockDiaryCreateView(LoginRequiredMixin, CreateView):
     model = StockDiary
     form_class = StockDiaryForm

@@ -3478,21 +3478,45 @@ window.showReportModal = function(el) {
 })();
 </script>
 
-<!-- 日記プレビューモーダル -->
-<div class="modal fade" id="diaryPreviewModal" tabindex="-1" aria-labelledby="diaryPreviewModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width: min(520px, 94vw);">
-    <div class="modal-content">
-      <div class="modal-header py-2 px-3">
-        <h6 class="modal-title mb-0" id="diaryPreviewModalLabel">
-          <i class="bi bi-journal-text me-1"></i>日記プレビュー
-        </h6>
-        <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="modal" aria-label="閉じる"></button>
-      </div>
-      <div class="modal-body p-3" id="diaryPreviewModalBody">
-        <div class="text-center py-4">
-          <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
-          <p class="mt-2 text-muted small mb-0">読み込み中...</p>
+<!-- Web記事閲覧モーダル -->
+<div class="modal fade" id="webArticleModal" tabindex="-1" aria-labelledby="webArticleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width: min(900px, 96vw); height: 90vh; margin: 5vh auto;">
+    <div class="modal-content" style="height: 100%;">
+      <div class="modal-header py-2 px-3" style="min-height:0; flex-shrink:0;">
+        <div class="d-flex align-items-center gap-2 overflow-hidden flex-grow-1 me-2">
+          <i class="bi bi-globe2 text-muted flex-shrink-0" style="font-size:0.9rem;"></i>
+          <span id="webArticleModalUrl" class="text-muted text-truncate" style="font-size:0.72rem;"></span>
         </div>
+        <div class="d-flex align-items-center gap-1 flex-shrink-0">
+          <a id="webArticleModalOpenBtn" href="#" target="_blank" rel="noopener noreferrer"
+             class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:0.75rem;">
+            <i class="bi bi-box-arrow-up-right me-1"></i>ブラウザで開く
+          </a>
+          <button type="button" class="btn-close btn-close-sm ms-1" data-bs-dismiss="modal" aria-label="閉じる"></button>
+        </div>
+      </div>
+      <div class="modal-body p-0" style="flex:1; overflow:hidden; position:relative;">
+        <!-- ローディング表示 -->
+        <div id="webArticleModalLoading"
+             style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg-100,#fff);z-index:2;">
+          <div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div>
+          <p class="text-muted small mb-0">記事を読み込んでいます...</p>
+        </div>
+        <!-- フレームブロック時フォールバック -->
+        <div id="webArticleModalBlocked"
+             style="position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:0.75rem;padding:1.5rem;text-align:center;background:var(--bg-100,#fff);z-index:2;">
+          <i class="bi bi-shield-x" style="font-size:2rem;color:var(--text-secondary,#888);"></i>
+          <div class="text-muted small">このサイトはページ内での表示をブロックしています</div>
+          <a id="webArticleModalBlockedBtn" href="#" target="_blank" rel="noopener noreferrer"
+             class="btn btn-sm btn-primary">
+            <i class="bi bi-box-arrow-up-right me-1"></i>ブラウザで開く
+          </a>
+        </div>
+        <iframe id="webArticleModalFrame"
+                src="about:blank"
+                style="width:100%;height:100%;border:none;display:block;"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+                title="Web記事プレビュー"></iframe>
       </div>
     </div>
   </div>
@@ -3500,87 +3524,93 @@ window.showReportModal = function(el) {
 
 <script>
 (function () {
-  var _diaryPreviewModal = null;
+  var _webArticleModal = null;
 
-  function getDiaryPreviewModal() {
-    if (!_diaryPreviewModal) {
-      _diaryPreviewModal = new bootstrap.Modal(document.getElementById('diaryPreviewModal'));
+  function getWebArticleModal() {
+    if (!_webArticleModal) {
+      _webArticleModal = new bootstrap.Modal(document.getElementById('webArticleModal'));
     }
-    return _diaryPreviewModal;
+    return _webArticleModal;
   }
 
-  function showDiaryPreviewModal(diaryId) {
-    var modalBody = document.getElementById('diaryPreviewModalBody');
-    modalBody.innerHTML =
-      '<div class="text-center py-4">' +
-      '<div class="spinner-border spinner-border-sm text-primary" role="status"></div>' +
-      '<p class="mt-2 text-muted small mb-0">読み込み中...</p>' +
-      '</div>';
+  function showWebArticleModal(url) {
+    var frame   = document.getElementById('webArticleModalFrame');
+    var loading = document.getElementById('webArticleModalLoading');
+    var blocked = document.getElementById('webArticleModalBlocked');
+    var urlEl   = document.getElementById('webArticleModalUrl');
+    var openBtn = document.getElementById('webArticleModalOpenBtn');
+    var blockedBtn = document.getElementById('webArticleModalBlockedBtn');
 
-    getDiaryPreviewModal().show();
+    // URLを表示・ボタンにセット
+    urlEl.textContent = url;
+    openBtn.href = url;
+    blockedBtn.href = url;
 
-    fetch('/stockdiary/' + diaryId + '/modal/', {
-      headers: { 'X-Requested-With': 'XMLHttpRequest' },
-      credentials: 'same-origin'
-    })
-      .then(function (res) {
-        if (res.status === 404) throw new Error('not_found');
-        if (!res.ok) throw new Error('error');
-        return res.text();
-      })
-      .then(function (html) {
-        modalBody.innerHTML = html;
-      })
-      .catch(function (err) {
-        if (err.message === 'not_found') {
-          modalBody.innerHTML =
-            '<div class="text-center py-3 text-muted">' +
-            '<i class="bi bi-journal-x" style="font-size:1.5rem;"></i>' +
-            '<p class="mt-2 small mb-0">この日記は見つかりませんでした</p>' +
-            '</div>';
-        } else {
-          modalBody.innerHTML =
-            '<div class="text-center py-3 text-danger">' +
-            '<i class="bi bi-exclamation-circle" style="font-size:1.5rem;"></i>' +
-            '<p class="mt-2 small mb-0">読み込みに失敗しました</p>' +
-            '</div>';
+    // ローディング表示にリセット
+    loading.style.display = 'flex';
+    blocked.style.display = 'none';
+    frame.src = 'about:blank';
+
+    getWebArticleModal().show();
+
+    // iframe にURLをセット
+    frame.src = url;
+
+    // 読み込み完了 or ブロック検出
+    frame.onload = function () {
+      // cross-origin の場合 contentDocument へのアクセスは失敗するが、
+      // それは正常にロードされた証拠。about:blank の場合は無視。
+      if (frame.src === 'about:blank') return;
+      try {
+        // 同一オリジンなら .location.href が取れる（通常ありえない）
+        var loc = frame.contentWindow.location.href;
+        if (loc === 'about:blank') {
+          // X-Frame-Options でブロックされ about:blank に戻った
+          loading.style.display = 'none';
+          blocked.style.display = 'flex';
+          return;
         }
-      });
+      } catch (e) {
+        // cross-origin SecurityError → 正常にロードされている
+      }
+      loading.style.display = 'none';
+    };
+
+    frame.onerror = function () {
+      loading.style.display = 'none';
+      blocked.style.display = 'flex';
+    };
   }
 
-  function initDiaryModalLinks() {
-    var diaryUrlPattern = /\/stockdiary\/(\d+)\/?$/;
+  // モーダルが閉じたらiframeをリセット（バックグラウンド再生などを止める）
+  document.getElementById('webArticleModal').addEventListener('hidden.bs.modal', function () {
+    var frame = document.getElementById('webArticleModalFrame');
+    frame.src = 'about:blank';
+  });
 
+  function initWebArticleLinks() {
     document.addEventListener('click', function (e) {
       var link = e.target.closest('a');
       if (!link) return;
 
-      // .markdown-content または .related-diary-item 内のリンクのみ対象
-      var inMarkdown = link.closest('.markdown-content');
-      var inRelated  = link.closest('.related-diary-item');
-      if (!inMarkdown && !inRelated) return;
+      // .markdown-content 内のリンクのみ対象
+      if (!link.closest('.markdown-content')) return;
 
       var href = link.getAttribute('href');
       if (!href) return;
 
-      // 内部の日記URLに一致するかチェック
-      var match = href.match(diaryUrlPattern);
-      if (!match) return;
-
-      // 現在の日記自身へのリンクは通常遷移
-      var currentPk = '{{ diary.pk }}';
-      if (match[1] === currentPk) return;
+      // 外部URL（http / https）のみインターセプト
+      if (!/^https?:\/\//i.test(href)) return;
 
       e.preventDefault();
-      showDiaryPreviewModal(match[1]);
+      showWebArticleModal(href);
     });
   }
 
-  // DOMContentLoaded または即時実行
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initDiaryModalLinks);
+    document.addEventListener('DOMContentLoaded', initWebArticleLinks);
   } else {
-    initDiaryModalLinks();
+    initWebArticleLinks();
   }
 })();
 </script>
