@@ -572,6 +572,9 @@ def render_markdown(value):
     # リスト・テーブル前の空行を補完（Python-Markdown の要件を満たすため）
     value = _ensure_block_spacing(value)
 
+    # 裸のURLをMarkdownオートリンクに変換
+    value = _linkify_bare_urls(value)
+
     # MarkdownをHTMLに変換
     html = markdown.markdown(
         value,
@@ -605,6 +608,27 @@ def render_markdown(value):
 
 
 _MENTION_PATTERN = re.compile(r'[（(](\d{4,6}|\d{3,4}[A-Z]|[A-Z]{2,6})[）)]')
+
+# 裸のURL（Markdownリンク構文・角括弧外のhttp/https）を検出
+_BARE_URL_PATTERN = re.compile(
+    r'(?<!\()'           # すでに (url) のMarkdownリンク内ではない
+    r'(?<!<)'            # すでに <url> のオートリンクではない
+    r'(?<!\]:\s)'        # 参照リンク定義ではない
+    r'(https?://[^\s\)\]<>"\'\u3000-\u303f\uff00-\uffef]+)',
+    re.IGNORECASE,
+)
+
+_TRAILING_PUNCT = re.compile(r'[.,!?;:。、！？；：]+$')
+
+
+def _linkify_bare_urls(text):
+    """プレーンURLを <URL> 形式のMarkdownオートリンクに変換する。
+    すでにMarkdownリンク構文内にあるURLは変換しない。"""
+    def replace(m):
+        url = _TRAILING_PUNCT.sub('', m.group(1))  # 末尾の句読点を除去
+        trailing = m.group(1)[len(url):]            # 除いた句読点を後ろに戻す
+        return '<' + url + '>' + trailing
+    return _BARE_URL_PATTERN.sub(replace, text)
 
 
 def _linkify_mentions(text, mention_map):
