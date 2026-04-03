@@ -31,6 +31,9 @@ from .utils import (
 import json
 import logging
 import traceback
+import requests
+from bs4 import BeautifulSoup
+from urllib.parse import urlparse, urljoin
 
 from pywebpush import webpush, WebPushException
 from decimal import Decimal, InvalidOperation
@@ -982,3 +985,74 @@ def diary_detail_graph_data(request, diary_id):
     except Exception as e:
         logger.error("diary_detail_graph_data error: %s", e, exc_info=True)
         return JsonResponse({'success': False, 'error': 'グラフデータの取得に失敗しました'}, status=500)
+
+
+@login_required
+@require_GET
+def link_preview(request):
+    """外部URLのOGPメタデータを取得してプレビュー情報をJSONで返す。"""
+    url = request.GET.get('url', '').strip()
+
+    # URLバリデーション（http/httpsのみ許可）
+    try:
+        parsed = urlparse(url)
+        if parsed.scheme not in ('http', 'https') or not parsed.netloc:
+            return JsonResponse({'error': 'invalid_url'}, status=400)
+    except Exception:
+        return JsonResponse({'error': 'invalid_url'}, status=400)
+
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (compatible; Kabulog-LinkPreview/1.0)',
+        'Accept': 'text/html,application/xhtml+xml',
+        'Accept-Language': 'ja,en;q=0.9',
+    }
+
+    try:
+        resp = requests.get(url, headers=headers, timeout=8, allow_redirects=True)
+        resp.raise_for_status()
+        content_type = resp.headers.get('Content-Type', '')
+        if 'text/html' not in content_type:
+            return JsonResponse({'error': 'not_html'}, status=422)
+    except requests.exceptions.Timeout:
+        return JsonResponse({'error': 'timeout'}, status=504)
+    except Exception:
+        return JsonResponse({'error': 'fetch_failed'}, status=502)
+
+    try:
+        soup = BeautifulSoup(resp.content, 'lxml')
+    except Exception:
+        soup = BeautifulSoup(resp.content, 'html.parser')
+
+    def og(prop):
+        tag = soup.find('meta', property=f'og:{prop}')
+        if tag:
+            return tag.get('content', '').strip()
+        return ''
+
+    def meta_name(name):
+        tag = soup.find('meta', attrs={'name': name})
+        if tag:
+            return tag.get('content', '').strip()
+        return ''
+
+    title = og('title') or (soup.title.string.strip() if soup.title and soup.title.string else '') or ''
+    description = og('description') or meta_name('description') or ''
+    image = og('image') or ''
+    site_name = og('site_name') or parsed.netloc
+
+    # og:image が相対URLの場合は絶対URLに変換
+    if image and not image.startswith(('http://', 'https://')):
+        image = urljoin(url, image)
+
+    # 文字数制限
+    title = title[:200]
+    description = description[:500]
+    site_name = site_name[:100]
+
+    return JsonResponse({
+        'title': title,
+        'description': description,
+        'image': image,
+        'site_name': site_name,
+        'url': url,
+    })
