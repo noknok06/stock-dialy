@@ -3478,45 +3478,22 @@ window.showReportModal = function(el) {
 })();
 </script>
 
-<!-- Web記事閲覧モーダル -->
+<!-- Web記事プレビューモーダル -->
 <div class="modal fade" id="webArticleModal" tabindex="-1" aria-labelledby="webArticleModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered" style="max-width: min(900px, 96vw); height: 90vh; margin: 5vh auto;">
-    <div class="modal-content" style="height: 100%;">
-      <div class="modal-header py-2 px-3" style="min-height:0; flex-shrink:0;">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width: min(520px, 94vw);">
+    <div class="modal-content">
+      <div class="modal-header py-2 px-3">
         <div class="d-flex align-items-center gap-2 overflow-hidden flex-grow-1 me-2">
-          <i class="bi bi-globe2 text-muted flex-shrink-0" style="font-size:0.9rem;"></i>
-          <span id="webArticleModalUrl" class="text-muted text-truncate" style="font-size:0.72rem;"></span>
+          <i class="bi bi-globe2 text-muted flex-shrink-0" style="font-size:0.85rem;"></i>
+          <span id="webArticleModalSiteName" class="text-muted text-truncate fw-semibold" style="font-size:0.8rem;"></span>
         </div>
-        <div class="d-flex align-items-center gap-1 flex-shrink-0">
-          <a id="webArticleModalOpenBtn" href="#" target="_blank" rel="noopener noreferrer"
-             class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:0.75rem;">
-            <i class="bi bi-box-arrow-up-right me-1"></i>ブラウザで開く
-          </a>
-          <button type="button" class="btn-close btn-close-sm ms-1" data-bs-dismiss="modal" aria-label="閉じる"></button>
-        </div>
+        <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="modal" aria-label="閉じる"></button>
       </div>
-      <div class="modal-body p-0" style="flex:1; overflow:hidden; position:relative;">
-        <!-- ローディング表示 -->
-        <div id="webArticleModalLoading"
-             style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg-100,#fff);z-index:2;">
-          <div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div>
-          <p class="text-muted small mb-0">記事を読み込んでいます...</p>
+      <div class="modal-body p-3" id="webArticleModalBody">
+        <div class="text-center py-4">
+          <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+          <p class="mt-2 text-muted small mb-0">記事情報を取得しています...</p>
         </div>
-        <!-- フレームブロック時フォールバック -->
-        <div id="webArticleModalBlocked"
-             style="position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:0.75rem;padding:1.5rem;text-align:center;background:var(--bg-100,#fff);z-index:2;">
-          <i class="bi bi-shield-x" style="font-size:2rem;color:var(--text-secondary,#888);"></i>
-          <div class="text-muted small">このサイトはページ内での表示をブロックしています</div>
-          <a id="webArticleModalBlockedBtn" href="#" target="_blank" rel="noopener noreferrer"
-             class="btn btn-sm btn-primary">
-            <i class="bi bi-box-arrow-up-right me-1"></i>ブラウザで開く
-          </a>
-        </div>
-        <iframe id="webArticleModalFrame"
-                src="about:blank"
-                style="width:100%;height:100%;border:none;display:block;"
-                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
-                title="Web記事プレビュー"></iframe>
       </div>
     </div>
   </div>
@@ -3533,60 +3510,91 @@ window.showReportModal = function(el) {
     return _webArticleModal;
   }
 
+  function renderPreviewCard(data) {
+    var html = '';
+
+    // OG画像
+    if (data.image) {
+      html += '<div style="margin:-1rem -1rem 0.75rem;border-radius:0;overflow:hidden;max-height:180px;">'
+            + '<img src="' + _esc(data.image) + '" alt="" loading="lazy"'
+            + ' style="width:100%;height:180px;object-fit:cover;"'
+            + ' onerror="this.parentElement.style.display=\'none\'">'
+            + '</div>';
+    }
+
+    // タイトル
+    if (data.title) {
+      html += '<div class="fw-bold mb-1" style="font-size:0.95rem;line-height:1.4;">'
+            + _esc(data.title)
+            + '</div>';
+    }
+
+    // 説明文
+    if (data.description) {
+      html += '<div class="text-muted mb-2" style="font-size:0.8rem;line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;">'
+            + _esc(data.description)
+            + '</div>';
+    }
+
+    // URL表示
+    html += '<div class="text-muted text-truncate mb-3" style="font-size:0.72rem;">'
+          + _esc(data.url)
+          + '</div>';
+
+    // ボタン
+    html += '<a href="' + _esc(data.url) + '" target="_blank" rel="noopener noreferrer"'
+          + ' class="btn btn-primary btn-sm w-100">'
+          + '<i class="bi bi-box-arrow-up-right me-1"></i>記事を開く'
+          + '</a>';
+
+    return html;
+  }
+
+  function _esc(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
   function showWebArticleModal(url) {
-    var frame   = document.getElementById('webArticleModalFrame');
-    var loading = document.getElementById('webArticleModalLoading');
-    var blocked = document.getElementById('webArticleModalBlocked');
-    var urlEl   = document.getElementById('webArticleModalUrl');
-    var openBtn = document.getElementById('webArticleModalOpenBtn');
-    var blockedBtn = document.getElementById('webArticleModalBlockedBtn');
+    var body     = document.getElementById('webArticleModalBody');
+    var siteName = document.getElementById('webArticleModalSiteName');
 
-    // URLを表示・ボタンにセット
-    urlEl.textContent = url;
-    openBtn.href = url;
-    blockedBtn.href = url;
-
-    // ローディング表示にリセット
-    loading.style.display = 'flex';
-    blocked.style.display = 'none';
-    frame.src = 'about:blank';
+    siteName.textContent = '';
+    body.innerHTML =
+      '<div class="text-center py-4">'
+      + '<div class="spinner-border spinner-border-sm text-primary" role="status"></div>'
+      + '<p class="mt-2 text-muted small mb-0">記事情報を取得しています...</p>'
+      + '</div>';
 
     getWebArticleModal().show();
 
-    // iframe にURLをセット
-    frame.src = url;
-
-    // 読み込み完了 or ブロック検出
-    frame.onload = function () {
-      // cross-origin の場合 contentDocument へのアクセスは失敗するが、
-      // それは正常にロードされた証拠。about:blank の場合は無視。
-      if (frame.src === 'about:blank') return;
-      try {
-        // 同一オリジンなら .location.href が取れる（通常ありえない）
-        var loc = frame.contentWindow.location.href;
-        if (loc === 'about:blank') {
-          // X-Frame-Options でブロックされ about:blank に戻った
-          loading.style.display = 'none';
-          blocked.style.display = 'flex';
-          return;
-        }
-      } catch (e) {
-        // cross-origin SecurityError → 正常にロードされている
-      }
-      loading.style.display = 'none';
-    };
-
-    frame.onerror = function () {
-      loading.style.display = 'none';
-      blocked.style.display = 'flex';
-    };
+    fetch('/stockdiary/api/link-preview/?url=' + encodeURIComponent(url), {
+      credentials: 'same-origin'
+    })
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        if (data.error) throw new Error(data.error);
+        siteName.textContent = data.site_name || '';
+        body.innerHTML = renderPreviewCard(data);
+      })
+      .catch(function () {
+        // フォールバック：プレビュー取得失敗でも記事へのリンクは提供
+        siteName.textContent = '';
+        body.innerHTML =
+          '<div class="text-center py-3 text-muted mb-3">'
+          + '<i class="bi bi-link-45deg" style="font-size:1.5rem;"></i>'
+          + '<p class="mt-1 small mb-0">プレビューを取得できませんでした</p>'
+          + '</div>'
+          + '<div class="text-muted text-truncate mb-3" style="font-size:0.75rem;">' + _esc(url) + '</div>'
+          + '<a href="' + _esc(url) + '" target="_blank" rel="noopener noreferrer"'
+          + ' class="btn btn-primary btn-sm w-100">'
+          + '<i class="bi bi-box-arrow-up-right me-1"></i>記事を開く'
+          + '</a>';
+      });
   }
-
-  // モーダルが閉じたらiframeをリセット（バックグラウンド再生などを止める）
-  document.getElementById('webArticleModal').addEventListener('hidden.bs.modal', function () {
-    var frame = document.getElementById('webArticleModalFrame');
-    frame.src = 'about:blank';
-  });
 
   function initWebArticleLinks() {
     document.addEventListener('click', function (e) {

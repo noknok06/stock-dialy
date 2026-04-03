@@ -94,6 +94,9 @@ path('api/create/', api.api_create_diary, name='api_create'),
     # ハッシュタグAPI
     path('api/hashtags/', api_views.get_hashtags, name='api_hashtags'),
 
+    # リンクプレビューAPI（OGPメタデータ取得）
+    path('api/link-preview/', api_views.link_preview, name='api_link_preview'),
+
     # ==========================================
     # 関連日記API
     # ==========================================
