@@ -16,6 +16,7 @@ urlpatterns = [
     path('', views.StockDiaryListView.as_view(), name='home'),
     path('create/', views.StockDiaryCreateView.as_view(), name='create'),
     path('<int:pk>/', views.StockDiaryDetailView.as_view(), name='detail'),
+    path('<int:pk>/modal/', views.diary_modal_view, name='diary_modal'),
     path('<int:pk>/update/', views.StockDiaryUpdateView.as_view(), name='update'),
     path('<int:pk>/delete/', views.StockDiaryDeleteView.as_view(), name='delete'),
 
