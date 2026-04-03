@@ -3477,4 +3477,111 @@ window.showReportModal = function(el) {
   }
 })();
 </script>
+
+<!-- 日記プレビューモーダル -->
+<div class="modal fade" id="diaryPreviewModal" tabindex="-1" aria-labelledby="diaryPreviewModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width: min(520px, 94vw);">
+    <div class="modal-content">
+      <div class="modal-header py-2 px-3">
+        <h6 class="modal-title mb-0" id="diaryPreviewModalLabel">
+          <i class="bi bi-journal-text me-1"></i>日記プレビュー
+        </h6>
+        <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="modal" aria-label="閉じる"></button>
+      </div>
+      <div class="modal-body p-3" id="diaryPreviewModalBody">
+        <div class="text-center py-4">
+          <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+          <p class="mt-2 text-muted small mb-0">読み込み中...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var _diaryPreviewModal = null;
+
+  function getDiaryPreviewModal() {
+    if (!_diaryPreviewModal) {
+      _diaryPreviewModal = new bootstrap.Modal(document.getElementById('diaryPreviewModal'));
+    }
+    return _diaryPreviewModal;
+  }
+
+  function showDiaryPreviewModal(diaryId) {
+    var modalBody = document.getElementById('diaryPreviewModalBody');
+    modalBody.innerHTML =
+      '<div class="text-center py-4">' +
+      '<div class="spinner-border spinner-border-sm text-primary" role="status"></div>' +
+      '<p class="mt-2 text-muted small mb-0">読み込み中...</p>' +
+      '</div>';
+
+    getDiaryPreviewModal().show();
+
+    fetch('/stockdiary/' + diaryId + '/modal/', {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      credentials: 'same-origin'
+    })
+      .then(function (res) {
+        if (res.status === 404) throw new Error('not_found');
+        if (!res.ok) throw new Error('error');
+        return res.text();
+      })
+      .then(function (html) {
+        modalBody.innerHTML = html;
+      })
+      .catch(function (err) {
+        if (err.message === 'not_found') {
+          modalBody.innerHTML =
+            '<div class="text-center py-3 text-muted">' +
+            '<i class="bi bi-journal-x" style="font-size:1.5rem;"></i>' +
+            '<p class="mt-2 small mb-0">この日記は見つかりませんでした</p>' +
+            '</div>';
+        } else {
+          modalBody.innerHTML =
+            '<div class="text-center py-3 text-danger">' +
+            '<i class="bi bi-exclamation-circle" style="font-size:1.5rem;"></i>' +
+            '<p class="mt-2 small mb-0">読み込みに失敗しました</p>' +
+            '</div>';
+        }
+      });
+  }
+
+  function initDiaryModalLinks() {
+    var diaryUrlPattern = /\/stockdiary\/(\d+)\/?$/;
+
+    document.addEventListener('click', function (e) {
+      var link = e.target.closest('a');
+      if (!link) return;
+
+      // .markdown-content または .related-diary-item 内のリンクのみ対象
+      var inMarkdown = link.closest('.markdown-content');
+      var inRelated  = link.closest('.related-diary-item');
+      if (!inMarkdown && !inRelated) return;
+
+      var href = link.getAttribute('href');
+      if (!href) return;
+
+      // 内部の日記URLに一致するかチェック
+      var match = href.match(diaryUrlPattern);
+      if (!match) return;
+
+      // 現在の日記自身へのリンクは通常遷移
+      var currentPk = '{{ diary.pk }}';
+      if (match[1] === currentPk) return;
+
+      e.preventDefault();
+      showDiaryPreviewModal(match[1]);
+    });
+  }
+
+  // DOMContentLoaded または即時実行
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initDiaryModalLinks);
+  } else {
+    initDiaryModalLinks();
+  }
+})();
+</script>
 {% endblock %}
