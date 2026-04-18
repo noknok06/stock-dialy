@@ -27,6 +27,8 @@ from .models import (
     TDNETReportSection,
 )
 
+from .services.tdnet_report_generator import TDNETReportGeneratorService
+
 
 # ログ設定（最優先で設定）
 logger = logging.getLogger(__name__)
@@ -1681,7 +1683,7 @@ class TDNETReportAdmin(admin.ModelAdmin):
         }),
     )
     
-    actions = ['publish_action', 'unpublish_action', 'archive_action']
+    actions = ['regenerate_action', 'publish_action', 'unpublish_action', 'archive_action']
     
     def title_short(self, obj):
         """タイトル（短縮版）"""
@@ -1749,6 +1751,35 @@ class TDNETReportAdmin(admin.ModelAdmin):
         )
     disclosure_link.short_description = '元開示情報'
     
+    def regenerate_action(self, request, queryset):
+        """再生成アクション（GeminiAPIを再実行してsummary/key_points/sectionsを作り直す）"""
+        service = TDNETReportGeneratorService()
+        success_count = 0
+        errors = []
+
+        for report in queryset:
+            result = service.regenerate_report(report.report_id, request.user)
+            if result['success']:
+                success_count += 1
+            else:
+                errors.append(f"{report.report_id}: {result.get('error', '不明なエラー')}")
+
+        if success_count > 0:
+            self.message_user(
+                request,
+                f'{success_count}件のレポートを再生成しました',
+                level=messages.SUCCESS,
+            )
+        if errors:
+            preview = '; '.join(errors[:3])
+            suffix = f'（他{len(errors) - 3}件）' if len(errors) > 3 else ''
+            self.message_user(
+                request,
+                f'{len(errors)}件で再生成に失敗: {preview}{suffix}',
+                level=messages.ERROR,
+            )
+    regenerate_action.short_description = 'レポート再生成（AI再実行）'
+
     def publish_action(self, request, queryset):
         """公開アクション"""
         count = 0
@@ -1756,7 +1787,7 @@ class TDNETReportAdmin(admin.ModelAdmin):
             if report.status != 'published':
                 report.publish()
                 count += 1
-        
+
         self.message_user(request, f'{count}件のレポートを公開しました')
     publish_action.short_description = 'レポート公開'
     
