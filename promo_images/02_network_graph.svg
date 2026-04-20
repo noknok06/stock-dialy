@@ -1,0 +1,249 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0e1a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#111827;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow1">
+      <feGaussianBlur stdDeviation="6" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="glow2">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="8" stdDeviation="20" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+    <radialGradient id="centerGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:0.15" />
+      <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:0" />
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bgGrad)"/>
+
+  <!-- Subtle radial glow at center -->
+  <ellipse cx="600" cy="340" rx="350" ry="280" fill="url(#centerGlow)"/>
+
+  <!-- Left panel: explanation -->
+  <rect x="30" y="50" width="280" height="530" rx="16" fill="#1e293b" stroke="#334155" stroke-width="1" opacity="0.9"/>
+
+  <!-- Panel header -->
+  <rect x="30" y="50" width="280" height="8" rx="4" fill="url(#accentGrad)"/>
+
+  <text x="170" y="90" text-anchor="middle" font-family="'Noto Sans JP', 'Helvetica Neue', sans-serif" font-size="16" font-weight="700" fill="white">銘柄ネットワーク図</text>
+
+  <text x="50" y="125" font-family="'Noto Sans JP', sans-serif" font-size="12" fill="#94a3b8">投資銘柄の関連性を</text>
+  <text x="50" y="145" font-family="'Noto Sans JP', sans-serif" font-size="12" fill="#94a3b8">ビジュアルで把握</text>
+
+  <!-- Legend -->
+  <text x="50" y="185" font-family="'Noto Sans JP', sans-serif" font-size="11" fill="#64748b">■ ノードの色</text>
+
+  <circle cx="65" cy="210" r="8" fill="#10b981"/>
+  <text x="82" y="215" font-family="'Noto Sans JP', sans-serif" font-size="11" fill="#94a3b8">保有中</text>
+
+  <circle cx="65" cy="235" r="8" fill="#3b82f6"/>
+  <text x="82" y="239" font-family="'Noto Sans JP', sans-serif" font-size="11" fill="#94a3b8">売却済み</text>
+
+  <circle cx="65" cy="260" r="8" fill="#8b5cf6"/>
+  <text x="82" y="264" font-family="'Noto Sans JP', sans-serif" font-size="11" fill="#94a3b8">ウォッチ</text>
+
+  <text x="50" y="295" font-family="'Noto Sans JP', sans-serif" font-size="11" fill="#64748b">■ 接続モード</text>
+
+  <rect x="55" y="305" width="12" height="3" rx="1.5" fill="#60a5fa"/>
+  <text x="82" y="312" font-family="'Noto Sans JP', sans-serif" font-size="11" fill="#94a3b8">手動リンク</text>
+
+  <rect x="55" y="325" width="12" height="3" rx="1.5" fill="#34d399"/>
+  <text x="82" y="332" font-family="'Noto Sans JP', sans-serif" font-size="11" fill="#94a3b8">共通タグ</text>
+
+  <rect x="55" y="345" width="12" height="3" rx="1.5" fill="#c084fc"/>
+  <text x="82" y="352" font-family="'Noto Sans JP', sans-serif" font-size="11" fill="#94a3b8">同業種</text>
+
+  <!-- Mode buttons -->
+  <rect x="50" y="380" width="240" height="34" rx="8" fill="#0f172a" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="170" y="402" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="12" fill="#60a5fa">タグ接続モード</text>
+
+  <rect x="50" y="422" width="240" height="34" rx="8" fill="#1e293b"/>
+  <text x="170" y="444" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="12" fill="#475569">業種接続モード</text>
+
+  <rect x="50" y="462" width="240" height="34" rx="8" fill="#1e293b"/>
+  <text x="170" y="484" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="12" fill="#475569">手動リンクモード</text>
+
+  <!-- Stats -->
+  <rect x="50" y="515" width="110" height="50" rx="8" fill="#0f172a"/>
+  <text x="105" y="534" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="10" fill="#64748b">銘柄数</text>
+  <text x="105" y="554" text-anchor="middle" font-family="'Helvetica Neue', sans-serif" font-size="22" font-weight="700" fill="white">24</text>
+
+  <rect x="170" y="515" width="120" height="50" rx="8" fill="#0f172a"/>
+  <text x="230" y="534" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="10" fill="#64748b">タグ数</text>
+  <text x="230" y="554" text-anchor="middle" font-family="'Helvetica Neue', sans-serif" font-size="22" font-weight="700" fill="white">18</text>
+
+  <!-- Main network visualization area -->
+  <!-- Network edges first (behind nodes) -->
+
+  <!-- #成長株 connections (green) -->
+  <line x1="620" y1="310" x2="500" y2="230" stroke="#34d399" stroke-width="1.5" opacity="0.4"/>
+  <line x1="620" y1="310" x2="750" y2="200" stroke="#34d399" stroke-width="1.5" opacity="0.4"/>
+  <line x1="620" y1="310" x2="820" y2="290" stroke="#34d399" stroke-width="1.5" opacity="0.4"/>
+  <line x1="620" y1="310" x2="700" y2="420" stroke="#34d399" stroke-width="1" opacity="0.3"/>
+
+  <!-- #半導体 connections (blue) -->
+  <line x1="500" y1="230" x2="420" y2="160" stroke="#60a5fa" stroke-width="1.5" opacity="0.4"/>
+  <line x1="500" y1="230" x2="580" y2="150" stroke="#60a5fa" stroke-width="1.5" opacity="0.4"/>
+  <line x1="500" y1="230" x2="750" y2="200" stroke="#60a5fa" stroke-width="1" opacity="0.3"/>
+
+  <!-- Manual links (lighter blue) -->
+  <line x1="620" y1="310" x2="530" y2="400" stroke="#60a5fa" stroke-width="2" opacity="0.5" stroke-dasharray="4,4"/>
+  <line x1="820" y1="290" x2="900" y2="380" stroke="#60a5fa" stroke-width="1.5" opacity="0.4" stroke-dasharray="4,4"/>
+
+  <!-- Industry links (purple) -->
+  <line x1="820" y1="290" x2="750" y2="200" stroke="#c084fc" stroke-width="1.5" opacity="0.35"/>
+  <line x1="820" y1="290" x2="900" y2="200" stroke="#c084fc" stroke-width="1.5" opacity="0.35"/>
+  <line x1="530" y1="400" x2="460" y2="480" stroke="#c084fc" stroke-width="1.5" opacity="0.35"/>
+  <line x1="530" y1="400" x2="640" y2="490" stroke="#c084fc" stroke-width="1" opacity="0.3"/>
+
+  <!-- Various other connections -->
+  <line x1="700" y1="420" x2="800" y2="480" stroke="#34d399" stroke-width="1" opacity="0.3"/>
+  <line x1="700" y1="420" x2="640" y2="490" stroke="#34d399" stroke-width="1" opacity="0.3"/>
+  <line x1="420" y1="160" x2="360" y2="280" stroke="#60a5fa" stroke-width="1" opacity="0.3"/>
+  <line x1="360" y1="280" x2="460" y2="480" stroke="#c084fc" stroke-width="1" opacity="0.25"/>
+  <line x1="900" y1="200" x2="1000" y2="280" stroke="#c084fc" stroke-width="1.5" opacity="0.35"/>
+  <line x1="1000" y1="280" x2="900" y2="380" stroke="#60a5fa" stroke-width="1" opacity="0.3"/>
+  <line x1="1000" y1="280" x2="1050" y2="400" stroke="#34d399" stroke-width="1" opacity="0.3"/>
+  <line x1="800" y1="480" x2="1050" y2="400" stroke="#34d399" stroke-width="1" opacity="0.25"/>
+
+  <!-- MAIN NODE: トヨタ (large, holding) -->
+  <circle cx="620" cy="310" r="42" fill="#0f2a1a" stroke="#10b981" stroke-width="2.5" filter="url(#glow1)"/>
+  <circle cx="620" cy="310" r="42" fill="none" stroke="#10b981" stroke-width="1" opacity="0.3">
+    <animate attributeName="r" values="42;50;42" dur="3s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.3;0;0.3" dur="3s" repeatCount="indefinite"/>
+  </circle>
+  <text x="620" y="304" text-anchor="middle" font-family="'Helvetica Neue', sans-serif" font-size="10" font-weight="700" fill="#34d399">7203</text>
+  <text x="620" y="318" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="9" fill="#86efac">トヨタ</text>
+  <text x="620" y="330" text-anchor="middle" font-family="'Helvetica Neue', sans-serif" font-size="9" fill="#10b981">+18.3%</text>
+
+  <!-- Node: ソニー -->
+  <circle cx="500" cy="230" r="32" fill="#0f1f3a" stroke="#3b82f6" stroke-width="2" filter="url(#glow2)"/>
+  <text x="500" y="225" text-anchor="middle" font-family="'Helvetica Neue', sans-serif" font-size="9" font-weight="700" fill="#60a5fa">6758</text>
+  <text x="500" y="238" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="8" fill="#93c5fd">ソニー</text>
+
+  <!-- Node: TSMC (ADR, sold) -->
+  <circle cx="750" cy="200" r="28" fill="#0f1f3a" stroke="#3b82f6" stroke-width="2" filter="url(#glow2)"/>
+  <text x="750" y="195" text-anchor="middle" font-family="'Helvetica Neue', sans-serif" font-size="9" font-weight="700" fill="#60a5fa">TSM</text>
+  <text x="750" y="208" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="8" fill="#93c5fd">TSMC</text>
+
+  <!-- Node: 信越化学 (holding) -->
+  <circle cx="820" cy="290" r="30" fill="#0f2a1a" stroke="#10b981" stroke-width="2" filter="url(#glow2)"/>
+  <text x="820" y="285" text-anchor="middle" font-family="'Helvetica Neue', sans-serif" font-size="9" font-weight="700" fill="#34d399">4063</text>
+  <text x="820" y="298" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="8" fill="#86efac">信越化学</text>
+
+  <!-- Node: レーザーテック -->
+  <circle cx="420" cy="160" r="24" fill="#1a0f3a" stroke="#8b5cf6" stroke-width="2"/>
+  <text x="420" y="155" text-anchor="middle" font-family="'Helvetica Neue', sans-serif" font-size="9" font-weight="700" fill="#a78bfa">6920</text>
+  <text x="420" y="168" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="8" fill="#c4b5fd">レーザーテック</text>
+
+  <!-- Node: 東京エレクトロン -->
+  <circle cx="580" cy="150" r="26" fill="#0f2a1a" stroke="#10b981" stroke-width="2"/>
+  <text x="580" y="145" text-anchor="middle" font-family="'Helvetica Neue', sans-serif" font-size="9" font-weight="700" fill="#34d399">8035</text>
+  <text x="580" y="158" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="8" fill="#86efac">東京エレクトロン</text>
+
+  <!-- Node: 三菱UFJ -->
+  <circle cx="530" cy="400" r="26" fill="#0f1f3a" stroke="#3b82f6" stroke-width="2"/>
+  <text x="530" y="395" text-anchor="middle" font-family="'Helvetica Neue', sans-serif" font-size="9" font-weight="700" fill="#60a5fa">8306</text>
+  <text x="530" y="408" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="8" fill="#93c5fd">三菱UFJ</text>
+
+  <!-- Node: NTT -->
+  <circle cx="700" cy="420" r="22" fill="#0f2a1a" stroke="#10b981" stroke-width="2"/>
+  <text x="700" y="415" text-anchor="middle" font-family="'Helvetica Neue', sans-serif" font-size="9" font-weight="700" fill="#34d399">9432</text>
+  <text x="700" y="428" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="8" fill="#86efac">NTT</text>
+
+  <!-- Node: ルネサス -->
+  <circle cx="360" cy="280" r="20" fill="#1a0f3a" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="360" y="275" text-anchor="middle" font-family="'Helvetica Neue', sans-serif" font-size="9" font-weight="700" fill="#a78bfa">6723</text>
+  <text x="360" y="288" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="8" fill="#c4b5fd">ルネサス</text>
+
+  <!-- Node: 日立 -->
+  <circle cx="900" cy="200" r="24" fill="#0f2a1a" stroke="#10b981" stroke-width="2"/>
+  <text x="900" y="195" text-anchor="middle" font-family="'Helvetica Neue', sans-serif" font-size="9" font-weight="700" fill="#34d399">6501</text>
+  <text x="900" y="208" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="8" fill="#86efac">日立</text>
+
+  <!-- Node: 任天堂 -->
+  <circle cx="1000" cy="280" r="25" fill="#0f1f3a" stroke="#3b82f6" stroke-width="2"/>
+  <text x="1000" y="275" text-anchor="middle" font-family="'Helvetica Neue', sans-serif" font-size="9" font-weight="700" fill="#60a5fa">7974</text>
+  <text x="1000" y="288" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="8" fill="#93c5fd">任天堂</text>
+
+  <!-- Node: 三井住友 -->
+  <circle cx="460" cy="480" r="20" fill="#1a0f3a" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="460" y="475" text-anchor="middle" font-family="'Helvetica Neue', sans-serif" font-size="9" font-weight="700" fill="#a78bfa">8316</text>
+  <text x="460" y="488" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="8" fill="#c4b5fd">三井住友</text>
+
+  <!-- Node: キーエンス -->
+  <circle cx="640" cy="490" r="18" fill="#0f1f3a" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="640" y="485" text-anchor="middle" font-family="'Helvetica Neue', sans-serif" font-size="9" font-weight="700" fill="#60a5fa">6861</text>
+  <text x="640" y="498" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="8" fill="#93c5fd">キーエンス</text>
+
+  <!-- Node: ファナック -->
+  <circle cx="800" cy="480" r="18" fill="#0f2a1a" stroke="#10b981" stroke-width="1.5"/>
+  <text x="800" y="475" text-anchor="middle" font-family="'Helvetica Neue', sans-serif" font-size="9" font-weight="700" fill="#34d399">6954</text>
+  <text x="800" y="488" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="8" fill="#86efac">ファナック</text>
+
+  <!-- Node: ソフトバンク -->
+  <circle cx="900" cy="380" r="20" fill="#1a0f3a" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="900" y="375" text-anchor="middle" font-family="'Helvetica Neue', sans-serif" font-size="9" font-weight="700" fill="#a78bfa">9984</text>
+  <text x="900" y="388" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="8" fill="#c4b5fd">SBG</text>
+
+  <!-- Node: デンソー -->
+  <circle cx="1050" cy="400" r="19" fill="#0f2a1a" stroke="#10b981" stroke-width="1.5"/>
+  <text x="1050" y="395" text-anchor="middle" font-family="'Helvetica Neue', sans-serif" font-size="9" font-weight="700" fill="#34d399">6902</text>
+  <text x="1050" y="408" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="8" fill="#86efac">デンソー</text>
+
+  <!-- Floating hashtag labels -->
+  <rect x="440" y="320" width="65" height="22" rx="11" fill="#1e3a5f" opacity="0.9"/>
+  <text x="472" y="335" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#60a5fa">#半導体</text>
+
+  <rect x="660" y="355" width="65" height="22" rx="11" fill="#1a3a2a" opacity="0.9"/>
+  <text x="692" y="370" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#34d399">#成長株</text>
+
+  <rect x="730" y="450" width="75" height="22" rx="11" fill="#2d1b4e" opacity="0.9"/>
+  <text x="767" y="465" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#a78bfa">#配当投資</text>
+
+  <rect x="920" y="310" width="75" height="22" rx="11" fill="#2d1a1a" opacity="0.9"/>
+  <text x="957" y="325" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#fbbf24">#地政学リスク</text>
+
+  <!-- Top title area -->
+  <rect x="430" y="52" width="340" height="48" rx="12" fill="#1e293b" stroke="#334155" stroke-width="1" opacity="0.9"/>
+  <text x="600" y="72" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="13" font-weight="700" fill="white">銘柄ネットワーク図</text>
+  <text x="600" y="90" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="11" fill="#64748b">タグ・業種・手動リンクで銘柄のつながりを可視化</text>
+
+  <!-- Right panel tooltip -->
+  <rect x="900" y="50" width="265" height="140" rx="12" fill="#1e293b" stroke="#334155" stroke-width="1" opacity="0.95" filter="url(#shadow)"/>
+  <text x="920" y="75" font-family="'Noto Sans JP', sans-serif" font-size="13" font-weight="700" fill="white">7203 トヨタ自動車</text>
+  <rect x="920" y="82" width="60" height="18" rx="9" fill="#0f2a1a" stroke="#10b981" stroke-width="1"/>
+  <text x="950" y="95" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="10" fill="#34d399">保有中</text>
+
+  <text x="920" y="120" font-family="'Noto Sans JP', sans-serif" font-size="11" fill="#64748b">保有株数: 100株</text>
+  <text x="920" y="138" font-family="'Noto Sans JP', sans-serif" font-size="11" fill="#64748b">含み損益: </text>
+  <text x="1000" y="138" font-family="'Helvetica Neue', sans-serif" font-size="11" fill="#10b981">+¥45,200</text>
+  <text x="920" y="155" font-family="'Noto Sans JP', sans-serif" font-size="11" fill="#64748b">関連銘柄: 8件</text>
+  <text x="920" y="173" font-family="'Noto Sans JP', sans-serif" font-size="11" fill="#64748b">タグ: </text>
+  <rect x="960" y="162" width="55" height="18" rx="9" fill="#1a3a2a"/>
+  <text x="987" y="175" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#34d399">#成長株</text>
+  <rect x="1022" y="162" width="45" height="18" rx="9" fill="#1e3a5f"/>
+  <text x="1044" y="175" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#60a5fa">#EV</text>
+
+  <!-- Bottom caption -->
+  <rect x="30" y="600" width="1140" height="2" rx="1" fill="url(#accentGrad)" opacity="0.4"/>
+  <text x="600" y="622" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="13" fill="#475569">D3.js によるインタラクティブネットワーク図 — 銘柄間の隠れた関連性を発見</text>
+</svg>
