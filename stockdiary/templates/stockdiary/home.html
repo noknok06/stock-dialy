@@ -516,8 +516,6 @@
 
 @media (min-width: 1400px) {
   .home-diary-grid {
-    max-width: 1300px;
-    margin: 0 auto;
     gap: 2rem;
   }
 }
@@ -913,6 +911,72 @@ button.read-more { font-family: inherit; cursor: pointer; }
 {% endif %}
 
 <div class="container py-4">
+<div class="home-layout">
+
+<!-- PC用フィルターサイドバー -->
+<aside class="home-sidebar" id="homeSidebar" aria-label="絞り込みフィルター">
+  <div class="home-sidebar-title">
+    <i class="bi bi-funnel-fill"></i> フィルター
+  </div>
+  <div>
+    <label class="filter-group-label" for="sidebarTagFilter">タグ</label>
+    <select class="form-select sidebar-filter" id="sidebarTagFilter" data-target="tagFilter">
+      <option value="">すべてのタグ</option>
+      {% for tag in tags %}
+        <option value="{{ tag.id }}"
+          {% if request.GET.tag|stringformat:"i" == tag.id|stringformat:"i" %}selected{% endif %}>
+          {{ tag.name }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label class="filter-group-label" for="sidebarSectorFilter">業種</label>
+    <select class="form-select sidebar-filter" id="sidebarSectorFilter" data-target="sectorFilter">
+      <option value="">すべての業種</option>
+      {% for sector in sectors %}
+        <option value="{{ sector }}" {% if request.GET.sector == sector %}selected{% endif %}>{{ sector }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label class="filter-group-label" for="sidebarTransactionDateRangeFilter">直近の取引</label>
+    <select class="form-select sidebar-filter" id="sidebarTransactionDateRangeFilter" data-target="transactionDateRangeFilter">
+      <option value="">指定なし</option>
+      <option value="1w" {% if request.GET.transaction_date_range == '1w' %}selected{% endif %}>1週間以内</option>
+      <option value="1m" {% if request.GET.transaction_date_range == '1m' %}selected{% endif %}>1ヶ月以内</option>
+      <option value="3m" {% if request.GET.transaction_date_range == '3m' %}selected{% endif %}>3ヶ月以内</option>
+      <option value="6m" {% if request.GET.transaction_date_range == '6m' %}selected{% endif %}>6ヶ月以内</option>
+      <option value="1y" {% if request.GET.transaction_date_range == '1y' %}selected{% endif %}>1年以内</option>
+    </select>
+  </div>
+  <div>
+    <label class="filter-group-label" for="sidebarDisclosureFilter">開示書類の更新</label>
+    <select class="form-select sidebar-filter" id="sidebarDisclosureFilter" data-target="disclosureFilter">
+      <option value="">指定なし</option>
+      <option value="new" {% if request.GET.disclosure == 'new' %}selected{% endif %}>直近1週間</option>
+      <option value="recent" {% if request.GET.disclosure == 'recent' %}selected{% endif %}>直近1ヶ月</option>
+    </select>
+  </div>
+  <div>
+    <label class="filter-group-label" for="sidebarDateRangeFilter">購入時期</label>
+    <select class="form-select sidebar-filter" id="sidebarDateRangeFilter" data-target="dateRangeFilter">
+      <option value="">指定なし</option>
+      <option value="1w" {% if request.GET.date_range == '1w' %}selected{% endif %}>直近1週間</option>
+      <option value="1m" {% if request.GET.date_range == '1m' %}selected{% endif %}>直近1ヶ月</option>
+      <option value="3m" {% if request.GET.date_range == '3m' %}selected{% endif %}>直近3ヶ月</option>
+      <option value="6m" {% if request.GET.date_range == '6m' %}selected{% endif %}>直近6ヶ月</option>
+      <option value="1y" {% if request.GET.date_range == '1y' %}selected{% endif %}>直近1年</option>
+    </select>
+  </div>
+  <div class="mt-3 pt-2" style="border-top: 1px solid var(--bg-300);">
+    <button type="button" class="btn btn-sm btn-outline-secondary w-100" id="sidebarResetBtn">
+      <i class="bi bi-x-circle me-1"></i>クリア
+    </button>
+  </div>
+</aside>
+
+<main class="home-main">
   <div class="page-header page-header-with-actions mb-4">
     <div class="page-header-content">
       <h1 class="page-title">
@@ -1091,7 +1155,9 @@ button.read-more { font-family: inherit; cursor: pointer; }
   <div id="diary-container" class="home-diary-grid">
     <!-- コンテンツはHTMXで動的に読み込まれます -->
   </div>
-</div>
+</main><!-- /.home-main -->
+</div><!-- /.home-layout -->
+</div><!-- /.container -->
 
 <!-- コンテンツ下部の広告 -->
 {% if show_ads %}
@@ -1192,6 +1258,8 @@ var filterOverlay = document.getElementById('filterOverlay');
 var filterToggleBtn = document.getElementById('filterToggleBtn');
 
 function openFilterPanel() {
+  var sidebar = document.getElementById('homeSidebar');
+  if (sidebar && getComputedStyle(sidebar).display !== 'none') return;
   filterPanel.classList.add('open');
   filterOverlay.classList.add('open');
   filterToggleBtn.setAttribute('aria-expanded', 'true');
@@ -1207,8 +1275,17 @@ filterToggleBtn.addEventListener('click', openFilterPanel);
 filterOverlay.addEventListener('click', closeFilterPanel);
 document.getElementById('filterPanelClose').addEventListener('click', closeFilterPanel);
 
+// モーダルフィルター ↔ サイドバーの値を同期するユーティリティ
+function syncSidebarFromModal() {
+  document.querySelectorAll('#homeSidebar .sidebar-filter').forEach(function(sidebarEl) {
+    var targetEl = document.getElementById(sidebarEl.getAttribute('data-target'));
+    if (targetEl) sidebarEl.value = targetEl.value;
+  });
+}
+
 document.getElementById('filterApplyBtn').addEventListener('click', function() {
   closeFilterPanel();
+  syncSidebarFromModal();
   htmx.trigger(document.getElementById('optimizedSearchForm'), 'submit');
 });
 
@@ -1218,8 +1295,35 @@ document.getElementById('filterResetBtn').addEventListener('click', function() {
     if (el) el.value = '';
   });
   closeFilterPanel();
+  syncSidebarFromModal();
   htmx.trigger(document.getElementById('optimizedSearchForm'), 'submit');
 });
+
+// サイドバーフィルター: 変更時に元のフィルターパネルの select を同期してから検索
+document.querySelectorAll('#homeSidebar .sidebar-filter').forEach(function(sidebarEl) {
+  sidebarEl.addEventListener('change', function() {
+    var targetId = sidebarEl.getAttribute('data-target');
+    var targetEl = document.getElementById(targetId);
+    if (targetEl) targetEl.value = sidebarEl.value;
+    htmx.trigger(document.getElementById('optimizedSearchForm'), 'submit');
+    setTimeout(updateFilterBadges, 100);
+  });
+});
+
+// サイドバーリセット
+var sidebarResetBtn = document.getElementById('sidebarResetBtn');
+if (sidebarResetBtn) {
+  sidebarResetBtn.addEventListener('click', function() {
+    document.querySelectorAll('#homeSidebar .sidebar-filter').forEach(function(sidebarEl) {
+      sidebarEl.value = '';
+      var targetId = sidebarEl.getAttribute('data-target');
+      var targetEl = document.getElementById(targetId);
+      if (targetEl) targetEl.value = '';
+    });
+    htmx.trigger(document.getElementById('optimizedSearchForm'), 'submit');
+    setTimeout(updateFilterBadges, 100);
+  });
+}
 
 // ── 並び順ドロップダウン ──
 var sortPanel = document.getElementById('sortPanel');

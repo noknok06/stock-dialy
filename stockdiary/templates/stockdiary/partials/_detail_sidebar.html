@@ -1,0 +1,73 @@
+{% load humanize %}
+{% load stockdiary_filters %}
+
+{% if not diary.is_memo and diary.average_purchase_price %}
+<div class="detail-sidebar-card">
+  <div class="detail-sidebar-card-title">
+    <i class="bi bi-graph-up-arrow"></i> 損益サマリー
+  </div>
+
+  {% if diary.realized_profit != 0 %}
+  <div class="profit-hero-card {% if diary.realized_profit < 0 %}loss{% endif %} mb-3">
+    <div class="profit-label">評価損益</div>
+    <div class="profit-value">
+      <span class="profit-icon">{% if diary.realized_profit > 0 %}↗{% else %}↘{% endif %}</span>
+      <span>{{ diary.realized_profit|floatformat:0|intcomma }}</span>
+      <span class="profit-unit">円</span>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="price-details-grid">
+    <div class="price-detail-card">
+      <div class="price-detail-label">平均取得単価</div>
+      <div class="price-detail-value">
+        {{ diary.average_purchase_price|floatformat:2|intcomma }}<span class="unit">円</span>
+      </div>
+    </div>
+    {% if diary.current_quantity > 0 %}
+    <div class="price-detail-card">
+      <div class="price-detail-label">保有数量</div>
+      <div class="price-detail-value">
+        {{ diary.current_quantity|floatformat:0 }}<span class="unit">株</span>
+      </div>
+    </div>
+    {% endif %}
+    {% if diary.total_cost %}
+    <div class="price-detail-card">
+      <div class="price-detail-label">取得総額</div>
+      <div class="price-detail-value">
+        {{ diary.total_cost|floatformat:0|intcomma }}<span class="unit">円</span>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% if related_diaries %}
+<div class="detail-sidebar-card">
+  <div class="detail-sidebar-card-title">
+    <i class="bi bi-link-45deg"></i> 関連日記
+    <span class="badge bg-primary ms-auto" style="font-size:0.7rem;">{{ related_diaries.count }}</span>
+  </div>
+  <div style="display:flex; flex-direction:column; gap:0.5rem;">
+    {% for rd in related_diaries|slice:":8" %}
+    <a href="{% url 'stockdiary:detail' rd.pk %}"
+       class="text-decoration-none d-flex align-items-center gap-2"
+       style="font-size:0.85rem; color:var(--text-100); padding:0.4rem 0.5rem; border-radius:var(--radius-sm); transition:background 0.15s;"
+       onmouseover="this.style.background='var(--bg-200)'" onmouseout="this.style.background=''">
+      <span class="badge" style="background:var(--accent-200); color:#fff; font-size:0.7rem; min-width:3.5rem; text-align:center;">
+        {{ rd.stock_symbol }}
+      </span>
+      <span class="text-truncate" style="flex:1;">{{ rd.stock_name }}</span>
+      {% if rd.realized_profit %}
+      <span style="font-size:0.75rem; {% if rd.realized_profit > 0 %}color:var(--success-color){% else %}color:var(--danger-color){% endif %}; white-space:nowrap;">
+        {{ rd.realized_profit|floatformat:0|intcomma }}円
+      </span>
+      {% endif %}
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}

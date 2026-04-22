@@ -20,7 +20,7 @@
 /* ========== コンテナの最適化 ========== */
 .diary-detail-container {
   width: 100%;
-  max-width: 1200px;
+  max-width: 1600px;
   margin: 0 auto;
   padding: 1.5rem;
   animation: fadeIn 0.4s ease-out;
@@ -1430,6 +1430,8 @@
     </div>
   </div>
 
+  <div class="detail-page-layout">
+  <div class="detail-main-col">
   <!-- メインカード -->
   <div class="card border-0 shadow-sm">
     <!-- ヘッダー -->
@@ -2106,6 +2108,11 @@
     </div>
   </div>
 </div>
+  </div><!-- /.detail-main-col -->
+  <aside class="detail-sidebar-col">
+    {% include "stockdiary/partials/_detail_sidebar.html" %}
+  </aside>
+  </div><!-- /.detail-page-layout -->
 
 <!-- 投資理由 全画面モーダル -->
 {% if diary.reason %}
