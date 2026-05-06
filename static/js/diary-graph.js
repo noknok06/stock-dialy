@@ -177,6 +177,25 @@
       if (closeBtn) {
         closeBtn.addEventListener('click', () => this._closeSidePanel());
       }
+
+      const fsBtn = document.getElementById('toggleFullscreen');
+      if (fsBtn) {
+        fsBtn.addEventListener('click', () => this._toggleFullscreen());
+      }
+      const exitFsBtn = document.getElementById('exitFullscreen');
+      if (exitFsBtn) {
+        exitFsBtn.addEventListener('click', () => this._toggleFullscreen(false));
+      }
+      document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && this._isFullscreen) {
+          this._toggleFullscreen(false);
+        }
+      });
+      // ウィンドウリサイズ時（端末回転など）はセンター追従のみ。手動 zoom/pan は維持
+      window.addEventListener('resize', () => {
+        if (this._resizeTimer) clearTimeout(this._resizeTimer);
+        this._resizeTimer = setTimeout(() => this._handleResize(false), 150);
+      });
     }
 
     // ==============================
@@ -595,6 +614,57 @@
         const sel = animate ? this.svg.transition().duration(500) : this.svg;
         sel.call(this.zoomBehavior.transform, t);
       } catch (_) { /* getBBox が利用できない環境では無視 */ }
+    }
+
+    // ==============================
+    // 全画面モード切替（スマホでノードが見えづらい問題対応）
+    // ==============================
+    _toggleFullscreen(force) {
+      const stage = document.getElementById('graph-stage');
+      if (!stage) return;
+      const next = (typeof force === 'boolean')
+        ? force
+        : !stage.classList.contains('is-fullscreen');
+
+      stage.classList.toggle('is-fullscreen', next);
+      document.body.classList.toggle('graph-fullscreen-active', next);
+      this._isFullscreen = next;
+
+      const btn = document.getElementById('toggleFullscreen');
+      if (btn) {
+        const icon = btn.querySelector('i');
+        if (icon) {
+          icon.className = next ? 'bi bi-fullscreen-exit' : 'bi bi-arrows-fullscreen';
+        }
+        btn.setAttribute('title', next ? '全画面を終了' : '全画面表示');
+        btn.setAttribute('aria-pressed', next ? 'true' : 'false');
+      }
+
+      // CSS のレイアウト変更が反映されてから再センター + フィット（明示操作なので強制フィット）
+      this._handleResize(true);
+    }
+
+    // ==============================
+    // 描画領域サイズ変更時の再センター/フィット
+    //   forceFit=true: 全体が見える位置に強制リフィット（全画面トグル時）
+    //   forceFit=false: シミュレーション中心のみ更新、ユーザーの zoom/pan は維持
+    // ==============================
+    _handleResize(forceFit) {
+      if (!this.svg || !this.simulation) return;
+      requestAnimationFrame(() => {
+        const svgEl = this.svgEl;
+        const w = svgEl.clientWidth  || svgEl.parentElement.clientWidth  || 800;
+        const h = svgEl.clientHeight || svgEl.parentElement.clientHeight || 600;
+        const centerForce = this.simulation.force('center');
+        if (centerForce) {
+          centerForce.x(w / 2).y(h / 2);
+        }
+        this.simulation.alpha(0.2).restart();
+        if (forceFit) {
+          this._userHasInteracted = false;
+          this._fitToView(true);
+        }
+      });
     }
 
     // ==============================

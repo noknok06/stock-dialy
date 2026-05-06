@@ -658,3 +658,115 @@ body.dark-mode .side-panel-footer,
 @media (max-width: 480px) {
   .graph-canvas { height: 360px; }
 }
+
+/* ================================================================
+   全画面モード（スマホで小さくて見えづらい問題への対策）
+   #graph-stage に .is-fullscreen が付与されたとき、
+   フィルターバー + グラフ本体を画面全体に拡大表示する。
+   ================================================================ */
+
+/* 通常時のステージは普通のブロックレイアウト（スタイル無効化） */
+.graph-stage { /* no-op */ }
+
+/* 全画面ステージ: 画面全体を覆う */
+.graph-stage.is-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 1080;
+  background: var(--bg-100, #fffefb);
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  gap: 8px;
+  /* iOS Safari のアドレスバー伸縮対策 */
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* 全画面時: フィルターバーは余白を詰める */
+.graph-stage.is-fullscreen .graph-filter-bar {
+  margin-bottom: 0 !important;
+  flex-shrink: 0;
+}
+
+/* 全画面時: グラフ本体は残りの全領域を占有 */
+.graph-stage.is-fullscreen .graph-outer-wrapper {
+  flex: 1;
+  min-height: 0;
+}
+
+/* 全画面時: グラフコンテナを最大化、角丸・枠を消してフラットに */
+.graph-stage.is-fullscreen .graph-container {
+  height: 100%;
+  border-radius: 0;
+}
+
+/* 全画面時: キャンバスと SVG を 100% に */
+.graph-stage.is-fullscreen .graph-canvas {
+  height: 100%;
+}
+
+.graph-stage.is-fullscreen #diary-graph-svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* 全画面時のサイドパネル（モバイル: 下からドロワー、PC: 右からドロワー） */
+@media (min-width: 769px) {
+  .graph-stage.is-fullscreen .graph-side-panel.open {
+    width: 320px;
+  }
+}
+
+@media (max-width: 768px) {
+  .graph-stage.is-fullscreen .graph-side-panel.open {
+    max-height: 45%;
+  }
+}
+
+/* 全画面終了ボタン（フローティング・通常時は非表示） */
+.graph-fullscreen-exit-btn {
+  display: none;
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  z-index: 6;
+  width: 38px;
+  height: 38px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--bg-100, #fffefb);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  color: var(--text-100, #1d1c1c);
+  font-size: 1rem;
+  padding: 0;
+  cursor: pointer;
+}
+
+.graph-stage.is-fullscreen .graph-fullscreen-exit-btn {
+  display: flex;
+}
+
+.graph-fullscreen-exit-btn:hover {
+  background: var(--bg-200, #f5f4f1);
+}
+
+body.dark-mode .graph-fullscreen-exit-btn,
+[data-theme="dark"] .graph-fullscreen-exit-btn {
+  background: var(--dm-card, #1e1e2e);
+  border-color: var(--dm-border, rgba(255, 255, 255, 0.15));
+  color: var(--dm-foreground, #e0e0e0);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+body.dark-mode .graph-fullscreen-exit-btn:hover,
+[data-theme="dark"] .graph-fullscreen-exit-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* 全画面モード中はページのスクロールを抑制 */
+body.graph-fullscreen-active {
+  overflow: hidden;
+}

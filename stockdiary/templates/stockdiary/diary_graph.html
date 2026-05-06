@@ -27,6 +27,9 @@
     </div>
   </div>
 
+  <!-- グラフステージ（フィルターバー + グラフ本体。全画面トグルの対象） -->
+  <div id="graph-stage" class="graph-stage">
+
   <!-- フィルターバー -->
   <div class="graph-filter-bar mb-3" id="graph-controls">
     <div id="ctrl-panel">
@@ -111,7 +114,10 @@
             <label class="form-check-label small" for="showLabels">ラベル</label>
           </div>
           <button class="btn btn-outline-secondary btn-sm" id="resetZoom" title="ズームリセット">
-            <i class="bi bi-fullscreen-exit"></i>
+            <i class="bi bi-aspect-ratio"></i>
+          </button>
+          <button class="btn btn-outline-secondary btn-sm" id="toggleFullscreen" title="全画面表示" aria-pressed="false">
+            <i class="bi bi-arrows-fullscreen"></i>
           </button>
         </div>
       </div>
@@ -156,6 +162,11 @@
         <span id="stats-edges" class="badge bg-secondary"></span>
       </div>
 
+      <!-- 全画面終了ボタン（全画面モード時のみ表示） -->
+      <button id="exitFullscreen" class="graph-fullscreen-exit-btn" type="button" title="全画面を終了" aria-label="全画面を終了">
+        <i class="bi bi-x-lg"></i>
+      </button>
+
     </div><!-- /.graph-container -->
 
     <!-- サイドパネル（ノードクリックで展開） -->
@@ -172,6 +183,8 @@
     </div>
 
   </div><!-- /.graph-outer-wrapper -->
+
+  </div><!-- /#graph-stage -->
 
   <!-- 凡例 -->
   <div class="d-flex gap-3 mt-2 flex-wrap align-items-center" id="graph-legend">
