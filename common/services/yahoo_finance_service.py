@@ -1,8 +1,12 @@
 # common/services/yahoo_finance_service.py
+import urllib.request
+import urllib.parse
+import xml.etree.ElementTree as ET
+from datetime import datetime
 import yfinance as yf
 import pandas as pd
 from decimal import Decimal
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 import logging
 
 logger = logging.getLogger(__name__)
@@ -321,3 +325,78 @@ class YahooFinanceService:
             return price is not None and float(price) > 0
         except Exception:
             return False
+
+    @staticmethod
+    def fetch_stock_news(company_code: str, company_name: str = "", max_items: int = 5) -> List[dict]:
+        """
+        yfinance + Google News RSS から直近ニュースを取得する。
+        Returns: [{"title": str, "source": str, "published": str}, ...]
+        外部通信失敗時は取得できた分だけ返す（例外を外に漏らさない）。
+        """
+        news_items: List[dict] = []
+
+        # --- yfinance ニュース ---
+        try:
+            ticker = yf.Ticker(f"{company_code}.T")
+            yf_news = ticker.news or []
+            for item in yf_news[:max_items]:
+                title = item.get('title', '') if isinstance(item, dict) else ''
+                if not title:
+                    continue
+                ts = item.get('providerPublishTime') if isinstance(item, dict) else None
+                try:
+                    published = datetime.fromtimestamp(ts).strftime('%Y-%m-%d') if ts else ''
+                except (OSError, ValueError, OverflowError):
+                    published = ''
+                news_items.append({
+                    'title': title,
+                    'source': item.get('publisher', 'Yahoo Finance') if isinstance(item, dict) else 'Yahoo Finance',
+                    'published': published,
+                })
+        except Exception as e:
+            logger.warning(f"yfinance news取得失敗 ({company_code}): {e}")
+
+        # --- Google News RSS（日本語） ---
+        try:
+            query_str = f"{company_name} {company_code}" if company_name else company_code
+            query = urllib.parse.quote(query_str)
+            url = f"https://news.google.com/rss/search?q={query}&hl=ja&gl=JP&ceid=JP:ja"
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                content = resp.read()
+            root = ET.fromstring(content)
+            for item in root.findall('.//item')[:max_items]:
+                title_el = item.find('title')
+                source_el = item.find('source')
+                pub_el = item.find('pubDate')
+                if title_el is None or not title_el.text:
+                    continue
+                pub_str = ''
+                if pub_el is not None and pub_el.text:
+                    try:
+                        from email.utils import parsedate
+                        t = parsedate(pub_el.text)
+                        if t:
+                            pub_str = datetime(*t[:3]).strftime('%Y-%m-%d')
+                    except Exception:
+                        pass
+                news_items.append({
+                    'title': title_el.text,
+                    'source': source_el.text if source_el is not None and source_el.text else 'Google News',
+                    'published': pub_str,
+                })
+        except Exception as e:
+            logger.warning(f"Google News RSS取得失敗 ({company_code}): {e}")
+
+        # 重複排除（タイトル先頭30文字で判定）・件数制限
+        seen: set = set()
+        unique: List[dict] = []
+        for item in news_items:
+            key = item['title'][:30]
+            if key not in seen:
+                seen.add(key)
+                unique.append(item)
+            if len(unique) >= max_items:
+                break
+
+        return unique

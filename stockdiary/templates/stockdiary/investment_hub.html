@@ -655,6 +655,43 @@ table.hub-table {
 .ai-point-good { color: var(--success-color); }
 .ai-point-risk { color: var(--danger-color); }
 
+.ai-news-section {
+    margin-top: 10px;
+    border-top: 1px solid var(--border-primary);
+    padding-top: 8px;
+}
+.ai-news-label {
+    font-size: 0.72rem;
+    font-weight: var(--font-bold);
+    color: var(--text-secondary);
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.ai-news-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.ai-news-list li {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+.ai-news-title {
+    font-size: 0.75rem;
+    color: var(--text-primary);
+    line-height: 1.4;
+}
+.ai-news-meta {
+    font-size: 0.68rem;
+    color: var(--text-secondary);
+}
+
 .ai-insight-box {
     background: var(--bg-secondary);
     border: 1px solid var(--border-primary);
@@ -2195,7 +2232,7 @@ table.hub-table {
             });
             const data=await res.json();
             if(!data.success) throw new Error(data.error||'分析失敗');
-            renderAIResult(data.analysis, codes);
+            renderAIResult(data.analysis, codes, data.news_map||{});
         } catch(err){
             showToast('AI分析に失敗しました: '+err.message,'error');
             document.getElementById('ai-placeholder').style.display='block';
@@ -2205,7 +2242,7 @@ table.hub-table {
         }
     });
 
-    function renderAIResult(analysis, codes){
+    function renderAIResult(analysis, codes, newsMap){
         const summaryBox  = document.getElementById('ai-summary-box');
         const topPickWrap = document.getElementById('ai-top-pick-wrap');
         const stocksGrid  = document.getElementById('ai-stocks-grid');
@@ -2239,6 +2276,14 @@ table.hub-table {
             const bg=s.business_grade||'B';
             const vg=s.valuation_grade||'B';
             const og=s.grade||'B';
+            const newsItems = (newsMap && newsMap[s.code]) || [];
+            const newsHtml = newsItems.length ? `
+                <div class="ai-news-section">
+                    <div class="ai-news-label"><i class="bi bi-newspaper"></i> 参考ニュース</div>
+                    <ul class="ai-news-list">${newsItems.map(n=>`
+                        <li><span class="ai-news-title">${n.title}</span><span class="ai-news-meta">${n.source}${n.published?' · '+n.published:''}</span></li>`).join('')}
+                    </ul>
+                </div>` : '';
             card.innerHTML=`
                 <div class="ai-card-header">
                     <div class="ai-card-header-top">
@@ -2266,7 +2311,8 @@ table.hub-table {
                     </div>
                 </div>
                 <p class="ai-appeal">${s.investment_appeal||''}</p>
-                <ul class="ai-point-list">${strengths}${risks}</ul>`;
+                <ul class="ai-point-list">${strengths}${risks}</ul>
+                ${newsHtml}`;
             stocksGrid.appendChild(card);
         });
 

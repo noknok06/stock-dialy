@@ -1,6 +1,7 @@
 # stockdiary/views_comparison.py
 import json
 import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -48,9 +49,30 @@ def api_gemini_stock_analysis(request):
 
     try:
         from stockdiary.services.gemini_stock_analysis import GeminiStockAnalyzer
+        from common.services.yahoo_finance_service import YahooFinanceService
+
+        # 銘柄ごとにニュースを並列取得（最大5秒でタイムアウト）
+        news_map: dict = {}
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            future_to_code = {
+                executor.submit(
+                    YahooFinanceService.fetch_stock_news,
+                    s['code'],
+                    s.get('stock_name', ''),
+                    5,
+                ): s['code']
+                for s in stocks
+            }
+            for future in as_completed(future_to_code, timeout=10):
+                code = future_to_code[future]
+                try:
+                    news_map[code] = future.result(timeout=5)
+                except Exception:
+                    news_map[code] = []
+
         analyzer = GeminiStockAnalyzer()
-        result = analyzer.analyze_stocks(stocks)
-        return JsonResponse({'success': True, 'analysis': result})
+        result = analyzer.analyze_stocks(stocks, news_map=news_map)
+        return JsonResponse({'success': True, 'analysis': result, 'news_map': news_map})
     except Exception as e:
         logger.error(f"Gemini stock analysis API error: {e}")
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
