@@ -169,7 +169,7 @@
   fill: var(--text-200, #313d44);
   pointer-events: none;
   user-select: none;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: var(--font-family-base);
 }
 .graph-node.node-hub text {
   font-size: 11px;
@@ -769,4 +769,22 @@ body.dark-mode .graph-fullscreen-exit-btn:hover,
 /* 全画面モード中はページのスクロールを抑制 */
 body.graph-fullscreen-active {
   overflow: hidden;
+}
+
+/* 凡例バー（#graph-stage 内に配置） */
+.graph-legend-bar {
+  padding: 4px 2px;
+}
+
+/* 全画面時: 凡例を下部に固定してフィルターバーと同様に扱う */
+.graph-stage.is-fullscreen .graph-legend-bar {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  background: color-mix(in srgb, var(--bg-100) 90%, transparent);
+  border-radius: 8px;
+}
+
+body.dark-mode .graph-stage.is-fullscreen .graph-legend-bar,
+[data-theme="dark"] .graph-stage.is-fullscreen .graph-legend-bar {
+  background: color-mix(in srgb, var(--dm-card, #1e1e2e) 90%, transparent);
 }

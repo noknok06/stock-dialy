@@ -184,10 +184,8 @@
 
   </div><!-- /.graph-outer-wrapper -->
 
-  </div><!-- /#graph-stage -->
-
-  <!-- 凡例 -->
-  <div class="d-flex gap-3 mt-2 flex-wrap align-items-center" id="graph-legend">
+  <!-- 凡例（#graph-stage 内に配置: 全画面モードでも表示される） -->
+  <div class="d-flex gap-3 mt-2 flex-wrap align-items-center graph-legend-bar" id="graph-legend">
     <!-- ステータス凡例（デフォルト表示） -->
     <div id="legend-status" class="d-flex gap-3 flex-wrap align-items-center">
       <span class="small text-muted d-flex align-items-center gap-1">
@@ -203,7 +201,7 @@
     <!-- ハブノード凡例（tag/sector/hashtag モード時に追加表示） -->
     <div id="legend-hubs" class="gap-3 flex-wrap align-items-center legend-hidden">
       <span class="small text-muted align-items-center gap-1 legend-hidden" id="legend-tag-node">
-        <svg width="14" height="14" viewBox="-7 -7 14 14"><polygon points="0,-6 5.2,3 -5.2,3" fill="#7c3aed" stroke="white" stroke-width="1.5"/></svg>タグ
+        <svg width="14" height="14" viewBox="-7 -7 14 14"><polygon points="5.20,-3 5.20,3 0,6 -5.20,3 -5.20,-3 0,-6" fill="#7c3aed" stroke="white" stroke-width="1.5"/></svg>タグ
       </span>
       <span class="small text-muted align-items-center gap-1 legend-hidden" id="legend-sector-node">
         <svg width="14" height="14" viewBox="-7 -7 14 14"><rect x="-5.5" y="-5.5" width="11" height="11" rx="2.5" fill="#d97706" stroke="white" stroke-width="1.5"/></svg>業種
@@ -220,6 +218,8 @@
       <i class="bi bi-info-circle me-1"></i>ノードサイズは接続数に比例 / クリックで詳細パネル表示
     </span>
   </div>
+
+  </div><!-- /#graph-stage -->
 
 </div><!-- /.container-fluid -->
 
