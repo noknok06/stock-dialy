@@ -7,13 +7,19 @@
   background: var(--bg-100);
   border-bottom: 1px solid var(--bg-300);
   padding: 1.25rem 1rem;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.2s ease, box-shadow 0.25s ease, transform 0.25s ease;
   overflow: hidden;
+  /* グリッド内で高さを揃えるためのflex */
+  display: flex;
+  flex-direction: column;
 }
 
 /* カード本文ラッパー（モバイルでの高さ制限対象） */
 .card-body-inner {
   position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .diary-article:last-child {
@@ -176,13 +182,14 @@
 }
 
 .tab-btn i {
-  font-size: 1.125rem;
+  font-size: 1rem;
   flex-shrink: 0;
   transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
 .tab-label {
-  display: none;
+  display: inline;
+  font-size: 0.75rem;
 }
 
 .tab-badge {
@@ -211,29 +218,30 @@
 }
 
 .tab-btn.active {
-  background: var(--bg-100);
-  color: var(--accent-200);
-  box-shadow: var(--elevation-1);
+  background: var(--accent-200);
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 102, 140, 0.3);
 }
 
 .tab-btn.active i {
-  transform: scale(1.1);
+  transform: scale(1.05);
 }
 
 .tab-btn.active .tab-badge {
-  background: var(--accent-200);
+  background: rgba(255, 255, 255, 0.25);
+  color: white;
 }
 
-/* Sliding Indicator - モダンなスライディングインジケーター */
+/* Sliding Indicator - アクセントカラーのスライディングインジケーター */
 .diary-tabs::before {
   content: '';
   position: absolute;
   bottom: 0.375rem;
   left: 0.375rem;
   height: calc(100% - 0.75rem);
-  background: var(--bg-100);
+  background: var(--accent-200);
   border-radius: var(--radius-md);
-  box-shadow: var(--elevation-1);
+  box-shadow: 0 2px 8px rgba(0, 102, 140, 0.3);
   transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
   z-index: 0;
   pointer-events: none;
@@ -260,12 +268,12 @@
   transform: translateX(var(--tab-3-left, 0));
 }
 
-/* スマホ横向き・タブレット以上でラベル表示 */
+/* タブレット以上でラベルフォントサイズ標準化 */
 @media (min-width: 480px) {
   .tab-label {
-    display: inline;
+    font-size: 0.875rem;
   }
-  
+
   .tab-btn {
     padding: 0.75rem 1.25rem;
   }
@@ -290,8 +298,9 @@
 /* ========== Tab Content ========== */
 .diary-tab-content {
   position: relative;
-  min-height: 150px;
+  min-height: 120px;
   overflow-x: hidden;
+  flex: 1;
 }
 
 .tab-panel {
@@ -363,9 +372,40 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 3rem 1rem;
+  padding: 2rem 1rem;
   color: var(--text-200);
   font-size: 0.875rem;
+}
+
+/* スケルトンローディング */
+.panel-skeleton {
+  padding: 0.5rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.skeleton-line {
+  height: 0.875rem;
+  background: linear-gradient(
+    90deg,
+    var(--bg-200) 25%,
+    var(--bg-300) 50%,
+    var(--bg-200) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+.skeleton-line--lg { width: 85%; height: 1rem; }
+.skeleton-line--md { width: 70%; }
+.skeleton-line--sm { width: 50%; }
+.skeleton-line--xs { width: 35%; height: 0.75rem; }
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 /* ========== Footer ========== */
@@ -492,16 +532,20 @@
   .diary-article {
     padding: 1.5rem;
     border-radius: var(--radius-lg);
-    border: 1px solid var(--bg-300);
-    margin-bottom: 1.5rem;
+    border: 1px solid var(--border-light);
+    margin-bottom: 0;
+    box-shadow: var(--elevation-1);
+    border-bottom: 1px solid var(--border-light);
   }
-  
+
   .diary-article:last-child {
-    border-bottom: 1px solid var(--bg-300);
+    border-bottom: 1px solid var(--border-light);
   }
-  
+
   .diary-article:hover {
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--elevation-3);
+    transform: translateY(-3px);
+    border-color: var(--primary-200);
   }
   
   .diary-name {
@@ -589,8 +633,9 @@
 
 .dark-mode .tab-btn.active,
 [data-theme="dark"] .tab-btn.active {
-  background: var(--dm-card);
-  color: var(--accent-100);
+  background: var(--accent-100);
+  color: #0d1117;
+  box-shadow: 0 2px 8px rgba(113, 196, 239, 0.3);
 }
 
 .dark-mode .tab-badge,
@@ -600,7 +645,14 @@
 
 .dark-mode .tab-btn.active .tab-badge,
 [data-theme="dark"] .tab-btn.active .tab-badge {
+  background: rgba(0, 0, 0, 0.2);
+  color: #0d1117;
+}
+
+.dark-mode .diary-tabs::before,
+[data-theme="dark"] .diary-tabs::before {
   background: var(--accent-100);
+  box-shadow: 0 2px 8px rgba(113, 196, 239, 0.3);
 }
 
 .dark-mode .panel-text,
