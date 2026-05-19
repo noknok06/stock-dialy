@@ -154,7 +154,7 @@
 
     @media (min-width: 1024px) {
         .metrics-grid {
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
         }
     }
 
@@ -1068,7 +1068,7 @@
 
     @media (max-width: 767.98px) and (orientation: landscape) {
         .metrics-grid {
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
         }
 
         .two-column {
@@ -1129,7 +1129,7 @@
         <div class="card">
             <div class="metric-card">
                 <div class="metric-content">
-                    <p class="metric-label">実現損益</p>
+                    <p class="metric-label">損益合計</p>
                     <p class="metric-value">¥{{ total_realized_profit|intcomma_float:0 }}</p>
                     <p class="metric-sub">投資額: ¥{{ total_invested|intcomma_float:0 }}</p>
                     <p class="metric-sub">ROI: {{ total_roi|floatformat:1 }}%</p>
@@ -1145,10 +1145,32 @@
                 <div class="metric-content">
                     <p class="metric-label">平均利益率</p>
                     <p class="metric-value">{{ avg_profit_rate|floatformat:1 }}%</p>
-                    <p class="metric-subtext">売却ベース</p>
+                    <p class="metric-subtext">売却済み銘柄の利益率平均</p>
                     <p>　</p>
                 </div>
                 <div class="metric-icon" style="background: rgba(245, 158, 11, 0.2); color: var(--accent);">🎯</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="metric-card">
+                <div class="metric-content">
+                    <p class="metric-label">勝率</p>
+                    {% if win_rate is not None %}
+                    <p class="metric-value">{{ win_rate|floatformat:1 }}%</p>
+                    <p class="metric-sub">{{ winning_count }}/{{ sold_count }}銘柄が黒字</p>
+                    {% if profit_factor is not None %}
+                    <p class="metric-sub">PF: {{ profit_factor }}</p>
+                    {% else %}
+                    <p>　</p>
+                    {% endif %}
+                    {% else %}
+                    <p class="metric-value">—</p>
+                    <p class="metric-subtext">売却実績なし</p>
+                    <p>　</p>
+                    {% endif %}
+                </div>
+                <div class="metric-icon" style="background: rgba(16, 185, 129, 0.2); color: var(--success);">🏆</div>
             </div>
         </div>
     </div>
