@@ -267,17 +267,26 @@
   background: transparent;
   color: var(--text-200);
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+  white-space: nowrap;
 }
 
-.status-tab:hover { color: var(--text-100); background: rgba(255,255,255,0.5); }
+.status-tab:hover {
+  color: var(--text-100);
+  background: rgba(255,255,255,0.6);
+}
+
+.status-tab:active {
+  transform: scale(0.97);
+}
 
 .status-tab.active {
-  background: white;
-  color: var(--accent-200);
-  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  background: var(--accent-200);
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 102, 140, 0.3);
+  font-weight: 600;
 }
 
 /* ── アクティブフィルターチップ ── */
@@ -661,9 +670,10 @@
 
 .dark-mode .status-tab.active,
 [data-theme="dark"] .status-tab.active {
-  background: var(--dm-card);
-  color: var(--dm-primary);
-  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  background: var(--accent-100);
+  color: #0d1117;
+  box-shadow: 0 2px 8px rgba(113, 196, 239, 0.3);
+  font-weight: 600;
 }
 
 .dark-mode .sort-panel,
