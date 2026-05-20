@@ -2,7 +2,7 @@
 {% load static %}
 {% load stockdiary_filters %}
 
-{% block title %}{{ tag.name }} - 仮説検証台帳 | カブログ{% endblock %}
+{% block title %}{{ tag.name }} - 投資理由台帳 | カブログ{% endblock %}
 
 {% block head %}
 {{ block.super }}
@@ -48,7 +48,8 @@
 
   .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(140px, 200px));
+    justify-content: center;
     gap: 1rem;
     margin-bottom: 1.5rem;
   }
@@ -468,7 +469,7 @@
       <i class="bi bi-table"></i>
       <span>{{ tag.name }}</span>
     </h1>
-    <p class="ledger-subtitle">投資仮説と結果の対照台帳</p>
+    <p class="ledger-subtitle">このタグで使われている投資理由の記録</p>
   </div>
 
   {% if diaries %}
@@ -478,7 +479,7 @@
       <div class="stat-card">
         <div class="stat-card-icon"><i class="bi bi-list-check"></i></div>
         <div class="stat-card-value">{{ ledger_stats.total_entries }}</div>
-        <div class="stat-card-label">仮説数</div>
+        <div class="stat-card-label">記録銘柄数</div>
       </div>
       <div class="stat-card">
         <div class="stat-card-icon"><i class="bi bi-check2-circle"></i></div>
@@ -508,7 +509,7 @@
     <!-- ツールバー -->
     <div class="ledger-toolbar">
       <span class="ledger-count">
-        <i class="bi bi-table me-1"></i>{{ ledger_stats.total_entries }}件の投資仮説
+        <i class="bi bi-table me-1"></i>{{ ledger_stats.total_entries }}件の投資記録
       </span>
       <div class="ledger-sort-group">
         <button class="ledger-sort-btn active" data-sort="profit-desc" aria-pressed="true">
@@ -526,7 +527,7 @@
         <thead>
           <tr>
             <th class="col-stock">銘柄</th>
-            <th class="col-thesis">投資仮説</th>
+            <th class="col-thesis">投資理由</th>
             <th class="col-status">ステータス</th>
             <th class="col-profit">実現損益</th>
           </tr>
@@ -632,7 +633,7 @@
     <!-- 空状態 -->
     <div class="empty-state">
       <span class="empty-state-icon"><i class="bi bi-journal-x"></i></span>
-      <div class="empty-state-title">投資仮説がありません</div>
+      <div class="empty-state-title">投資理由の記録がありません</div>
       <p class="empty-state-text">
         このタグに「投資理由」が記入された銘柄日記がまだありません。<br>
         日記に投資理由を記入してから再度お試しください。
