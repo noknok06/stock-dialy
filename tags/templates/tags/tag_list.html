@@ -1091,17 +1091,20 @@
           {% if diary_count > 0 %}
           <i class="bi bi-journal-text"></i>
           <span>{{ diary_count }}件の記録で使用中</span>
-          {% with book_count=tag_book_counts|get_item:tag.id %}
-          {% if book_count is not None %}
-          <br><small class="text-muted"><i class="bi bi-book"></i> {{ book_count }}銘柄（投資理由あり）</small>
-          {% endif %}
-          {% endwith %}
           {% else %}
           <i class="bi bi-dash-circle"></i>
           <span>未使用</span>
           {% endif %}
           {% endwith %}
         </div>
+        {% with book_count=tag_book_counts|get_item:tag.id %}
+        {% if book_count is not None %}
+        <div class="tag-card-count mt-1" style="font-size:0.85rem;">
+          <i class="bi bi-book text-muted"></i>
+          <span class="text-muted">{{ book_count }}銘柄（投資理由あり）</span>
+        </div>
+        {% endif %}
+        {% endwith %}
       </div>
 
       <div class="tag-card-footer">
