@@ -225,8 +225,10 @@
     color: var(--text-100);
     margin-bottom: 0.5rem;
     line-height: 1.3;
-    display: flex;
-    align-items: center;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
     gap: 0.5rem;
   }
 
@@ -623,6 +625,40 @@
     .tags-action-btn {
       font-size: 0.9rem;
       padding: 0.75rem 1.25rem;
+    }
+
+    .tags-header {
+      margin-bottom: 1.5rem;
+    }
+
+    .tag-card-menu-btn {
+      min-width: 44px;
+      min-height: 44px;
+    }
+
+    .tags-stats {
+      margin-bottom: 1rem;
+    }
+
+    .tags-stat-card {
+      padding: 0.75rem 1rem;
+      flex-direction: row;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .tags-stat-icon {
+      width: 36px;
+      height: 36px;
+      flex-shrink: 0;
+    }
+
+    .tags-stat-icon i {
+      font-size: 1rem;
+    }
+
+    .tags-stat-value {
+      font-size: 1.25rem;
     }
   }
 
@@ -1101,8 +1137,8 @@
   </div>
   {% endif %}
 
-  <!-- タグの使い方ガイド -->
-  <div class="tags-guide">
+  <!-- タグの使い方ガイド（タグあり時はモバイルで非表示） -->
+  <div class="tags-guide {% if tags %}d-none d-md-block{% endif %}">
     <h2 class="tags-guide-title">
       <i class="bi bi-lightbulb-fill"></i>
       タグの活用方法
