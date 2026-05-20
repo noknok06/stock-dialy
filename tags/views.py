@@ -263,7 +263,7 @@ class TagDeleteView(LoginRequiredMixin, DeleteView):
 
 class TagBookView(LoginRequiredMixin, DetailView):
     """
-    タグ付き銘柄を本のようにめくって表示するビュー
+    タグ付き銘柄の投資仮説と結果を対照表示する仮説検証台帳ビュー
     """
     model = Tag
     template_name = 'tags/tag_book.html'
@@ -281,24 +281,38 @@ class TagBookView(LoginRequiredMixin, DetailView):
             reason__isnull=False
         ).exclude(
             reason=''
-        ).select_related('user').order_by('-created_at')
+        ).select_related('user').order_by('-last_transaction_date', '-created_at')
 
-        # 銘柄ごとの最新の日記を取得（投資理由を表示）
+        # 銘柄ごとの最新の日記を取得（重複排除）
         seen_stocks = set()
         unique_diaries = []
+        sold_profits = []
 
         for diary in diaries:
             stock_key = f"{diary.stock_symbol}_{diary.stock_name}"
             if stock_key not in seen_stocks:
                 seen_stocks.add(stock_key)
                 unique_diaries.append(diary)
+                if diary.is_sold_out:
+                    sold_profits.append(float(diary.cash_only_realized_profit or 0))
+
+        sold_count = len(sold_profits)
+        winning_count = sum(1 for p in sold_profits if p > 0)
+        total_profit = sum(sold_profits)
+        win_rate = round(winning_count / sold_count * 100, 1) if sold_count > 0 else None
 
         context.update({
             'diaries': unique_diaries,
-            'total_pages': len(unique_diaries),
+            'total_pages': len(unique_diaries),  # 後方互換
+            'ledger_stats': {
+                'total_entries': len(unique_diaries),
+                'sold_count': sold_count,
+                'winning_count': winning_count,
+                'total_profit': total_profit,
+                'win_rate': win_rate,
+            },
         })
 
-        # スピードダイアル用のアクション
         context['page_actions'] = [
             {
                 'type': 'back',
