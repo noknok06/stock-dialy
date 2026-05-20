@@ -1689,7 +1689,9 @@
                 タグ
               </div>
               {% for tag in diary.tags.all %}
-                {% include "stockdiary/components/_badge.html" with type="primary" text=tag.name icon="bi-tag-fill" extra_class="me-1 mb-1" %}
+                <a href="{% url 'tags:detail' tag.pk %}" class="text-decoration-none">
+                  {% include "stockdiary/components/_badge.html" with type="primary" text=tag.name icon="bi-tag-fill" extra_class="me-1 mb-1" %}
+                </a>
               {% empty %}
               <p class="text-muted mb-0">タグはありません</p>
               {% endfor %}

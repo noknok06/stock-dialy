@@ -93,11 +93,18 @@ class TagDetailView(LoginRequiredMixin, DetailView):
             
             stock_groups[symbol]['diaries'].append(diary)
             stock_groups[symbol]['total_entries'] += 1
-            
+
+            if diary.is_holding:
+                stock_groups[symbol]['active_holdings'] += 1
+            elif diary.is_sold_out:
+                stock_groups[symbol]['completed_sales'] += 1
+            elif diary.is_memo:
+                stock_groups[symbol]['memo_entries'] += 1
+
             # latest_date と earliest_date の更新
             if stock_groups[symbol]['latest_date'] is None or diary.created_at > stock_groups[symbol]['latest_date']:
                 stock_groups[symbol]['latest_date'] = diary.created_at
-            
+
             if stock_groups[symbol]['earliest_date'] is None or diary.created_at < stock_groups[symbol]['earliest_date']:
                 stock_groups[symbol]['earliest_date'] = diary.created_at
                 
@@ -107,6 +114,17 @@ class TagDetailView(LoginRequiredMixin, DetailView):
         # latest_date と earliest_date が None の場合に適切な値を設定
         stock_list.sort(key=lambda x: x['latest_date'] or datetime.min, reverse=True)
         
+        # パフォーマンス統計（売却済み銘柄ベース）
+        sold_profits = [
+            float(d.cash_only_realized_profit or 0)
+            for d in diaries
+            if d.is_sold_out and d.cash_only_realized_profit is not None
+        ]
+        sold_count = len(sold_profits)
+        winning_count = sum(1 for p in sold_profits if p > 0)
+        total_profit = sum(sold_profits)
+        win_rate = round(winning_count / sold_count * 100, 1) if sold_count > 0 else None
+
         # 統計情報
         stats = {
             'total_diaries': diaries.count(),
@@ -114,6 +132,10 @@ class TagDetailView(LoginRequiredMixin, DetailView):
             'active_holdings': sum(stock['active_holdings'] for stock in stock_list),
             'completed_sales': sum(stock['completed_sales'] for stock in stock_list),
             'memo_entries': sum(stock['memo_entries'] for stock in stock_list),
+            'total_profit': total_profit,
+            'win_rate': win_rate,
+            'winning_count': winning_count,
+            'sold_count': sold_count,
         }
         
         # 保有状況フィルター
