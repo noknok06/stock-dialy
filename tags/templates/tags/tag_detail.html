@@ -912,6 +912,30 @@
           <span>売却済み</span>
         </div>
       </div>
+      {% if stats.win_rate is not None %}
+      <div class="stat-card">
+        <div class="stat-card-icon">
+          <i class="bi bi-trophy"></i>
+        </div>
+        <div class="stat-card-value" style="color: {% if stats.win_rate >= 50 %}var(--bs-success){% else %}var(--bs-danger){% endif %}">
+          {{ stats.win_rate|floatformat:1 }}%
+        </div>
+        <div class="stat-card-label">
+          <span>勝率（{{ stats.winning_count }}/{{ stats.sold_count }}）</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-icon">
+          <i class="bi bi-graph-up-arrow"></i>
+        </div>
+        <div class="stat-card-value" style="color: {% if stats.total_profit >= 0 %}var(--bs-success){% else %}var(--bs-danger){% endif %}; font-size: 1rem;">
+          {% if stats.total_profit >= 0 %}+{% endif %}{{ stats.total_profit|floatformat:0 }}円
+        </div>
+        <div class="stat-card-label">
+          <span>実現損益合計</span>
+        </div>
+      </div>
+      {% endif %}
     </div>
   </div>
 
