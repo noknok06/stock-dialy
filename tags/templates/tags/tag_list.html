@@ -1057,7 +1057,7 @@
           <span>{{ diary_count }}件の記録で使用中</span>
           {% with book_count=tag_book_counts|get_item:tag.id %}
           {% if book_count is not None %}
-          <br><small class="text-muted"><i class="bi bi-book"></i> 本モード: {{ book_count }}銘柄（投資理由あり）</small>
+          <br><small class="text-muted"><i class="bi bi-book"></i> {{ book_count }}銘柄（投資理由あり）</small>
           {% endif %}
           {% endwith %}
           {% else %}
@@ -1077,7 +1077,7 @@
         <a href="{% url 'tags:book' tag.id %}"
            class="tag-card-btn tag-card-btn-secondary">
           <i class="bi bi-book-fill"></i>
-          <span>本モード</span>
+          <span>理由台帳</span>
         </a>
       </div>
     </div>
