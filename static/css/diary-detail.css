@@ -2310,3 +2310,254 @@
     transition: none !important;
   }
 }
+
+/* ================================================================
+   継続記録: トピックインデックス・コンパクト行・テーマ詳細モーダル
+   ================================================================ */
+
+/* ── トピックインデックスビュー ── */
+.notes-topic-index {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.topic-index-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--bg-300);
+  border-radius: 12px;
+  background: var(--bg-100);
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+  gap: 0.5rem;
+}
+.topic-index-row:hover {
+  border-color: var(--accent-100);
+  box-shadow: var(--shadow-sm);
+}
+.topic-index-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.topic-index-right {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: var(--text-200);
+  font-size: 0.78rem;
+  flex-shrink: 0;
+}
+.topic-index-count {
+  font-size: 0.75rem;
+  color: var(--text-200);
+  white-space: nowrap;
+}
+.topic-index-date {
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+/* ── 時系列コンパクト行 ── */
+.notes-timeline-list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--bg-300);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.note-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1rem;
+  cursor: pointer;
+  border-bottom: 1px solid var(--bg-200);
+  transition: background 0.1s ease;
+  min-width: 0;
+}
+.note-row:last-child { border-bottom: none; }
+.note-row:hover { background: var(--bg-200); }
+
+.note-row-date {
+  font-size: 0.75rem;
+  color: var(--text-200);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.note-row-preview {
+  flex: 1;
+  font-size: 0.82rem;
+  color: var(--text-200);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.note-row-caret {
+  color: var(--bg-300);
+  flex-shrink: 0;
+  font-size: 0.75rem;
+}
+.topic-tag-sm {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.4rem;
+  background: rgba(59, 130, 246, 0.08);
+  border-radius: 999px;
+  color: var(--accent-200);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── テーマ詳細モーダルオーバーレイ ── */
+.note-detail-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1055;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: flex-end;
+}
+.note-detail-overlay[hidden] { display: none; }
+
+.note-detail-panel {
+  background: var(--bg-100);
+  border-radius: 20px 20px 0 0;
+  width: 100%;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  animation: noteDetailSlideUp 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+@keyframes noteDetailSlideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+@media (min-width: 768px) {
+  .note-detail-overlay {
+    align-items: center;
+    justify-content: center;
+  }
+  .note-detail-panel {
+    border-radius: 20px;
+    max-width: 680px;
+    width: 95%;
+    max-height: 85vh;
+    animation: none;
+    box-shadow: var(--shadow-lg);
+  }
+}
+
+.note-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--bg-300);
+  flex-shrink: 0;
+}
+.note-detail-close {
+  border: none;
+  background: none;
+  font-size: 1rem;
+  color: var(--text-200);
+  padding: 0.25rem;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+  border-radius: 6px;
+  transition: background 0.1s;
+}
+.note-detail-close:hover { background: var(--bg-200); }
+
+.note-detail-nav {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+.note-detail-nav-btn {
+  border: 1px solid var(--bg-300);
+  border-radius: 8px;
+  background: none;
+  padding: 0.3rem 0.6rem;
+  cursor: pointer;
+  color: var(--text-200);
+  transition: border-color 0.15s;
+  line-height: 1;
+}
+.note-detail-nav-btn:hover:not(:disabled) { border-color: var(--accent-100); color: var(--accent-200); }
+.note-detail-nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.note-detail-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text-100);
+  min-width: 5rem;
+  text-align: center;
+}
+.note-detail-count {
+  font-size: 0.72rem;
+  color: var(--text-200);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.note-detail-body {
+  overflow-y: auto;
+  flex: 1;
+  padding: 1rem;
+  -webkit-overflow-scrolling: touch;
+}
+/* モーダル内ノートカードのスワイプ削除シェルフは非表示（操作が混在するため） */
+.note-detail-body .note-delete-shelf { display: none; }
+
+/* ── ダークモード ── */
+.dark-mode .topic-index-row,
+[data-theme="dark"] .topic-index-row {
+  background: var(--dm-card);
+  border-color: var(--dm-border);
+}
+.dark-mode .topic-index-row:hover,
+[data-theme="dark"] .topic-index-row:hover {
+  border-color: var(--dm-primary);
+}
+.dark-mode .notes-timeline-list,
+[data-theme="dark"] .notes-timeline-list {
+  border-color: var(--dm-border);
+}
+.dark-mode .note-row,
+[data-theme="dark"] .note-row {
+  border-bottom-color: var(--dm-border);
+}
+.dark-mode .note-row:hover,
+[data-theme="dark"] .note-row:hover {
+  background: var(--dm-card);
+}
+.dark-mode .note-detail-panel,
+[data-theme="dark"] .note-detail-panel {
+  background: var(--dm-card);
+}
+.dark-mode .note-detail-header,
+[data-theme="dark"] .note-detail-header {
+  border-bottom-color: var(--dm-border);
+}
+.dark-mode .note-detail-nav-btn,
+[data-theme="dark"] .note-detail-nav-btn {
+  border-color: var(--dm-border);
+}
+.dark-mode .topic-tag-sm,
+[data-theme="dark"] .topic-tag-sm {
+  background: rgba(113, 196, 239, 0.12);
+  color: var(--dm-primary);
+}

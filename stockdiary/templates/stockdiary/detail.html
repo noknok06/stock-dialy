@@ -1899,48 +1899,74 @@
           </div>
 
           {% if notes %}
-          <!-- 表示切替: 時系列 / テーマ別 -->
+          <!-- 表示切替: テーマ別（デフォルト） / 時系列 -->
           <div class="notes-view-toggle mb-3" role="tablist">
-            <button type="button" class="notes-view-btn active" data-view="timeline" onclick="switchNotesView('timeline')">
-              <i class="bi bi-list-ul me-1"></i>時系列
-            </button>
-            <button type="button" class="notes-view-btn" data-view="topic" onclick="switchNotesView('topic')">
+            <button type="button" class="notes-view-btn active" data-view="topic" onclick="switchNotesView('topic')">
               <i class="bi bi-collection me-1"></i>テーマ別
+            </button>
+            <button type="button" class="notes-view-btn" data-view="timeline" onclick="switchNotesView('timeline')">
+              <i class="bi bi-list-ul me-1"></i>時系列
             </button>
           </div>
           {% endif %}
 
-          <!-- 継続記録一覧（時系列） -->
-          <div class="notes-list mobile-optimized" id="notes-view-timeline">
-            {% for note in notes %}
-            {% include "stockdiary/partials/_note_card.html" %}
+          <!-- テーマ別ビュー: トピックインデックス（デフォルト表示） -->
+          <div class="notes-topic-index" id="notes-view-topic">
+            {% for topic, topic_notes in notes_by_topic.items %}
+            <button type="button" class="topic-index-row"
+                    onclick="openNoteDetailModal('{{ topic|default:''|escapejs }}')"
+                    data-topic="{{ topic|default:'' }}">
+              <div class="topic-index-left">
+                {% if topic %}<span class="topic-tag"># {{ topic }}</span>
+                {% else %}<span class="topic-tag topic-tag--muted">未分類</span>{% endif %}
+                <span class="topic-index-count">{{ topic_notes|length }}件</span>
+              </div>
+              <div class="topic-index-right">
+                <span class="topic-index-date">{{ topic_notes.0.date|date:"m/d" }}</span>
+                <i class="bi bi-chevron-right"></i>
+              </div>
+            </button>
             {% empty %}
             {% include "stockdiary/components/_empty_state.html" with icon="bi-journal-text" title="継続記録はまだありません" description="上のボタンから最初の記録を追加しましょう" %}
             {% endfor %}
           </div>
 
-          <!-- 継続記録一覧（テーマ別スレッド集約） -->
-          <div class="notes-topic-list" id="notes-view-topic" hidden>
-            {% for topic, topic_notes in notes_by_topic.items %}
-            <div class="topic-thread{% if not topic %} topic-thread--uncategorized{% endif %}">
-              <button type="button" class="topic-thread-header" onclick="toggleTopicThread(this)" aria-expanded="false">
-                <div class="topic-thread-title">
-                  {% if topic %}<span class="topic-tag"># {{ topic }}</span>{% else %}<span class="topic-tag topic-tag--muted">未分類</span>{% endif %}
-                  <span class="topic-thread-count">{{ topic_notes|length }}件</span>
-                </div>
-                <div class="topic-thread-meta">
-                  <span class="topic-thread-date"><i class="bi bi-clock-history me-1"></i>{{ topic_notes.0.date|date:"Y/m/d" }}</span>
-                  <i class="bi bi-chevron-down topic-thread-caret"></i>
-                </div>
-              </button>
-              <div class="topic-thread-preview">{{ topic_notes.0.content|render_markdown_with_mentions:mention_map|striptags|truncatewords:30 }}</div>
-              <div class="topic-thread-body" hidden>
-                {% for note in topic_notes %}
-                {% include "stockdiary/partials/_note_card.html" %}
-                {% endfor %}
-              </div>
-            </div>
+          <!-- 時系列ビュー: コンパクト行（hidden） -->
+          <div class="notes-timeline-list" id="notes-view-timeline" hidden>
+            {% for note in notes %}
+            {% include "stockdiary/partials/_note_row.html" %}
+            {% empty %}
+            {% include "stockdiary/components/_empty_state.html" with icon="bi-journal-text" title="継続記録はまだありません" description="上のボタンから最初の記録を追加しましょう" %}
             {% endfor %}
+          </div>
+
+          <!-- ノートカード格納庫（モーダル用・非表示） -->
+          <div id="note-card-store" aria-hidden="true" style="display:none;">
+            {% for note in notes %}
+            {% include "stockdiary/partials/_note_card.html" %}
+            {% endfor %}
+          </div>
+
+          <!-- テーマ詳細モーダル -->
+          <div class="note-detail-overlay" id="noteDetailOverlay" aria-modal="true" role="dialog" hidden>
+            <div class="note-detail-panel">
+              <div class="note-detail-header">
+                <button class="note-detail-close" onclick="closeNoteDetailModal()" aria-label="閉じる">
+                  <i class="bi bi-x-lg"></i>
+                </button>
+                <div class="note-detail-nav">
+                  <button class="note-detail-nav-btn" id="noteDetailPrev" onclick="navigateTopic(-1)" aria-label="前のテーマ" disabled>
+                    <i class="bi bi-chevron-left"></i>
+                  </button>
+                  <div class="note-detail-title" id="noteDetailTitle"></div>
+                  <button class="note-detail-nav-btn" id="noteDetailNext" onclick="navigateTopic(1)" aria-label="次のテーマ" disabled>
+                    <i class="bi bi-chevron-right"></i>
+                  </button>
+                </div>
+                <span class="note-detail-count" id="noteDetailCount"></span>
+              </div>
+              <div class="note-detail-body" id="noteDetailBody"></div>
+            </div>
           </div>
         </div>
 
@@ -2392,17 +2418,59 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   };
 
-  window.toggleTopicThread = function(btn) {
-    var thread = btn.closest('.topic-thread');
-    if (!thread) return;
-    var body = thread.querySelector('.topic-thread-body');
-    var preview = thread.querySelector('.topic-thread-preview');
-    var expanded = btn.getAttribute('aria-expanded') === 'true';
-    btn.setAttribute('aria-expanded', expanded ? 'false' : 'true');
-    if (body) body.hidden = expanded;
-    if (preview) preview.hidden = !expanded;
-    thread.classList.toggle('expanded', !expanded);
+  // テーマ別モーダル
+  var _noteTopics = [
+    {% for topic, topic_notes in notes_by_topic.items %}
+    {
+      topic: "{{ topic|default:''|escapejs }}",
+      label: "{% if topic %}# {{ topic|escapejs }}{% else %}未分類{% endif %}",
+      noteIds: [{% for note in topic_notes %}{{ note.id }}{% if not forloop.last %},{% endif %}{% endfor %}]
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+  var _currentTopicIdx = 0;
+
+  window.openNoteDetailModal = function(topic) {
+    var idx = _noteTopics.findIndex(function(t) { return t.topic === topic; });
+    _currentTopicIdx = idx >= 0 ? idx : 0;
+    _renderNoteDetailModal();
+    var overlay = document.getElementById('noteDetailOverlay');
+    if (overlay) { overlay.removeAttribute('hidden'); }
+    document.body.style.overflow = 'hidden';
   };
+
+  window.closeNoteDetailModal = function() {
+    var overlay = document.getElementById('noteDetailOverlay');
+    if (overlay) { overlay.setAttribute('hidden', ''); }
+    document.body.style.overflow = '';
+  };
+
+  window.navigateTopic = function(dir) {
+    _currentTopicIdx = Math.max(0, Math.min(_noteTopics.length - 1, _currentTopicIdx + dir));
+    _renderNoteDetailModal();
+  };
+
+  function _renderNoteDetailModal() {
+    if (!_noteTopics.length) return;
+    var data = _noteTopics[_currentTopicIdx];
+    var titleEl = document.getElementById('noteDetailTitle');
+    var countEl = document.getElementById('noteDetailCount');
+    var prevBtn = document.getElementById('noteDetailPrev');
+    var nextBtn = document.getElementById('noteDetailNext');
+    var body    = document.getElementById('noteDetailBody');
+    if (titleEl) titleEl.textContent = data.label;
+    if (countEl) countEl.textContent = (_currentTopicIdx + 1) + ' / ' + _noteTopics.length;
+    if (prevBtn) prevBtn.disabled = (_currentTopicIdx === 0);
+    if (nextBtn) nextBtn.disabled = (_currentTopicIdx === _noteTopics.length - 1);
+    if (body) {
+      body.innerHTML = '';
+      data.noteIds.forEach(function(noteId) {
+        var card = document.querySelector('#note-card-store .note-card[data-note-id="' + noteId + '"]');
+        if (card) { body.appendChild(card.cloneNode(true)); }
+      });
+      body.scrollTop = 0;
+    }
+  }
 
   // URLハッシュで直接フォームを開く場合はボトムシートを開く
   if (window.location.hash === '#add-note') {
