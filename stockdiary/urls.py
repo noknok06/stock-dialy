@@ -46,6 +46,7 @@ urlpatterns = [
     # 継続記録関連
     # ==========================================
     path('<int:pk>/note/', views.AddDiaryNoteView.as_view(), name='add_note'),
+    path('<int:diary_pk>/note/<int:pk>/edit/', views.UpdateDiaryNoteView.as_view(), name='edit_note'),
     path('<int:diary_pk>/note/<int:pk>/delete/', views.DeleteDiaryNoteView.as_view(), name='delete_note'),
 
     # ==========================================
