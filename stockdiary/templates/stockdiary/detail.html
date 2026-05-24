@@ -1931,10 +1931,10 @@
             {% endfor %}
           </div>
 
-          <!-- 時系列ビュー: コンパクト行（hidden） -->
-          <div class="notes-timeline-list" id="notes-view-timeline" hidden>
+          <!-- 時系列ビュー: 従来のカード一覧（hidden） -->
+          <div class="notes-list mobile-optimized" id="notes-view-timeline" hidden>
             {% for note in notes %}
-            {% include "stockdiary/partials/_note_row.html" %}
+            {% include "stockdiary/partials/_note_card.html" %}
             {% empty %}
             {% include "stockdiary/components/_empty_state.html" with icon="bi-journal-text" title="継続記録はまだありません" description="上のボタンから最初の記録を追加しましょう" %}
             {% endfor %}
