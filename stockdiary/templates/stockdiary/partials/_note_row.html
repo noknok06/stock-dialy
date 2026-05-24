@@ -1,0 +1,12 @@
+{% load stockdiary_filters %}
+{% load humanize %}
+<div class="note-row"
+     data-note-id="{{ note.id }}"
+     data-note-topic="{{ note.topic|default:'' }}"
+     onclick="openNoteDetailModal('{{ note.topic|default:''|escapejs }}', {{ note.id }})">
+  <span class="note-row-date">{{ note.date|date:"m/d" }}</span>
+  {% include "stockdiary/components/_note_type_badge.html" with note_type=note.note_type size="sm" %}
+  {% if note.topic %}<span class="topic-tag-sm"># {{ note.topic }}</span>{% endif %}
+  <span class="note-row-preview">{{ note.content|striptags|truncatechars:35 }}</span>
+  <i class="bi bi-chevron-right note-row-caret"></i>
+</div>
