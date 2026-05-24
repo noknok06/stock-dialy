@@ -1892,92 +1892,54 @@
               type="button"
               class="btn btn-primary"
               id="toggleNoteForm"
-              onclick="var s=document.getElementById('note_source_doc_id');if(s)s.value='';openBottomSheet('addNoteSheet')">
+              onclick="resetNoteFormToAdd();openBottomSheet('addNoteSheet')">
               <i class="bi bi-plus-circle me-2"></i>
               <span class="toggle-text">記録を追加</span>
             </button>
           </div>
 
-          <!-- 継続記録一覧 -->
-          <div class="notes-list mobile-optimized">
+          {% if notes %}
+          <!-- 表示切替: 時系列 / テーマ別 -->
+          <div class="notes-view-toggle mb-3" role="tablist">
+            <button type="button" class="notes-view-btn active" data-view="timeline" onclick="switchNotesView('timeline')">
+              <i class="bi bi-list-ul me-1"></i>時系列
+            </button>
+            <button type="button" class="notes-view-btn" data-view="topic" onclick="switchNotesView('topic')">
+              <i class="bi bi-collection me-1"></i>テーマ別
+            </button>
+          </div>
+          {% endif %}
+
+          <!-- 継続記録一覧（時系列） -->
+          <div class="notes-list mobile-optimized" id="notes-view-timeline">
             {% for note in notes %}
-            <div class="note-card mobile-optimized fade-in">
-              <!-- スワイプ削除シェルフ（モバイルのみ表示） -->
-              <div class="note-delete-shelf"
-                   data-note-id="{{ note.id }}"
-                   data-note-date="{{ note.date|date:'Y年m月d日' }}"
-                   data-note-type-label="{% if note.note_type == 'analysis' %}分析更新{% elif note.note_type == 'news' %}ニュース{% elif note.note_type == 'earnings' %}決算情報{% elif note.note_type == 'insight' %}新たな気づき{% elif note.note_type == 'risk' %}リスク要因{% else %}その他{% endif %}"
-                   data-diary-id="{{ diary.id }}">
-                <i class="bi bi-trash3"></i>
-                <span>削除</span>
-              </div>
-              <!-- スライドするコンテンツ -->
-              <div class="note-slide-content">
-              <div class="note-card-header-modern">
-                <!-- 左側：日付とメタ情報 -->
-                <div class="note-header-left">
-                  <div class="note-date-large">
-                    <span class="date-day">{{ note.date|date:"d" }}</span>
-                    <div class="date-year-month">
-                      <span class="date-year">{{ note.date|date:"Y" }}</span>
-                      <span class="date-month">{{ note.date|date:"m月" }}</span>
-                    </div>
-                  </div>
-
-                  <div class="note-meta-badges">
-                    {% include "stockdiary/components/_note_type_badge.html" with note_type=note.note_type %}
-                    {% include "stockdiary/components/_importance_badge.html" with importance=note.importance %}
-                  </div>
-                </div>
-
-                <!-- 右側：価格とアクション -->
-                <div class="note-header-right">
-                  {% if note.current_price %}
-                  <div class="price-info-compact">
-                    <div class="current-price">{{ note.current_price|floatformat:2|intcomma }}<span class="unit">円</span></div>
-                    {% with price_change=note.get_price_change %}
-                    {% if price_change %}
-                    <div class="price-change-badge {% if price_change > 0 %}gain{% else %}loss{% endif %}">
-                      <i class="bi bi-arrow-{% if price_change > 0 %}up{% else %}down{% endif %}-right"></i>
-                      {% if price_change > 0 %}+{% endif %}{{ price_change|floatformat:2 }}%
-                    </div>
-                    {% endif %}
-                    {% endwith %}
-                  </div>
-                  {% endif %}
-
-                  <button class="btn-delete-note"
-                          onclick="confirmDeleteNote({{ note.id }}, '{{ note.date|date:"Y年m月d日" }}', '{% if note.note_type == 'analysis' %}分析更新{% elif note.note_type == 'news' %}ニュース{% elif note.note_type == 'earnings' %}決算情報{% elif note.note_type == 'insight' %}新たな気づき{% elif note.note_type == 'risk' %}リスク要因{% else %}その他{% endif %}', {{ diary.id }})"
-                          title="削除">
-                    <i class="bi bi-trash3"></i>
-                  </button>
-                </div>
-              </div>
-
-              <div class="note-card-body mobile-optimized">
-                {% if note.image_url %}
-                <div class="note-image mb-2">
-                  <img src="{{ note.image_url }}"
-                      class="img-fluid rounded note-attached-image"
-                      alt="継続記録画像"
-                      loading="lazy"
-                      style="max-height: 200px; object-fit: cover; width: 100%; cursor: pointer;"
-                      onclick="showImageModal('{{ note.image_url }}', '{{ note.date|date:"Y年m月d日" }}の記録')">
-                  <div class="mt-1">
-                    <small class="text-muted">
-                      <i class="bi bi-image me-1"></i>
-                      クリックで拡大表示
-                    </small>
-                  </div>
-                </div>
-                {% endif %}
-
-                <div class="note-content-text markdown-content">{{ note.content|render_markdown_with_mentions:mention_map }}</div>
-              </div>
-              </div><!-- /.note-slide-content -->
-            </div>
+            {% include "stockdiary/partials/_note_card.html" %}
             {% empty %}
             {% include "stockdiary/components/_empty_state.html" with icon="bi-journal-text" title="継続記録はまだありません" description="上のボタンから最初の記録を追加しましょう" %}
+            {% endfor %}
+          </div>
+
+          <!-- 継続記録一覧（テーマ別スレッド集約） -->
+          <div class="notes-topic-list" id="notes-view-topic" hidden>
+            {% for topic, topic_notes in notes_by_topic.items %}
+            <div class="topic-thread{% if not topic %} topic-thread--uncategorized{% endif %}">
+              <button type="button" class="topic-thread-header" onclick="toggleTopicThread(this)" aria-expanded="false">
+                <div class="topic-thread-title">
+                  {% if topic %}<span class="topic-tag"># {{ topic }}</span>{% else %}<span class="topic-tag topic-tag--muted">未分類</span>{% endif %}
+                  <span class="topic-thread-count">{{ topic_notes|length }}件</span>
+                </div>
+                <div class="topic-thread-meta">
+                  <span class="topic-thread-date"><i class="bi bi-clock-history me-1"></i>{{ topic_notes.0.date|date:"Y/m/d" }}</span>
+                  <i class="bi bi-chevron-down topic-thread-caret"></i>
+                </div>
+              </button>
+              <div class="topic-thread-preview">{{ topic_notes.0.content|render_markdown_with_mentions:mention_map|striptags|truncatewords:30 }}</div>
+              <div class="topic-thread-body" hidden>
+                {% for note in topic_notes %}
+                {% include "stockdiary/partials/_note_card.html" %}
+                {% endfor %}
+              </div>
+            </div>
             {% endfor %}
           </div>
         </div>
@@ -2338,9 +2300,113 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
+  // ============================================
+  // 継続記録: 新規/編集モード切替・テーマUI
+  // ============================================
+  function setPillActive(target, value) {
+    document.querySelectorAll('[data-target="' + target + '"]').forEach(function(p) {
+      p.classList.toggle('active', p.dataset.value === value);
+    });
+  }
+
+  window.setNoteFormAddMode = function() {
+    if (!quickNoteForm) return;
+    quickNoteForm.action = quickNoteForm.dataset.addAction;
+    var title = document.getElementById('addNoteSheetTitle');
+    if (title) title.innerHTML = '<i class="bi bi-journal-plus me-2"></i>記録を追加';
+  };
+
+  window.resetNoteFormToAdd = function() {
+    window.setNoteFormAddMode();
+    var dateEl = document.getElementById('date');
+    if (dateEl) dateEl.value = new Date().toISOString().slice(0, 10);
+    var typeEl = document.getElementById('note_type');
+    if (typeEl) { typeEl.value = 'analysis'; setPillActive('note_type', 'analysis'); }
+    var impEl = document.getElementById('note_importance');
+    if (impEl) { impEl.value = 'medium'; setPillActive('note_importance', 'medium'); }
+    var topicEl = document.getElementById('note_topic');
+    if (topicEl) topicEl.value = '';
+    document.querySelectorAll('.topic-chip.active').forEach(function(c) { c.classList.remove('active'); });
+    var priceEl = document.getElementById('note_current_price');
+    if (priceEl) priceEl.value = '';
+    var srcEl = document.getElementById('note_source_doc_id');
+    if (srcEl) srcEl.value = '';
+    if (typeof resetNoteEasyMDE === 'function') resetNoteEasyMDE();
+    var ta = document.getElementById('content');
+    if (ta) ta.value = '';
+    var fileEl = document.getElementById('note_image');
+    if (fileEl) fileEl.value = '';
+    var preview = document.getElementById('note-image-preview-container');
+    if (preview) preview.style.display = 'none';
+  };
+
+  window.openEditNoteSheet = function(noteId) {
+    var card = document.querySelector('.note-card[data-note-id="' + noteId + '"]');
+    if (!card || !quickNoteForm) return;
+    window.resetNoteFormToAdd();
+
+    // 編集モードへ
+    quickNoteForm.action = quickNoteForm.dataset.editBase + noteId + '/edit/';
+    var title = document.getElementById('addNoteSheetTitle');
+    if (title) title.innerHTML = '<i class="bi bi-pencil-square me-2"></i>記録を編集';
+
+    var dateEl = document.getElementById('date');
+    if (dateEl) dateEl.value = card.dataset.noteDate || '';
+    var typeEl = document.getElementById('note_type');
+    if (typeEl) { typeEl.value = card.dataset.noteType; setPillActive('note_type', card.dataset.noteType); }
+    var impEl = document.getElementById('note_importance');
+    if (impEl) { impEl.value = card.dataset.noteImportance; setPillActive('note_importance', card.dataset.noteImportance); }
+    var topicEl = document.getElementById('note_topic');
+    if (topicEl) topicEl.value = card.dataset.noteTopic || '';
+    var priceEl = document.getElementById('note_current_price');
+    if (priceEl) priceEl.value = card.dataset.notePrice || '';
+
+    var raw = document.querySelector('.note-raw-content[data-for-note="' + noteId + '"]');
+    var content = raw ? raw.value : '';
+
+    openBottomSheet('addNoteSheet');
+    if (typeof initNoteEasyMDE === 'function') initNoteEasyMDE();
+    if (noteEasyMDE) {
+      noteEasyMDE.value(content);
+      updateNoteCharCount(content);
+    } else {
+      var ta = document.getElementById('content');
+      if (ta) ta.value = content;
+    }
+  };
+
+  window.setNoteTopic = function(el, value) {
+    var topicEl = document.getElementById('note_topic');
+    if (topicEl) topicEl.value = value;
+    document.querySelectorAll('.topic-chip').forEach(function(c) { c.classList.remove('active'); });
+    if (el) el.classList.add('active');
+  };
+
+  window.switchNotesView = function(view) {
+    var timeline = document.getElementById('notes-view-timeline');
+    var topic = document.getElementById('notes-view-topic');
+    if (timeline) timeline.hidden = (view !== 'timeline');
+    if (topic) topic.hidden = (view !== 'topic');
+    document.querySelectorAll('.notes-view-btn').forEach(function(b) {
+      b.classList.toggle('active', b.dataset.view === view);
+    });
+  };
+
+  window.toggleTopicThread = function(btn) {
+    var thread = btn.closest('.topic-thread');
+    if (!thread) return;
+    var body = thread.querySelector('.topic-thread-body');
+    var preview = thread.querySelector('.topic-thread-preview');
+    var expanded = btn.getAttribute('aria-expanded') === 'true';
+    btn.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+    if (body) body.hidden = expanded;
+    if (preview) preview.hidden = !expanded;
+    thread.classList.toggle('expanded', !expanded);
+  };
+
   // URLハッシュで直接フォームを開く場合はボトムシートを開く
   if (window.location.hash === '#add-note') {
-    setTimeout(function() { openBottomSheet('addNoteSheet'); }, 300);
+    setTimeout(function() { resetNoteFormToAdd(); openBottomSheet('addNoteSheet'); }, 300);
   }
 })();
 }); // DOMContentLoaded
@@ -2802,7 +2868,10 @@ window.edinetPrefillNote = function(diaryId, docId) {
     var srcDocEl = document.getElementById('note_source_doc_id');
     if (srcDocEl) srcDocEl.value = data.doc_id || '';
 
-    // 継続記録ボトムシートを開く
+    // 継続記録ボトムシートを開く（新規モードを保証。内容は維持）
+    if (typeof window.setNoteFormAddMode === 'function') {
+      window.setNoteFormAddMode();
+    }
     if (typeof openBottomSheet === 'function') {
       openBottomSheet('addNoteSheet');
     }
@@ -3215,13 +3284,14 @@ window.showReportModal = function(el) {
   <div class="bottom-sheet-content">
     <div class="bottom-sheet-handle" aria-label="シートを閉じるにはドラッグしてください"></div>
     <div class="bottom-sheet-header">
-      <h3><i class="bi bi-journal-plus me-2"></i>記録を追加</h3>
+      <h3 id="addNoteSheetTitle"><i class="bi bi-journal-plus me-2"></i>記録を追加</h3>
       <button type="button" class="btn-close" aria-label="閉じる">
         <i class="bi bi-x-lg"></i>
       </button>
     </div>
     <div class="bottom-sheet-body">
-      <form id="quickNoteForm" method="post" action="{% url 'stockdiary:add_note' diary.id %}" enctype="multipart/form-data">
+      <form id="quickNoteForm" method="post" action="{% url 'stockdiary:add_note' diary.id %}" enctype="multipart/form-data"
+            data-add-action="{% url 'stockdiary:add_note' diary.id %}" data-edit-base="/stockdiary/{{ diary.id }}/note/">
         {% csrf_token %}
 
         {% now "Y-m-d" as today %}
@@ -3270,6 +3340,26 @@ window.showReportModal = function(el) {
           </div>
           <input type="hidden" id="note_importance" name="importance" value="medium">
           <input type="hidden" id="note_source_doc_id" name="source_doc_id" value="">
+        </div>
+
+        <div class="form-section mobile-optimized">
+          <label for="note_topic" class="section-title">
+            <i class="bi bi-bookmark"></i>
+            テーマ（任意）
+            <small class="text-muted ms-2" style="font-size: 0.75rem; font-weight: 400;">同じ話題を束ねます</small>
+          </label>
+          {% if note_topics %}
+          <div class="topic-chips mb-2">
+            {% for t in note_topics %}
+            <button type="button" class="topic-chip" onclick="setNoteTopic(this, '{{ t|escapejs }}')"># {{ t }}</button>
+            {% endfor %}
+          </div>
+          {% endif %}
+          <input type="text" class="form-control form-input-improved" id="note_topic" name="topic"
+                 maxlength="50" placeholder="例: ナフサの影響" list="note-topic-list" autocomplete="off">
+          <datalist id="note-topic-list">
+            {% for t in note_topics %}<option value="{{ t }}"></option>{% endfor %}
+          </datalist>
         </div>
 
         <div class="form-group">

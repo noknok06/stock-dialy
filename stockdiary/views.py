@@ -38,7 +38,7 @@ from django.views.generic import FormView
 from django.db import transaction as db_transaction
 from decimal import Decimal, InvalidOperation
 from datetime import datetime, timedelta
-from collections import Counter, defaultdict
+from collections import Counter, defaultdict, OrderedDict
 import calendar
 import chardet
 import mimetypes
@@ -611,7 +611,18 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         
         # 継続記録
         context['note_form'] = DiaryNoteForm(initial={'date': timezone.now().date()})
-        context['notes'] = self.object.notes.all().order_by('-date')
+        notes = self.object.notes.all().order_by('-date')
+        context['notes'] = notes
+
+        # テーマ別（スレッド集約）ビュー用。date降順を保持し、未分類は最後に回す。
+        grouped = OrderedDict()
+        for note in notes:
+            grouped.setdefault(note.topic or '', []).append(note)
+        if '' in grouped:
+            grouped.move_to_end('')
+        context['notes_by_topic'] = grouped
+        # 入力チップ/サジェスト用（直近使用順 = date降順での初出順、未分類を除く）
+        context['note_topics'] = [t for t in grouped if t]
         
         # 関連日記
         # 銘柄コードが空の場合は同一銘柄グループとして扱わない（空同士がまとめられるのを防ぐ）
@@ -882,6 +893,48 @@ class AddDiaryNoteView(LoginRequiredMixin, CreateView):
     def form_invalid(self, form):
         diary_id = self.kwargs.get('pk')
         return redirect('stockdiary:detail', pk=diary_id)
+
+
+class UpdateDiaryNoteView(LoginRequiredMixin, UpdateView):
+    """継続記録の編集"""
+    model = DiaryNote
+    form_class = DiaryNoteForm
+    http_method_names = ['post']
+
+    def get_queryset(self):
+        return DiaryNote.objects.filter(diary__user=self.request.user)
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+
+        source_doc_id = self.request.POST.get('source_doc_id', '').strip()[:8]
+        if source_doc_id:
+            self.object.source_doc_id = source_doc_id
+            self.object.save(update_fields=['source_doc_id'])
+
+        image_file = self.request.FILES.get('image')
+        if image_file:
+            if image_file.size > 10 * 1024 * 1024:
+                messages.error(self.request, '画像ファイルのサイズは10MB以下にしてください')
+                return self.form_invalid(form)
+
+            valid_formats = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+            if hasattr(image_file, 'content_type') and image_file.content_type not in valid_formats:
+                messages.error(self.request, 'JPEG、PNG、GIF、WebP形式の画像ファイルのみアップロード可能です')
+                return self.form_invalid(form)
+
+            success = self.object.process_and_save_image(image_file)
+            if not success:
+                messages.warning(self.request, '継続記録は更新されましたが、画像の処理に失敗しました。')
+
+        messages.success(self.request, "継続記録を更新しました")
+        return response
+
+    def get_success_url(self):
+        return reverse_lazy('stockdiary:detail', kwargs={'pk': self.kwargs.get('diary_pk')})
+
+    def form_invalid(self, form):
+        return redirect('stockdiary:detail', pk=self.kwargs.get('diary_pk'))
 
 
 class DeleteDiaryNoteView(LoginRequiredMixin, DeleteView):

@@ -344,6 +344,9 @@ class DiaryNote(models.Model):
     ]
     importance = models.CharField(max_length=10, choices=IMPORTANCE_CHOICES, default='medium')
 
+    topic = models.CharField('トピック', max_length=50, blank=True, default='', db_index=True,
+                             help_text='分析テーマ（例: ナフサの影響）。空欄可')
+
     source_doc_id = models.CharField('参照書類ID', max_length=8, null=True, blank=True,
                                      help_text='関連するEDINET書類のdoc_id')
 

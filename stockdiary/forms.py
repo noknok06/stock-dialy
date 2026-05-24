@@ -361,11 +361,12 @@ class DiaryNoteForm(forms.ModelForm):
     
     class Meta:
         model = DiaryNote
-        fields = ['date', 'note_type', 'importance', 'content', 'current_price']
+        fields = ['date', 'note_type', 'importance', 'topic', 'content', 'current_price']
         widgets = {
             'date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'note_type': forms.Select(attrs={'class': 'form-select'}),
             'importance': forms.Select(attrs={'class': 'form-select'}),
+            'topic': forms.TextInput(attrs={'class': 'form-control', 'maxlength': '50'}),
             'content': forms.Textarea(attrs={
                 'rows': 5,
                 'class': 'form-control',
