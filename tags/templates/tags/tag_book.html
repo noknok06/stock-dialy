@@ -2,7 +2,7 @@
 {% load static %}
 {% load stockdiary_filters %}
 
-{% block title %}{{ tag.name }} - 本モード | カブログ{% endblock %}
+{% block title %}{{ tag.name }} - 投資理由台帳 | カブログ{% endblock %}
 
 {% block head %}
 {{ block.super }}
@@ -10,492 +10,381 @@
 <link rel="stylesheet" href="{% static 'css/3-components/dark-mode-components.css' %}?v={{ STATIC_VERSION }}">
 
 <style>
-  /* ========== 本モード専用スタイル ========== */
+  /* ========== レイアウト ========== */
 
-  .book-container {
-    max-width: 860px;
+  .ledger-container {
+    max-width: 1100px;
     margin: 0 auto;
-    padding: 1.5rem 1rem 2rem;
+    padding: 1.5rem 1rem 3rem;
   }
 
-  /* ヘッダー */
-  .book-header {
+  .ledger-header {
     text-align: center;
+    margin-bottom: 1.75rem;
+  }
+
+  .ledger-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-100);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .ledger-title i {
+    color: var(--primary-200);
+    font-size: 1.3rem;
+  }
+
+  .ledger-subtitle {
+    font-size: 0.88rem;
+    color: var(--text-200);
+  }
+
+  /* ========== サマリー統計グリッド ========== */
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
     margin-bottom: 1.5rem;
   }
 
-  .book-title {
-    font-size: 1.6rem;
-    font-weight: 700;
-    color: var(--text-100);
-    margin-bottom: 0.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    line-height: 1.3;
+  @media (min-width: 768px) {
+    .stats-grid {
+      grid-template-columns: repeat(auto-fill, minmax(150px, 200px));
+      justify-content: center;
+      gap: 1rem;
+    }
   }
 
-  .book-title i {
-    font-size: 1.4rem;
-    flex-shrink: 0;
-    color: var(--primary-200);
-  }
-
-  .book-subtitle {
-    font-size: 0.9rem;
-    color: var(--text-200);
-  }
-
-  /* ========== スライドカルーセル ========== */
-
-  .book-viewport {
-    position: relative;
-    overflow: hidden;
-    border-radius: var(--radius-lg);
-    user-select: none;
-    -webkit-user-select: none;
-    touch-action: pan-y; /* allow vertical scroll, intercept horizontal */
-    cursor: grab;
-  }
-
-  .book-viewport:active {
-    cursor: grabbing;
-  }
-
-  .page-slide-track {
-    display: flex;
-    will-change: transform;
-    transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    align-items: flex-start;
-  }
-
-  .page-slide-track.no-transition {
-    transition: none !important;
-  }
-
-  /* ========== ページカード ========== */
-
-  .page-card {
-    flex: 0 0 100%;
-    min-width: 0;
+  .stat-card {
     background: var(--bg-100);
-    border: 1.5px solid var(--border-light);
+    border: 2px solid var(--border-light);
     border-radius: var(--radius-lg);
-    padding: 2.25rem 2.5rem 3.5rem;
-    box-shadow:
-      0 2px 8px rgba(0, 0, 0, 0.06),
-      0 8px 24px rgba(0, 0, 0, 0.04);
+    padding: 1.25rem;
     position: relative;
-    min-height: 480px;
     overflow: hidden;
   }
 
-  /* 本の綴じ目（スパイン）装飾 */
-  .page-card::before {
+  .stat-card::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    width: 5px;
-    background: linear-gradient(
-      to right,
-      rgba(0, 0, 0, 0.12) 0%,
-      rgba(0, 0, 0, 0.04) 60%,
-      transparent 100%
-    );
-    border-radius: var(--radius-lg) 0 0 var(--radius-lg);
-    pointer-events: none;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--gradient-primary);
   }
 
-  /* ページ番号フッター（本のように下中央）*/
-  .page-number-footer {
-    position: absolute;
-    bottom: 1rem;
-    left: 0;
-    right: 0;
-    text-align: center;
-    font-size: 0.75rem;
-    color: var(--text-200);
-    opacity: 0.6;
-    font-style: italic;
-    letter-spacing: 0.05em;
-    pointer-events: none;
-  }
-
-  /* ページ内コンテンツ */
-  .page-inner {
-    position: relative;
-  }
-
-  .page-header {
-    margin-bottom: 1.75rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid var(--border-light);
-  }
-
-  .page-stock-name {
-    font-size: 1.7rem;
-    font-weight: 700;
-    color: var(--text-100);
-    margin-bottom: 0.65rem;
-    line-height: 1.35;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-  }
-
-  .page-stock-code {
-    font-size: 0.9rem;
-    color: var(--text-200);
-    margin: 0 0 0.65rem 0;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-  }
-
-  .page-stock-code i {
-    font-size: 0.8rem;
-    flex-shrink: 0;
-  }
-
-  .page-sector {
-    display: inline-block;
-    background: var(--primary-100);
+  .stat-card-icon {
+    font-size: 1.25rem;
     color: var(--primary-200);
-    padding: 0.3rem 0.8rem;
-    border-radius: 14px;
-    font-size: 0.8rem;
-    font-weight: 500;
-    line-height: 1.4;
+    margin-bottom: 0.4rem;
   }
 
-  .page-content {
-    font-size: 1.05rem;
-    line-height: 1.85;
-    color: var(--text-100);
-  }
-
-  .page-content h1, .page-content h2, .page-content h3 {
-    margin-top: 1.5rem;
-    margin-bottom: 0.85rem;
-    color: var(--text-100);
-  }
-
-  .page-content p {
-    margin-bottom: 1rem;
-  }
-
-  .page-content ul, .page-content ol {
-    margin-left: 1.5rem;
-    margin-bottom: 1rem;
-  }
-
-  .page-content li {
-    margin-bottom: 0.5rem;
-  }
-
-  .page-content code {
-    background: rgba(0, 0, 0, 0.05);
-    padding: 0.2rem 0.4rem;
-    border-radius: 4px;
-    font-size: 0.9em;
-    font-family: 'Courier New', monospace;
-  }
-
-  .page-content pre {
-    background: rgba(0, 0, 0, 0.05);
-    padding: 1rem;
-    border-radius: 8px;
-    overflow-x: auto;
-    margin-bottom: 1rem;
-  }
-
-  .page-content pre code {
-    background: none;
-    padding: 0;
-  }
-
-  .page-content blockquote {
-    border-left: 4px solid var(--primary-200);
-    padding-left: 1rem;
-    margin: 1rem 0;
-    color: var(--text-200);
-    font-style: italic;
-  }
-
-  .page-content a {
-    color: var(--primary-200);
-    text-decoration: none;
-  }
-
-  .page-content a:hover {
-    text-decoration: underline;
-  }
-
-  .page-content table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 1rem;
-  }
-
-  .page-content th,
-  .page-content td {
-    padding: 0.5rem;
-    border: 1px solid var(--border-light);
-    text-align: left;
-  }
-
-  .page-content th {
-    background: var(--bg-200);
-    font-weight: 600;
-  }
-
-  .page-content hr {
-    border: none;
-    border-top: 2px solid var(--border-light);
-    margin: 1.5rem 0;
-  }
-
-  .page-content img {
-    max-width: 100%;
-    height: auto;
-    border-radius: 8px;
-    margin: 1rem 0;
-  }
-
-  /* ========== タップゾーン（デスクトップ） ========== */
-
-  .book-tap-zone {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 64px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10;
-    opacity: 0;
-    transition: opacity 0.2s ease, background 0.2s ease;
-    cursor: pointer;
-    border: none;
-    background: transparent;
-    padding: 0;
-  }
-
-  .book-viewport:hover .book-tap-zone:not(:disabled) {
-    opacity: 1;
-  }
-
-  .book-tap-zone:not(:disabled):hover {
-    background: rgba(0, 0, 0, 0.04);
-  }
-
-  .book-tap-zone:disabled {
-    cursor: default;
-    pointer-events: none;
-  }
-
-  .book-tap-zone-left {
-    left: 0;
-    border-radius: var(--radius-lg) 0 0 var(--radius-lg);
-  }
-
-  .book-tap-zone-right {
-    right: 0;
-    border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
-  }
-
-  .book-tap-zone i {
+  .stat-card-value {
     font-size: 1.5rem;
-    color: var(--text-200);
-    text-shadow: 0 1px 4px rgba(0,0,0,0.15);
-  }
-
-  /* ========== プログレスインジケーター ========== */
-
-  .book-progress {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-    padding: 1.25rem 0 0.5rem;
-  }
-
-  .progress-dots {
-    display: flex;
-    gap: 6px;
-    align-items: center;
-  }
-
-  .progress-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--border-light);
-    transition: all 0.25s ease;
-    cursor: pointer;
-    border: none;
-    padding: 0;
-    flex-shrink: 0;
-  }
-
-  .progress-dot:hover {
-    background: var(--text-200);
-    transform: scale(1.2);
-  }
-
-  .progress-dot.active {
-    background: var(--primary-200);
-    width: 22px;
-    border-radius: 4px;
-  }
-
-  .progress-bar-wrap {
-    flex: 1;
-    max-width: 200px;
-    height: 4px;
-    background: var(--border-light);
-    border-radius: 2px;
-    overflow: hidden;
-  }
-
-  .progress-bar-fill {
-    height: 100%;
-    background: var(--gradient-primary);
-    border-radius: 2px;
-    transition: width 0.35s ease;
-    width: 0%;
-  }
-
-  .page-counter {
-    font-size: 0.875rem;
-    color: var(--text-200);
-    font-weight: 500;
-    min-width: 50px;
-    text-align: center;
-  }
-
-  .page-counter .current-num {
-    font-size: 1rem;
     font-weight: 700;
     color: var(--text-100);
+    line-height: 1.2;
   }
 
-  /* ========== ナビゲーションボタン（前/次） ========== */
+  .stat-card-label {
+    font-size: 0.78rem;
+    color: var(--text-200);
+    margin-top: 4px;
+  }
 
-  .book-nav {
+  /* ========== ツールバー ========== */
+
+  .ledger-toolbar {
     display: flex;
+    align-items: center;
     justify-content: space-between;
-    align-items: center;
-    padding-top: 0.5rem;
+    margin-bottom: 0.75rem;
+    gap: 0.5rem;
+    flex-wrap: wrap;
   }
 
-  .nav-btn {
-    background: var(--gradient-primary);
-    color: white;
-    border: none;
-    padding: 0.65rem 1.25rem;
-    border-radius: var(--radius-md);
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
+  .ledger-count {
+    font-size: 0.88rem;
+    color: var(--text-200);
+  }
+
+  .ledger-sort-group {
     display: flex;
-    align-items: center;
     gap: 0.4rem;
   }
 
-  .nav-btn:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lg);
-  }
-
-  .nav-btn:disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
-  }
-
-  /* ========== スワイプヒント ========== */
-
-  .swipe-hint {
-    position: fixed;
-    bottom: 5rem;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.75);
-    color: white;
-    padding: 0.65rem 1.25rem;
-    border-radius: 2rem;
-    font-size: 0.8rem;
-    z-index: 1000;
-    pointer-events: none;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    opacity: 0;
-    animation: hintFadeInOut 2.5s ease-in-out 0.6s forwards;
+  .ledger-sort-btn {
+    padding: 0.3rem 0.75rem;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--text-200);
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.15s;
     white-space: nowrap;
   }
 
-  .swipe-hint i {
-    font-size: 1rem;
-    animation: swipeAnim 1.2s ease-in-out infinite;
+  .ledger-sort-btn:hover {
+    background: var(--bg-200);
+    color: var(--text-100);
   }
 
-  @keyframes swipeAnim {
-    0%, 100% { transform: translateX(0); }
-    50% { transform: translateX(-6px); }
+  .ledger-sort-btn.active {
+    background: var(--primary-100);
+    color: var(--primary-200);
+    border-color: var(--primary-200);
+    font-weight: 600;
   }
 
-  @keyframes hintFadeInOut {
-    0% { opacity: 0; transform: translateX(-50%) translateY(6px); }
-    15% { opacity: 1; transform: translateX(-50%) translateY(0); }
-    75% { opacity: 1; transform: translateX(-50%) translateY(0); }
-    100% { opacity: 0; transform: translateX(-50%) translateY(-4px); }
+  /* ========== テーブル（デスクトップ） ========== */
+
+  .ledger-table-wrap {
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
   }
 
-  /* キーボードショートカットヒント（デスクトップ） */
-  .keyboard-hint {
-    position: fixed;
-    bottom: 2rem;
-    right: 2rem;
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 0.75rem 1.25rem;
-    border-radius: var(--radius-md);
-    font-size: 0.8rem;
-    z-index: 1000;
-    pointer-events: none;
-    opacity: 0;
-    animation: hintFadeInOut 2.5s ease-in-out 0.6s forwards;
+  .ledger-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--bg-100);
   }
 
-  .keyboard-hint kbd {
-    background: rgba(255, 255, 255, 0.2);
-    padding: 0.15rem 0.4rem;
-    border-radius: 4px;
-    font-family: monospace;
-    margin: 0 0.2rem;
+  .ledger-table thead th {
+    background: var(--bg-200);
+    padding: 0.7rem 1rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-200);
+    border-bottom: 2px solid var(--border-light);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
   }
 
-  /* ========== 空の状態 ========== */
+  .ledger-table td {
+    padding: 0.85rem 1rem;
+    vertical-align: top;
+    border-bottom: 1px solid var(--border-light);
+    color: var(--text-100);
+  }
+
+  .ledger-row:last-child td {
+    border-bottom: none;
+  }
+
+  .ledger-row {
+    transition: background 0.12s;
+    border-left: 3px solid transparent;
+  }
+
+  .ledger-row:hover td {
+    background: var(--bg-200);
+  }
+
+  .ledger-row[data-status="holding"] {
+    border-left-color: #3b82f6;
+  }
+
+  .ledger-row[data-status="memo"] {
+    border-left-color: #9ca3af;
+  }
+
+  .col-stock  { width: 20%; min-width: 130px; }
+  .col-thesis { width: 55%; }
+  .col-status { width: 10%; text-align: center; white-space: nowrap; }
+  .col-profit { width: 15%; text-align: right; white-space: nowrap; }
+
+  /* ========== 銘柄セル ========== */
+
+  .stock-link {
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .stock-link:hover .stock-name {
+    text-decoration: underline;
+  }
+
+  .stock-name {
+    font-weight: 600;
+    color: var(--text-100);
+    font-size: 0.95rem;
+  }
+
+  .stock-code {
+    font-size: 0.75rem;
+    color: var(--text-200);
+  }
+
+  .stock-sector {
+    display: inline-block;
+    margin-top: 0.3rem;
+    font-size: 0.7rem;
+    color: var(--primary-200);
+    background: var(--primary-100);
+    padding: 0.15rem 0.55rem;
+    border-radius: 10px;
+  }
+
+  /* ========== テーゼセル（展開） ========== */
+
+  .thesis-preview {
+    font-size: 0.88rem;
+    line-height: 1.6;
+    color: var(--text-200);
+  }
+
+  .thesis-preview p, .thesis-preview h1, .thesis-preview h2, .thesis-preview h3 {
+    margin: 0;
+  }
+
+  .thesis-full {
+    font-size: 0.88rem;
+    line-height: 1.7;
+    color: var(--text-100);
+    margin-top: 0.4rem;
+  }
+
+  .thesis-full p { margin-bottom: 0.6rem; }
+  .thesis-full p:last-child { margin-bottom: 0; }
+  .thesis-full h1, .thesis-full h2, .thesis-full h3 {
+    margin: 0.8rem 0 0.4rem; font-size: 1rem;
+  }
+  .thesis-full ul, .thesis-full ol { margin-left: 1.2rem; margin-bottom: 0.5rem; }
+  .thesis-full code {
+    background: rgba(0,0,0,0.05); padding: 0.1rem 0.35rem;
+    border-radius: 4px; font-size: 0.85em;
+  }
+
+  .thesis-expand-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: none;
+    border: none;
+    padding: 0.2rem 0;
+    margin-top: 0.35rem;
+    font-size: 0.78rem;
+    color: var(--accent-200, #00668c);
+    cursor: pointer;
+  }
+
+  .thesis-expand-btn:hover {
+    text-decoration: underline;
+  }
+
+  .expand-icon {
+    transition: transform 0.22s ease;
+  }
+
+  .thesis-expand-btn[aria-expanded="true"] .expand-icon {
+    transform: rotate(180deg);
+  }
+
+  /* ========== ステータスバッジ（diary-detail.css から流用） ========== */
+
+  .status-badge-improved {
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    border: 1px solid;
+  }
+
+  .status-badge-memo {
+    background: linear-gradient(135deg, rgba(113,196,239,0.15) 0%, rgba(113,196,239,0.08) 100%);
+    color: var(--accent-100);
+    border-color: rgba(113,196,239,0.3);
+  }
+
+  .status-badge-sold {
+    background: linear-gradient(135deg, rgba(239,68,68,0.15) 0%, rgba(239,68,68,0.08) 100%);
+    color: var(--danger-color);
+    border-color: rgba(239,68,68,0.3);
+  }
+
+  .status-badge-active {
+    background: linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(16,185,129,0.08) 100%);
+    color: var(--success-color);
+    border-color: rgba(16,185,129,0.3);
+  }
+
+  .date-hint {
+    font-size: 0.7rem;
+    color: var(--text-200);
+    margin-top: 4px;
+  }
+
+  /* ========== モバイルカード ========== */
+
+  .ledger-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .ledger-card {
+    background: var(--bg-100);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .lcard-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .lcard-badges {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.3rem;
+  }
+
+  .lcard-thesis {
+    font-size: 0.88rem;
+    line-height: 1.65;
+    color: var(--text-200);
+  }
+
+  /* ========== 空状態 ========== */
 
   .empty-state {
     text-align: center;
     padding: 4rem 2rem;
     background: var(--bg-100);
     border-radius: var(--radius-lg);
+    border: 1px dashed var(--border-light);
   }
 
   .empty-state-icon {
-    font-size: 4rem;
+    font-size: 3rem;
     color: var(--text-200);
     margin-bottom: 1rem;
+    display: block;
   }
 
   .empty-state-title {
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     font-weight: 600;
     color: var(--text-100);
     margin-bottom: 0.5rem;
@@ -503,545 +392,332 @@
 
   .empty-state-text {
     color: var(--text-200);
-    margin-bottom: 2rem;
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
   }
 
   /* ========== ダークモード ========== */
 
-  .dark-mode .page-card,
-  [data-theme="dark"] .page-card {
+  .dark-mode .stat-card,
+  [data-theme="dark"] .stat-card {
     background: var(--dm-card);
     border-color: var(--dm-border);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.2);
   }
 
-  .dark-mode .page-card::before,
-  [data-theme="dark"] .page-card::before {
-    background: linear-gradient(
-      to right,
-      rgba(255, 255, 255, 0.06) 0%,
-      rgba(255, 255, 255, 0.02) 60%,
-      transparent 100%
-    );
-  }
-
-  .dark-mode .page-header,
-  [data-theme="dark"] .page-header {
-    border-bottom-color: var(--dm-border);
-  }
-
-  .dark-mode .page-stock-name,
-  [data-theme="dark"] .page-stock-name {
-    color: var(--dm-text);
-  }
-
-  .dark-mode .page-stock-code,
-  [data-theme="dark"] .page-stock-code {
-    color: var(--dm-text-secondary);
-  }
-
-  .dark-mode .page-sector,
-  [data-theme="dark"] .page-sector {
-    background: var(--dm-primary-bg);
-    color: var(--dm-primary-text);
-  }
-
-  .dark-mode .page-content,
-  [data-theme="dark"] .page-content {
-    color: var(--dm-text);
-  }
-
-  .dark-mode .page-content h1,
-  .dark-mode .page-content h2,
-  .dark-mode .page-content h3,
-  .dark-mode .page-content h4,
-  .dark-mode .page-content h5,
-  .dark-mode .page-content h6,
-  [data-theme="dark"] .page-content h1,
-  [data-theme="dark"] .page-content h2,
-  [data-theme="dark"] .page-content h3,
-  [data-theme="dark"] .page-content h4,
-  [data-theme="dark"] .page-content h5,
-  [data-theme="dark"] .page-content h6 {
-    color: var(--dm-text);
-  }
-
-  .dark-mode .page-content a,
-  [data-theme="dark"] .page-content a {
-    color: var(--accent-200);
-  }
-
-  .dark-mode .page-content code,
-  [data-theme="dark"] .page-content code {
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--dm-text);
-  }
-
-  .dark-mode .page-content pre,
-  [data-theme="dark"] .page-content pre {
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid var(--dm-border);
-  }
-
-  .dark-mode .page-content blockquote,
-  [data-theme="dark"] .page-content blockquote {
-    border-left-color: var(--dm-border);
-    color: var(--dm-text-secondary);
-  }
-
-  .dark-mode .page-content table th,
-  .dark-mode .page-content table td,
-  [data-theme="dark"] .page-content table th,
-  [data-theme="dark"] .page-content table td {
+  .dark-mode .ledger-table-wrap,
+  [data-theme="dark"] .ledger-table-wrap {
     border-color: var(--dm-border);
   }
 
-  .dark-mode .page-content table th,
-  [data-theme="dark"] .page-content table th {
-    background: rgba(255, 255, 255, 0.05);
+  .dark-mode .ledger-table,
+  [data-theme="dark"] .ledger-table {
+    background: var(--dm-card);
   }
 
-  .dark-mode .page-content hr,
-  [data-theme="dark"] .page-content hr {
-    border-top-color: var(--dm-border);
+  .dark-mode .ledger-table thead th,
+  [data-theme="dark"] .ledger-table thead th {
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--dm-muted-foreground, #94a3b8);
+    border-color: var(--dm-border);
   }
 
-  .dark-mode .page-number-footer,
-  [data-theme="dark"] .page-number-footer {
-    color: var(--dm-text-secondary);
+  .dark-mode .ledger-table td,
+  [data-theme="dark"] .ledger-table td {
+    border-color: var(--dm-border);
   }
 
-  .dark-mode .book-tap-zone:not(:disabled):hover,
-  [data-theme="dark"] .book-tap-zone:not(:disabled):hover {
-    background: rgba(255, 255, 255, 0.05);
+  .dark-mode .ledger-row:hover td,
+  [data-theme="dark"] .ledger-row:hover td {
+    background: rgba(255, 255, 255, 0.03);
   }
 
-  .dark-mode .progress-dot,
-  [data-theme="dark"] .progress-dot {
-    background: var(--dm-border);
+  .dark-mode .stock-name,
+  [data-theme="dark"] .stock-name {
+    color: var(--dm-foreground, #f1f5f9);
   }
 
-  .dark-mode .progress-dot.active,
-  [data-theme="dark"] .progress-dot.active {
-    background: var(--primary-200);
+  .dark-mode .thesis-full,
+  [data-theme="dark"] .thesis-full {
+    color: var(--dm-foreground, #f1f5f9);
   }
 
-  .dark-mode .progress-bar-wrap,
-  [data-theme="dark"] .progress-bar-wrap {
-    background: var(--dm-border);
+  .dark-mode .thesis-full code,
+  [data-theme="dark"] .thesis-full code {
+    background: rgba(255, 255, 255, 0.08);
   }
 
-  .dark-mode .page-counter,
-  [data-theme="dark"] .page-counter {
-    color: var(--dm-text-secondary);
+  .dark-mode .ledger-card,
+  [data-theme="dark"] .ledger-card {
+    background: var(--dm-card);
+    border-color: var(--dm-border);
   }
 
-  .dark-mode .page-counter .current-num,
-  [data-theme="dark"] .page-counter .current-num {
-    color: var(--dm-text);
+  .dark-mode .ledger-sort-btn.active,
+  [data-theme="dark"] .ledger-sort-btn.active {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+    border-color: rgba(59, 130, 246, 0.4);
   }
 
   .dark-mode .empty-state,
   [data-theme="dark"] .empty-state {
     background: var(--dm-card);
-  }
-
-  .dark-mode .empty-state-icon,
-  [data-theme="dark"] .empty-state-icon {
-    color: var(--dm-text-secondary);
-  }
-
-  .dark-mode .empty-state-title,
-  [data-theme="dark"] .empty-state-title {
-    color: var(--dm-text);
-  }
-
-  .dark-mode .empty-state-text,
-  [data-theme="dark"] .empty-state-text {
-    color: var(--dm-text-secondary);
-  }
-
-  /* ========== レスポンシブ ========== */
-
-  @media (max-width: 768px) {
-    .book-container {
-      padding: 1rem 0.5rem 1.5rem;
-    }
-
-    .book-title {
-      font-size: 1.25rem;
-    }
-
-    .book-title i {
-      font-size: 1.15rem;
-    }
-
-    .book-subtitle {
-      font-size: 0.82rem;
-    }
-
-    .page-card {
-      padding: 1.25rem 1.25rem 3rem;
-      min-height: 380px;
-    }
-
-    .page-stock-name {
-      font-size: 1.25rem;
-    }
-
-    .page-content {
-      font-size: 1rem;
-      line-height: 1.75;
-    }
-
-    .page-content h1 { font-size: 1.4rem; }
-    .page-content h2 { font-size: 1.2rem; }
-    .page-content h3 { font-size: 1.05rem; }
-
-    .book-tap-zone {
-      display: none; /* スマホではタップゾーン非表示、スワイプで操作 */
-    }
-
-    .keyboard-hint {
-      display: none;
-    }
-
-    .nav-btn .btn-label {
-      display: none;
-    }
-  }
-
-  @media (max-width: 480px) {
-    .page-card {
-      padding: 1rem 1rem 2.75rem;
-      min-height: 320px;
-    }
-
-    .page-stock-name {
-      font-size: 1.1rem;
-    }
-
-    .page-number-footer {
-      font-size: 0.7rem;
-    }
+    border-color: var(--dm-border);
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="book-container">
+<div class="ledger-container">
+
   <!-- ヘッダー -->
-  <div class="book-header">
-    <h1 class="book-title">
-      <i class="bi bi-book-half"></i>
+  <div class="ledger-header">
+    <h1 class="ledger-title">
+      <i class="bi bi-table"></i>
       <span>{{ tag.name }}</span>
     </h1>
-    <p class="book-subtitle">{{ total_pages }}件の銘柄の投資理由</p>
+    <p class="ledger-subtitle">このタグで使われている投資理由の記録</p>
   </div>
 
   {% if diaries %}
-    <!-- ビューポート（スライドカルーセル） -->
-    <div class="book-viewport" id="bookViewport">
-      <!-- タップゾーン（デスクトップ） -->
-      <button class="book-tap-zone book-tap-zone-left" id="tapLeft" disabled aria-label="前のページ">
-        <i class="bi bi-chevron-left"></i>
-      </button>
-      <button class="book-tap-zone book-tap-zone-right" id="tapRight" aria-label="次のページ">
-        <i class="bi bi-chevron-right"></i>
-      </button>
 
-      <!-- スライドトラック -->
-      <div class="page-slide-track" id="slideTrack">
-        {% for diary in diaries %}
-        <div class="page-card" data-page="{{ forloop.counter }}">
-          <div class="page-inner">
-            <div class="page-header">
-              <h2 class="page-stock-name">{{ diary.stock_name }}</h2>
-              {% if diary.stock_symbol %}
-              <p class="page-stock-code">
-                <i class="bi bi-tag"></i>
-                <span>{{ diary.stock_symbol }}</span>
-              </p>
-              {% endif %}
-              {% if diary.sector %}
-              <span class="page-sector">{{ diary.sector }}</span>
-              {% endif %}
-            </div>
-
-            <div class="page-content markdown-content" id="content-{{ forloop.counter }}">
-              {{ diary.reason }}
-            </div>
-          </div>
-
-          <!-- 本のようなページ番号フッター -->
-          <div class="page-number-footer">
-            — {{ forloop.counter }} —
-          </div>
-        </div>
-        {% endfor %}
+    <!-- サマリー統計 -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-card-icon"><i class="bi bi-list-check"></i></div>
+        <div class="stat-card-value">{{ ledger_stats.total_entries }}</div>
+        <div class="stat-card-label">記録銘柄数</div>
       </div>
-    </div>
-
-    <!-- プログレスインジケーター + ナビ -->
-    <div class="book-progress">
-      <button class="nav-btn" id="prevBtn" disabled>
-        <i class="bi bi-chevron-left"></i>
-        <span class="btn-label">前へ</span>
-      </button>
-
-      {% if total_pages <= 12 %}
-      <div class="progress-dots" id="progressDots" role="tablist" aria-label="ページ選択"></div>
-      {% else %}
-      <div class="progress-bar-wrap">
-        <div class="progress-bar-fill" id="progressBarFill"></div>
+      <div class="stat-card">
+        <div class="stat-card-icon"><i class="bi bi-check2-circle"></i></div>
+        <div class="stat-card-value">{{ ledger_stats.sold_count }}</div>
+        <div class="stat-card-label">検証済み（売却）</div>
+      </div>
+      {% if ledger_stats.win_rate is not None %}
+      <div class="stat-card">
+        <div class="stat-card-icon"><i class="bi bi-trophy"></i></div>
+        <div class="stat-card-value"
+             style="color:{% if ledger_stats.win_rate >= 50 %}var(--bs-success,#198754){% else %}var(--bs-danger,#dc3545){% endif %}">
+          {{ ledger_stats.win_rate|floatformat:1 }}%
+        </div>
+        <div class="stat-card-label">的中率（{{ ledger_stats.winning_count }}/{{ ledger_stats.sold_count }}）</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-icon"><i class="bi bi-graph-up-arrow"></i></div>
+        <div class="stat-card-value"
+             style="font-size:1.1rem; color:{% if ledger_stats.total_profit >= 0 %}var(--bs-success,#198754){% else %}var(--bs-danger,#dc3545){% endif %}">
+          {% if ledger_stats.total_profit >= 0 %}+{% endif %}{{ ledger_stats.total_profit|intcomma_float }}円
+        </div>
+        <div class="stat-card-label">実現損益合計</div>
       </div>
       {% endif %}
+    </div>
 
-      <div class="page-counter">
-        <span class="current-num" id="currentPageNum">1</span>
-        <span> / {{ total_pages }}</span>
+    <!-- ツールバー -->
+    <div class="ledger-toolbar">
+      <span class="ledger-count">
+        <i class="bi bi-table me-1"></i>{{ ledger_stats.total_entries }}件の投資記録
+      </span>
+      <div class="ledger-sort-group">
+        <button class="ledger-sort-btn active" data-sort="profit-desc" aria-pressed="true">
+          <i class="bi bi-sort-numeric-down-alt me-1"></i>損益 高い順
+        </button>
+        <button class="ledger-sort-btn" data-sort="profit-asc" aria-pressed="false">
+          <i class="bi bi-sort-numeric-up me-1"></i>低い順
+        </button>
       </div>
-
-      <button class="nav-btn" id="nextBtn" {% if total_pages <= 1 %}disabled{% endif %}>
-        <span class="btn-label">次へ</span>
-        <i class="bi bi-chevron-right"></i>
-      </button>
     </div>
 
-    <!-- スワイプヒント（モバイル） -->
-    <div class="swipe-hint d-md-none" id="swipeHint" aria-hidden="true">
-      <i class="bi bi-arrow-left-right"></i>
-      スワイプでページを捲る
+    <!-- テーブル（デスクトップ md以上） -->
+    <div class="ledger-table-wrap d-none d-md-block">
+      <table class="ledger-table" id="ledgerTable">
+        <thead>
+          <tr>
+            <th class="col-stock">銘柄</th>
+            <th class="col-thesis">投資理由</th>
+            <th class="col-status">ステータス</th>
+            <th class="col-profit">実現損益</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for diary in diaries %}
+          <tr class="ledger-row"
+              data-profit="{{ diary.cash_only_realized_profit|default:0 }}"
+              data-status="{% if diary.is_memo %}memo{% elif diary.is_holding %}holding{% else %}sold{% endif %}">
+
+            <!-- 銘柄 -->
+            <td class="col-stock">
+              <a href="{% url 'stockdiary:detail' diary.id %}" class="stock-link">
+                <span class="stock-name">{{ diary.stock_name }}</span>
+                {% if diary.stock_symbol %}
+                <span class="stock-code">{{ diary.stock_symbol }}</span>
+                {% endif %}
+              </a>
+              {% if diary.sector %}
+              <span class="stock-sector">{{ diary.sector }}</span>
+              {% endif %}
+            </td>
+
+            <!-- 投資仮説（展開可能） -->
+            <td class="col-thesis">
+              <div class="thesis-preview" id="tp-{{ forloop.counter }}">{{ diary.reason|render_markdown|truncatechars_html:140 }}</div>
+              {% if diary.reason|length > 140 %}
+              <div class="thesis-full" id="tf-{{ forloop.counter }}" hidden>{{ diary.reason|render_markdown }}</div>
+              <button class="thesis-expand-btn"
+                      aria-expanded="false"
+                      data-p="tp-{{ forloop.counter }}"
+                      data-f="tf-{{ forloop.counter }}">
+                <span class="expand-label">続きを読む</span>
+                <i class="bi bi-chevron-down expand-icon"></i>
+              </button>
+              {% endif %}
+            </td>
+
+            <!-- ステータス -->
+            <td class="col-status">
+              {% include "stockdiary/components/_status_badge.html" with diary=diary %}
+              {% if diary.first_purchase_date %}
+              <div class="date-hint">{{ diary.first_purchase_date|date:"Y/m/d" }}</div>
+              {% endif %}
+            </td>
+
+            <!-- 実現損益 -->
+            <td class="col-profit">
+              {% if diary.is_sold_out %}
+                {% include "stockdiary/components/_profit_display.html" with profit=diary.cash_only_realized_profit style="badge" show_icon=True decimals=0 %}
+              {% else %}
+              <span class="text-muted" style="font-size:0.82rem;">—</span>
+              {% endif %}
+            </td>
+
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
 
-    <!-- キーボードヒント（デスクトップ） -->
-    <div class="keyboard-hint d-none d-md-flex" id="keyboardHint" aria-hidden="true">
-      <kbd>←</kbd> 前のページ &nbsp;/&nbsp; <kbd>→</kbd> 次のページ
+    <!-- カード（モバイル sm以下） -->
+    <div class="ledger-cards d-md-none">
+      {% for diary in diaries %}
+      <div class="ledger-card"
+           data-profit="{{ diary.cash_only_realized_profit|default:0 }}">
+
+        <div class="lcard-header">
+          <div>
+            <a href="{% url 'stockdiary:detail' diary.id %}" class="stock-link">
+              <span class="stock-name">{{ diary.stock_name }}</span>
+              {% if diary.stock_symbol %}<span class="stock-code">{{ diary.stock_symbol }}</span>{% endif %}
+            </a>
+            {% if diary.sector %}<span class="stock-sector d-inline-block mt-1">{{ diary.sector }}</span>{% endif %}
+          </div>
+          <div class="lcard-badges">
+            {% include "stockdiary/components/_status_badge.html" with diary=diary %}
+            {% if diary.is_sold_out %}
+            <div>{% include "stockdiary/components/_profit_display.html" with profit=diary.cash_only_realized_profit style="badge" decimals=0 %}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="lcard-thesis">
+          <div class="thesis-preview" id="mtp-{{ forloop.counter }}">{{ diary.reason|render_markdown|truncatechars_html:160 }}</div>
+          {% if diary.reason|length > 160 %}
+          <div class="thesis-full" id="mtf-{{ forloop.counter }}" hidden>{{ diary.reason|render_markdown }}</div>
+          <button class="thesis-expand-btn"
+                  aria-expanded="false"
+                  data-p="mtp-{{ forloop.counter }}"
+                  data-f="mtf-{{ forloop.counter }}">
+            <span class="expand-label">続きを読む</span>
+            <i class="bi bi-chevron-down expand-icon"></i>
+          </button>
+          {% endif %}
+        </div>
+
+      </div>
+      {% endfor %}
     </div>
 
   {% else %}
-    <!-- 空の状態 -->
+    <!-- 空状態 -->
     <div class="empty-state">
-      <div class="empty-state-icon">
-        <i class="bi bi-book"></i>
-      </div>
-      <h2 class="empty-state-title">投資理由が記録されていません</h2>
+      <span class="empty-state-icon"><i class="bi bi-journal-x"></i></span>
+      <div class="empty-state-title">投資理由の記録がありません</div>
       <p class="empty-state-text">
-        このタグに紐付いた銘柄で投資理由が記録されているものがありません。
+        このタグに「投資理由」が記入された銘柄日記がまだありません。<br>
+        日記に投資理由を記入してから再度お試しください。
       </p>
-      <a href="{% url 'tags:detail' tag.pk %}" class="btn btn-primary">
-        <i class="bi bi-arrow-left me-2"></i>
-        タグ詳細に戻る
+      <a href="{% url 'tags:detail' tag.pk %}" class="btn btn-outline-primary">
+        <i class="bi bi-arrow-left me-1"></i>タグ詳細に戻る
       </a>
     </div>
   {% endif %}
-</div>
 
-{% include 'speed_dial.html' with actions=page_actions %}
+</div>
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
-
+{{ block.super }}
 <script>
-{% if diaries %}
 (function () {
   'use strict';
 
-  const TOTAL = {{ total_pages }};
-  let currentIdx = 0; // 0-indexed
+  // ── テーゼ展開/折りたたみ ────────────────────────────────────
+  document.querySelectorAll('.thesis-expand-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var previewId = btn.dataset.p;
+      var fullId    = btn.dataset.f;
+      var preview   = document.getElementById(previewId);
+      var full      = document.getElementById(fullId);
+      var isOpen    = btn.getAttribute('aria-expanded') === 'true';
 
-  const slideTrack = document.getElementById('slideTrack');
-  const viewport   = document.getElementById('bookViewport');
-  const prevBtn    = document.getElementById('prevBtn');
-  const nextBtn    = document.getElementById('nextBtn');
-  const tapLeft    = document.getElementById('tapLeft');
-  const tapRight   = document.getElementById('tapRight');
-  const currentNumEl = document.getElementById('currentPageNum');
-
-  // ── marked.js セットアップ ──────────────────────────────
-  marked.setOptions({ breaks: true, gfm: true, headerIds: false, mangle: false });
-
-  document.querySelectorAll('.markdown-content').forEach(el => {
-    const raw = el.textContent.trim();
-    if (raw) el.innerHTML = marked.parse(raw);
-  });
-
-  // ── ドット / プログレスバー セットアップ ──────────────
-  const dotsContainer  = document.getElementById('progressDots');
-  const progressBarFill = document.getElementById('progressBarFill');
-
-  if (dotsContainer && TOTAL > 1) {
-    for (let i = 0; i < TOTAL; i++) {
-      const btn = document.createElement('button');
-      btn.className = 'progress-dot' + (i === 0 ? ' active' : '');
-      btn.setAttribute('role', 'tab');
-      btn.setAttribute('aria-label', `ページ ${i + 1}`);
-      btn.dataset.idx = i;
-      btn.addEventListener('click', () => goTo(i));
-      dotsContainer.appendChild(btn);
-    }
-  }
-
-  function updateIndicator(idx) {
-    if (dotsContainer) {
-      dotsContainer.querySelectorAll('.progress-dot').forEach((d, i) => {
-        d.classList.toggle('active', i === idx);
-      });
-    }
-    if (progressBarFill) {
-      progressBarFill.style.width = `${((idx + 1) / TOTAL) * 100}%`;
-    }
-  }
-
-  // ── ページ表示 ──────────────────────────────────────────
-  function getViewportWidth() {
-    return viewport.offsetWidth;
-  }
-
-  function goTo(idx, animated = true) {
-    if (idx < 0 || idx >= TOTAL) return;
-    if (!animated) {
-      slideTrack.classList.add('no-transition');
-    } else {
-      slideTrack.classList.remove('no-transition');
-    }
-
-    const w = getViewportWidth();
-    slideTrack.style.transform = `translateX(${-idx * w}px)`;
-    currentIdx = idx;
-
-    // UI更新
-    currentNumEl.textContent = idx + 1;
-    prevBtn.disabled = idx === 0;
-    nextBtn.disabled = idx === TOTAL - 1;
-    if (tapLeft)  tapLeft.disabled  = idx === 0;
-    if (tapRight) tapRight.disabled = idx === TOTAL - 1;
-    updateIndicator(idx);
-
-    // ページ先頭へスクロール（既にトップ付近なら無視）
-    if (!animated) return;
-    const rect = viewport.getBoundingClientRect();
-    if (rect.top < -50) {
-      viewport.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }
-
-  // 初期位置（transitionなし）
-  goTo(0, false);
-  // no-transition クラスを素早く外す
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      slideTrack.classList.remove('no-transition');
+      if (isOpen) {
+        full.hidden    = true;
+        preview.hidden = false;
+        btn.setAttribute('aria-expanded', 'false');
+        btn.querySelector('.expand-label').textContent = '続きを読む';
+      } else {
+        preview.hidden = true;
+        full.hidden    = false;
+        btn.setAttribute('aria-expanded', 'true');
+        btn.querySelector('.expand-label').textContent = '折りたたむ';
+      }
     });
   });
 
-  // ── ボタン / タップゾーン ───────────────────────────────
-  prevBtn.addEventListener('click', () => goTo(currentIdx - 1));
-  nextBtn.addEventListener('click', () => goTo(currentIdx + 1));
-  if (tapLeft)  tapLeft.addEventListener('click',  () => goTo(currentIdx - 1));
-  if (tapRight) tapRight.addEventListener('click', () => goTo(currentIdx + 1));
+  // ── ソート ──────────────────────────────────────────────────
+  var tbody      = document.querySelector('#ledgerTable tbody');
+  var cardsWrap  = document.querySelector('.ledger-cards');
 
-  // ── キーボード ──────────────────────────────────────────
-  document.addEventListener('keydown', e => {
-    if (e.key === 'ArrowLeft')  { e.preventDefault(); goTo(currentIdx - 1); }
-    if (e.key === 'ArrowRight') { e.preventDefault(); goTo(currentIdx + 1); }
-  });
-
-  // ── タッチ（スワイプ / フリック） ───────────────────────
-  let touchStartX  = 0;
-  let touchStartY  = 0;
-  let touchStartTs = 0;
-  let trackBaseX   = 0;  // タッチ開始時点のトラック位置(px)
-  let isHoriz      = null; // null=未判定, true=水平, false=垂直
-  let dragging     = false;
-
-  const SWIPE_PX   = 60;   // 確定スワイプ距離 (px)
-  const FLICK_VEL  = 0.35; // フリック判定速度 (px/ms)
-  const EDGE_RESIST = 0.25; // エッジ抵抗係数
-
-  viewport.addEventListener('touchstart', e => {
-    const t = e.touches[0];
-    touchStartX  = t.clientX;
-    touchStartY  = t.clientY;
-    touchStartTs = e.timeStamp;
-    trackBaseX   = -currentIdx * getViewportWidth();
-    isHoriz      = null;
-    dragging     = false;
-    slideTrack.classList.add('no-transition');
-  }, { passive: true });
-
-  viewport.addEventListener('touchmove', e => {
-    const t      = e.touches[0];
-    const deltaX = t.clientX - touchStartX;
-    const deltaY = t.clientY - touchStartY;
-
-    // 方向判定
-    if (isHoriz === null) {
-      if (Math.abs(deltaX) > 8 || Math.abs(deltaY) > 8) {
-        isHoriz = Math.abs(deltaX) > Math.abs(deltaY);
-      }
-      return; // まだ判定できない
+  function sortItems(direction) {
+    var cmp = function (a, b) {
+      var pa = parseFloat(a.dataset.profit) || 0;
+      var pb = parseFloat(b.dataset.profit) || 0;
+      return direction === 'desc' ? pb - pa : pa - pb;
+    };
+    if (tbody) {
+      var rows = Array.from(tbody.querySelectorAll('.ledger-row'));
+      rows.sort(cmp).forEach(function (r) { tbody.appendChild(r); });
     }
-
-    if (!isHoriz) return; // 縦スクロールはブラウザに任せる
-
-    e.preventDefault(); // 横スワイプ中は縦スクロール抑制
-    dragging = true;
-
-    const w = getViewportWidth();
-    let newX = trackBaseX + deltaX;
-
-    // 両端でゴムバンド抵抗
-    if (newX > 0) {
-      newX = deltaX * EDGE_RESIST;
-    } else if (newX < -(TOTAL - 1) * w) {
-      const over = newX + (TOTAL - 1) * w;
-      newX = -(TOTAL - 1) * w + over * EDGE_RESIST;
+    if (cardsWrap) {
+      var cards = Array.from(cardsWrap.querySelectorAll('.ledger-card'));
+      cards.sort(cmp).forEach(function (c) { cardsWrap.appendChild(c); });
     }
+  }
 
-    slideTrack.style.transform = `translateX(${newX}px)`;
-  }, { passive: false });
-
-  viewport.addEventListener('touchend', e => {
-    slideTrack.classList.remove('no-transition');
-
-    if (!dragging) return;
-    dragging = false;
-
-    const deltaX   = e.changedTouches[0].clientX - touchStartX;
-    const elapsed  = e.timeStamp - touchStartTs;
-    const velocity = Math.abs(deltaX) / Math.max(elapsed, 1); // px/ms
-
-    const isFlick    = velocity > FLICK_VEL;
-    const isBigSwipe = Math.abs(deltaX) > SWIPE_PX;
-
-    if ((deltaX < 0) && (isBigSwipe || isFlick) && currentIdx < TOTAL - 1) {
-      goTo(currentIdx + 1);
-    } else if ((deltaX > 0) && (isBigSwipe || isFlick) && currentIdx > 0) {
-      goTo(currentIdx - 1);
-    } else {
-      goTo(currentIdx); // スナップバック
-    }
-  }, { passive: true });
-
-  // ── ウィンドウリサイズ対応 ──────────────────────────────
-  let resizeTimer;
-  window.addEventListener('resize', () => {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => {
-      slideTrack.classList.add('no-transition');
-      const w = getViewportWidth();
-      slideTrack.style.transform = `translateX(${-currentIdx * w}px)`;
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          slideTrack.classList.remove('no-transition');
-        });
+  document.querySelectorAll('.ledger-sort-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.ledger-sort-btn').forEach(function (b) {
+        b.classList.remove('active');
+        b.setAttribute('aria-pressed', 'false');
       });
-    }, 100);
+      btn.classList.add('active');
+      btn.setAttribute('aria-pressed', 'true');
+      var dir = btn.dataset.sort === 'profit-asc' ? 'asc' : 'desc';
+      sortItems(dir);
+    });
   });
 
+  // 初期ソート（損益降順）
+  sortItems('desc');
 })();
-{% endif %}
 </script>
 {% endblock %}

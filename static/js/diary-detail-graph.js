@@ -180,15 +180,40 @@
               })
           );
 
-      // 円（全ノード共通）
-      node.append('circle')
-        .attr('r', d => nodeRadius(d, d.id === this.focalId))
-        .attr('fill', d => {
-          if (d.node_type !== 'diary') return HUB_COLOR[d.node_type] || '#999';
-          return STATUS_COLOR[d.status] || '#9ca3af';
-        })
-        .attr('stroke', d => d.id === this.focalId ? '#f59e0b' : 'rgba(255,255,255,0.5)')
-        .attr('stroke-width', d => d.id === this.focalId ? 3 : 1);
+      // 形状描画（node_typeに応じて diary-graph.js と同じ形状を使用）
+      const focalId = this.focalId;
+      node.each(function(d) {
+        const el = d3.select(this);
+        const r  = nodeRadius(d, d.id === focalId);
+        if (d.node_type === 'diary') {
+          el.append('circle')
+            .attr('r', r)
+            .attr('fill', STATUS_COLOR[d.status] || '#9ca3af')
+            .attr('stroke', d.id === focalId ? '#f59e0b' : 'rgba(255,255,255,0.5)')
+            .attr('stroke-width', d.id === focalId ? 3 : 1);
+        } else if (d.node_type === 'tag') {
+          el.append('polygon')
+            .attr('points', _hexPoints(r))
+            .attr('fill', HUB_COLOR.tag)
+            .attr('stroke', 'white')
+            .attr('stroke-width', 1.5);
+        } else if (d.node_type === 'sector') {
+          const s = r * 1.5;
+          el.append('rect')
+            .attr('x', -s / 2).attr('y', -s / 2)
+            .attr('width', s).attr('height', s)
+            .attr('rx', 4).attr('ry', 4)
+            .attr('fill', HUB_COLOR.sector)
+            .attr('stroke', 'white')
+            .attr('stroke-width', 1.5);
+        } else if (d.node_type === 'hashtag') {
+          el.append('polygon')
+            .attr('points', _triPoints(r))
+            .attr('fill', HUB_COLOR.hashtag)
+            .attr('stroke', 'white')
+            .attr('stroke-width', 1.5);
+        }
+      });
 
       // フォーカルノードに外枠リング
       node.filter(d => d.id === this.focalId)
@@ -298,6 +323,20 @@
     _showEmpty(show) {
       this.emptyMsg.style.display = show ? 'flex' : 'none';
     }
+  }
+
+  // ── ユーティリティ（diary-graph.js と同じ実装） ──────────────────
+  function _hexPoints(r) {
+    const pts = [];
+    for (let i = 0; i < 6; i++) {
+      const angle = (Math.PI / 3) * i - Math.PI / 6;
+      pts.push(`${(r * Math.cos(angle)).toFixed(2)},${(r * Math.sin(angle)).toFixed(2)}`);
+    }
+    return pts.join(' ');
+  }
+
+  function _triPoints(r) {
+    return `0,${-r} ${(r * 0.866).toFixed(2)},${(r * 0.5).toFixed(2)} ${(-r * 0.866).toFixed(2)},${(r * 0.5).toFixed(2)}`;
   }
 
   // ── 初期化 ────────────────────────────────────────────────────────

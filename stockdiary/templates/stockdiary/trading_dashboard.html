@@ -21,22 +21,33 @@
     }
 
     :root {
+        /* ダッシュボード固有カラー定数 */
         --primary: #3b82f6;
         --secondary: #8b5cf6;
         --success: #10b981;
         --destructive: #ef4444;
         --accent: #f59e0b;
-        --background: #0f172a;
-        --foreground: #f1f5f9;
-        --card: #1e293b;
-        --border: #334155;
-        --muted: #475569;
         --chart-1: #3b82f6;
+        /* テーマ追従変数 — ライトモードデフォルト */
+        --foreground: var(--text-100, #1d1c1c);
+        --card: var(--bg-100, #fffefb);
+        --border: rgba(0, 0, 0, 0.1);
+        --muted: var(--text-200, #6b7280);
+        --item-bg: rgba(0, 0, 0, 0.04);
+        --item-bg-hover: rgba(0, 0, 0, 0.08);
+        --item-bg-subtle: rgba(0, 0, 0, 0.025);
     }
 
-    body {
-        background-color: var(--background);
-        color: var(--foreground);
+    /* ダークモード上書き */
+    .dark-mode,
+    [data-theme="dark"] {
+        --foreground: var(--dm-foreground, #f1f5f9);
+        --card: var(--dm-card, #1e293b);
+        --border: var(--dm-border, rgba(255, 255, 255, 0.1));
+        --muted: var(--dm-muted-foreground, #94a3b8);
+        --item-bg: rgba(71, 85, 105, 0.3);
+        --item-bg-hover: rgba(71, 85, 105, 0.5);
+        --item-bg-subtle: rgba(71, 85, 105, 0.2);
     }
 
     .dashboard-container {
@@ -47,8 +58,8 @@
 
     /* Header */
     .dashboard-header {
-        background-color: var(--card);
-        border-bottom: 1px solid var(--border);
+        background-color: var(--bg-200, #f5f4f1);
+        border: 1px solid var(--border);
         border-radius: 8px;
         padding: 16px;
         margin-bottom: 24px;
@@ -115,7 +126,7 @@
     .period-btn {
         padding: 8px 16px;
         border-radius: 6px;
-        background-color: rgba(71, 85, 105, 0.3);
+        background-color: var(--item-bg);
         color: var(--foreground);
         border: 1px solid transparent;
         cursor: pointer;
@@ -127,14 +138,14 @@
     }
 
     .period-btn:hover {
-        background-color: rgba(71, 85, 105, 0.5);
+        background-color: var(--item-bg-hover);
         color: var(--foreground);
     }
 
     .period-btn.active {
-        background-color: var(--primary);
+        background-color: var(--accent-200, #00668c);
         color: white;
-        border-color: var(--primary);
+        border-color: var(--accent-200, #00668c);
     }
 
     /* Metrics Grid */
@@ -154,7 +165,7 @@
 
     @media (min-width: 1024px) {
         .metrics-grid {
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
         }
     }
 
@@ -295,12 +306,12 @@
     }
 
     .chart-tab:hover {
-        background-color: rgba(71, 85, 105, 0.3);
+        background-color: var(--item-bg);
         color: var(--foreground);
     }
 
     .chart-tab.active {
-        background-color: var(--primary);
+        background-color: var(--accent-200, #00668c);
         color: white;
     }
 
@@ -321,7 +332,7 @@
     }
 
     .ranking-item:hover {
-        background-color: rgba(71, 85, 105, 0.3);
+        background-color: var(--item-bg);
     }
 
     .ranking-left {
@@ -441,7 +452,7 @@
     .bar {
         flex: 1;
         height: 24px;
-        background-color: rgba(71, 85, 105, 0.3);
+        background-color: var(--item-bg);
         border-radius: 4px;
         overflow: hidden;
     }
@@ -540,14 +551,14 @@
     .pl-item {
         padding: 16px;
         border-radius: 8px;
-        background-color: rgba(71, 85, 105, 0.3);
+        background-color: var(--item-bg);
         border: 1px solid transparent;
         cursor: pointer;
         transition: all 0.2s;
     }
 
     .pl-item:hover {
-        background-color: rgba(71, 85, 105, 0.5);
+        background-color: var(--item-bg-hover);
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     }
@@ -604,7 +615,7 @@
 
     .company-item {
         padding: 16px;
-        background-color: rgba(71, 85, 105, 0.3);
+        background-color: var(--item-bg);
         border-radius: 8px;
         border: 1px solid transparent;
         transition: all 0.2s;
@@ -612,7 +623,7 @@
     }
 
     .company-item:hover {
-        background-color: rgba(71, 85, 105, 0.5);
+        background-color: var(--item-bg-hover);
         border-color: var(--primary);
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
@@ -701,7 +712,7 @@
 
     .diary-list-item {
         padding: 12px;
-        background-color: rgba(71, 85, 105, 0.2);
+        background-color: var(--item-bg-subtle);
         border-radius: 6px;
         margin-bottom: 8px;
         border-left: 3px solid transparent;
@@ -709,7 +720,7 @@
     }
 
     .diary-list-item:hover {
-        background-color: rgba(71, 85, 105, 0.3);
+        background-color: var(--item-bg);
         border-left-color: var(--primary);
         transform: translateX(4px);
     }
@@ -1068,7 +1079,7 @@
 
     @media (max-width: 767.98px) and (orientation: landscape) {
         .metrics-grid {
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
         }
 
         .two-column {
@@ -1129,7 +1140,7 @@
         <div class="card">
             <div class="metric-card">
                 <div class="metric-content">
-                    <p class="metric-label">実現損益</p>
+                    <p class="metric-label">損益合計</p>
                     <p class="metric-value">¥{{ total_realized_profit|intcomma_float:0 }}</p>
                     <p class="metric-sub">投資額: ¥{{ total_invested|intcomma_float:0 }}</p>
                     <p class="metric-sub">ROI: {{ total_roi|floatformat:1 }}%</p>
@@ -1145,10 +1156,32 @@
                 <div class="metric-content">
                     <p class="metric-label">平均利益率</p>
                     <p class="metric-value">{{ avg_profit_rate|floatformat:1 }}%</p>
-                    <p class="metric-subtext">売却ベース</p>
+                    <p class="metric-subtext">売却済み銘柄の利益率平均</p>
                     <p>　</p>
                 </div>
                 <div class="metric-icon" style="background: rgba(245, 158, 11, 0.2); color: var(--accent);">🎯</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="metric-card">
+                <div class="metric-content">
+                    <p class="metric-label">勝率</p>
+                    {% if win_rate is not None %}
+                    <p class="metric-value">{{ win_rate|floatformat:1 }}%</p>
+                    <p class="metric-sub">{{ winning_count }}/{{ sold_count }}銘柄が黒字</p>
+                    {% if profit_factor is not None %}
+                    <p class="metric-sub">PF: {{ profit_factor }}</p>
+                    {% else %}
+                    <p>　</p>
+                    {% endif %}
+                    {% else %}
+                    <p class="metric-value">—</p>
+                    <p class="metric-subtext">売却実績なし</p>
+                    <p>　</p>
+                    {% endif %}
+                </div>
+                <div class="metric-icon" style="background: rgba(16, 185, 129, 0.2); color: var(--success);">🏆</div>
             </div>
         </div>
     </div>
@@ -1354,6 +1387,17 @@
         initRoiChart(type);
     }
 
+    // テーマカラーを取得（ライト/ダーク対応）
+    function getChartThemeColors() {
+        const isDark = document.body.classList.contains('dark-mode') ||
+                       document.documentElement.getAttribute('data-theme') === 'dark';
+        return {
+            grid:        isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+            ticksMuted:  isDark ? '#94a3b8' : '#6b7280',
+            ticksLabel:  isDark ? '#f1f5f9' : '#1d1c1c',
+        };
+    }
+
     // ROIチャート初期化
     function initRoiChart(type) {
         const ctx = document.getElementById('roiChart');
@@ -1487,10 +1531,10 @@
                 scales: {
                     x: {
                         grid: {
-                            color: 'rgba(255, 255, 255, 0.1)'
+                            color: getChartThemeColors().grid
                         },
                         ticks: {
-                            color: '#94a3b8',
+                            color: getChartThemeColors().ticksMuted,
                             callback: function(value) {
                                 return value.toFixed(0) + '%';
                             }
@@ -1501,7 +1545,7 @@
                             display: false
                         },
                         ticks: {
-                            color: '#f1f5f9',
+                            color: getChartThemeColors().ticksLabel,
                             font: {
                                 size: 11
                             }

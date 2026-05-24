@@ -2926,19 +2926,31 @@ class TradingDashboardView(LoginRequiredMixin, TemplateView):
             if cash_stats['current_quantity'] > 0:
                 holding_count += 1
 
-        # 平均利益率（売却ベース）
+        # 平均利益率（売却ベース）& 勝率・プロフィットファクター
         profitable_rates = []
+        sold_profits = []  # 売却した全銘柄の実現損益（勝率計算用）
         for diary in diaries_in_period:
             cash_stats = diary.calculate_cash_only_stats()
             if cash_stats['total_sell_amount'] and cash_stats['total_sell_amount'] > 0:
                 buy_cost = cash_stats['total_buy_amount'] - cash_stats['total_cost']
                 if buy_cost > 0:
-                    profit_rate = ((cash_stats['total_sell_amount'] - buy_cost) 
+                    profit_rate = ((cash_stats['total_sell_amount'] - buy_cost)
                                   / buy_cost) * 100
                     profitable_rates.append(profit_rate)
+                sold_profits.append(float(cash_stats['realized_profit'] or 0))
 
-        avg_profit_rate = (sum(profitable_rates) / len(profitable_rates) 
+        avg_profit_rate = (sum(profitable_rates) / len(profitable_rates)
                           if profitable_rates else 0)
+
+        # 勝率
+        sold_count = len(sold_profits)
+        winning_count = sum(1 for p in sold_profits if p > 0)
+        win_rate = round(winning_count / sold_count * 100, 1) if sold_count > 0 else None
+
+        # プロフィットファクター = 総利益 / 総損失
+        pf_gain = sum(p for p in sold_profits if p > 0)
+        pf_loss = abs(sum(p for p in sold_profits if p < 0))
+        profit_factor = round(pf_gain / pf_loss, 2) if pf_loss > 0 else None
 
         # ========== 取引回数ランキング（銘柄別・現物のみ） ==========
         stock_ranking = {}
@@ -3186,6 +3198,10 @@ class TradingDashboardView(LoginRequiredMixin, TemplateView):
             'total_invested': float(total_cash_invested),
             'total_roi': round(float(total_roi), 1),
             'avg_profit_rate': round(avg_profit_rate, 1),
+            'win_rate': win_rate,
+            'winning_count': winning_count,
+            'sold_count': sold_count,
+            'profit_factor': profit_factor,
             'transaction_ranking': transaction_ranking,
             'sector_analysis': sector_analysis,
             'profitable_sectors': profitable_sectors,

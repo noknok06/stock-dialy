@@ -37,10 +37,14 @@ class GeminiStockAnalyzer:
     # ----------------------------------------------------------------
     # Public API
     # ----------------------------------------------------------------
-    def analyze_stocks(self, stocks_data: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def analyze_stocks(
+        self,
+        stocks_data: List[Dict[str, Any]],
+        news_map: Optional[Dict[str, List[Dict]]] = None,
+    ) -> Dict[str, Any]:
         """
-        複数銘柄を比較分析してJSON形式で返す
-        stocks_data: フロントエンドから送られてくる各銘柄のデータ辞書のリスト
+        複数銘柄を比較分析してJSON形式で返す。
+        news_map: {stock_code: [{"title":str, "source":str, "published":str}, ...]}
         """
         if not stocks_data:
             return self._error_result("銘柄データがありません")
@@ -53,7 +57,7 @@ class GeminiStockAnalyzer:
             result['error_message'] = self.initialization_error
             return result
 
-        prompt = self._build_prompt(stocks_data)
+        prompt = self._build_prompt(stocks_data, news_map)
         try:
             logger.info(f"Gemini API呼び出し開始: {len(stocks_data)}銘柄")
             response = self.model.generate_content(prompt)
@@ -73,7 +77,11 @@ class GeminiStockAnalyzer:
     # ----------------------------------------------------------------
     # Prompt building
     # ----------------------------------------------------------------
-    def _build_prompt(self, stocks_data: List[Dict]) -> str:
+    def _build_prompt(
+        self,
+        stocks_data: List[Dict],
+        news_map: Optional[Dict[str, List[Dict]]] = None,
+    ) -> str:
         stocks_desc = ""
         for d in stocks_data:
             name = d.get('stock_name') or d.get('code', '不明')
@@ -107,12 +115,22 @@ class GeminiStockAnalyzer:
             else:
                 margin_str = "データなし"
 
+            news_section = ""
+            if news_map:
+                news_items = news_map.get(code, [])
+                if news_items:
+                    headlines = "\n".join(
+                        f"    ・{n['title']}（{n['source']}、{n['published']}）"
+                        for n in news_items[:5]
+                    )
+                    news_section = f"\n  【直近ニュース（参考）】\n{headlines}"
+
             stocks_desc += f"""
 ■ {name}（{code}）
   ROE: {fmt(roe, '%')} | 営業利益率: {fmt(opm, '%')} | 自己資本比率: {fmt(eq_ratio, '%')}
   PER: {fmt(per, '倍')} | PBR: {fmt(pbr, '倍')} | 配当利回り: {fmt(div_yield, '%')}
   売上CAGR(4年): {fmt(rev_cagr, '%')} | 営業利益CAGR: {fmt(oi_cagr, '%')}
-  信用倍率（最新）: {margin_str}
+  信用倍率（最新）: {margin_str}{news_section}
 """
 
         n = len(stocks_data)
@@ -131,6 +149,15 @@ class GeminiStockAnalyzer:
 【信用倍率の解釈（参考指標）】
 信用倍率は「買い残高÷売り残高」の需給指標です。評価グレードへの直接反映は不要ですが、strengths/risks に言及してください。
 【正しい解釈】高倍率（3倍以上）＝買い残過多→将来の売り圧力リスク（risks に記載）。低倍率（1倍以下）＝売り残優勢→将来の買い戻し需要・需給好転の可能性（strengths に記載）。
+
+【直近ニュースの取り扱い】
+各銘柄に「直近ニュース（参考）」が付いている場合、以下のルールで活用してください。
+・財務データを評価の主軸とするが、重要なニュースはグレードにも反映してよい。
+・業績修正・不祥事・事業転換など企業価値に直結するニュースは business_grade や grade の調整根拠に使用可。
+・ポジティブなニュース（好決算・新製品・提携等）は strengths と business_grade 向上の根拠に使用可。
+・ネガティブなニュース（不祥事・業績悪化・規制強化等）は risks と business_grade 引き下げの根拠に使用可。
+・ただし PER/PBR に基づく valuation_grade と PER 制約（PER60倍超→最大B）は必ず守ること。
+・ニュースがない、または株価・業績と無関係な内容はノイズとして無視すること。
 
 以下のJSON形式（日本語）で回答してください。コードブロック（```）や余分な説明テキストは不要です。JSONのみを返してください。
 

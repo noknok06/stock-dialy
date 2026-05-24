@@ -37,15 +37,18 @@
   position: sticky;
   top: 0;
   z-index: 100;
-  background: var(--bg-primary);
-  border-bottom: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--bg-100) 92%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-light);
   padding: 1rem 1.5rem;
   margin: -1.5rem -1.5rem 2rem -1.5rem;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
+  transition: box-shadow 0.2s ease;
 }
 
 .back-link {
@@ -831,8 +834,11 @@
 
 .dark-mode .action-bar,
 [data-theme="dark"] .action-bar {
-  background: var(--dm-card);
+  background: rgba(22, 27, 34, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-bottom-color: var(--dm-border);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
 }
 
 .dark-mode .back-link,
@@ -1685,7 +1691,9 @@
                 タグ
               </div>
               {% for tag in diary.tags.all %}
-                {% include "stockdiary/components/_badge.html" with type="primary" text=tag.name icon="bi-tag-fill" extra_class="me-1 mb-1" %}
+                <a href="{% url 'tags:detail' tag.pk %}" class="text-decoration-none">
+                  {% include "stockdiary/components/_badge.html" with type="primary" text=tag.name icon="bi-tag-fill" extra_class="me-1 mb-1" %}
+                </a>
               {% empty %}
               <p class="text-muted mb-0">タグはありません</p>
               {% endfor %}
