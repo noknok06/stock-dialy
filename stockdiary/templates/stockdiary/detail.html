@@ -1931,10 +1931,10 @@
             {% endfor %}
           </div>
 
-          <!-- 時系列ビュー: コンパクト行（hidden） -->
-          <div class="notes-timeline-list" id="notes-view-timeline" hidden>
+          <!-- 時系列ビュー: 従来のカード一覧（hidden） -->
+          <div class="notes-list mobile-optimized" id="notes-view-timeline" hidden>
             {% for note in notes %}
-            {% include "stockdiary/partials/_note_row.html" %}
+            {% include "stockdiary/partials/_note_card.html" %}
             {% empty %}
             {% include "stockdiary/components/_empty_state.html" with icon="bi-journal-text" title="継続記録はまだありません" description="上のボタンから最初の記録を追加しましょう" %}
             {% endfor %}
@@ -2325,7 +2325,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var dateEl = document.getElementById('date');
     if (dateEl) dateEl.value = new Date().toISOString().slice(0, 10);
     var typeEl = document.getElementById('note_type');
-    if (typeEl) { typeEl.value = 'analysis'; setPillActive('note_type', 'analysis'); }
+    if (typeEl) { typeEl.value = 'analysis'; }
     var impEl = document.getElementById('note_importance');
     if (impEl) { impEl.value = 'medium'; setPillActive('note_importance', 'medium'); }
     var topicEl = document.getElementById('note_topic');
@@ -2357,7 +2357,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var dateEl = document.getElementById('date');
     if (dateEl) dateEl.value = card.dataset.noteDate || '';
     var typeEl = document.getElementById('note_type');
-    if (typeEl) { typeEl.value = card.dataset.noteType; setPillActive('note_type', card.dataset.noteType); }
+    if (typeEl) { typeEl.value = card.dataset.noteType; }
     var impEl = document.getElementById('note_importance');
     if (impEl) { impEl.value = card.dataset.noteImportance; setPillActive('note_importance', card.dataset.noteImportance); }
     var topicEl = document.getElementById('note_topic');
@@ -3343,30 +3343,7 @@ window.showReportModal = function(el) {
         {% now "Y-m-d" as today %}
         {% include "stockdiary/components/_form_field.html" with type="date" name="date" label="日付" icon="bi-calendar-date" required=True value=today %}
 
-        <div class="form-section mobile-optimized">
-          <div class="section-title">
-            <i class="bi bi-tag"></i>
-            記録タイプ
-          </div>
-          <div class="option-pills mobile-optimized">
-            <div class="option-pill active" data-value="analysis" data-target="note_type">
-              <i class="bi bi-graph-up"></i>分析更新
-            </div>
-            <div class="option-pill" data-value="news" data-target="note_type">
-              <i class="bi bi-newspaper"></i>ニュース
-            </div>
-            <div class="option-pill" data-value="earnings" data-target="note_type">
-              <i class="bi bi-bar-chart"></i>決算
-            </div>
-            <div class="option-pill" data-value="insight" data-target="note_type">
-              <i class="bi bi-lightbulb"></i>気づき
-            </div>
-            <div class="option-pill" data-value="risk" data-target="note_type">
-              <i class="bi bi-exclamation-triangle"></i>リスク
-            </div>
-          </div>
-          <input type="hidden" id="note_type" name="note_type" value="analysis">
-        </div>
+        <input type="hidden" id="note_type" name="note_type" value="analysis">
 
         <div class="form-section mobile-optimized">
           <div class="section-title">
