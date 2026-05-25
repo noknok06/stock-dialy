@@ -196,9 +196,10 @@ def get_hashtag_graph_data(diaries_qs) -> Dict[str, Any]:
     """
     @ハッシュタグが共通する日記同士をエッジで繋ぐ。
     ハッシュタグをハブノードとして追加する。
+    reason フィールドに加え、継続記録（DiaryNote.content）も対象にする。
 
     Args:
-        diaries_qs: StockDiary QuerySet（reason フィールドを含む）
+        diaries_qs: prefetch_related('notes') 済みの StockDiary QuerySet
 
     Returns:
         {
@@ -210,16 +211,27 @@ def get_hashtag_graph_data(diaries_qs) -> Dict[str, Any]:
     edges: List[dict] = []
 
     for diary in diaries_qs:
-        if not diary.reason:
-            continue
-        for tag in extract_hashtags(diary.reason):
-            ht_id = f'ht_{tag}'
-            ht_diary_count[tag] += 1
-            edges.append({
-                'source': diary.pk,
-                'target': ht_id,
-                'edge_type': 'hashtag',
-            })
+        # 同一日記からの重複エッジを防ぐため、この日記で発見済みのタグを追跡
+        seen_tags: Set[str] = set()
+
+        texts = [diary.reason or '']
+        try:
+            texts.extend(note.content for note in diary.notes.all() if note.content)
+        except AttributeError:
+            pass
+
+        for text in texts:
+            for tag in extract_hashtags(text):
+                if tag in seen_tags:
+                    continue
+                seen_tags.add(tag)
+                ht_id = f'ht_{tag}'
+                ht_diary_count[tag] += 1
+                edges.append({
+                    'source': diary.pk,
+                    'target': ht_id,
+                    'edge_type': 'hashtag',
+                })
 
     hashtag_nodes = [
         {

@@ -618,7 +618,7 @@ def diary_graph_data(request):
         # 全モードで共通利用する primary 日記を一括取得
         # mention モードで memo も参照するため常に含める
         primary_diaries = list(
-            primary_qs.prefetch_related('tags').only(
+            primary_qs.prefetch_related('tags', 'notes').only(
                 'id', 'stock_name', 'stock_symbol', 'sector',
                 'realized_profit', 'current_quantity', 'transaction_count', 'reason', 'memo',
             )
@@ -877,7 +877,7 @@ def diary_detail_graph_data(request, diary_id):
         all_diary_ids = {focal.id} | neighbor_ids
         all_diaries = list(
             StockDiary.objects.filter(id__in=all_diary_ids)
-            .prefetch_related('tags')
+            .prefetch_related('tags', 'notes')
             .only(
                 'id', 'stock_name', 'stock_symbol', 'sector',
                 'realized_profit', 'current_quantity', 'transaction_count',
