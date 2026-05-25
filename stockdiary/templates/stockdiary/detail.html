@@ -2344,6 +2344,8 @@ document.addEventListener('DOMContentLoaded', function() {
   };
 
   window.openEditNoteSheet = function(noteId) {
+    // テーマ別モーダルが開いていれば先に閉じる（z-index 衝突防止）
+    closeNoteDetailModal();
     var card = document.querySelector('.note-card[data-note-id="' + noteId + '"]');
     if (!card || !quickNoteForm) return;
     window.resetNoteFormToAdd();
