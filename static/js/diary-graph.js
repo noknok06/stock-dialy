@@ -289,6 +289,8 @@
 
       // ユーザーが手動でズーム・パン操作したかを記録するフラグ
       this._userHasInteracted = false;
+      // 自動フィットを一度だけ実行するためのフラグ（多重フィットによる「ガクつき」防止）
+      this._hasAutoFitted = false;
 
       this.zoomBehavior = d3.zoom()
         .scaleExtent([0.1, 6])
@@ -332,6 +334,11 @@
         )
         .force('charge', d3.forceManyBody().strength(FORCE_CHARGE))
         .force('center',  d3.forceCenter(width / 2, height / 2))
+        // 中央への弱い引力。レイアウトが横長・縦長に広がりすぎるのを抑え、
+        // 自動フィット時にノードが豆粒化しないよう全体をまとめる。
+        // 縦は画面が短いので少し強めに引く。
+        .force('x', d3.forceX(width / 2).strength(0.05))
+        .force('y', d3.forceY(height / 2).strength(0.08))
         .force('collision',
           d3.forceCollide().radius(d => {
             if (d.node_type !== 'diary') {
@@ -498,6 +505,14 @@
           .attr('x1', d => d.source.x).attr('y1', d => d.source.y)
           .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
         nodeSel.attr('transform', d => `translate(${d.x},${d.y})`);
+
+        // レイアウトがほぼ安定したら（end を待たず）一度だけ滑らかにフィット。
+        // end まで待つと数秒かかり、その間に瞬間的な縮小が起きて見づらいため。
+        if (!this._hasAutoFitted && !this._userHasInteracted
+            && this.simulation.alpha() < 0.06) {
+          this._hasAutoFitted = true;
+          this._fitToView(true);
+        }
       });
 
       this._applyColorMode();
@@ -505,14 +520,21 @@
       this._applySearch();
       this._showGraph();
 
-      // シミュレーション安定後に自動フィット（ユーザーが手動操作していない場合のみ）
+      // シミュレーション安定後の自動フィット（tick で未実行だった場合の保険）。
+      // すでに tick 内でフィット済み、または手動操作済みなら何もしない。
       this.simulation.on('end', () => {
-        if (!this._userHasInteracted) this._fitToView(false);
+        if (!this._userHasInteracted && !this._hasAutoFitted) {
+          this._hasAutoFitted = true;
+          this._fitToView(true);
+        }
       });
-      // 3秒後にもフィット（end が発火しないケースの保険。手動操作済みなら実行しない）
+      // 4秒後にもフィット（tick も end も発火しないケースの最終保険）
       setTimeout(() => {
-        if (this.svg && !this._userHasInteracted) this._fitToView(false);
-      }, 3000);
+        if (this.svg && !this._userHasInteracted && !this._hasAutoFitted) {
+          this._hasAutoFitted = true;
+          this._fitToView(true);
+        }
+      }, 4000);
     }
 
     // ==============================
@@ -602,12 +624,17 @@
       try {
         const bbox = this.gRoot.node().getBBox();
         if (!bbox || bbox.width === 0 || bbox.height === 0) return;
-        const padding = 40;
-        const scale = Math.min(
+        const padding = 48;
+        // 全体が収まる縮尺
+        const fitScale = Math.min(
           (width  - padding * 2) / bbox.width,
-          (height - padding * 2) / bbox.height,
-          2  // 最大2倍まで
+          (height - padding * 2) / bbox.height
         );
+        // ノードが豆粒化しない下限と、少数ノード時に寄りすぎない上限でクランプ。
+        // 全体が下限縮尺で収まらない場合は中央付近を表示し、パン/ピンチで全体を辿れる。
+        const MIN_READABLE_SCALE = 0.5;
+        const MAX_SCALE = 1.6;
+        const scale = Math.max(MIN_READABLE_SCALE, Math.min(fitScale, MAX_SCALE));
         const tx = width  / 2 - scale * (bbox.x + bbox.width  / 2);
         const ty = height / 2 - scale * (bbox.y + bbox.height / 2);
         const t = d3.zoomIdentity.translate(tx, ty).scale(scale);
