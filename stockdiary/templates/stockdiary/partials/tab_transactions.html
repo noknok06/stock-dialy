@@ -164,7 +164,7 @@
   <!-- 取引サマリー -->
   <div class="transaction-summary-section mb-4">
     <div class="row g-3">
-      <div class="col-md-3 col-6">
+      <div class="col-xxl-3 col-md-6 col-6">
         <div class="summary-card-improved">
           <div class="summary-label">現在保有数（現物のみ）</div>
           <div class="summary-value">
@@ -172,7 +172,7 @@
           </div>
         </div>
       </div>
-      <div class="col-md-3 col-6">
+      <div class="col-xxl-3 col-md-6 col-6">
         <div class="summary-card-improved">
           <div class="summary-label">平均取得単価（現物のみ）</div>
           <div class="summary-value">
@@ -184,7 +184,7 @@
           </div>
         </div>
       </div>
-      <div class="col-md-3 col-6">
+      <div class="col-xxl-3 col-md-6 col-6">
         <div class="summary-card-improved">
           <div class="summary-label">総取得原価（現物のみ）</div>
           <div class="summary-value">
@@ -192,7 +192,7 @@
           </div>
         </div>
       </div>
-      <div class="col-md-3 col-6">
+      <div class="col-xxl-3 col-md-6 col-6">
         <div class="summary-card-improved {% if cash_only_stats.realized_profit > 0 %}profit{% elif cash_only_stats.realized_profit < 0 %}loss{% endif %}">
           <div class="summary-label">実現損益（現物のみ）</div>
           <div class="summary-value">
@@ -869,21 +869,25 @@
   color: var(--text-secondary);
   margin-bottom: 0.625rem;
   font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  word-break: break-all;
+  line-height: 1.4;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .summary-value {
-  font-size: 1.625rem;
+  font-size: 1.375rem;
   font-weight: 700;
   color: var(--text-primary);
-  line-height: 1.2;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.3;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* ≥1400px (xxl) で4列表示の場合は少し小さめのフォント */
+@media (min-width: 1400px) {
+  .summary-value {
+    font-size: 1.25rem;
+  }
 }
 
 /* ========== タブレット対応 (768px〜1024px) ========== */
@@ -1049,7 +1053,6 @@
 
   .summary-value {
     font-size: 1.125rem;
-    white-space: nowrap;
   }
 }
 
