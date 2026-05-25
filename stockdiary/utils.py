@@ -217,7 +217,7 @@ def get_hashtag_graph_data(diaries_qs) -> Dict[str, Any]:
         texts = [diary.reason or '']
         try:
             texts.extend(note.content for note in diary.notes.all() if note.content)
-        except Exception:
+        except AttributeError:
             pass
 
         for text in texts:
