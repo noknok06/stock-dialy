@@ -920,19 +920,22 @@
   .wizard-progress-bar {
     display: flex;
     align-items: center;
-    justify-content: center;
-    padding: 1.25rem 1rem 1rem;
+    justify-content: space-between;
+    padding: 1.25rem 0.5rem 1rem;
     margin-bottom: 1.5rem;
     background: var(--card-bg, #fff);
     border-radius: var(--radius-md, 0.5rem);
     border: 1px solid var(--border-color, #e5e7eb);
+    overflow: hidden;
+    box-sizing: border-box;
   }
   .wizard-step-item {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 0.3rem;
-    min-width: 56px;
+    min-width: 0;
+    flex-shrink: 1;
   }
   .wizard-step-dot {
     width: 34px;
@@ -949,10 +952,11 @@
     transition: background 0.3s, border-color 0.3s, color 0.3s;
   }
   .wizard-step-label {
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     color: var(--text-muted, #6b7280);
     white-space: nowrap;
     transition: color 0.3s;
+    text-align: center;
   }
   .wizard-step-item.wizard-si-active .wizard-step-dot {
     background: var(--primary-color, #3b82f6);
@@ -981,8 +985,8 @@
     flex: 1;
     height: 2px;
     background: var(--border-color, #d1d5db);
-    margin: 0 0.5rem 1.2rem;
-    min-width: 20px;
+    margin: 0 0.25rem 1.2rem;
+    min-width: 8px;
   }
 
   /* ダークモード対応 */
