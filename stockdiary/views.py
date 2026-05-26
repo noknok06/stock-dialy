@@ -1145,6 +1145,97 @@ class StockListView(LoginRequiredMixin, TemplateView):
         
         return context
 
+class DiarySummaryView(LoginRequiredMixin, TemplateView):
+    """銘柄ごとの日記サマリー一覧"""
+    template_name = 'stockdiary/diary_summary.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+
+        search_query = self.request.GET.get('q', '').strip()
+        sort_by = self.request.GET.get('sort', 'updated_desc')
+
+        diary_agg = (
+            StockDiary.objects.filter(user=user, stock_symbol__isnull=False)
+            .exclude(stock_symbol='')
+            .values('stock_symbol')
+            .annotate(
+                stock_name=Max('stock_name'),
+                latest_updated=Max('updated_at'),
+                diary_count=Count('id'),
+            )
+        )
+
+        # 継続記録数（DiaryNote）を別クエリで集計（JOIN乗算を回避）
+        note_count_map = dict(
+            DiaryNote.objects.filter(
+                diary__user=user,
+                diary__stock_symbol__isnull=False,
+            )
+            .exclude(diary__stock_symbol='')
+            .values('diary__stock_symbol')
+            .annotate(cnt=Count('id'))
+            .values_list('diary__stock_symbol', 'cnt')
+        )
+
+        summary_list = [
+            {
+                'symbol': row['stock_symbol'],
+                'name': row['stock_name'],
+                'latest_date': row['latest_updated'],
+                'note_count': note_count_map.get(row['stock_symbol'], 0),
+                'diary_count': row['diary_count'],
+                'diary_id': None,
+            }
+            for row in diary_agg
+        ]
+
+        # 日記が1件の銘柄は詳細画面へ直接リンクするためpkを取得
+        single_symbols = [s['symbol'] for s in summary_list if s['diary_count'] == 1]
+        single_pk_map = dict(
+            StockDiary.objects.filter(user=user, stock_symbol__in=single_symbols)
+            .values_list('stock_symbol', 'id')
+        )
+        for s in summary_list:
+            if s['diary_count'] == 1:
+                s['diary_id'] = single_pk_map.get(s['symbol'])
+
+        if search_query:
+            summary_list = [
+                s for s in summary_list
+                if search_query.lower() in s['name'].lower()
+                or search_query.lower() in s['symbol'].lower()
+            ]
+
+        _epoch = timezone.datetime(1970, 1, 1, tzinfo=timezone.utc)
+        sort_mapping = {
+            'updated_desc': (lambda x: x['latest_date'] or _epoch, True),
+            'updated_asc': (lambda x: x['latest_date'] or _epoch, False),
+            'note_count_desc': (lambda x: x['note_count'], True),
+            'note_count_asc': (lambda x: x['note_count'], False),
+            'symbol': (lambda x: x['symbol'], False),
+            'name': (lambda x: x['name'], False),
+        }
+        key_fn, reverse = sort_mapping.get(sort_by, sort_mapping['updated_desc'])
+        summary_list.sort(key=key_fn, reverse=reverse)
+
+        context['page_actions'] = [
+            {
+                'type': 'back',
+                'url': reverse_lazy('stockdiary:home'),
+                'icon': 'bi-arrow-left',
+                'label': '戻る',
+            },
+        ]
+        context.update({
+            'summary_list': summary_list,
+            'search_query': search_query,
+            'sort_by': sort_by,
+        })
+        return context
+
+
 class ServeImageView(LoginRequiredMixin, View):
     """ユーザー認証付きの画像配信ビュー"""
     

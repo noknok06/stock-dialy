@@ -108,6 +108,7 @@ path('api/create/', api.api_create_diary, name='api_create'),
 
     # 銘柄一覧
     path('stocks/', views.StockListView.as_view(), name='stock_list'),
+    path('diary-summary/', views.DiarySummaryView.as_view(), name='diary_summary'),
     path('api/stock-diaries/<str:symbol>/', views.api_stock_diaries, name='api_stock_diaries'),
 
     # 取引履歴アップロード
