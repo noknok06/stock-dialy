@@ -1039,6 +1039,7 @@ class StockListView(LoginRequiredMixin, TemplateView):
             .annotate(
                 stock_name=Max('stock_name'),
                 sector=Max('sector'),
+                latest_updated=Max('updated_at'),
                 diary_count=Count('id'),
                 active_count=Count('id', filter=Q(current_quantity__gt=0)),
                 sold_count=Count(
@@ -1056,6 +1057,18 @@ class StockListView(LoginRequiredMixin, TemplateView):
             for c in CompanyMaster.objects.filter(code__in=symbols)
         }
 
+        # 継続記録数（DiaryNote）を銘柄ごとに集計（別クエリでJOIN乗算を回避）
+        note_count_map = dict(
+            DiaryNote.objects.filter(
+                diary__user=user,
+                diary__stock_symbol__isnull=False,
+            )
+            .exclude(diary__stock_symbol='')
+            .values('diary__stock_symbol')
+            .annotate(cnt=Count('id'))
+            .values_list('diary__stock_symbol', 'cnt')
+        )
+
         stock_list = []
 
         for row in diary_agg:
@@ -1070,8 +1083,9 @@ class StockListView(LoginRequiredMixin, TemplateView):
                 'current_ratio': 0,
                 'previous_ratio': 0,
                 'ratio_change': 0,
-                'latest_date': None,
+                'latest_date': row['latest_updated'],
                 'diary_count': row['diary_count'],
+                'note_count': note_count_map.get(row['stock_symbol'], 0),
                 'has_active_holdings': row['active_count'] > 0,
                 'has_completed_sales': row['sold_count'] > 0,
                 'margin_data_available': False,
@@ -1091,6 +1105,7 @@ class StockListView(LoginRequiredMixin, TemplateView):
             stock_list = [stock for stock in stock_list if stock['sector'] == sector_filter]
         
         # ソート処理
+        _epoch = timezone.datetime(1970, 1, 1, tzinfo=timezone.utc)
         sort_mapping = {
             'name': lambda x: x['name'],
             'sector': lambda x: x['sector'],
@@ -1099,8 +1114,12 @@ class StockListView(LoginRequiredMixin, TemplateView):
             'ratio_change_desc': lambda x: x['ratio_change'],
             'ratio_change_asc': lambda x: x['ratio_change'],
             'diary_count_desc': lambda x: x['diary_count'],
+            'updated_desc': lambda x: x['latest_date'] or _epoch,
+            'updated_asc': lambda x: x['latest_date'] or _epoch,
+            'note_count_desc': lambda x: x['note_count'],
+            'note_count_asc': lambda x: x['note_count'],
         }
-        
+
         if sort_by in sort_mapping:
             reverse = sort_by.endswith('_desc')
             stock_list.sort(key=sort_mapping[sort_by], reverse=reverse)
