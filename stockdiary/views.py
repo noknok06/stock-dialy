@@ -3071,8 +3071,8 @@ class TradingDashboardView(LoginRequiredMixin, TemplateView):
             if total_invested > 0:
                 roi = ((total_sell + total_current_value - total_invested) / total_invested * 100)
 
-            # 実現損益
-            realized_profit = total_sell - (total_invested - total_current_value)
+            # 実現損益: 各銘柄のFIFO計算済み実現損益を合計する
+            realized_profit = sum(c['realized_profit'] for c in sector_companies.get(sector, []))
 
             sector_analysis.append({
                 'sector': sector.strip(),

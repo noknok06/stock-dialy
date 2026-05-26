@@ -1609,8 +1609,8 @@
             totalRoi = ((totalSell + totalCurrentValue - totalInvested) / totalInvested * 100);
         }
 
-        // 実現損益
-        let realizedProfit = totalSell - (totalInvested - totalCurrentValue);
+        // 実現損益: 各銘柄のFIFO計算済み実現損益を合計する
+        let realizedProfit = companies.reduce((sum, c) => sum + (c.realized_profit || 0), 0);
         
         const roiClass = totalRoi >= 0 ? 'highlight-positive' : 'highlight-negative';
         const profitClass = realizedProfit >= 0 ? 'highlight-positive' : 'highlight-negative';
