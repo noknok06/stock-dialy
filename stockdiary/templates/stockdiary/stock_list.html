@@ -396,10 +396,10 @@
                     <option value="symbol" {% if sort_by == 'symbol' %}selected{% endif %}>証券コード順</option>
                     <option value="name" {% if sort_by == 'name' %}selected{% endif %}>銘柄名順</option>
                     <option value="sector" {% if sort_by == 'sector' %}selected{% endif %}>業種順</option>
-                    <option value="updated_desc" {% if sort_by == 'updated_desc' %}selected{% endif %}>最終更新日↓</option>
-                    <option value="updated_asc" {% if sort_by == 'updated_asc' %}selected{% endif %}>最終更新日↑</option>
-                    <option value="note_count_desc" {% if sort_by == 'note_count_desc' %}selected{% endif %}>継続記録数↓</option>
-                    <option value="note_count_asc" {% if sort_by == 'note_count_asc' %}selected{% endif %}>継続記録数↑</option>
+                    <option value="current_ratio_desc" {% if sort_by == 'current_ratio_desc' %}selected{% endif %}>信用倍率↓</option>
+                    <option value="current_ratio_asc" {% if sort_by == 'current_ratio_asc' %}selected{% endif %}>信用倍率↑</option>
+                    <option value="ratio_change_desc" {% if sort_by == 'ratio_change_desc' %}selected{% endif %}>変動↓</option>
+                    <option value="ratio_change_asc" {% if sort_by == 'ratio_change_asc' %}selected{% endif %}>変動↑</option>
                     <option value="diary_count_desc" {% if sort_by == 'diary_count_desc' %}selected{% endif %}>日記件数↓</option>
                 </select>
             </div>
@@ -440,8 +440,10 @@
                         <th>証券コード</th>
                         <th>銘柄名</th>
                         <th>業種</th>
-                        <th class="text-center">最終更新日</th>
-                        <th class="text-center">継続記録数</th>
+                        <th class="text-center">現在倍率</th>
+                        <th class="text-center">前回倍率</th>
+                        <th class="text-center">変動</th>
+                        <th class="text-center">更新日</th>
                         <th class="text-center">日記件数</th>
                         <th class="text-center">状態</th>
                         <th class="text-center">操作</th>
@@ -460,15 +462,44 @@
                             <span class="sector-badge">{{ stock.sector }}</span>
                         </td>
                         <td class="text-center">
-                            {% if stock.latest_date %}
-                                <small class="text-muted">{{ stock.latest_date|date:"Y/m/d" }}</small>
+                            {% if stock.margin_data_available %}
+                                <span class="fw-bold">{{ stock.current_ratio }}</span>
                             {% else %}
                                 <span class="text-muted">-</span>
                             {% endif %}
                         </td>
                         <td class="text-center">
-                            {% if stock.note_count > 0 %}
-                                <span class="badge bg-info text-dark">{{ stock.note_count }}件</span>
+                            {% if stock.margin_data_available and stock.previous_ratio %}
+                                <span>{{ stock.previous_ratio }}</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if stock.margin_data_available and stock.ratio_change %}
+                                {% if stock.ratio_change > 0 %}
+                                    <span class="ratio-change ratio-up">
+                                        <i class="bi bi-arrow-up"></i>
+                                        +{{ stock.ratio_change }}
+                                    </span>
+                                {% elif stock.ratio_change < 0 %}
+                                    <span class="ratio-change ratio-down">
+                                        <i class="bi bi-arrow-down"></i>
+                                        {{ stock.ratio_change }}
+                                    </span>
+                                {% else %}
+                                    <span class="ratio-change ratio-neutral">
+                                        <i class="bi bi-dash"></i>
+                                        {{ stock.ratio_change }}
+                                    </span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if stock.latest_date %}
+                                <small class="text-muted">{{ stock.latest_date|date:"m/d" }}</small>
                             {% else %}
                                 <span class="text-muted">-</span>
                             {% endif %}
@@ -514,8 +545,9 @@
                 <thead class="table-light">
                     <tr>
                         <th>銘柄</th>
-                        <th class="text-center">最終更新日</th>
-                        <th class="text-center">継続記録</th>
+                        <th>業種</th>
+                        <th class="text-center">倍率</th>
+                        <th class="text-center">変動</th>
                         <th class="text-center">状態</th>
                         <th class="text-center">操作</th>
                     </tr>
@@ -527,16 +559,34 @@
                             <div class="stock-symbol text-primary">{{ stock.symbol }}</div>
                             <div class="stock-name">{{ stock.name }}</div>
                         </td>
+                        <td>
+                            <span class="sector-badge">{{ stock.sector }}</span>
+                        </td>
                         <td class="text-center">
-                            {% if stock.latest_date %}
-                                <small class="text-muted">{{ stock.latest_date|date:"m/d" }}</small>
+                            {% if stock.margin_data_available %}
+                                <div class="ratio-display">{{ stock.current_ratio }}</div>
+                                {% if stock.previous_ratio %}
+                                    <small class="text-muted">({{ stock.previous_ratio }})</small>
+                                {% endif %}
                             {% else %}
                                 <span class="text-muted">-</span>
                             {% endif %}
                         </td>
                         <td class="text-center">
-                            {% if stock.note_count > 0 %}
-                                <span class="badge bg-info text-dark" style="font-size:0.65rem;">{{ stock.note_count }}</span>
+                            {% if stock.margin_data_available and stock.ratio_change %}
+                                {% if stock.ratio_change > 0 %}
+                                    <div class="change-display ratio-up">
+                                        <i class="bi bi-arrow-up"></i>+{{ stock.ratio_change }}
+                                    </div>
+                                {% elif stock.ratio_change < 0 %}
+                                    <div class="change-display ratio-down">
+                                        <i class="bi bi-arrow-down"></i>{{ stock.ratio_change }}
+                                    </div>
+                                {% else %}
+                                    <div class="change-display ratio-neutral">
+                                        <i class="bi bi-dash"></i>{{ stock.ratio_change }}
+                                    </div>
+                                {% endif %}
                             {% else %}
                                 <span class="text-muted">-</span>
                             {% endif %}
@@ -597,17 +647,23 @@
                     
                     <div class="compact-card-metrics">
                         <div class="compact-metric">
-                            <div class="compact-metric-label">最終更新</div>
-                            {% if stock.latest_date %}
-                                <div class="compact-metric-value" style="font-size:0.7rem;">{{ stock.latest_date|date:"m/d" }}</div>
+                            <div class="compact-metric-label">現在倍率</div>
+                            {% if stock.margin_data_available %}
+                                <div class="compact-metric-value">{{ stock.current_ratio }}</div>
                             {% else %}
                                 <div class="compact-metric-value text-muted">-</div>
                             {% endif %}
                         </div>
                         <div class="compact-metric">
-                            <div class="compact-metric-label">継続記録</div>
-                            {% if stock.note_count > 0 %}
-                                <div class="compact-metric-value">{{ stock.note_count }}件</div>
+                            <div class="compact-metric-label">変動</div>
+                            {% if stock.margin_data_available and stock.ratio_change %}
+                                {% if stock.ratio_change > 0 %}
+                                    <div class="compact-metric-value ratio-up">+{{ stock.ratio_change }}</div>
+                                {% elif stock.ratio_change < 0 %}
+                                    <div class="compact-metric-value ratio-down">{{ stock.ratio_change }}</div>
+                                {% else %}
+                                    <div class="compact-metric-value ratio-neutral">{{ stock.ratio_change }}</div>
+                                {% endif %}
                             {% else %}
                                 <div class="compact-metric-value text-muted">-</div>
                             {% endif %}
