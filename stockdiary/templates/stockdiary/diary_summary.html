@@ -5,6 +5,11 @@
 
 {% block head %}
 <style>
+.summary-table {
+    table-layout: fixed;
+    width: 100%;
+}
+
 .summary-table th {
     background: linear-gradient(135deg, #f8f9fc 0%, #e9ecef 100%);
     border-bottom: 2px solid rgba(79, 131, 204, 0.15);
@@ -22,6 +27,11 @@
     background-color: rgba(79, 131, 204, 0.05);
 }
 
+.col-code  { width: 4.5rem; }
+.col-name  { /* 残り幅 */ }
+.col-date  { width: 6.5rem; }
+.col-count { width: 5rem; }
+
 .symbol-code {
     font-family: monospace;
     font-weight: 600;
@@ -31,9 +41,13 @@
 
 .stock-name-cell {
     font-weight: 500;
-    max-width: 200px;
+    display: block;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.date-cell {
     white-space: nowrap;
 }
 
@@ -45,6 +59,7 @@
     font-size: 0.75rem;
     padding: 0.2rem 0.5rem;
     border-radius: 0.375rem;
+    white-space: nowrap;
 }
 
 .note-badge-zero {
@@ -61,9 +76,10 @@
 }
 
 @media (max-width: 576px) {
-    .stock-name-cell {
-        max-width: 120px;
-    }
+    .col-code  { width: 3.8rem; }
+    .col-date  { width: 3.2rem; }
+    .col-count { width: 3.8rem; }
+    .symbol-code { font-size: 0.8rem; }
 }
 </style>
 {% endblock %}
@@ -113,12 +129,24 @@
     {% if summary_list %}
     <div class="table-responsive">
         <table class="table table-hover align-middle summary-table">
+            <colgroup>
+                <col class="col-code">
+                <col class="col-name">
+                <col class="col-date">
+                <col class="col-count">
+            </colgroup>
             <thead>
                 <tr>
                     <th>コード</th>
                     <th>銘柄名</th>
-                    <th class="text-center">最終更新日</th>
-                    <th class="text-center">継続記録数</th>
+                    <th class="text-center">
+                        <span class="d-none d-sm-inline">最終更新日</span>
+                        <span class="d-sm-none">更新日</span>
+                    </th>
+                    <th class="text-center">
+                        <span class="d-none d-sm-inline">継続記録数</span>
+                        <span class="d-sm-none">記録数</span>
+                    </th>
                 </tr>
             </thead>
             <tbody>
@@ -126,9 +154,10 @@
                 <tr onclick="location.href='{% if stock.diary_id %}{% url 'stockdiary:detail' pk=stock.diary_id %}{% else %}{% url 'stockdiary:home' %}?query={{ stock.symbol }}{% endif %}'">
                     <td><span class="symbol-code">{{ stock.symbol }}</span></td>
                     <td><span class="stock-name-cell">{{ stock.name }}</span></td>
-                    <td class="text-center">
+                    <td class="text-center date-cell">
                         {% if stock.latest_date %}
-                            <span class="text-muted">{{ stock.latest_date|date:"Y/m/d" }}</span>
+                            <span class="text-muted d-none d-sm-inline">{{ stock.latest_date|date:"Y/m/d" }}</span>
+                            <span class="text-muted d-sm-none">{{ stock.latest_date|date:"m/d" }}</span>
                         {% else %}
                             <span class="text-muted">-</span>
                         {% endif %}
