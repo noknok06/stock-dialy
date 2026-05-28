@@ -1,7 +1,7 @@
 # stockdiary/forms.py
 from django import forms
 from django.core.exceptions import ValidationError
-from django.core.validators import ProhibitNullCharactersValidator
+from django.core.validators import ProhibitNullCharactersValidator, MaxLengthValidator
 from .models import StockDiary, Transaction, StockSplit, DiaryNote, sanitize_text_content
 from tags.models import Tag
 from decimal import Decimal
@@ -378,11 +378,12 @@ class DiaryNoteForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # NULL文字の検証はclean_contentでサニタイズして対応するため、
-        # ここで弾かれてフォームが無言で無効化されるのを防ぐ。
+        # NULL文字除去・最大長チェックはclean_contentでサニタイズ・改行正規化
+        # してから行う。フィールドレベルの検証を残すと、送信時にCRLFへ変換された
+        # 生の値で文字数超過と判定され、無言で弾かれてしまうため外す。
         self.fields['content'].validators = [
             v for v in self.fields['content'].validators
-            if not isinstance(v, ProhibitNullCharactersValidator)
+            if not isinstance(v, (ProhibitNullCharactersValidator, MaxLengthValidator))
         ]
 
     def clean_content(self):

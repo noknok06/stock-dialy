@@ -22,9 +22,15 @@ _CONTROL_CHARS_RE = re.compile(r'[\x00-\x08\x0b\x0c\x0e-\x1f]')
 
 
 def sanitize_text_content(text):
-    """コピペ等で混入するNULL/制御文字を除去する（タブ・改行は保持）"""
+    """コピペ等で混入するNULL/制御文字を除去し、改行コードをLFに正規化する。
+
+    改行をLFに揃えるのは、textareaのフォーム送信時にブラウザが改行を
+    CRLFへ変換し、サーバ側のlen()がクライアントの文字数カウント（LF基準）
+    より行数ぶん多くなって、3000字制限に無言で弾かれるのを防ぐため。
+    （タブ・改行は保持する）"""
     if not text:
         return text
+    text = text.replace('\r\n', '\n').replace('\r', '\n')
     return _CONTROL_CHARS_RE.sub('', text)
 
 logger = logging.getLogger(__name__)

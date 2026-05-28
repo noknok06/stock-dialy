@@ -16,7 +16,7 @@ from django.urls import reverse
 from django.shortcuts import get_object_or_404
 from decimal import Decimal, InvalidOperation
 
-from .models import StockDiary, DiaryNote, Transaction
+from .models import StockDiary, DiaryNote, Transaction, sanitize_text_content
 from tags.models import Tag
 import logging
 
@@ -122,7 +122,7 @@ def quick_add_note(request, diary_id):
     try:
         diary = get_object_or_404(StockDiary, pk=diary_id, user=request.user)
 
-        content = request.POST.get('content', '').strip()
+        content = sanitize_text_content(request.POST.get('content', '')).strip()
         if not content:
             return JsonResponse({
                 'success': False,
