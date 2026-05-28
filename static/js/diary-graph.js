@@ -78,11 +78,11 @@
       this.showLabels       = true;
       this.searchQuery      = '';
       this.sectorColorMap   = {};
-      // ノイズ間引き: 付けすぎたタグ/業種/@タグ（多数の銘柄に繋がる generic な
-      // ハブ）を隠し、希少な関連を際立たせる。既定でON。
-      // 1銘柄しか繋がらない孤立ハブは、接続モードを選んだ意図を尊重して残す。
+      // ノイズを減らす: ノード(ハブ)は隠さず、サイズ=接続数の表現はそのまま。
+      // エッジの強調で「気づきにくい個別の関連」を際立たせる。希少な関連(weight大)
+      // を太く濃く、多数の銘柄に共通する汎用的な関連(weight小)を細く淡くする。
+      // 既定でON。OFFで全エッジ均一表示。
       this.reduceNoise      = true;
-      this.hubDegreeMax     = 12;
 
       this._init();
     }
@@ -178,13 +178,12 @@
         noiseToggle.checked = this.reduceNoise;
         noiseToggle.addEventListener('change', e => {
           this.reduceNoise = e.target.checked;
-          // 再フェッチ不要。手元のデータを間引いて描き直す。
-          this._renderGraph();
-          this._updateStats({
-            total_nodes: this.allNodes.length,
-            total_edges: this.allEdges.length,
-            modes: [...this.currentEdgeModes],
-          });
+          // ノード集合は変えず、エッジの強調度だけ更新（レイアウト維持）
+          if (this.linkSel) {
+            this.linkSel
+              .attr('stroke-width',   d => this._edgeWidth(d))
+              .attr('stroke-opacity', d => this._edgeOpacity(d));
+          }
         });
       }
 
@@ -276,33 +275,23 @@
     }
 
     // ==============================
-    // ノイズ間引き
-    //   - 付けすぎハブ（hubDegreeMax 超の銘柄に繋がる generic なハブ）のみ除外
-    //   関連付けしすぎで「見にくい」問題への対策。reduceNoise=false で全表示。
-    //   ※ 1銘柄しか繋がらない孤立ハブは残す。@タグ等を選んだのに何も出ない
-    //     （@タグは1日記だけの記述が多く is_isolated になりがち）のを防ぐため。
+    // エッジ強調（「ノイズを減らす」）
+    //   ノード(ハブ)は隠さない。サイズ=接続数の表現はそのまま保つ。
+    //   reduceNoise=ON: 希少な関連(weight大)を太く濃く、巨大ハブ経由の汎用関連
+    //     (weight小)を細く淡くし、気づきにくい個別の関連を際立たせる。
+    //   reduceNoise=OFF: 全エッジを均一の太さ・不透明度で表示。
+    //   weight は逆頻度（1銘柄/2銘柄=1.0 〜 多数共通=0 に近づく, utils.hub_weight）。
     // ==============================
-    _applyNoiseFilter(nodes, edges) {
-      if (!this.reduceNoise) return { nodes, edges };
+    _edgeWidth(d) {
+      if (!this.reduceNoise) return 1.5;
+      const w = d.weight != null ? d.weight : 0.4;
+      return 0.6 + w * 3.4;   // weight 0 → 0.6px, 1 → 4.0px
+    }
 
-      const removed = new Set();
-      const keptNodes = nodes.filter(n => {
-        if (n.node_type === 'diary') return true;
-        const deg = n.diary_count || 0;
-        if (deg > this.hubDegreeMax) {
-          removed.add(n.id);
-          return false;
-        }
-        return true;
-      });
-
-      if (removed.size === 0) return { nodes: keptNodes, edges };
-
-      const idOf = v => (v && typeof v === 'object') ? v.id : v;
-      const keptEdges = edges.filter(e =>
-        !removed.has(idOf(e.source)) && !removed.has(idOf(e.target))
-      );
-      return { nodes: keptNodes, edges: keptEdges };
+    _edgeOpacity(d) {
+      if (!this.reduceNoise) return 0.5;
+      const w = d.weight != null ? d.weight : 0.4;
+      return 0.12 + w * 0.68; // weight 0 → 0.12, 1 → 0.80
     }
 
     // ==============================
@@ -372,12 +361,10 @@
         this._closeSidePanel();
       });
 
-      const filtered = this._applyNoiseFilter(
-        this.allNodes.map(d => ({ ...d })),
-        this.allEdges.map(d => ({ ...d }))
-      );
-      const nodes = filtered.nodes;
-      const edges = filtered.edges;
+      // ノードは間引かない（ハブも全表示）。d3 が x/y や source/target を
+      // 書き換えるため、元データを汚さないようコピーを渡す。
+      const nodes = this.allNodes.map(d => ({ ...d }));
+      const edges = this.allEdges.map(d => ({ ...d }));
 
       const hasHubMode = this.currentEdgeModes.has('tag') || this.currentEdgeModes.has('sector') || this.currentEdgeModes.has('hashtag');
       const linkDist  = hasHubMode ? FORCE_LINK_DISTANCE_HUB : FORCE_LINK_DISTANCE_DEFAULT;
@@ -402,16 +389,17 @@
           })
         );
 
-      // エッジ
+      // エッジ。希少な関連を太く濃く（_edgeWidth/_edgeOpacity 参照）
       const linkSel = g.append('g').attr('class', 'links')
         .selectAll('line')
         .data(edges)
         .join('line')
           .attr('class', d => `graph-link edge-${d.edge_type || 'manual'}`)
           .attr('stroke', d => EDGE_COLOR[d.edge_type] || EDGE_COLOR.manual)
-          // 希少な関連（weight 大）ほど太く濃く、付けすぎ（weight 小）は細く淡く
-          .attr('stroke-width',   d => 0.8 + (d.weight != null ? d.weight : 0.4) * 2.2)
-          .attr('stroke-opacity', d => 0.25 + (d.weight != null ? d.weight : 0.4) * 0.55);
+          .attr('stroke-width',   d => this._edgeWidth(d))
+          .attr('stroke-opacity', d => this._edgeOpacity(d));
+      // トグル変更時に再描画せず強調度だけ更新するため保持
+      this.linkSel = linkSel;
 
       // ノードグループ
       const self = this;
