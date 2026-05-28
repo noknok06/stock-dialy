@@ -679,7 +679,7 @@ def diary_graph_data(request):
                 manual_edge_set.add((min(src, tgt), max(src, tgt)))
 
             for s, t in manual_edge_set:
-                all_edges.append({'source': s, 'target': t, 'edge_type': 'manual'})
+                all_edges.append({'source': s, 'target': t, 'edge_type': 'manual', 'weight': 1.0})
 
         # ====================================================
         # tag モード: タグハブノード
@@ -913,13 +913,13 @@ def diary_detail_graph_data(request, diary_id):
                     key = (focal.id, linked_id)
                     if key not in edge_set:
                         edge_set.add(key)
-                        all_edges.append({'source': focal.id, 'target': linked_id, 'edge_type': 'manual'})
+                        all_edges.append({'source': focal.id, 'target': linked_id, 'edge_type': 'manual', 'weight': 1.0})
             for linked_id in manual_from_ids:
                 if linked_id in diary_nodes_map:
                     key = tuple(sorted([focal.id, linked_id]))
                     if key not in edge_set:
                         edge_set.add(key)
-                        all_edges.append({'source': linked_id, 'target': focal.id, 'edge_type': 'manual'})
+                        all_edges.append({'source': linked_id, 'target': focal.id, 'edge_type': 'manual', 'weight': 1.0})
 
         # tag ハブノード（フォーカル日記のタグのみ）
         if 'tag' in edge_modes:
@@ -940,7 +940,7 @@ def diary_detail_graph_data(request, diary_id):
                 'diary_count': 1,
                 'link_count': 1,
             }
-            all_edges.append({'source': focal.id, 'target': sector_id, 'edge_type': 'sector'})
+            all_edges.append({'source': focal.id, 'target': sector_id, 'edge_type': 'sector', 'weight': 1.0})
 
         # hashtag ハブノード（フォーカル日記のハッシュタグのみ）
         if 'hashtag' in edge_modes:

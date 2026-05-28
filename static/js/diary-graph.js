@@ -78,6 +78,11 @@
       this.showLabels       = true;
       this.searchQuery      = '';
       this.sectorColorMap   = {};
+      // ノイズを減らす: ノード(ハブ)は隠さず、サイズ=接続数の表現はそのまま。
+      // エッジの強調で「気づきにくい個別の関連」を際立たせる。希少な関連(weight大)
+      // を太く濃く、多数の銘柄に共通する汎用的な関連(weight小)を細く淡くする。
+      // 既定でON。OFFで全エッジ均一表示。
+      this.reduceNoise      = true;
 
       this._init();
     }
@@ -165,6 +170,20 @@
         labelToggle.addEventListener('change', e => {
           this.showLabels = e.target.checked;
           this._toggleLabels();
+        });
+      }
+
+      const noiseToggle = document.getElementById('reduceNoise');
+      if (noiseToggle) {
+        noiseToggle.checked = this.reduceNoise;
+        noiseToggle.addEventListener('change', e => {
+          this.reduceNoise = e.target.checked;
+          // ノード集合は変えず、エッジの強調度だけ更新（レイアウト維持）
+          if (this.linkSel) {
+            this.linkSel
+              .attr('stroke-width',   d => this._edgeWidth(d))
+              .attr('stroke-opacity', d => this._edgeOpacity(d));
+          }
         });
       }
 
@@ -256,6 +275,26 @@
     }
 
     // ==============================
+    // エッジ強調（「ノイズを減らす」）
+    //   ノード(ハブ)は隠さない。サイズ=接続数の表現はそのまま保つ。
+    //   reduceNoise=ON: 希少な関連(weight大)を太く濃く、巨大ハブ経由の汎用関連
+    //     (weight小)を細く淡くし、気づきにくい個別の関連を際立たせる。
+    //   reduceNoise=OFF: 全エッジを均一の太さ・不透明度で表示。
+    //   weight は逆頻度（1銘柄/2銘柄=1.0 〜 多数共通=0 に近づく, utils.hub_weight）。
+    // ==============================
+    _edgeWidth(d) {
+      if (!this.reduceNoise) return 1.5;
+      const w = d.weight != null ? d.weight : 0.4;
+      return 0.6 + w * 3.4;   // weight 0 → 0.6px, 1 → 4.0px
+    }
+
+    _edgeOpacity(d) {
+      if (!this.reduceNoise) return 0.5;
+      const w = d.weight != null ? d.weight : 0.4;
+      return 0.12 + w * 0.68; // weight 0 → 0.12, 1 → 0.80
+    }
+
+    // ==============================
     // D3 グラフ描画
     // ==============================
     _renderGraph() {
@@ -322,6 +361,8 @@
         this._closeSidePanel();
       });
 
+      // ノードは間引かない（ハブも全表示）。d3 が x/y や source/target を
+      // 書き換えるため、元データを汚さないようコピーを渡す。
       const nodes = this.allNodes.map(d => ({ ...d }));
       const edges = this.allEdges.map(d => ({ ...d }));
 
@@ -348,13 +389,17 @@
           })
         );
 
-      // エッジ
+      // エッジ。希少な関連を太く濃く（_edgeWidth/_edgeOpacity 参照）
       const linkSel = g.append('g').attr('class', 'links')
         .selectAll('line')
         .data(edges)
         .join('line')
           .attr('class', d => `graph-link edge-${d.edge_type || 'manual'}`)
-          .attr('stroke', d => EDGE_COLOR[d.edge_type] || EDGE_COLOR.manual);
+          .attr('stroke', d => EDGE_COLOR[d.edge_type] || EDGE_COLOR.manual)
+          .attr('stroke-width',   d => this._edgeWidth(d))
+          .attr('stroke-opacity', d => this._edgeOpacity(d));
+      // トグル変更時に再描画せず強調度だけ更新するため保持
+      this.linkSel = linkSel;
 
       // ノードグループ
       const self = this;

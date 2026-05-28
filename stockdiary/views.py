@@ -30,6 +30,7 @@ from .models import StockDiary, DiaryNote, DiaryNotification
 from .models import Transaction, StockSplit
 from .forms import TransactionForm, StockSplitForm, TradeUploadForm
 from .forms import StockDiaryForm, DiaryNoteForm
+from .utils import compute_related_strength
 from company_master.models import CompanyMaster
 from tags.models import Tag
 from django.views.generic import FormView
@@ -490,7 +491,11 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
                 if d.id not in manual_linked_ids:
                     combined_related.append({'diary': d, 'is_auto': True})
         context['combined_related_diaries'] = combined_related
-        
+
+        # 関連の強い銘柄（希少性で重み付け・付けすぎはノイズ除外）。
+        # グラフが密でも「読める」関連発見の導線。
+        context['related_strength'] = compute_related_strength(self.object, self.request.user)
+
         # スピードダイアルアクション
         context['diary_actions'] = [
             {
