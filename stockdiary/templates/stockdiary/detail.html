@@ -1246,6 +1246,88 @@
   margin-top: 0.1rem;
   max-width: 100%;
 }
+/* 関連の強い銘柄（希少性ランキング） */
+.related-strength-head {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+.related-strength-head i { color: var(--primary-color, #6366f1); }
+.related-strength-note {
+  font-weight: normal;
+  font-size: 0.65rem;
+  color: var(--text-tertiary, #9ca3af);
+}
+.related-strength-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.related-strength-item {
+  display: block;
+  text-decoration: none;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--border-light, #e5e7eb);
+  border-radius: var(--radius-sm, 0.4rem);
+  background: var(--bg-primary, #fff);
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.related-strength-item:hover {
+  border-color: var(--primary-color, #6366f1);
+  background: var(--bg-secondary, #f8f9fa);
+}
+.related-strength-item .rs-head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.25rem;
+}
+.related-strength-item .rs-code { font-size: 0.66rem; flex-shrink: 0; }
+.related-strength-item .rs-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary, #1f2937);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.related-strength-item .rs-vias {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+.rs-via {
+  font-size: 0.62rem;
+  line-height: 1;
+  padding: 0.18rem 0.4rem;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.18);
+  color: var(--text-secondary, #475569);
+  white-space: nowrap;
+}
+.rs-via-symbol  { background: rgba(16, 185, 129, 0.16); color: #0f9d6b; }
+.rs-via-manual  { background: rgba(99, 102, 241, 0.16); color: #5457e6; }
+.rs-via-mention { background: rgba(245, 158, 11, 0.18); color: #b45309; }
+.rs-via-tag     { background: rgba(124, 58, 237, 0.15); color: #7c3aed; }
+.rs-via-sector  { background: rgba(217, 119, 6, 0.15);  color: #b45309; }
+.rs-via-hashtag { background: rgba(14, 165, 233, 0.15); color: #0284c7; }
+.dark-mode .related-strength-item,
+[data-theme="dark"] .related-strength-item {
+  background: var(--dm-card, #1e293b);
+  border-color: var(--dm-border, #334155);
+}
+.dark-mode .related-strength-item:hover,
+[data-theme="dark"] .related-strength-item:hover {
+  background: rgba(99, 102, 241, 0.12);
+}
+.dark-mode .related-strength-item .rs-name,
+[data-theme="dark"] .related-strength-item .rs-name { color: var(--dm-foreground, #e2e8f0); }
+.dark-mode .related-strength-head,
+[data-theme="dark"] .related-strength-head { color: var(--dm-foreground, #e2e8f0); }
 /* 検索エリア */
 .related-search-wrap .form-control {
   background: var(--bg-secondary);
@@ -1760,6 +1842,30 @@
             <!-- ツールチップ（全ページ共通・fixed配置） -->
             <div id="detail-graph-tooltip"
                  style="display:none;position:fixed;background:rgba(0,0,0,0.82);color:#fff;padding:5px 9px;border-radius:5px;font-size:0.72rem;pointer-events:none;z-index:9999;max-width:200px;line-height:1.4;"></div>
+
+            <!-- 関連の強い銘柄（希少性で重み付け・付けすぎはノイズ除外） -->
+            {% if related_strength %}
+            <div class="related-strength mt-3">
+              <div class="related-strength-head">
+                <i class="bi bi-stars"></i>
+                <span>関連の強い銘柄</span>
+                <span class="related-strength-note">希少な関連ほど上位</span>
+              </div>
+              <div class="related-strength-list">
+                {% for item in related_strength %}
+                <a href="{% url 'stockdiary:detail' item.diary.pk %}" class="related-strength-item">
+                  <div class="rs-head">
+                    {% if item.diary.stock_symbol %}<span class="badge bg-secondary rs-code">{{ item.diary.stock_symbol }}</span>{% endif %}
+                    <span class="rs-name">{{ item.diary.stock_name }}</span>
+                  </div>
+                  <div class="rs-vias">
+                    {% for v in item.via %}<span class="rs-via rs-via-{{ v.type }}">{{ v.label }}</span>{% endfor %}
+                  </div>
+                </a>
+                {% endfor %}
+              </div>
+            </div>
+            {% endif %}
           </div>
 
           <!-- 関連日記セクション -->

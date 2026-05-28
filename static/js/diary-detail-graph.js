@@ -151,8 +151,9 @@
         .data(edges)
         .join('line')
           .attr('stroke', d => EDGE_COLOR[d.edge_type] || '#aaa')
-          .attr('stroke-width', 1.5)
-          .attr('stroke-opacity', 0.65);
+          // 希少な関連（weight 大）ほど太く濃く描く
+          .attr('stroke-width',   d => 1.0 + (d.weight != null ? d.weight : 0.5) * 1.6)
+          .attr('stroke-opacity', d => 0.35 + (d.weight != null ? d.weight : 0.5) * 0.45);
 
       // ── ノード描画 ─────────────────────────────────────────────────
       const node = g.append('g').attr('class', 'detail-graph-nodes')

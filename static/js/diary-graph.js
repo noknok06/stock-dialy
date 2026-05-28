@@ -78,6 +78,10 @@
       this.showLabels       = true;
       this.searchQuery      = '';
       this.sectorColorMap   = {};
+      // ノイズ間引き: 付けすぎたタグ/業種/@タグ（多数の銘柄に繋がるハブ）と
+      // 孤立ハブを隠し、希少な関連だけを際立たせる。既定でON。
+      this.reduceNoise      = true;
+      this.hubDegreeMax     = 12;
 
       this._init();
     }
@@ -165,6 +169,21 @@
         labelToggle.addEventListener('change', e => {
           this.showLabels = e.target.checked;
           this._toggleLabels();
+        });
+      }
+
+      const noiseToggle = document.getElementById('reduceNoise');
+      if (noiseToggle) {
+        noiseToggle.checked = this.reduceNoise;
+        noiseToggle.addEventListener('change', e => {
+          this.reduceNoise = e.target.checked;
+          // 再フェッチ不要。手元のデータを間引いて描き直す。
+          this._renderGraph();
+          this._updateStats({
+            total_nodes: this.allNodes.length,
+            total_edges: this.allEdges.length,
+            modes: [...this.currentEdgeModes],
+          });
         });
       }
 
@@ -256,6 +275,35 @@
     }
 
     // ==============================
+    // ノイズ間引き
+    //   - 孤立ハブ（1銘柄しか繋がない）を除外
+    //   - 付けすぎハブ（hubDegreeMax 超の銘柄に繋がる）を除外
+    //   関連付けしすぎで「見にくい」問題への対策。reduceNoise=false で全表示。
+    // ==============================
+    _applyNoiseFilter(nodes, edges) {
+      if (!this.reduceNoise) return { nodes, edges };
+
+      const removed = new Set();
+      const keptNodes = nodes.filter(n => {
+        if (n.node_type === 'diary') return true;
+        const deg = n.diary_count || 0;
+        if (n.is_isolated || deg <= 1 || deg > this.hubDegreeMax) {
+          removed.add(n.id);
+          return false;
+        }
+        return true;
+      });
+
+      if (removed.size === 0) return { nodes: keptNodes, edges };
+
+      const idOf = v => (v && typeof v === 'object') ? v.id : v;
+      const keptEdges = edges.filter(e =>
+        !removed.has(idOf(e.source)) && !removed.has(idOf(e.target))
+      );
+      return { nodes: keptNodes, edges: keptEdges };
+    }
+
+    // ==============================
     // D3 グラフ描画
     // ==============================
     _renderGraph() {
@@ -322,8 +370,12 @@
         this._closeSidePanel();
       });
 
-      const nodes = this.allNodes.map(d => ({ ...d }));
-      const edges = this.allEdges.map(d => ({ ...d }));
+      const filtered = this._applyNoiseFilter(
+        this.allNodes.map(d => ({ ...d })),
+        this.allEdges.map(d => ({ ...d }))
+      );
+      const nodes = filtered.nodes;
+      const edges = filtered.edges;
 
       const hasHubMode = this.currentEdgeModes.has('tag') || this.currentEdgeModes.has('sector') || this.currentEdgeModes.has('hashtag');
       const linkDist  = hasHubMode ? FORCE_LINK_DISTANCE_HUB : FORCE_LINK_DISTANCE_DEFAULT;
@@ -354,7 +406,10 @@
         .data(edges)
         .join('line')
           .attr('class', d => `graph-link edge-${d.edge_type || 'manual'}`)
-          .attr('stroke', d => EDGE_COLOR[d.edge_type] || EDGE_COLOR.manual);
+          .attr('stroke', d => EDGE_COLOR[d.edge_type] || EDGE_COLOR.manual)
+          // 希少な関連（weight 大）ほど太く濃く、付けすぎ（weight 小）は細く淡く
+          .attr('stroke-width',   d => 0.8 + (d.weight != null ? d.weight : 0.4) * 2.2)
+          .attr('stroke-opacity', d => 0.25 + (d.weight != null ? d.weight : 0.4) * 0.55);
 
       // ノードグループ
       const self = this;
