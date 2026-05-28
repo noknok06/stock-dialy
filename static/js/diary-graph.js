@@ -78,8 +78,9 @@
       this.showLabels       = true;
       this.searchQuery      = '';
       this.sectorColorMap   = {};
-      // ノイズ間引き: 付けすぎたタグ/業種/@タグ（多数の銘柄に繋がるハブ）と
-      // 孤立ハブを隠し、希少な関連だけを際立たせる。既定でON。
+      // ノイズ間引き: 付けすぎたタグ/業種/@タグ（多数の銘柄に繋がる generic な
+      // ハブ）を隠し、希少な関連を際立たせる。既定でON。
+      // 1銘柄しか繋がらない孤立ハブは、接続モードを選んだ意図を尊重して残す。
       this.reduceNoise      = true;
       this.hubDegreeMax     = 12;
 
@@ -276,9 +277,10 @@
 
     // ==============================
     // ノイズ間引き
-    //   - 孤立ハブ（1銘柄しか繋がない）を除外
-    //   - 付けすぎハブ（hubDegreeMax 超の銘柄に繋がる）を除外
+    //   - 付けすぎハブ（hubDegreeMax 超の銘柄に繋がる generic なハブ）のみ除外
     //   関連付けしすぎで「見にくい」問題への対策。reduceNoise=false で全表示。
+    //   ※ 1銘柄しか繋がらない孤立ハブは残す。@タグ等を選んだのに何も出ない
+    //     （@タグは1日記だけの記述が多く is_isolated になりがち）のを防ぐため。
     // ==============================
     _applyNoiseFilter(nodes, edges) {
       if (!this.reduceNoise) return { nodes, edges };
@@ -287,7 +289,7 @@
       const keptNodes = nodes.filter(n => {
         if (n.node_type === 'diary') return true;
         const deg = n.diary_count || 0;
-        if (n.is_isolated || deg <= 1 || deg > this.hubDegreeMax) {
+        if (deg > this.hubDegreeMax) {
           removed.add(n.id);
           return false;
         }
