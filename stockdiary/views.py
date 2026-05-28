@@ -684,6 +684,19 @@ class StockDiaryDeleteView(LoginRequiredMixin, DeleteView):
         return response
 
 
+def _add_note_form_error_messages(request, form):
+    """継続記録フォームの検証エラーをメッセージとして表示する。
+    以前は無言でリダイレクトしており、保存失敗が画面に出ず原因不明になっていた。"""
+    for field, errors in form.errors.items():
+        if field == '__all__':
+            label = ''
+        else:
+            field_obj = form.fields.get(field)
+            label = (field_obj.label or field) if field_obj else field
+        text = ' '.join(errors)
+        messages.error(request, f"{label}: {text}" if label else text)
+
+
 class AddDiaryNoteView(LoginRequiredMixin, CreateView):
     """日記エントリーへの継続記録追加"""
     model = DiaryNote
@@ -723,9 +736,10 @@ class AddDiaryNoteView(LoginRequiredMixin, CreateView):
     
     def get_success_url(self):
         return reverse_lazy('stockdiary:detail', kwargs={'pk': self.kwargs.get('pk')})
-    
+
     def form_invalid(self, form):
         diary_id = self.kwargs.get('pk')
+        _add_note_form_error_messages(self.request, form)
         return redirect('stockdiary:detail', pk=diary_id)
 
 
@@ -768,6 +782,7 @@ class UpdateDiaryNoteView(LoginRequiredMixin, UpdateView):
         return reverse_lazy('stockdiary:detail', kwargs={'pk': self.kwargs.get('diary_pk')})
 
     def form_invalid(self, form):
+        _add_note_form_error_messages(self.request, form)
         return redirect('stockdiary:detail', pk=self.kwargs.get('diary_pk'))
 
 

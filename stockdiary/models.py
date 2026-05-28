@@ -10,9 +10,22 @@ from django.db.models import Sum, F, Q, Count
 from django.utils import timezone
 from decimal import Decimal, ROUND_HALF_UP
 import os
+import re
 import uuid
 import logging
 from tags.models import Tag
+
+# NULL文字や制御文字（タブ・改行・復帰を除くC0制御）を検出する。
+# AIツールやPDFからのコピペで混入し、ProhibitNullCharactersValidator等で
+# 弾かれて継続記録が無言で保存失敗する原因になるため除去する。
+_CONTROL_CHARS_RE = re.compile(r'[\x00-\x08\x0b\x0c\x0e-\x1f]')
+
+
+def sanitize_text_content(text):
+    """コピペ等で混入するNULL/制御文字を除去する（タブ・改行は保持）"""
+    if not text:
+        return text
+    return _CONTROL_CHARS_RE.sub('', text)
 
 logger = logging.getLogger(__name__)
 
@@ -363,6 +376,7 @@ class DiaryNote(models.Model):
     
     def clean(self):
         super().clean()
+        self.content = sanitize_text_content(self.content)
         if self.content and len(self.content) > 3000:
             raise ValidationError({'content': '記録内容は3000文字以内で入力してください'})
     

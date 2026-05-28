@@ -1,7 +1,8 @@
 # stockdiary/forms.py
 from django import forms
 from django.core.exceptions import ValidationError
-from .models import StockDiary, Transaction, StockSplit, DiaryNote
+from django.core.validators import ProhibitNullCharactersValidator
+from .models import StockDiary, Transaction, StockSplit, DiaryNote, sanitize_text_content
 from tags.models import Tag
 from decimal import Decimal
 
@@ -375,9 +376,18 @@ class DiaryNoteForm(forms.ModelForm):
             'current_price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # NULL文字の検証はclean_contentでサニタイズして対応するため、
+        # ここで弾かれてフォームが無言で無効化されるのを防ぐ。
+        self.fields['content'].validators = [
+            v for v in self.fields['content'].validators
+            if not isinstance(v, ProhibitNullCharactersValidator)
+        ]
+
     def clean_content(self):
         """記録内容のバリデーション"""
-        content = self.cleaned_data.get('content')
+        content = sanitize_text_content(self.cleaned_data.get('content'))
         if content and len(content) > 3000:
             raise ValidationError('記録内容は3000文字以内で入力してください。')
         return content
