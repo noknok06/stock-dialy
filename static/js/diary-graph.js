@@ -31,7 +31,7 @@
     manual:  '#94a3b8',
     tag:     '#a78bfa',
     sector:  '#fb923c',
-    hashtag: '#38bdf8',
+    hashtag: '#a78bfa',  // タグと統合（同色）
     mention: '#f59e0b',
   };
 
@@ -39,7 +39,7 @@
   const HUB_COLOR = {
     tag:     '#7c3aed',
     sector:  '#d97706',
-    hashtag: '#0ea5e9',
+    hashtag: '#7c3aed',  // タグと統合（同色）
   };
 
   // セクター色パレット
@@ -78,11 +78,9 @@
       this.showLabels       = true;
       this.searchQuery      = '';
       this.sectorColorMap   = {};
-      // ノイズを減らす: ノード(ハブ)は隠さず、サイズ=接続数の表現はそのまま。
-      // エッジの強調で「気づきにくい個別の関連」を際立たせる。希少な関連(weight大)
-      // を太く濃く、多数の銘柄に共通する汎用的な関連(weight小)を細く淡くする。
-      // 既定でON。OFFで全エッジ均一表示。
-      this.reduceNoise      = true;
+      this.focusNodeId      = null;
+      this.focusNeighborIds = new Set();
+      this._searchMatchIds  = [];
 
       this._init();
     }
@@ -100,6 +98,10 @@
       document.querySelectorAll('.edge-mode-check').forEach(cb => {
         cb.checked = this.currentEdgeModes.has(cb.value);
       });
+      const unifiedTagCb = document.getElementById('mode-tag-unified');
+      if (unifiedTagCb) {
+        unifiedTagCb.checked = this.currentEdgeModes.has('tag') || this.currentEdgeModes.has('hashtag');
+      }
     }
 
     // ==============================
@@ -121,15 +123,39 @@
         });
       }
 
+      // タグ統合ボタン（tag + hashtag を同時制御）
+      const unifiedTagCb = document.getElementById('mode-tag-unified');
+      if (unifiedTagCb) {
+        unifiedTagCb.addEventListener('change', () => {
+          if (unifiedTagCb.checked) {
+            this.currentEdgeModes.add('tag');
+            this.currentEdgeModes.add('hashtag');
+          } else {
+            const otherModes = ['manual', 'sector', 'mention'];
+            const hasOther = otherModes.some(m => this.currentEdgeModes.has(m));
+            if (!hasOther) { unifiedTagCb.checked = true; return; }
+            this.currentEdgeModes.delete('tag');
+            this.currentEdgeModes.delete('hashtag');
+          }
+          this._updateLegend();
+          this._fetchAndRender();
+        });
+      }
+
+      // その他のエッジモード（手動・業種・コード参照）
       document.querySelectorAll('.edge-mode-check').forEach(cb => {
         cb.addEventListener('change', () => {
-          // 少なくとも1つは選択を維持
           const checked = [...document.querySelectorAll('.edge-mode-check')].filter(c => c.checked);
-          if (checked.length === 0) {
+          const tagUnifiedOn = unifiedTagCb && unifiedTagCb.checked;
+          if (checked.length === 0 && !tagUnifiedOn) {
             cb.checked = true;
             return;
           }
           this.currentEdgeModes = new Set(checked.map(c => c.value));
+          if (tagUnifiedOn) {
+            this.currentEdgeModes.add('tag');
+            this.currentEdgeModes.add('hashtag');
+          }
           this._updateLegend();
           this._fetchAndRender();
         });
@@ -173,20 +199,6 @@
         });
       }
 
-      const noiseToggle = document.getElementById('reduceNoise');
-      if (noiseToggle) {
-        noiseToggle.checked = this.reduceNoise;
-        noiseToggle.addEventListener('change', e => {
-          this.reduceNoise = e.target.checked;
-          // ノード集合は変えず、エッジの強調度だけ更新（レイアウト維持）
-          if (this.linkSel) {
-            this.linkSel
-              .attr('stroke-width',   d => this._edgeWidth(d))
-              .attr('stroke-opacity', d => this._edgeOpacity(d));
-          }
-        });
-      }
-
       const resetBtn = document.getElementById('resetZoom');
       if (resetBtn) {
         resetBtn.addEventListener('click', () => this._resetZoom());
@@ -206,10 +218,30 @@
         exitFsBtn.addEventListener('click', () => this._toggleFullscreen(false));
       }
       document.addEventListener('keydown', e => {
-        if (e.key === 'Escape' && this._isFullscreen) {
-          this._toggleFullscreen(false);
+        if (e.key === 'Escape') {
+          if (this._isFullscreen) this._toggleFullscreen(false);
+          if (this.focusNodeId) this._exitFocusMode();
         }
       });
+
+      const focusExitBtn = document.getElementById('focus-banner-exit');
+      if (focusExitBtn) {
+        focusExitBtn.addEventListener('click', () => this._exitFocusMode());
+      }
+
+      const searchFocusBtn = document.getElementById('search-focus-btn');
+      if (searchFocusBtn) {
+        searchFocusBtn.addEventListener('click', () => {
+          if (this._searchMatchIds && this._searchMatchIds.length > 0) {
+            const ids = [...this._searchMatchIds];
+            const inp = document.getElementById('graphSearch');
+            if (inp) inp.value = '';
+            this.searchQuery = '';
+            this._applySearch();
+            this._enterMultiFocusMode(ids);
+          }
+        });
+      }
       // ウィンドウリサイズ時（端末回転など）はセンター追従のみ。手動 zoom/pan は維持
       window.addEventListener('resize', () => {
         if (this._resizeTimer) clearTimeout(this._resizeTimer);
@@ -223,6 +255,9 @@
     async _fetchAndRender() {
       this._showLoading();
       this._closeSidePanel();
+      this.focusNodeId = null;
+      this.focusNeighborIds = new Set();
+      this._hideFocusBanner();
 
       const params = new URLSearchParams();
       if (this.currentStatus && this.currentStatus !== 'all') {
@@ -274,25 +309,8 @@
       });
     }
 
-    // ==============================
-    // エッジ強調（「ノイズを減らす」）
-    //   ノード(ハブ)は隠さない。サイズ=接続数の表現はそのまま保つ。
-    //   reduceNoise=ON: 希少な関連(weight大)を太く濃く、巨大ハブ経由の汎用関連
-    //     (weight小)を細く淡くし、気づきにくい個別の関連を際立たせる。
-    //   reduceNoise=OFF: 全エッジを均一の太さ・不透明度で表示。
-    //   weight は逆頻度（1銘柄/2銘柄=1.0 〜 多数共通=0 に近づく, utils.hub_weight）。
-    // ==============================
-    _edgeWidth(d) {
-      if (!this.reduceNoise) return 1.5;
-      const w = d.weight != null ? d.weight : 0.4;
-      return 0.6 + w * 3.4;   // weight 0 → 0.6px, 1 → 4.0px
-    }
-
-    _edgeOpacity(d) {
-      if (!this.reduceNoise) return 0.5;
-      const w = d.weight != null ? d.weight : 0.4;
-      return 0.12 + w * 0.68; // weight 0 → 0.12, 1 → 0.80
-    }
+    _edgeWidth(d)   { return 1.5; }
+    _edgeOpacity(d) { return 0.55; }
 
     // ==============================
     // D3 グラフ描画
@@ -359,6 +377,7 @@
         if (moved) return;
         this._hideTooltip();
         this._closeSidePanel();
+        if (this.focusNodeId) this._exitFocusMode();
       });
 
       // ノードは間引かない（ハブも全表示）。d3 が x/y や source/target を
@@ -456,7 +475,7 @@
         } else if (d.node_type === 'hashtag') {
           const r = hubRadiusScale(d.link_count || 0);
           el.append('polygon')
-            .attr('points', _triPoints(r))
+            .attr('points', _hexPoints(r))
             .attr('fill', HUB_COLOR.hashtag)
             .attr('stroke', 'white')
             .attr('stroke-width', 2);
@@ -564,6 +583,7 @@
       this._toggleLabels();
       this._applySearch();
       this._showGraph();
+      this._applyHubGlow();
 
       // シミュレーション安定後の自動フィット（tick で未実行だった場合の保険）。
       // すでに tick 内でフィット済み、または手動操作済みなら何もしない。
@@ -596,6 +616,8 @@
     // ==============================
     _applySearch() {
       const q = this.searchQuery;
+      const matchIds = [];
+
       document.querySelectorAll('.graph-node').forEach(el => {
         if (!q) {
           el.classList.remove('highlighted', 'dimmed');
@@ -605,11 +627,15 @@
         if (name.includes(q)) {
           el.classList.add('highlighted');
           el.classList.remove('dimmed');
+          matchIds.push(el.dataset.id);
         } else {
           el.classList.remove('highlighted');
           el.classList.add('dimmed');
         }
       });
+
+      this._searchMatchIds = matchIds;
+      this._updateSearchFocusButton();
     }
 
     // ==============================
@@ -641,15 +667,14 @@
       const modes  = this.currentEdgeModes;
       const tagLeg  = document.getElementById('legend-tag-node');
       const secLeg  = document.getElementById('legend-sector-node');
-      const htLeg   = document.getElementById('legend-hashtag-node');
       const hubWrap = document.getElementById('legend-hubs');
       const mentionLeg = document.getElementById('legend-mention-edge');
 
       const toggle = (el, show) => el && el.classList.toggle('legend-hidden', !show);
-      toggle(tagLeg,  modes.has('tag'));
+      const hasTag = modes.has('tag') || modes.has('hashtag');
+      toggle(tagLeg,  hasTag);
       toggle(secLeg,  modes.has('sector'));
-      toggle(htLeg,   modes.has('hashtag'));
-      const hasHub = modes.has('tag') || modes.has('sector') || modes.has('hashtag');
+      const hasHub = hasTag || modes.has('sector');
       toggle(hubWrap, hasHub);
       toggle(mentionLeg, modes.has('mention'));
     }
@@ -867,10 +892,27 @@
           </div>`;
       }
 
+      html += `
+        <div class="side-panel-section mt-2">
+          <button class="btn btn-outline-primary btn-sm w-100" id="focus-mode-btn"
+                  data-node-id="${_esc(String(d.id))}">
+            <i class="bi bi-crosshair me-1"></i>この関連のみ表示
+          </button>
+        </div>`;
+
       this.sidePanelTitle.innerHTML = title;
       this.sidePanelBody.innerHTML  = html;
       this.sidePanel.classList.add('open');
       document.getElementById('graph-wrapper').classList.add('panel-open');
+
+      const focusBtn = document.getElementById('focus-mode-btn');
+      if (focusBtn) {
+        focusBtn.addEventListener('click', () => {
+          const nid = focusBtn.dataset.nodeId;
+          this._closeSidePanel();
+          this._enterFocusMode(nid);
+        });
+      }
     }
 
     _closeSidePanel() {
@@ -887,6 +929,223 @@
       document.getElementById('stats-nodes').textContent = `${meta.total_nodes} ノード`;
       document.getElementById('stats-edges').textContent = `${meta.total_edges} 接続`;
       this.statsEl.style.display = 'block';
+    }
+
+    // ==============================
+    // フォーカスモード
+    // ==============================
+    _enterFocusMode(nodeId) {
+      const nid = String(nodeId);
+      const neighbors = new Set();
+      this.allEdges.forEach(e => {
+        const s = String(typeof e.source === 'object' ? e.source.id : e.source);
+        const t = String(typeof e.target === 'object' ? e.target.id : e.target);
+        if (s === nid) neighbors.add(t);
+        if (t === nid) neighbors.add(s);
+      });
+
+      this.focusNodeId = nid;
+      this.focusNeighborIds = neighbors;
+      const visibleIds = new Set([nid, ...neighbors]);
+
+      document.querySelectorAll('.graph-node').forEach(el => {
+        const id = el.dataset.id;
+        if (visibleIds.has(id)) {
+          el.classList.remove('focus-hidden');
+          el.classList.add('focus-visible');
+        } else {
+          el.classList.add('focus-hidden');
+          el.classList.remove('focus-visible');
+        }
+      });
+
+      if (this.linkSel) {
+        this.linkSel.classed('focus-hidden', e => {
+          const s = String(typeof e.source === 'object' ? e.source.id : e.source);
+          const t = String(typeof e.target === 'object' ? e.target.id : e.target);
+          return !(visibleIds.has(s) && visibleIds.has(t));
+        });
+      }
+
+      this._showFocusBanner(visibleIds.size);
+
+      const nodesEl = document.getElementById('stats-nodes');
+      const edgesEl = document.getElementById('stats-edges');
+      const focusedEdgeCount = this.allEdges.filter(e => {
+        const s = String(typeof e.source === 'object' ? e.source.id : e.source);
+        const t = String(typeof e.target === 'object' ? e.target.id : e.target);
+        return visibleIds.has(s) && visibleIds.has(t);
+      }).length;
+      if (nodesEl) nodesEl.textContent = `${visibleIds.size} ノード (フォーカス)`;
+      if (edgesEl) edgesEl.textContent = `${focusedEdgeCount} 接続`;
+    }
+
+    _exitFocusMode() {
+      this.focusNodeId = null;
+      this.focusNeighborIds = new Set();
+
+      document.querySelectorAll('.graph-node').forEach(el => {
+        el.classList.remove('focus-hidden', 'focus-visible');
+      });
+
+      if (this.linkSel) {
+        this.linkSel.classed('focus-hidden', false);
+      }
+
+      this._hideFocusBanner();
+
+      const nodesEl = document.getElementById('stats-nodes');
+      const edgesEl = document.getElementById('stats-edges');
+      if (nodesEl) nodesEl.textContent = `${this.allNodes.length} ノード`;
+      if (edgesEl) edgesEl.textContent = `${this.allEdges.length} 接続`;
+
+      this._applySearch();
+    }
+
+    _showFocusBanner(nodeCount) {
+      const banner = document.getElementById('focus-mode-banner');
+      if (!banner) return;
+      const node = this.allNodes.find(n => String(n.id) === this.focusNodeId);
+      const label = node
+        ? (node.stock_name || node.tag_name || node.sector_name || 'ノード')
+        : 'ノード';
+      const labelEl = banner.querySelector('#focus-banner-label');
+      const countEl = banner.querySelector('#focus-banner-count');
+      if (labelEl) labelEl.textContent = label;
+      if (countEl) countEl.textContent = `${nodeCount} ノード表示中`;
+      banner.style.display = 'flex';
+    }
+
+    _hideFocusBanner() {
+      const banner = document.getElementById('focus-mode-banner');
+      if (banner) banner.style.display = 'none';
+    }
+
+    _enterMultiFocusMode(nodeIds) {
+      if (nodeIds.length === 0) return;
+      if (nodeIds.length === 1) { this._enterFocusMode(nodeIds[0]); return; }
+
+      const focusSet = new Set(nodeIds.map(String));
+      const neighborUnion = new Set();
+      this.allEdges.forEach(e => {
+        const s = String(typeof e.source === 'object' ? e.source.id : e.source);
+        const t = String(typeof e.target === 'object' ? e.target.id : e.target);
+        if (focusSet.has(s)) neighborUnion.add(t);
+        if (focusSet.has(t)) neighborUnion.add(s);
+      });
+
+      this.focusNodeId = '__multi__';
+      this.focusNeighborIds = neighborUnion;
+      const visibleIds = new Set([...focusSet, ...neighborUnion]);
+
+      document.querySelectorAll('.graph-node').forEach(el => {
+        const id = el.dataset.id;
+        if (visibleIds.has(id)) {
+          el.classList.remove('focus-hidden');
+          el.classList.add('focus-visible');
+        } else {
+          el.classList.add('focus-hidden');
+          el.classList.remove('focus-visible');
+        }
+      });
+
+      if (this.linkSel) {
+        this.linkSel.classed('focus-hidden', e => {
+          const s = String(typeof e.source === 'object' ? e.source.id : e.source);
+          const t = String(typeof e.target === 'object' ? e.target.id : e.target);
+          return !(visibleIds.has(s) && visibleIds.has(t));
+        });
+      }
+
+      const banner = document.getElementById('focus-mode-banner');
+      if (banner) {
+        const labelEl = banner.querySelector('#focus-banner-label');
+        const countEl = banner.querySelector('#focus-banner-count');
+        if (labelEl) labelEl.textContent = `${nodeIds.length} 件の検索結果`;
+        if (countEl) countEl.textContent = `${visibleIds.size} ノード表示中`;
+        banner.style.display = 'flex';
+      }
+
+      const nodesEl = document.getElementById('stats-nodes');
+      const edgesEl = document.getElementById('stats-edges');
+      const focusedEdgeCount = this.allEdges.filter(e => {
+        const s = String(typeof e.source === 'object' ? e.source.id : e.source);
+        const t = String(typeof e.target === 'object' ? e.target.id : e.target);
+        return visibleIds.has(s) && visibleIds.has(t);
+      }).length;
+      if (nodesEl) nodesEl.textContent = `${visibleIds.size} ノード (フォーカス)`;
+      if (edgesEl) edgesEl.textContent = `${focusedEdgeCount} 接続`;
+
+      const sfBtn = document.getElementById('search-focus-btn');
+      if (sfBtn) sfBtn.style.display = 'none';
+    }
+
+    _updateSearchFocusButton() {
+      const btn = document.getElementById('search-focus-btn');
+      if (!btn) return;
+      if (!this.searchQuery || this.focusNodeId || this._searchMatchIds.length === 0) {
+        btn.style.display = 'none'; return;
+      }
+      const count = this._searchMatchIds.length;
+      if (count === 1) {
+        const node = this.allNodes.find(n => String(n.id) === this._searchMatchIds[0]);
+        const label = node ? (node.stock_name || node.tag_name || node.sector_name || '') : '';
+        btn.innerHTML = `<i class="bi bi-crosshair me-1"></i>${_esc(label)} の関連のみ表示`;
+      } else {
+        btn.innerHTML = `<i class="bi bi-crosshair me-1"></i>一致した ${count} 件を中心に表示`;
+      }
+      btn.style.display = 'inline-flex';
+    }
+
+    // ==============================
+    // ハブノードのグロー強調
+    // ==============================
+    _applyHubGlow() {
+      if (!this.svg) return;
+
+      let defs = this.svg.select('defs');
+      if (defs.empty()) defs = this.svg.insert('defs', ':first-child');
+      defs.selectAll('filter.hub-glow-filter').remove();
+
+      const TOP_N = 5;
+      const glowColorMap = { tag: '#a78bfa', sector: '#fb923c', hashtag: '#a78bfa' };
+
+      const hubNodes = this.allNodes
+        .filter(n => ['tag', 'sector', 'hashtag'].includes(n.node_type))
+        .sort((a, b) => (b.link_count || 0) - (a.link_count || 0))
+        .slice(0, TOP_N);
+
+      if (hubNodes.length === 0) return;
+
+      hubNodes.forEach((node, rank) => {
+        const filterId = `hub-glow-${String(node.id).replace(/[^a-z0-9]/gi, '_')}`;
+        const glowColor = glowColorMap[node.node_type] || '#a78bfa';
+        const stdDev  = 4 - (rank / Math.max(TOP_N - 1, 1)) * 2.5;
+        const opacity = 0.85 - (rank / Math.max(TOP_N - 1, 1)) * 0.5;
+
+        const filter = defs.append('filter')
+          .attr('id', filterId)
+          .attr('class', 'hub-glow-filter')
+          .attr('x', '-50%').attr('y', '-50%')
+          .attr('width', '200%').attr('height', '200%');
+        filter.append('feFlood')
+          .attr('flood-color', glowColor)
+          .attr('flood-opacity', opacity)
+          .attr('result', 'color');
+        filter.append('feComposite')
+          .attr('in', 'color').attr('in2', 'SourceGraphic')
+          .attr('operator', 'in').attr('result', 'coloredSource');
+        filter.append('feGaussianBlur')
+          .attr('in', 'coloredSource')
+          .attr('stdDeviation', stdDev)
+          .attr('result', 'blur');
+        const merge = filter.append('feMerge');
+        merge.append('feMergeNode').attr('in', 'blur');
+        merge.append('feMergeNode').attr('in', 'SourceGraphic');
+
+        this.svg.select(`.graph-node[data-id="${String(node.id)}"]`)
+          .attr('filter', `url(#${filterId})`);
+      });
     }
 
     // ==============================

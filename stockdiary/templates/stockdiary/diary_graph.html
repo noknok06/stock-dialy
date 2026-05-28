@@ -65,17 +65,13 @@
           <label class="btn btn-outline-secondary" for="mode-manual">
             <i class="bi bi-link-45deg"></i><span class="mode-label">手動</span>
           </label>
-          <input type="checkbox" class="btn-check edge-mode-check" id="mode-tag" value="tag" autocomplete="off" checked>
-          <label class="btn btn-outline-secondary" for="mode-tag">
+          <input type="checkbox" class="btn-check" id="mode-tag-unified" autocomplete="off" checked>
+          <label class="btn btn-outline-secondary" for="mode-tag-unified">
             <i class="bi bi-tag"></i><span class="mode-label">タグ</span>
           </label>
           <input type="checkbox" class="btn-check edge-mode-check" id="mode-sector" value="sector" autocomplete="off">
           <label class="btn btn-outline-secondary" for="mode-sector">
             <i class="bi bi-building"></i><span class="mode-label">業種</span>
-          </label>
-          <input type="checkbox" class="btn-check edge-mode-check" id="mode-hashtag" value="hashtag" autocomplete="off">
-          <label class="btn btn-outline-secondary" for="mode-hashtag">
-            <i class="bi bi-hash"></i><span class="mode-label">@タグ</span>
           </label>
           <input type="checkbox" class="btn-check edge-mode-check" id="mode-mention" value="mention" autocomplete="off">
           <label class="btn btn-outline-secondary" for="mode-mention">
@@ -109,10 +105,6 @@
           <option value="profit">色: 損益</option>
         </select>
         <div class="ctrl-tools">
-          <div class="form-check form-switch mb-0 d-flex align-items-center gap-1" title="希少な関連を太く強調し、多数の銘柄に共通する汎用的な関連を控えめに表示します（ノードは隠しません）">
-            <input class="form-check-input" type="checkbox" id="reduceNoise" checked>
-            <label class="form-check-label small" for="reduceNoise">ノイズを減らす</label>
-          </div>
           <div class="form-check form-switch mb-0 d-flex align-items-center gap-1">
             <input class="form-check-input" type="checkbox" id="showLabels" checked>
             <label class="form-check-label small" for="showLabels">ラベル</label>
@@ -124,9 +116,21 @@
             <i class="bi bi-arrows-fullscreen"></i>
           </button>
         </div>
+        <button class="btn btn-sm btn-primary search-focus-btn" id="search-focus-btn"
+                type="button" style="display:none;" title="一致した銘柄の関連のみ表示"></button>
       </div>
 
     </div>
+  </div>
+
+  <!-- フォーカスモードバナー -->
+  <div id="focus-mode-banner" class="focus-mode-banner" style="display:none;" role="status" aria-live="polite">
+    <i class="bi bi-crosshair me-2 text-primary"></i>
+    <span id="focus-banner-label" class="fw-semibold me-1"></span>の関連のみ表示中
+    <span id="focus-banner-count" class="badge bg-primary ms-2"></span>
+    <button id="focus-banner-exit" class="btn btn-sm btn-outline-secondary ms-auto" type="button">
+      <i class="bi bi-x me-1"></i>解除
+    </button>
   </div>
 
   <!-- グラフエリア（グラフ本体 + サイドパネル） -->
@@ -202,16 +206,13 @@
         <span class="graph-legend-dot" style="background:#9ca3af;"></span>メモ
       </span>
     </div>
-    <!-- ハブノード凡例（tag/sector/hashtag モード時に追加表示） -->
+    <!-- ハブノード凡例（tag/sector モード時に追加表示） -->
     <div id="legend-hubs" class="gap-3 flex-wrap align-items-center legend-hidden">
       <span class="small text-muted align-items-center gap-1 legend-hidden" id="legend-tag-node">
         <svg width="14" height="14" viewBox="-7 -7 14 14"><polygon points="5.20,-3 5.20,3 0,6 -5.20,3 -5.20,-3 0,-6" fill="#7c3aed" stroke="white" stroke-width="1.5"/></svg>タグ
       </span>
       <span class="small text-muted align-items-center gap-1 legend-hidden" id="legend-sector-node">
         <svg width="14" height="14" viewBox="-7 -7 14 14"><rect x="-5.5" y="-5.5" width="11" height="11" rx="2.5" fill="#d97706" stroke="white" stroke-width="1.5"/></svg>業種
-      </span>
-      <span class="small text-muted align-items-center gap-1 legend-hidden" id="legend-hashtag-node">
-        <svg width="14" height="14" viewBox="-7 -7 14 14"><polygon points="0,-6 5.2,3 -5.2,3" fill="#0ea5e9" stroke="white" stroke-width="1.5"/></svg>@タグ
       </span>
     </div>
     <!-- コード参照凡例 -->
@@ -237,7 +238,7 @@
   const GRAPH_CONFIG = {
     apiUrl: "{% url 'stockdiary:api_diary_graph_data' %}",
     diaryCount: {{ diary_count }},
-    defaultEdgeModes: ['tag'],
+    defaultEdgeModes: ['tag', 'hashtag'],
   };
 </script>
 <script src="{% static 'js/diary-graph.js' %}?v={{ STATIC_VERSION }}"></script>
