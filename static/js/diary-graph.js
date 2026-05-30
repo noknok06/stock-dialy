@@ -279,7 +279,15 @@
         this.allNodes = data.nodes || [];
         this.allEdges = data.edges || [];
 
-        if (this.allEdges.length === 0 && this.allNodes.length < 2) {
+        // 孤立ノード（どのエッジにも接続していない）を除外
+        const connectedIds = new Set();
+        this.allEdges.forEach(e => {
+          connectedIds.add(String(e.source));
+          connectedIds.add(String(e.target));
+        });
+        this.allNodes = this.allNodes.filter(n => connectedIds.has(String(n.id)));
+
+        if (this.allEdges.length === 0 || this.allNodes.length === 0) {
           this._showEmpty();
           return;
         }
