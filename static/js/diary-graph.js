@@ -332,9 +332,10 @@
 
       const diaryNodes = this.allNodes.filter(n => n.node_type === 'diary');
       const maxLinks = Math.max(...diaryNodes.map(n => n.link_count || 0), 1);
-      const radiusScale = d3.scaleSqrt()
+      const radiusScale = d3.scaleLinear()
         .domain([0, maxLinks])
-        .range([NODE_RADIUS_MIN, NODE_RADIUS_MAX]);
+        .range([NODE_RADIUS_MIN, NODE_RADIUS_MAX])
+        .clamp(true);
 
       const hubNodes = this.allNodes.filter(n => n.node_type !== 'diary');
       const hubMaxLinks = Math.max(...hubNodes.map(n => n.link_count || 0), 1);
