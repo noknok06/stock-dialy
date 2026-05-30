@@ -18,8 +18,8 @@
   // ==============================
   const NODE_RADIUS_MIN   = 8;
   const NODE_RADIUS_MAX   = 26;
-  const HUB_RADIUS_MIN    = 14;
-  const HUB_RADIUS_MAX    = 36;
+  const HUB_RADIUS_MIN    = 12;
+  const HUB_RADIUS_MAX    = 56;
 
   const FORCE_LINK_DISTANCE_DEFAULT  = 120;
   const FORCE_LINK_DISTANCE_HUB      = 160;
@@ -342,9 +342,10 @@
 
       const hubNodes = this.allNodes.filter(n => n.node_type !== 'diary');
       const hubMaxLinks = Math.max(...hubNodes.map(n => n.link_count || 0), 1);
-      const hubRadiusScale = d3.scaleSqrt()
+      const hubRadiusScale = d3.scaleLinear()
         .domain([0, hubMaxLinks])
-        .range([HUB_RADIUS_MIN, HUB_RADIUS_MAX]);
+        .range([HUB_RADIUS_MIN, HUB_RADIUS_MAX])
+        .clamp(true);
 
       const svg = d3.select(svgEl);
       this.svg = svg;
