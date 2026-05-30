@@ -44,6 +44,10 @@
   .detail-main-col .price-summary {
     display: none;
   }
+  /* PCではサイドバーに取引サマリー・タグを集約するため、メイン側フォールバックを非表示 */
+  .detail-main-col .detail-fallback-on-narrow {
+    display: none;
+  }
 }
 
 @media (min-width: 1400px) {
@@ -83,6 +87,88 @@
 [data-theme="dark"] .detail-sidebar-card {
   background: var(--dm-card);
   border-color: var(--dm-border);
+}
+
+/* === サイドバー: 投資ステータス メトリクスグリッド === */
+.sidebar-metrics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.sidebar-metric {
+  background: var(--bg-200);
+  border: 1px solid var(--bg-300);
+  border-radius: 8px;
+  padding: 0.55rem 0.7rem;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.sidebar-metric-label {
+  font-size: 0.68rem;
+  color: var(--text-200);
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.sidebar-metric-value {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-100);
+  line-height: 1.2;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.sidebar-metric-value .unit {
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: var(--text-200);
+  margin-left: 0.15rem;
+}
+
+.sidebar-metric-value.positive {
+  color: var(--success-color);
+}
+
+.sidebar-metric-value.negative {
+  color: var(--danger-color);
+}
+
+.sidebar-metric-footer {
+  margin-top: 0.75rem;
+  padding-top: 0.6rem;
+  border-top: 1px dashed var(--bg-300);
+  font-size: 0.72rem;
+  color: var(--text-200);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.sidebar-metric-footer i {
+  color: var(--accent-200);
+}
+
+.dark-mode .sidebar-metric,
+[data-theme="dark"] .sidebar-metric {
+  background: var(--dm-bg);
+  border-color: var(--dm-border);
+}
+
+.dark-mode .sidebar-metric-footer,
+[data-theme="dark"] .sidebar-metric-footer {
+  border-top-color: var(--dm-border);
+}
+
+/* === サイドバー: タグ === */
+.sidebar-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem;
 }
 
 /* === ヘッダー情報（新パレット適用） === */

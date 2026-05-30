@@ -4,7 +4,7 @@
 {% if not diary.is_memo and diary.average_purchase_price %}
 <div class="detail-sidebar-card">
   <div class="detail-sidebar-card-title">
-    <i class="bi bi-graph-up-arrow"></i> 損益サマリー
+    <i class="bi bi-graph-up-arrow"></i> 投資ステータス
   </div>
 
   {% if diary.realized_profit != 0 %}
@@ -18,29 +18,59 @@
   </div>
   {% endif %}
 
-  <div class="price-details-grid">
-    <div class="price-detail-card">
-      <div class="price-detail-label">平均取得単価</div>
-      <div class="price-detail-value">
+  <div class="sidebar-metrics-grid">
+    <div class="sidebar-metric">
+      <div class="sidebar-metric-label">平均取得単価</div>
+      <div class="sidebar-metric-value">
         {{ diary.average_purchase_price|floatformat:2|intcomma }}<span class="unit">円</span>
       </div>
     </div>
     {% if diary.current_quantity > 0 %}
-    <div class="price-detail-card">
-      <div class="price-detail-label">保有数量</div>
-      <div class="price-detail-value">
+    <div class="sidebar-metric">
+      <div class="sidebar-metric-label">保有数量</div>
+      <div class="sidebar-metric-value">
         {{ diary.current_quantity|floatformat:0 }}<span class="unit">株</span>
       </div>
     </div>
     {% endif %}
     {% if diary.total_cost %}
-    <div class="price-detail-card">
-      <div class="price-detail-label">取得総額</div>
-      <div class="price-detail-value">
+    <div class="sidebar-metric">
+      <div class="sidebar-metric-label">取得総額</div>
+      <div class="sidebar-metric-value">
         {{ diary.total_cost|floatformat:0|intcomma }}<span class="unit">円</span>
       </div>
     </div>
     {% endif %}
+    {% if diary.realized_profit != 0 %}
+    <div class="sidebar-metric">
+      <div class="sidebar-metric-label">実現損益</div>
+      <div class="sidebar-metric-value {% if diary.realized_profit > 0 %}positive{% elif diary.realized_profit < 0 %}negative{% endif %}">
+        {{ diary.realized_profit|floatformat:0|intcomma }}<span class="unit">円</span>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if diary.first_purchase_date %}
+  <div class="sidebar-metric-footer">
+    <i class="bi bi-calendar-check"></i>
+    <span>初回購入: {{ diary.first_purchase_date|date:"Y年n月j日" }}</span>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if diary.tags.all %}
+<div class="detail-sidebar-card">
+  <div class="detail-sidebar-card-title">
+    <i class="bi bi-tags"></i> タグ
+  </div>
+  <div class="sidebar-tags">
+    {% for tag in diary.tags.all %}
+    <a href="{% url 'tags:detail' tag.pk %}" class="text-decoration-none">
+      {% include "stockdiary/components/_badge.html" with type="primary" text=tag.name icon="bi-tag-fill" extra_class="me-1 mb-1" %}
+    </a>
+    {% endfor %}
   </div>
 </div>
 {% endif %}

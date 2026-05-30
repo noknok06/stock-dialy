@@ -1676,26 +1676,37 @@
           </div>
           {% endif %}
 
-          <div class="info-grid mobile-optimized fade-in">
-            <!-- 投資理由/メモ -->
-            <div class="info-card mobile-optimized">
-              <div class="info-card-title">
-                <i class="bi bi-journal-text"></i>
-                {% if diary.is_memo %}メモ内容{% else %}投資理由{% endif %}
-                {% if diary.reason %}
-                <button type="button" class="reason-expand-btn" id="reasonExpandBtn"
-                        title="全画面で表示">
-                  <i class="bi bi-arrows-fullscreen"></i>
-                  <span>全画面</span>
-                </button>
-                {% endif %}
-              </div>
-              <div class="reason-content mobile-optimized markdown-content">
-                {{ diary.reason|render_markdown_with_mentions:mention_map }}
-              </div>
+          <!-- 投資理由/メモ（全幅） -->
+          <div class="info-card mobile-optimized fade-in" style="margin-bottom: 1rem;">
+            <div class="info-card-title">
+              <i class="bi bi-journal-text"></i>
+              {% if diary.is_memo %}メモ内容{% else %}投資理由{% endif %}
+              {% if diary.reason %}
+              <button type="button" class="reason-expand-btn" id="reasonExpandBtn"
+                      title="全画面で表示">
+                <i class="bi bi-arrows-fullscreen"></i>
+                <span>全画面</span>
+              </button>
+              {% endif %}
             </div>
+            <div class="reason-content mobile-optimized markdown-content">
+              {{ diary.reason|render_markdown_with_mentions:mention_map }}
+            </div>
+          </div>
 
-            <!-- 取引サマリー -->
+          <!-- メモ（投資理由の補足として下に配置） -->
+          {% if diary.memo %}
+          <div class="info-card mobile-optimized fade-in" style="margin-bottom: 1rem;">
+            <div class="info-card-title">
+              <i class="bi bi-sticky"></i>
+              メモ
+            </div>
+            <div class="memo-content markdown-content">{{ diary.memo|render_markdown }}</div>
+          </div>
+          {% endif %}
+
+          <!-- PCサイドバー非表示時用フォールバック: 取引サマリー・タグ -->
+          <div class="info-grid mobile-optimized fade-in detail-fallback-on-narrow">
             {% if not diary.is_memo %}
             <div class="info-card mobile-optimized">
               <div class="info-card-title">
@@ -1763,10 +1774,7 @@
               </div>
             </div>
             {% endif %}
-          </div>
 
-          <!-- タグとメモ -->
-          <div class="info-grid mobile-optimized fade-in">
             <div class="info-card mobile-optimized">
               <div class="info-card-title">
                 <i class="bi bi-tags"></i>
@@ -1779,18 +1787,6 @@
               {% empty %}
               <p class="text-muted mb-0">タグはありません</p>
               {% endfor %}
-            </div>
-
-            <div class="info-card mobile-optimized">
-              <div class="info-card-title">
-                <i class="bi bi-sticky"></i>
-                メモ
-              </div>
-              {% if diary.memo %}
-              <div class="memo-content markdown-content">{{ diary.memo|render_markdown }}</div>
-              {% else %}
-              <p class="text-muted mb-0">メモはありません</p>
-              {% endif %}
             </div>
           </div>
 
