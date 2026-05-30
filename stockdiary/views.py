@@ -474,27 +474,24 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         context['related_diaries'] = all_related_diaries.exclude(id=self.object.id)
         context['timeline_diaries'] = all_related_diaries
 
-        # 手動リンク + 自動リンク（メモ・投資理由に記載された4桁銘柄コード言及）を統合した関連日記リスト
+        # 関連日記（統合版）: 希少性スコアでランキングしつつ、手動リンクの解除UI・本文抜粋を併設
         manual_linked_ids = set(self.object.linked_diaries.values_list('id', flat=True))
-        combined_related = []
-        for d in self.object.linked_diaries.select_related():
-            combined_related.append({'diary': d, 'is_auto': False})
-        # メモ・投資理由から4桁銘柄コードを抽出し、一致する日記を自動リンク
-        search_text = ' '.join(filter(None, [self.object.memo, self.object.reason]))
-        mentioned_codes = set(re.findall(r'\b\d{4}\b', search_text))
-        if mentioned_codes:
-            auto_diaries = StockDiary.objects.filter(
-                user=self.request.user,
-                stock_symbol__in=mentioned_codes
-            ).exclude(id=self.object.id)
-            for d in auto_diaries:
-                if d.id not in manual_linked_ids:
-                    combined_related.append({'diary': d, 'is_auto': True})
-        context['combined_related_diaries'] = combined_related
-
-        # 関連の強い銘柄（希少性で重み付け・付けすぎはノイズ除外）。
-        # グラフが密でも「読める」関連発見の導線。
-        context['related_strength'] = compute_related_strength(self.object, self.request.user)
+        related_strength = compute_related_strength(self.object, self.request.user)
+        related_unified = []
+        for item in related_strength:
+            d = item['diary']
+            excerpt_src = (d.reason or d.memo or '')
+            excerpt = re.sub(r'<[^>]+>', '', excerpt_src).strip()
+            if len(excerpt) > 60:
+                excerpt = excerpt[:60] + '…'
+            related_unified.append({
+                'diary': d,
+                'via': item['via'],
+                'score': item['score'],
+                'is_manual': d.id in manual_linked_ids,
+                'excerpt': excerpt,
+            })
+        context['related_unified'] = related_unified
 
         # スピードダイアルアクション
         context['diary_actions'] = [
