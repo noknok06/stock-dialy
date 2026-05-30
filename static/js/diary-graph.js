@@ -71,11 +71,10 @@
       this.gRoot      = null;
       this.zoomBehavior = null;
 
-      this.currentStatus    = 'all';
+      this.currentStatuses  = new Set(['holding']);
       this.currentTag       = '';
       this.currentEdgeModes = new Set(config.defaultEdgeModes || ['tag']);
-      this.currentColorMode = 'status';
-      this.showLabels       = true;
+      this.currentColorMode = 'sector';
       this.searchQuery      = '';
       this.sectorColorMap   = {};
       this.focusNodeId      = null;
@@ -108,9 +107,12 @@
     // コントロールイベントバインド
     // ==============================
     _bindControls() {
-      document.querySelectorAll('input[name="statusFilter"]').forEach(radio => {
-        radio.addEventListener('change', e => {
-          this.currentStatus = e.target.value;
+      document.querySelectorAll('.status-filter-check').forEach(cb => {
+        cb.addEventListener('change', () => {
+          this.currentStatuses = new Set(
+            [...document.querySelectorAll('.status-filter-check')]
+              .filter(c => c.checked).map(c => c.value)
+          );
           this._fetchAndRender();
         });
       });
@@ -191,14 +193,6 @@
         });
       }
 
-      const labelToggle = document.getElementById('showLabels');
-      if (labelToggle) {
-        labelToggle.addEventListener('change', e => {
-          this.showLabels = e.target.checked;
-          this._toggleLabels();
-        });
-      }
-
       const resetBtn = document.getElementById('resetZoom');
       if (resetBtn) {
         resetBtn.addEventListener('click', () => this._resetZoom());
@@ -259,10 +253,12 @@
       this.focusNeighborIds = new Set();
       this._hideFocusBanner();
 
-      const params = new URLSearchParams();
-      if (this.currentStatus && this.currentStatus !== 'all') {
-        params.set('status', this.currentStatus);
+      if (this.currentStatuses.size === 0) {
+        this._showEmpty();
+        return;
       }
+      const params = new URLSearchParams();
+      params.set('status', [...this.currentStatuses].join(','));
       if (this.currentTag) {
         params.set('tag', this.currentTag);
       }
@@ -589,7 +585,6 @@
       });
 
       this._applyColorMode();
-      this._toggleLabels();
       this._applySearch();
       this._showGraph();
       this._applyHubGlow();
@@ -609,15 +604,6 @@
           this._fitToView(true);
         }
       }, 4000);
-    }
-
-    // ==============================
-    // ラベル表示切り替え
-    // ==============================
-    _toggleLabels() {
-      document.querySelectorAll('.graph-label').forEach(el => {
-        el.style.display = this.showLabels ? '' : 'none';
-      });
     }
 
     // ==============================

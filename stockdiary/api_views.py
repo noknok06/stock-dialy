@@ -572,7 +572,7 @@ def diary_graph_data(request):
     """日記関連グラフのノード・エッジデータを返す。
 
     Query Parameters:
-        status:     all / holding / sold / memo（デフォルト: all）
+        status:     カンマ区切りのステータス列（holding,sold,memo / all）。デフォルト: all
         tag:        タグID（空文字 or 未指定で全て）
         edge_modes: カンマ区切りのモード列（manual,tag,sector,hashtag）
                     後方互換のため edge_mode（単数）も受け付ける
@@ -586,9 +586,13 @@ def diary_graph_data(request):
     複数モードを同時に指定すると各モードのノード・エッジを統合して返す。
     """
     try:
+        from django.db.models import Q as _Q
         user = request.user
-        status_filter = request.GET.get('status', 'all')
         tag_id = request.GET.get('tag', '').strip()
+
+        VALID_STATUSES = {'holding', 'sold', 'memo', 'all'}
+        status_param = request.GET.get('status', 'all').strip()
+        statuses = {s.strip() for s in status_param.split(',') if s.strip() in VALID_STATUSES}
 
         # edge_modes（複数可）を解析。後方互換として edge_mode（単数）も受け付ける
         VALID_MODES = {'manual', 'tag', 'sector', 'hashtag', 'mention'}
@@ -601,12 +605,15 @@ def diary_graph_data(request):
 
         # --- primary: フィルター条件に合う日記 ---
         primary_qs = all_user_qs
-        if status_filter == 'holding':
-            primary_qs = primary_qs.filter(current_quantity__gt=0)
-        elif status_filter == 'sold':
-            primary_qs = primary_qs.filter(transaction_count__gt=0, current_quantity=0)
-        elif status_filter == 'memo':
-            primary_qs = primary_qs.filter(transaction_count=0)
+        if statuses and 'all' not in statuses:
+            status_q = _Q()
+            if 'holding' in statuses:
+                status_q |= _Q(current_quantity__gt=0)
+            if 'sold' in statuses:
+                status_q |= _Q(transaction_count__gt=0, current_quantity=0)
+            if 'memo' in statuses:
+                status_q |= _Q(transaction_count=0)
+            primary_qs = primary_qs.filter(status_q)
         if tag_id:
             try:
                 primary_qs = primary_qs.filter(tags__id=int(tag_id))
@@ -634,7 +641,7 @@ def diary_graph_data(request):
         # ====================================================
         if 'manual' in edge_modes:
             Through = StockDiary.linked_diaries.through
-            is_filtered = (status_filter != 'all' or bool(tag_id))
+            is_filtered = (bool(statuses) and 'all' not in statuses) or bool(tag_id)
             secondary_ids = set()
             if is_filtered:
                 linked_from = set(
