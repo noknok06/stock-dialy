@@ -224,7 +224,7 @@ def get_sector_graph_data(diaries_qs, company_sector_map: Dict[str, str] = None)
     return {'sector_nodes': sector_nodes, 'edges': edges}
 
 
-def get_hashtag_graph_data(diaries_qs) -> Dict[str, Any]:
+def get_hashtag_graph_data(diaries_qs, note_limit: int | None = None) -> Dict[str, Any]:
     """
     @ハッシュタグが共通する日記同士をエッジで繋ぐ。
     ハッシュタグをハブノードとして追加する。
@@ -232,6 +232,7 @@ def get_hashtag_graph_data(diaries_qs) -> Dict[str, Any]:
 
     Args:
         diaries_qs: prefetch_related('notes') 済みの StockDiary QuerySet
+        note_limit: 各日記の継続記録を直近N件に制限する。None で全件。
 
     Returns:
         {
@@ -248,7 +249,11 @@ def get_hashtag_graph_data(diaries_qs) -> Dict[str, Any]:
 
         texts = [diary.reason or '']
         try:
-            texts.extend(note.content for note in diary.notes.all() if note.content)
+            notes = diary.notes.all()
+            if note_limit is not None:
+                # prefetch済みのデータをPythonでソートして件数制限（直近N件）
+                notes = sorted(notes, key=lambda n: n.date, reverse=True)[:note_limit]
+            texts.extend(note.content for note in notes if note.content)
         except AttributeError:
             pass
 

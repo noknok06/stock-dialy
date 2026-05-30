@@ -720,7 +720,8 @@ def diary_graph_data(request):
         # hashtag モード: @ハッシュタグハブノード
         # ====================================================
         if 'hashtag' in edge_modes:
-            hub_data = get_hashtag_graph_data(primary_diaries)
+            note_limit = getattr(request.user, 'diary_note_tag_limit', 3)
+            hub_data = get_hashtag_graph_data(primary_diaries, note_limit=note_limit)
             for hub in hub_data['hashtag_nodes']:
                 hub['link_count'] = hub.get('diary_count', 0)
                 hub_nodes_map[hub['id']] = hub
@@ -945,7 +946,8 @@ def diary_detail_graph_data(request, diary_id):
         # hashtag ハブノード（フォーカル日記のハッシュタグのみ）
         if 'hashtag' in edge_modes:
             focal_list = [d for d in all_diaries if d.id == focal.id]
-            hub_data = get_hashtag_graph_data(focal_list)
+            note_limit = getattr(request.user, 'diary_note_tag_limit', 3)
+            hub_data = get_hashtag_graph_data(focal_list, note_limit=note_limit)
             for hub in hub_data['hashtag_nodes']:
                 hub['link_count'] = hub.get('diary_count', 0)
                 hub_nodes_map[hub['id']] = hub
