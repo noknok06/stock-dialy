@@ -99,6 +99,110 @@
   color: var(--dm-primary);
 }
 
+/* === サイドバー: 目次（概要タブ専用） === */
+.detail-sidebar-toc {
+  background: var(--bg-100);
+  border: 1px solid var(--bg-300);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.1rem;
+  box-shadow: var(--shadow-sm);
+}
+
+/* デフォルトは非表示（PCサイドバー表示時のみJSで切り替え） */
+.detail-sidebar-toc { display: none; }
+
+.detail-sidebar-toc .detail-sidebar-card-title {
+  margin-bottom: 0.65rem;
+}
+
+.toc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.toc-link {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: var(--radius-sm);
+  color: var(--text-100);
+  text-decoration: none;
+  font-size: 0.83rem;
+  border-left: 2px solid transparent;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.toc-link i {
+  font-size: 0.9rem;
+  color: var(--text-200);
+  flex-shrink: 0;
+}
+
+.toc-link:hover {
+  background: var(--bg-200);
+  color: var(--accent-200);
+  border-left-color: var(--accent-100);
+}
+
+.toc-link:hover i {
+  color: var(--accent-200);
+}
+
+.toc-link.active {
+  background: rgba(113, 196, 239, 0.10);
+  color: var(--accent-200);
+  border-left-color: var(--accent-200);
+  font-weight: 600;
+}
+
+.toc-link.active i {
+  color: var(--accent-200);
+}
+
+.dark-mode .detail-sidebar-toc,
+[data-theme="dark"] .detail-sidebar-toc {
+  background: var(--dm-card);
+  border-color: var(--dm-border);
+}
+
+.dark-mode .toc-link,
+[data-theme="dark"] .toc-link {
+  color: var(--dm-foreground);
+}
+
+.dark-mode .toc-link i,
+[data-theme="dark"] .toc-link i {
+  color: var(--dm-muted-foreground);
+}
+
+.dark-mode .toc-link:hover,
+[data-theme="dark"] .toc-link:hover {
+  background: rgba(71, 85, 105, 0.3);
+  color: var(--dm-primary);
+}
+
+.dark-mode .toc-link:hover i,
+[data-theme="dark"] .toc-link:hover i {
+  color: var(--dm-primary);
+}
+
+.dark-mode .toc-link.active,
+[data-theme="dark"] .toc-link.active {
+  background: rgba(113, 196, 239, 0.15);
+  color: var(--dm-primary);
+  border-left-color: var(--dm-primary);
+}
+
+.dark-mode .toc-link.active i,
+[data-theme="dark"] .toc-link.active i {
+  color: var(--dm-primary);
+}
+
 /* === サイドバー: 投資ステータス メトリクスグリッド === */
 .sidebar-metrics-grid {
   display: grid;
