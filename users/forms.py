@@ -46,16 +46,19 @@ class CustomPasswordChangeForm(PasswordChangeForm):
 
 class CustomUserChangeForm(UserChangeForm):
     password = None  # パスワードフィールドを除外
-    
+
     class Meta:
         model = User
-        fields = ('username', 'email')
-    
+        fields = ('username', 'email', 'diary_note_tag_limit')
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # フォームフィールドのスタイル設定
         for field in self.fields.values():
             field.widget.attrs['class'] = 'form-control'
+        self.fields['diary_note_tag_limit'].widget.attrs.update({
+            'min': 1, 'max': 20, 'type': 'number',
+        })
 
 
 class CustomPasswordResetForm(PasswordResetForm):

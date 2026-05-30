@@ -105,17 +105,35 @@ def search_diaries_by_hashtag(queryset, hashtag: str):
     )
 
 
+def hub_weight(diary_count: int) -> float:
+    """ハブの次数(diary_count)から逆頻度の重みを算出する。
+
+    少数の銘柄しか結ばないハブ（希少な関連）ほど強く、
+    全銘柄に付くようなハブ（ノイズ）ほど 0 に近づく。
+
+        N=2  -> 1.0   （2銘柄だけを結ぶ＝最も強い関連）
+        N=3  -> 0.5
+        N=6  -> 0.2
+        N=11 -> 0.1
+    """
+    return round(1.0 / max(diary_count - 1, 1), 4)
+
+
 def get_tag_graph_data(diaries_qs) -> Dict[str, Any]:
     """
     タグハブノードと diary→tag エッジを生成する。
+
+    各エッジ・ハブには逆頻度の `weight`（希少な関連ほど大）と、
+    他銘柄に繋がらないハブを示す `is_isolated` を付与する。
 
     Args:
         diaries_qs: prefetch_related('tags') 済みの StockDiary QuerySet
 
     Returns:
         {
-            'tag_nodes': [{'id': 'tag_<pk>', 'node_type': 'tag', 'tag_name': str, 'tag_pk': int, 'diary_count': int}],
-            'edges':     [{'source': <diary_id>, 'target': 'tag_<pk>', 'edge_type': 'tag'}]
+            'tag_nodes': [{'id': 'tag_<pk>', 'node_type': 'tag', 'tag_name': str,
+                           'tag_pk': int, 'diary_count': int, 'weight': float, 'is_isolated': bool}],
+            'edges':     [{'source': <diary_id>, 'target': 'tag_<pk>', 'edge_type': 'tag', 'weight': float}]
         }
     """
     tag_diary_count: Dict[int, int] = defaultdict(int)
@@ -133,6 +151,11 @@ def get_tag_graph_data(diaries_qs) -> Dict[str, Any]:
                 'edge_type': 'tag',
             })
 
+    # 全カウント確定後に逆頻度の重みを付与
+    for e in edges:
+        pk = int(e['target'].split('_', 1)[1])
+        e['weight'] = hub_weight(tag_diary_count[pk])
+
     tag_nodes = [
         {
             'id': f'tag_{pk}',
@@ -140,6 +163,8 @@ def get_tag_graph_data(diaries_qs) -> Dict[str, Any]:
             'tag_name': meta['name'],
             'tag_pk': pk,
             'diary_count': tag_diary_count[pk],
+            'weight': hub_weight(tag_diary_count[pk]),
+            'is_isolated': tag_diary_count[pk] <= 1,
         }
         for pk, meta in tag_meta.items()
     ]
@@ -179,12 +204,19 @@ def get_sector_graph_data(diaries_qs, company_sector_map: Dict[str, str] = None)
             'edge_type': 'sector',
         })
 
+    # 全カウント確定後に逆頻度の重みを付与
+    for e in edges:
+        name = e['target'].split('_', 1)[1]
+        e['weight'] = hub_weight(sector_diary_count[name])
+
     sector_nodes = [
         {
             'id': f'sec_{name}',
             'node_type': 'sector',
             'sector_name': name,
             'diary_count': count,
+            'weight': hub_weight(count),
+            'is_isolated': count <= 1,
         }
         for name, count in sector_diary_count.items()
     ]
@@ -192,7 +224,7 @@ def get_sector_graph_data(diaries_qs, company_sector_map: Dict[str, str] = None)
     return {'sector_nodes': sector_nodes, 'edges': edges}
 
 
-def get_hashtag_graph_data(diaries_qs) -> Dict[str, Any]:
+def get_hashtag_graph_data(diaries_qs, note_limit: int | None = None) -> Dict[str, Any]:
     """
     @ハッシュタグが共通する日記同士をエッジで繋ぐ。
     ハッシュタグをハブノードとして追加する。
@@ -200,6 +232,7 @@ def get_hashtag_graph_data(diaries_qs) -> Dict[str, Any]:
 
     Args:
         diaries_qs: prefetch_related('notes') 済みの StockDiary QuerySet
+        note_limit: 各日記の継続記録を直近N件に制限する。None で全件。
 
     Returns:
         {
@@ -216,7 +249,11 @@ def get_hashtag_graph_data(diaries_qs) -> Dict[str, Any]:
 
         texts = [diary.reason or '']
         try:
-            texts.extend(note.content for note in diary.notes.all() if note.content)
+            notes = diary.notes.all()
+            if note_limit is not None:
+                # prefetch済みのデータをPythonでソートして件数制限（直近N件）
+                notes = sorted(notes, key=lambda n: n.date, reverse=True)[:note_limit]
+            texts.extend(note.content for note in notes if note.content)
         except AttributeError:
             pass
 
@@ -233,12 +270,19 @@ def get_hashtag_graph_data(diaries_qs) -> Dict[str, Any]:
                     'edge_type': 'hashtag',
                 })
 
+    # 全カウント確定後に逆頻度の重みを付与
+    for e in edges:
+        tag = e['target'].split('_', 1)[1]
+        e['weight'] = hub_weight(ht_diary_count[tag])
+
     hashtag_nodes = [
         {
             'id': f'ht_{tag}',
             'node_type': 'hashtag',
             'tag_name': tag,
             'diary_count': count,
+            'weight': hub_weight(count),
+            'is_isolated': count <= 1,
         }
         for tag, count in ht_diary_count.items()
     ]
@@ -315,8 +359,120 @@ def get_mention_graph_data(
                     'source': diary.pk,
                     'target': target_id,
                     'edge_type': 'mention',
+                    'weight': 0.9,  # 本文の明示的言及は強い関連
                 })
             if target_id not in primary_id_set:
                 mentioned_diary_ids.add(target_id)
 
     return {'edges': edges, 'mentioned_diary_ids': mentioned_diary_ids}
+
+
+# この数を超える銘柄が共有するタグ／業種／@タグは「付けすぎ＝ノイズ」とみなし、
+# 関連サマリーから除外する（関連付けしすぎで見にくくなる問題への対策）。
+RELATED_NOISE_MAX = 25
+
+
+def compute_related_strength(focal, user, limit: int = 12) -> List[dict]:
+    """フォーカル日記に対する他日記の「関連の強さ」を希少性で重み付けして算出する。
+
+    複数の弱い関連より、希少なタグや明示的リンク・言及といった強い関連を上位に出す。
+    付けすぎたタグ／業種（多数の銘柄が共有するもの）は RELATED_NOISE_MAX で除外し、
+    グラフが密でも「読める」関連発見の導線にする。
+
+    Returns:
+        score 降順の [{'diary': StockDiary, 'score': float,
+                       'via': [{'type': str, 'label': str}]}] （最大 limit 件）
+    """
+    from django.db.models import Q
+    from .models import StockDiary, DiaryNote
+
+    scores: Dict[int, float] = defaultdict(float)
+    reasons: Dict[int, List[dict]] = defaultdict(list)
+    diary_cache: Dict[int, Any] = {}
+
+    others = StockDiary.objects.filter(user=user).exclude(id=focal.id)
+
+    def _add(did: int, score: float, via: dict) -> None:
+        scores[did] += score
+        reasons[did].append(via)
+
+    # 1. 同一銘柄コード（同じ会社の別エントリ）= 最も強い
+    if focal.stock_symbol:
+        for d in others.filter(stock_symbol=focal.stock_symbol):
+            diary_cache[d.id] = d
+            _add(d.id, 1.0, {'type': 'symbol', 'label': '同一銘柄'})
+
+    # 2. 手動リンク（双方向）= 明示的意図で最強
+    manual_ids = (
+        set(focal.linked_diaries.values_list('id', flat=True))
+        | set(focal.linked_from.values_list('id', flat=True))
+    )
+    if manual_ids:
+        for d in others.filter(id__in=manual_ids):
+            diary_cache[d.id] = d
+            _add(d.id, 1.0, {'type': 'manual', 'label': '手動リンク'})
+
+    # 3. 共通タグ（希少なほど強い・付けすぎは除外）
+    for tag in focal.tags.all():
+        ids = list(others.filter(tags=tag).values_list('id', flat=True))
+        if not ids or len(ids) > RELATED_NOISE_MAX:
+            continue
+        w = hub_weight(len(ids) + 1)
+        for did in ids:
+            _add(did, w, {'type': 'tag', 'label': f'共通タグ「{tag.name}」'})
+
+    # 4. 同業種（希少なほど強い・付けすぎは除外）
+    sector = (focal.sector or '').strip()
+    if sector:
+        ids = list(others.filter(sector=sector).values_list('id', flat=True))
+        if ids and len(ids) <= RELATED_NOISE_MAX:
+            w = hub_weight(len(ids) + 1)
+            for did in ids:
+                _add(did, w, {'type': 'sector', 'label': f'同業種「{sector}」'})
+
+    # 5. 共通 @ハッシュタグ（投資理由 + 継続記録から抽出・付けすぎは除外）
+    focal_hashtags: Set[str] = set(extract_hashtags(focal.reason or ''))
+    for note in DiaryNote.objects.filter(diary=focal).only('content'):
+        focal_hashtags |= set(extract_hashtags(note.content or ''))
+    for ht in focal_hashtags:
+        ids = list(
+            others.filter(
+                Q(reason__icontains=f'@{ht}') | Q(notes__content__icontains=f'@{ht}')
+            ).distinct().values_list('id', flat=True)
+        )
+        if not ids or len(ids) > RELATED_NOISE_MAX:
+            continue
+        w = hub_weight(len(ids) + 1)
+        for did in ids:
+            _add(did, w, {'type': 'hashtag', 'label': f'共通@{ht}'})
+
+    # 6. 銘柄コード言及（双方向）= 明示的参照で強い
+    mentioned = extract_stock_mentions((focal.reason or '') + ' ' + (focal.memo or ''))
+    if mentioned:
+        for d in others.filter(stock_symbol__in=mentioned):
+            diary_cache[d.id] = d
+            _add(d.id, 0.9, {'type': 'mention', 'label': '本文で言及'})
+    if focal.stock_symbol:
+        sym = focal.stock_symbol
+        token_q = (
+            Q(reason__icontains=f'({sym})') | Q(reason__icontains=f'（{sym}）')
+            | Q(memo__icontains=f'({sym})') | Q(memo__icontains=f'（{sym}）')
+        )
+        for d in others.filter(token_q):
+            diary_cache[d.id] = d
+            _add(d.id, 0.9, {'type': 'mention', 'label': '相手から言及'})
+
+    # まだ取得していない日記オブジェクトをまとめて取得
+    missing = [did for did in scores if did not in diary_cache]
+    if missing:
+        for d in StockDiary.objects.filter(id__in=missing):
+            diary_cache[d.id] = d
+
+    result: List[dict] = []
+    for did, score in scores.items():
+        d = diary_cache.get(did)
+        if not d:
+            continue
+        result.append({'diary': d, 'score': round(score, 4), 'via': reasons[did]})
+    result.sort(key=lambda x: x['score'], reverse=True)
+    return result[:limit]

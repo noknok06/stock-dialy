@@ -274,7 +274,18 @@
             <div class="form-text">Google認証を使用している場合、メールアドレスの変更はGoogleアカウントで行ってください。</div>
           {% endif %}
         </div>
-        
+
+        <div class="mb-3">
+          <label for="{{ form.diary_note_tag_limit.id_for_label }}" class="form-label">
+            グラフ: @タグ集計に使う継続記録の件数
+          </label>
+          {{ form.diary_note_tag_limit }}
+          {% if form.diary_note_tag_limit.errors %}
+            <div class="text-danger">{{ form.diary_note_tag_limit.errors }}</div>
+          {% endif %}
+          <div class="form-text">直近N件の継続記録に含まれる@タグのみ関連グラフに反映します（1〜20）。</div>
+        </div>
+
         <div class="d-grid gap-2">
           <button type="submit" class="btn submit-btn">
             <i class="bi bi-check-circle me-2"></i>プロフィールを更新する

@@ -572,7 +572,7 @@ def diary_graph_data(request):
     """日記関連グラフのノード・エッジデータを返す。
 
     Query Parameters:
-        status:     all / holding / sold / memo（デフォルト: all）
+        status:     カンマ区切りのステータス列（holding,sold,memo / all）。デフォルト: all
         tag:        タグID（空文字 or 未指定で全て）
         edge_modes: カンマ区切りのモード列（manual,tag,sector,hashtag）
                     後方互換のため edge_mode（単数）も受け付ける
@@ -586,9 +586,13 @@ def diary_graph_data(request):
     複数モードを同時に指定すると各モードのノード・エッジを統合して返す。
     """
     try:
+        from django.db.models import Q as _Q
         user = request.user
-        status_filter = request.GET.get('status', 'all')
         tag_id = request.GET.get('tag', '').strip()
+
+        VALID_STATUSES = {'holding', 'sold', 'memo', 'all'}
+        status_param = request.GET.get('status', 'all').strip()
+        statuses = {s.strip() for s in status_param.split(',') if s.strip() in VALID_STATUSES}
 
         # edge_modes（複数可）を解析。後方互換として edge_mode（単数）も受け付ける
         VALID_MODES = {'manual', 'tag', 'sector', 'hashtag', 'mention'}
@@ -601,12 +605,15 @@ def diary_graph_data(request):
 
         # --- primary: フィルター条件に合う日記 ---
         primary_qs = all_user_qs
-        if status_filter == 'holding':
-            primary_qs = primary_qs.filter(current_quantity__gt=0)
-        elif status_filter == 'sold':
-            primary_qs = primary_qs.filter(transaction_count__gt=0, current_quantity=0)
-        elif status_filter == 'memo':
-            primary_qs = primary_qs.filter(transaction_count=0)
+        if statuses and 'all' not in statuses:
+            status_q = _Q()
+            if 'holding' in statuses:
+                status_q |= _Q(current_quantity__gt=0)
+            if 'sold' in statuses:
+                status_q |= _Q(transaction_count__gt=0, current_quantity=0)
+            if 'memo' in statuses:
+                status_q |= _Q(transaction_count=0)
+            primary_qs = primary_qs.filter(status_q)
         if tag_id:
             try:
                 primary_qs = primary_qs.filter(tags__id=int(tag_id))
@@ -634,7 +641,7 @@ def diary_graph_data(request):
         # ====================================================
         if 'manual' in edge_modes:
             Through = StockDiary.linked_diaries.through
-            is_filtered = (status_filter != 'all' or bool(tag_id))
+            is_filtered = (bool(statuses) and 'all' not in statuses) or bool(tag_id)
             secondary_ids = set()
             if is_filtered:
                 linked_from = set(
@@ -679,7 +686,7 @@ def diary_graph_data(request):
                 manual_edge_set.add((min(src, tgt), max(src, tgt)))
 
             for s, t in manual_edge_set:
-                all_edges.append({'source': s, 'target': t, 'edge_type': 'manual'})
+                all_edges.append({'source': s, 'target': t, 'edge_type': 'manual', 'weight': 1.0})
 
         # ====================================================
         # tag モード: タグハブノード
@@ -720,7 +727,8 @@ def diary_graph_data(request):
         # hashtag モード: @ハッシュタグハブノード
         # ====================================================
         if 'hashtag' in edge_modes:
-            hub_data = get_hashtag_graph_data(primary_diaries)
+            note_limit = getattr(request.user, 'diary_note_tag_limit', 3)
+            hub_data = get_hashtag_graph_data(primary_diaries, note_limit=note_limit)
             for hub in hub_data['hashtag_nodes']:
                 hub['link_count'] = hub.get('diary_count', 0)
                 hub_nodes_map[hub['id']] = hub
@@ -913,13 +921,13 @@ def diary_detail_graph_data(request, diary_id):
                     key = (focal.id, linked_id)
                     if key not in edge_set:
                         edge_set.add(key)
-                        all_edges.append({'source': focal.id, 'target': linked_id, 'edge_type': 'manual'})
+                        all_edges.append({'source': focal.id, 'target': linked_id, 'edge_type': 'manual', 'weight': 1.0})
             for linked_id in manual_from_ids:
                 if linked_id in diary_nodes_map:
                     key = tuple(sorted([focal.id, linked_id]))
                     if key not in edge_set:
                         edge_set.add(key)
-                        all_edges.append({'source': linked_id, 'target': focal.id, 'edge_type': 'manual'})
+                        all_edges.append({'source': linked_id, 'target': focal.id, 'edge_type': 'manual', 'weight': 1.0})
 
         # tag ハブノード（フォーカル日記のタグのみ）
         if 'tag' in edge_modes:
@@ -940,12 +948,13 @@ def diary_detail_graph_data(request, diary_id):
                 'diary_count': 1,
                 'link_count': 1,
             }
-            all_edges.append({'source': focal.id, 'target': sector_id, 'edge_type': 'sector'})
+            all_edges.append({'source': focal.id, 'target': sector_id, 'edge_type': 'sector', 'weight': 1.0})
 
         # hashtag ハブノード（フォーカル日記のハッシュタグのみ）
         if 'hashtag' in edge_modes:
             focal_list = [d for d in all_diaries if d.id == focal.id]
-            hub_data = get_hashtag_graph_data(focal_list)
+            note_limit = getattr(request.user, 'diary_note_tag_limit', 3)
+            hub_data = get_hashtag_graph_data(focal_list, note_limit=note_limit)
             for hub in hub_data['hashtag_nodes']:
                 hub['link_count'] = hub.get('diary_count', 0)
                 hub_nodes_map[hub['id']] = hub

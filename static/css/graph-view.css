@@ -772,6 +772,70 @@ body.graph-fullscreen-active {
   overflow: hidden;
 }
 
+/* ================================================================
+   フォーカスモード
+   ================================================================ */
+.focus-mode-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 1rem;
+  margin-bottom: 0.5rem;
+  background: color-mix(in srgb, #2563eb 10%, var(--bg-100, #fffefb));
+  border: 1px solid color-mix(in srgb, #2563eb 25%, transparent);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: var(--text-100, #1d1c1c);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+body.dark-mode .focus-mode-banner,
+[data-theme="dark"] .focus-mode-banner {
+  background: color-mix(in srgb, #3b82f6 12%, var(--dm-card, #1e1e2e));
+  border-color: color-mix(in srgb, #3b82f6 30%, transparent);
+  color: var(--dm-foreground, #e0e0e0);
+}
+
+.graph-node.focus-hidden {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.graph-node.focus-visible {
+  opacity: 1;
+}
+
+.graph-link.focus-hidden {
+  opacity: 0 !important;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+/* ================================================================
+   ハブノードのグロートランジション
+   ================================================================ */
+.node-hub polygon,
+.node-hub rect {
+  transition: filter 0.3s ease;
+}
+
+/* ================================================================
+   検索フォーカスボタン
+   ================================================================ */
+.search-focus-btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 12px;
+  line-height: 1.4;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
 /* 凡例バー（#graph-stage 内に配置） */
 .graph-legend-bar {
   padding: 4px 2px;
