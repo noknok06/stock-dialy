@@ -2593,7 +2593,13 @@ document.addEventListener('DOMContentLoaded', function() {
       body.innerHTML = '';
       data.noteIds.forEach(function(noteId) {
         var card = document.querySelector('#note-card-store .note-card[data-note-id="' + noteId + '"]');
-        if (card) { body.appendChild(card.cloneNode(true)); }
+        // フィルター後、実際に表示中のビューに同じ ID のカードが存在し、かつ display が '' (表示中) の場合のみ追加
+        if (card) {
+          var displayCard = document.querySelector('.notes-list .note-card[data-note-id="' + noteId + '"], #notes-view-topic .note-card[data-note-id="' + noteId + '"]');
+          if (displayCard && displayCard.style.display !== 'none') {
+            body.appendChild(card.cloneNode(true));
+          }
+        }
       });
       body.scrollTop = 0;
     }
@@ -3988,7 +3994,7 @@ function updateFilterChips(filterId, active) {
 function applyNoteFilters() {
   // note-card-store を除外して、現在表示中のビュー内の note cards のみを対象
   const cardStore = document.getElementById('note-card-store');
-  const noteCards = Array.from(document.querySelectorAll('[data-note-type][data-note-importance]'))
+  const noteCards = Array.from(document.querySelectorAll('.notes-list [data-note-type][data-note-importance], #notes-view-topic [data-note-type][data-note-importance]'))
     .filter(card => !cardStore || !cardStore.contains(card));
 
   let visibleCount = 0;
@@ -4024,8 +4030,10 @@ function applyNoteFilters() {
     const hasFilter = currentTextFilter || currentImportanceFilter !== 'all';
     countSpan.textContent = hasFilter ? `${matchCount}/${totalCount}件` : `${totalCount}件`;
 
-    // ヒット数が0の場合は薄くする
+    // ヒット数が0の場合は薄くするとともに、クリック不可にする
     row.style.opacity = matchCount === 0 && hasFilter ? '0.5' : '1';
+    row.style.pointerEvents = matchCount === 0 && hasFilter ? 'none' : 'auto';
+    row.style.cursor = matchCount === 0 && hasFilter ? 'not-allowed' : 'pointer';
   });
 
   // フィルタ結果が空の場合のメッセージ表示（オプション）
