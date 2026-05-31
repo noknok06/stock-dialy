@@ -123,6 +123,11 @@ def quick_add_note(request, diary_id):
         diary = get_object_or_404(StockDiary, pk=diary_id, user=request.user)
 
         content = sanitize_text_content(request.POST.get('content', '')).strip()
+        topic = request.POST.get('topic', '').strip()
+        importance = request.POST.get('importance', 'medium')
+
+        logger.info(f'[quick_add_note] Received - content: {bool(content)}, topic: {repr(topic)}, importance: {importance}')
+
         if not content:
             return JsonResponse({
                 'success': False,
@@ -140,10 +145,11 @@ def quick_add_note(request, diary_id):
             diary=diary,
             date=timezone.now().date(),
             content=content,
-            topic=request.POST.get('topic', '').strip(),
+            topic=topic,
             note_type=request.POST.get('note_type', 'other'),
-            importance=request.POST.get('importance', 'medium')
+            importance=importance
         )
+        logger.info(f'[quick_add_note] Created note - id: {note.id}, topic: {repr(note.topic)}')
 
         return JsonResponse({
             'success': True,

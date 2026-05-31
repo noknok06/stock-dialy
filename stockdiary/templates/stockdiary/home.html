@@ -2075,16 +2075,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
           // 日記ごとの topics を動的に topic-chips に設定
           var topicChipsContainer = document.querySelector('.bottom-sheet-body .topic-chips');
+          console.log('[diary-card click] topicChipsContainer:', topicChipsContainer);
+          console.log('[diary-card click] noteTopic from data-note-topics:', noteTopic);
           if (topicChipsContainer) {
             topicChipsContainer.innerHTML = '';
             if (noteTopic) {
               var topics = noteTopic.split('|').filter(t => t.trim());
+              console.log('[diary-card click] Parsed topics:', topics);
               topics.forEach(function(topic) {
                 var btn = document.createElement('button');
                 btn.type = 'button';
                 btn.className = 'topic-chip';
                 btn.textContent = '# ' + topic;
-                btn.onclick = function() { setQnTopic(this, topic); };
+                btn.onclick = function() {
+                  console.log('[dynamic-chip click] Topic chip clicked:', topic);
+                  setQnTopic(this, topic);
+                };
                 btn.style.padding = '0.4rem 0.8rem';
                 btn.style.border = '1px solid #ddd';
                 btn.style.borderRadius = '1rem';
@@ -2160,8 +2166,14 @@ htmx.on('htmx:beforeRequest', function(evt) {
 
 // クイックノート：タイトル topic-chip クリックハンドラ
 window.setQnTopic = function(el, value) {
+  console.log('[setQnTopic] Setting topic to:', value);
   var topicEl = document.getElementById('qnTopic');
-  if (topicEl) topicEl.value = value;
+  if (topicEl) {
+    topicEl.value = value;
+    console.log('[setQnTopic] Input value set to:', topicEl.value);
+  } else {
+    console.error('[setQnTopic] qnTopic element not found');
+  }
   document.querySelectorAll('.topic-chip').forEach(function(c) { c.classList.remove('active'); });
   if (el) el.classList.add('active');
 };
@@ -2172,6 +2184,11 @@ window.qnSubmitNote = function() {
   var content = document.getElementById('qnContent').value.trim();
   var topic = document.getElementById('qnTopic').value.trim();
   var importance = document.querySelector('.qn-importance-btn.active')?.dataset.value || 'medium';
+
+  console.log('[qnSubmitNote] noteUrl:', noteUrl);
+  console.log('[qnSubmitNote] content:', content);
+  console.log('[qnSubmitNote] topic:', topic);
+  console.log('[qnSubmitNote] importance:', importance);
 
   if (!content) {
     alert('記録内容を入力してください');
@@ -2184,6 +2201,8 @@ window.qnSubmitNote = function() {
   formData.append('topic', topic);
   formData.append('importance', importance);
   formData.append('csrfmiddlewaretoken', document.querySelector('input[name="csrfmiddlewaretoken"]').value);
+
+  console.log('[qnSubmitNote] Sending FormData with topic:', topic);
 
   fetch(noteUrl, {
     method: 'POST',
