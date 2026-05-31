@@ -18,3 +18,5 @@ SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
 MIDDLEWARE = [m for m in MIDDLEWARE if 'subscription' not in m.lower()]
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# テスト環境ではManifestStaticFilesStorageを使用しない
+STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
