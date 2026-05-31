@@ -1681,20 +1681,10 @@ button.read-more { font-family: inherit; cursor: pointer; }
           <i class="bi bi-tag me-1"></i>タイトル
           <small class="text-muted ms-2" style="font-size: 0.75rem; font-weight: 400;">同じ話題を束ねます</small>
         </label>
-        {% if note_topics %}
-        <div class="topic-chips mb-2" style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-          {% for t in note_topics %}
-          <button type="button" class="topic-chip" onclick="setQnTopic(this, '{{ t|escapejs }}')" style="padding: 0.4rem 0.8rem; border: 1px solid #ddd; border-radius: 1rem; background: white; cursor: pointer; font-size: 0.875rem;">
-            # {{ t }}
-          </button>
-          {% endfor %}
-        </div>
-        {% endif %}
+        <!-- 日記ごとの topic-chips は JavaScript で動的に生成される -->
+        <div class="topic-chips mb-2" style="display: flex; flex-wrap: wrap; gap: 0.5rem;"></div>
         <input type="text" class="form-control form-control-sm" id="qnTopic" name="topic"
-               maxlength="50" placeholder="例：ナフサの影響" list="qn-topic-list" autocomplete="off">
-        <datalist id="qn-topic-list">
-          {% for t in note_topics %}<option value="{{ t }}"></option>{% endfor %}
-        </datalist>
+               maxlength="50" placeholder="例：ナフサの影響" autocomplete="off">
       </div>
 
       <!-- 本文 -->
