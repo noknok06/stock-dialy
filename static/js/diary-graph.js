@@ -79,6 +79,9 @@
       this.sectorColorMap   = {};
       this.focusNodeId      = null;
       this.focusNeighborIds = new Set();
+      this.focusDepth       = 2;    // フォーカスの探索深さ（ホップ数・デフォルト2）
+      this.focusSeedIds     = [];   // フォーカスの起点ノードid（単一/複数共通）。深さ変更時の再探索に使う
+      this._adj             = null; // 隣接マップ（_buildAdjacency で構築）
       this._searchMatchIds  = [];
 
       this._init();
@@ -223,6 +226,19 @@
         focusExitBtn.addEventListener('click', () => this._exitFocusMode());
       }
 
+      // 深さセレクタ（フォーカス中の探索ホップ数をライブ変更）
+      const depthSel = document.getElementById('focus-depth-select');
+      if (depthSel) {
+        depthSel.addEventListener('change', () => {
+          this.focusDepth = parseInt(depthSel.value, 10) || 2;
+          if (this.focusSeedIds.length > 0) {
+            const n = this._applyFocus().size;
+            const countEl = document.querySelector('#focus-mode-banner #focus-banner-count');
+            if (countEl) countEl.textContent = `${n} ノード表示中`;
+          }
+        });
+      }
+
       const searchFocusBtn = document.getElementById('search-focus-btn');
       if (searchFocusBtn) {
         searchFocusBtn.addEventListener('click', () => {
@@ -251,6 +267,7 @@
       this._closeSidePanel();
       this.focusNodeId = null;
       this.focusNeighborIds = new Set();
+      this.focusSeedIds = [];
       this._hideFocusBanner();
 
       if (this.currentStatuses.size === 0) {
@@ -282,6 +299,9 @@
           connectedIds.add(String(e.target));
         });
         this.allNodes = this.allNodes.filter(n => connectedIds.has(String(n.id)));
+
+        // 隣接マップを1回だけ構築（フォーカスの BFS で使い回す）
+        this._buildAdjacency();
 
         if (this.allEdges.length === 0 || this.allNodes.length === 0) {
           this._showEmpty();
@@ -930,28 +950,55 @@
     // ==============================
     // フォーカスモード
     // ==============================
-    _enterFocusMode(nodeId) {
-      const nid = String(nodeId);
-      const neighbors = new Set();
+    // 隣接マップ構築（無向グラフとして双方向に登録）
+    _buildAdjacency() {
+      const adj = new Map();
+      const add = (a, b) => {
+        if (!adj.has(a)) adj.set(a, new Set());
+        adj.get(a).add(b);
+      };
       this.allEdges.forEach(e => {
         const s = String(typeof e.source === 'object' ? e.source.id : e.source);
         const t = String(typeof e.target === 'object' ? e.target.id : e.target);
-        if (s === nid) neighbors.add(t);
-        if (t === nid) neighbors.add(s);
+        add(s, t); add(t, s);
       });
+      this._adj = adj;
+    }
 
-      this.focusNodeId = nid;
-      this.focusNeighborIds = neighbors;
-      const visibleIds = new Set([nid, ...neighbors]);
+    // シードから BFS で maxDepth ホップ辿り Map<id, 距離> を返す（シードは距離0）
+    _bfsDistances(seedIds, maxDepth) {
+      if (!this._adj) this._buildAdjacency();
+      const dist = new Map();
+      let frontier = [];
+      seedIds.forEach(id => { const s = String(id); dist.set(s, 0); frontier.push(s); });
+      for (let d = 1; d <= maxDepth && frontier.length; d++) {
+        const next = [];
+        frontier.forEach(cur => {
+          (this._adj.get(cur) || []).forEach(n => {
+            if (!dist.has(n)) { dist.set(n, d); next.push(n); }
+          });
+        });
+        frontier = next;
+      }
+      return dist;
+    }
+
+    // フォーカス表示の共通適用（focusSeedIds / focusDepth を読んで BFS → 表示反映）
+    _applyFocus() {
+      const seeds = this.focusSeedIds;
+      if (!seeds || seeds.length === 0) return new Set();
+      const dist = this._bfsDistances(seeds, this.focusDepth);
+      this.focusNeighborIds = new Set([...dist.keys()].filter(id => dist.get(id) > 0));
+      const visibleIds = new Set(dist.keys());
 
       document.querySelectorAll('.graph-node').forEach(el => {
         const id = el.dataset.id;
-        if (visibleIds.has(id)) {
-          el.classList.remove('focus-hidden');
-          el.classList.add('focus-visible');
+        el.classList.remove('focus-hidden', 'focus-visible',
+          'focus-dist-0', 'focus-dist-1', 'focus-dist-2', 'focus-dist-3');
+        if (dist.has(id)) {
+          el.classList.add('focus-visible', 'focus-dist-' + Math.min(dist.get(id), 3));
         } else {
           el.classList.add('focus-hidden');
-          el.classList.remove('focus-visible');
         }
       });
 
@@ -963,8 +1010,12 @@
         });
       }
 
-      this._showFocusBanner(visibleIds.size);
+      this._updateFocusStats(visibleIds);
+      return visibleIds;
+    }
 
+    // フォーカス時の統計バッジ更新
+    _updateFocusStats(visibleIds) {
       const nodesEl = document.getElementById('stats-nodes');
       const edgesEl = document.getElementById('stats-edges');
       const focusedEdgeCount = this.allEdges.filter(e => {
@@ -976,12 +1027,20 @@
       if (edgesEl) edgesEl.textContent = `${focusedEdgeCount} 接続`;
     }
 
+    _enterFocusMode(nodeId) {
+      this.focusNodeId  = String(nodeId);
+      this.focusSeedIds = [String(nodeId)];
+      this._showFocusBanner(this._applyFocus().size);
+    }
+
     _exitFocusMode() {
       this.focusNodeId = null;
       this.focusNeighborIds = new Set();
+      this.focusSeedIds = [];
 
       document.querySelectorAll('.graph-node').forEach(el => {
-        el.classList.remove('focus-hidden', 'focus-visible');
+        el.classList.remove('focus-hidden', 'focus-visible',
+          'focus-dist-0', 'focus-dist-1', 'focus-dist-2', 'focus-dist-3');
       });
 
       if (this.linkSel) {
@@ -1021,37 +1080,9 @@
       if (nodeIds.length === 0) return;
       if (nodeIds.length === 1) { this._enterFocusMode(nodeIds[0]); return; }
 
-      const focusSet = new Set(nodeIds.map(String));
-      const neighborUnion = new Set();
-      this.allEdges.forEach(e => {
-        const s = String(typeof e.source === 'object' ? e.source.id : e.source);
-        const t = String(typeof e.target === 'object' ? e.target.id : e.target);
-        if (focusSet.has(s)) neighborUnion.add(t);
-        if (focusSet.has(t)) neighborUnion.add(s);
-      });
-
-      this.focusNodeId = '__multi__';
-      this.focusNeighborIds = neighborUnion;
-      const visibleIds = new Set([...focusSet, ...neighborUnion]);
-
-      document.querySelectorAll('.graph-node').forEach(el => {
-        const id = el.dataset.id;
-        if (visibleIds.has(id)) {
-          el.classList.remove('focus-hidden');
-          el.classList.add('focus-visible');
-        } else {
-          el.classList.add('focus-hidden');
-          el.classList.remove('focus-visible');
-        }
-      });
-
-      if (this.linkSel) {
-        this.linkSel.classed('focus-hidden', e => {
-          const s = String(typeof e.source === 'object' ? e.source.id : e.source);
-          const t = String(typeof e.target === 'object' ? e.target.id : e.target);
-          return !(visibleIds.has(s) && visibleIds.has(t));
-        });
-      }
+      this.focusNodeId  = '__multi__';
+      this.focusSeedIds = nodeIds.map(String);
+      const visibleIds = this._applyFocus();
 
       const banner = document.getElementById('focus-mode-banner');
       if (banner) {
@@ -1061,16 +1092,6 @@
         if (countEl) countEl.textContent = `${visibleIds.size} ノード表示中`;
         banner.style.display = 'flex';
       }
-
-      const nodesEl = document.getElementById('stats-nodes');
-      const edgesEl = document.getElementById('stats-edges');
-      const focusedEdgeCount = this.allEdges.filter(e => {
-        const s = String(typeof e.source === 'object' ? e.source.id : e.source);
-        const t = String(typeof e.target === 'object' ? e.target.id : e.target);
-        return visibleIds.has(s) && visibleIds.has(t);
-      }).length;
-      if (nodesEl) nodesEl.textContent = `${visibleIds.size} ノード (フォーカス)`;
-      if (edgesEl) edgesEl.textContent = `${focusedEdgeCount} 接続`;
 
       const sfBtn = document.getElementById('search-focus-btn');
       if (sfBtn) sfBtn.style.display = 'none';

@@ -804,8 +804,14 @@ body.dark-mode .focus-mode-banner,
 }
 
 .graph-node.focus-visible {
-  opacity: 1;
+  transition: opacity 0.25s ease;
 }
+
+/* 中心からの距離による段階フェード（遠いほど薄く） */
+.graph-node.focus-dist-0 { opacity: 1; }
+.graph-node.focus-dist-1 { opacity: 1; }
+.graph-node.focus-dist-2 { opacity: 0.6; }
+.graph-node.focus-dist-3 { opacity: 0.35; }
 
 .graph-link.focus-hidden {
   opacity: 0 !important;
