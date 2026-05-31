@@ -318,6 +318,13 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
         context['current_query'] = self.request.GET.urlencode()
         context['current_params'] = self.request.GET
 
+        # ユーザー全体の既存タイトル（topic）リストを取得
+        user_topics = DiaryNote.objects.filter(
+            diary__user=self.request.user,
+            topic__isnull=False
+        ).exclude(topic='').values_list('topic', flat=True).distinct().order_by('topic')
+        context['note_topics'] = list(user_topics)
+
         # 日記ごとの既存タイトル（topic）リストを取得し、各 diary オブジェクトに追加
         for diary in context['diaries']:
             topics = DiaryNote.objects.filter(
