@@ -63,6 +63,14 @@ page_actionsは以下のような構造のリストを含む変数名:
                   title="{{ action.label }}">
             <i class="bi {{ action.icon }}"></i>
           </button>
+        {% elif action.type == 'submit' %}
+          {# フォーム送信ボタン #}
+          <button type="submit"
+                  class="speed-dial-btn action-{{ action.type }}"
+                  aria-label="{{ action.aria_label|default:action.label }}"
+                  title="{{ action.label }}">
+            <i class="bi {{ action.icon }}"></i>
+          </button>
         {% else %}
           {# 通常のリンクボタン #}
           <a href="{{ action.url }}"

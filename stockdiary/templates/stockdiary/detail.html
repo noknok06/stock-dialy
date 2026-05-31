@@ -607,6 +607,50 @@
   margin-bottom: 0.5rem;
 }
 
+/* 継続記録フィルタバー */
+.notes-filter-bar {
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+}
+
+.notes-filter-bar input {
+  border-radius: var(--radius-sm);
+}
+
+.filter-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0;
+}
+
+.filter-chip {
+  padding: 0.375rem 0.875rem;
+  font-size: 0.875rem;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border-radius: 99px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.filter-chip:hover {
+  border-color: var(--primary-color);
+  background: var(--bg-100);
+}
+
+.filter-chip.active {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
 /* 継続記録一覧 */
 .notes-list {
   display: flex;
@@ -1433,6 +1477,151 @@
   color: var(--dm-muted);
 }
 
+/* ========== 活動履歴タイムライン ========== */
+.event-timeline {
+  list-style: none;
+  padding: 1rem 0;
+  margin: 0;
+  position: relative;
+}
+
+.event-timeline .timeline-item {
+  position: relative;
+  padding-left: 3rem;
+  margin-bottom: 2rem;
+  animation: slideInLeft 0.3s ease-out;
+}
+
+.event-timeline .timeline-item::before {
+  content: '';
+  position: absolute;
+  left: 0.5rem;
+  top: 0.5rem;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  border: 3px solid var(--bg-primary);
+  box-shadow: 0 0 0 3px var(--border-color);
+  transition: all 0.2s ease;
+}
+
+.event-timeline .timeline-item::after {
+  content: '';
+  position: absolute;
+  left: calc(0.5rem + 6px - 1px);
+  top: 2.5rem;
+  width: 2px;
+  height: calc(100% + 1rem);
+  background: var(--border-light);
+}
+
+.event-timeline .timeline-item:last-child::after {
+  display: none;
+}
+
+.event-timeline .event-transaction::before {
+  background: var(--primary-color);
+}
+
+.event-timeline .event-split::before {
+  background: var(--warning-color);
+}
+
+.event-timeline .event-note::before {
+  background: var(--success-color);
+}
+
+.event-timeline .timeline-date {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  display: block;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.event-timeline .timeline-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+  border-left: 4px solid var(--primary-color);
+}
+
+.event-timeline .event-transaction .timeline-card {
+  border-left-color: var(--primary-color);
+}
+
+.event-timeline .event-split .timeline-card {
+  border-left-color: var(--warning-color);
+}
+
+.event-timeline .event-note .timeline-card {
+  border-left-color: var(--success-color);
+}
+
+.event-timeline .timeline-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateX(2px);
+}
+
+.transaction-event,
+.split-event,
+.note-event {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.note-content {
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.note-content p {
+  margin: 0.5rem 0;
+  word-break: break-word;
+}
+
+.event-timeline .badge {
+  font-size: 0.75rem;
+  padding: 0.4rem 0.6rem;
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .event-timeline .timeline-item {
+    padding-left: 2.5rem;
+  }
+
+  .event-timeline .timeline-item::before {
+    left: 0.25rem;
+    width: 10px;
+    height: 10px;
+  }
+
+  .event-timeline .timeline-item::after {
+    left: calc(0.25rem + 5px - 1px);
+    top: 2.2rem;
+  }
+}
+
+/* Dark mode対応 */
+.dark-mode .event-timeline .timeline-item::before,
+[data-theme="dark"] .event-timeline .timeline-item::before {
+  border-color: var(--dm-card-bg);
+  box-shadow: 0 0 0 3px var(--dm-border);
+}
+
+.dark-mode .event-timeline .timeline-card,
+[data-theme="dark"] .event-timeline .timeline-card {
+  background: var(--dm-card-bg);
+  border-color: var(--dm-border);
+  color: var(--dm-text-primary);
+}
+
 </style>
 {% endblock %}
 
@@ -1625,6 +1814,19 @@
             type="button" role="tab" aria-controls="notifications-content" aria-selected="false">
             <div class="tab-icon"><i class="bi bi-bell"></i></div>
             <div class="tab-label">通知</div>
+          </button>
+        </li>
+
+        <li class="improved-tab-item" role="presentation">
+          <button class="improved-tab-link" id="events-tab" data-bs-toggle="tab" data-bs-target="#events-content"
+            type="button" role="tab" aria-controls="events-content" aria-selected="false">
+            <div class="tab-icon">
+              <i class="bi bi-clock-history"></i>
+              {% if event_timeline %}
+              {% include "stockdiary/components/_badge.html" with type="info" text=event_timeline|length size="sm" %}
+              {% endif %}
+            </div>
+            <div class="tab-label">活動履歴</div>
           </button>
         </li>
 
@@ -1978,6 +2180,75 @@
           </div>
         </div>
 
+        <!-- 活動履歴タブ（取引・分割・継続記録統合） -->
+        <div class="tab-pane fade" id="events-content" role="tabpanel" aria-labelledby="events-tab">
+          <ol class="timeline-list event-timeline">
+            {% for event in event_timeline %}
+              <li class="timeline-item event-{{ event.type }}">
+                <span class="timeline-date">{{ event.date|date:"Y/m/d" }}</span>
+                <div class="timeline-card p-3">
+                  {% if event.type == 'transaction' %}
+                    <!-- 取引 -->
+                    <div class="transaction-event">
+                      <div class="d-flex align-items-center gap-2">
+                        <span class="badge {% if event.data.transaction_type == 'buy' %}bg-primary{% else %}bg-danger{% endif %}">
+                          <i class="bi {% if event.data.transaction_type == 'buy' %}bi-cart-plus{% else %}bi-cart-dash{% endif %}"></i>
+                          {% if event.data.transaction_type == 'buy' %}購入{% else %}売却{% endif %}
+                        </span>
+                        {% if event.data.is_margin %}<span class="badge bg-warning"><i class="bi bi-percent"></i>信用</span>{% endif %}
+                      </div>
+                      <div class="mt-2 small">
+                        <div><strong>単価:</strong> ¥{{ event.data.price|floatformat:0 }}</div>
+                        <div><strong>数量:</strong> {{ event.data.quantity }} 株</div>
+                        <div><strong>金額:</strong> ¥{{ event.data.amount|floatformat:0 }}</div>
+                        {% if event.data.memo %}<div class="mt-2 text-muted">{{ event.data.memo|truncatewords:20 }}</div>{% endif %}
+                      </div>
+                    </div>
+                  {% elif event.type == 'split' %}
+                    <!-- 株式分割 -->
+                    <div class="split-event">
+                      <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-warning">
+                          <i class="bi bi-diagram-3"></i>
+                          株式分割
+                        </span>
+                      </div>
+                      <div class="mt-2 small">
+                        <div><strong>分割比率:</strong> {{ event.data.ratio_before }} → {{ event.data.ratio_after }}</div>
+                        {% if event.data.memo %}<div class="mt-2 text-muted">{{ event.data.memo|truncatewords:20 }}</div>{% endif %}
+                      </div>
+                    </div>
+                  {% elif event.type == 'note' %}
+                    <!-- 継続記録 -->
+                    <div class="note-event">
+                      <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="badge bg-success">
+                          <i class="bi bi-journal-richtext"></i>
+                          {% if event.data.note_type %}{{ event.data.get_note_type_display }}{% else %}メモ{% endif %}
+                        </span>
+                        {% if event.data.importance %}
+                          <span class="badge {% if event.data.importance == 'high' %}bg-danger{% elif event.data.importance == 'medium' %}bg-warning{% else %}bg-secondary{% endif %}">
+                            {% if event.data.importance == 'high' %}重要{% elif event.data.importance == 'medium' %}中{% else %}低{% endif %}
+                          </span>
+                        {% endif %}
+                        {% if event.data.topic %}<span class="badge bg-light text-dark">#{{ event.data.topic }}</span>{% endif %}
+                      </div>
+                      <div class="note-content small">
+                        {% if event.data.current_price %}
+                          <div class="text-muted mb-1"><strong>価格:</strong> ¥{{ event.data.current_price|floatformat:0 }} ({% if event.data.get_price_change %}{{ event.data.get_price_change }}%{% endif %})</div>
+                        {% endif %}
+                        <p class="markdown-content">{{ event.data.content|truncatewords:30 }}</p>
+                      </div>
+                    </div>
+                  {% endif %}
+                </div>
+              </li>
+            {% empty %}
+              <p class="text-muted text-center py-4">活動記録がありません</p>
+            {% endfor %}
+          </ol>
+        </div>
+
         <!-- 取引履歴タブ -->
         <div class="tab-pane fade" id="transactions-content" role="tabpanel" aria-labelledby="transactions-tab">
           {% include 'stockdiary/partials/tab_transactions.html' %}
@@ -1998,6 +2269,46 @@
           </div>
 
           {% if notes %}
+          <!-- フィルタバー: note_type / importance / 検索 -->
+          <div class="notes-filter-bar mb-3">
+            <div class="d-flex flex-wrap gap-2 mb-2" id="noteTypeFilter">
+              <button type="button" class="filter-chip active" data-filter="all" onclick="filterNotesByType('all')">
+                すべて
+              </button>
+              <button type="button" class="filter-chip" data-filter="analysis" onclick="filterNotesByType('analysis')">
+                分析
+              </button>
+              <button type="button" class="filter-chip" data-filter="news" onclick="filterNotesByType('news')">
+                ニュース
+              </button>
+              <button type="button" class="filter-chip" data-filter="earnings" onclick="filterNotesByType('earnings')">
+                決算
+              </button>
+              <button type="button" class="filter-chip" data-filter="insight" onclick="filterNotesByType('insight')">
+                気づき
+              </button>
+              <button type="button" class="filter-chip" data-filter="risk" onclick="filterNotesByType('risk')">
+                リスク
+              </button>
+            </div>
+            <div class="d-flex flex-wrap gap-2 mb-2" id="noteImportanceFilter">
+              <span class="filter-label">重要度:</span>
+              <button type="button" class="filter-chip active" data-filter="all" onclick="filterNotesByImportance('all')">
+                すべて
+              </button>
+              <button type="button" class="filter-chip" data-filter="high" onclick="filterNotesByImportance('high')">
+                <i class="bi bi-exclamation-circle-fill me-1" style="color:#dc3545;"></i>高
+              </button>
+              <button type="button" class="filter-chip" data-filter="medium" onclick="filterNotesByImportance('medium')">
+                中
+              </button>
+              <button type="button" class="filter-chip" data-filter="low" onclick="filterNotesByImportance('low')">
+                低
+              </button>
+            </div>
+            <input type="text" class="form-control form-control-sm" id="noteSearchInput" placeholder="記録を検索..." onkeyup="filterNotesByText(this.value)">
+          </div>
+
           <!-- 表示切替: テーマ別（デフォルト） / 時系列 -->
           <div class="notes-view-toggle mb-3" role="tablist">
             <button type="button" class="notes-view-btn active" data-view="topic" onclick="switchNotesView('topic')">
@@ -3908,6 +4219,87 @@ window.showReportModal = function(el) {
   } else {
     initWebArticleLinks();
   }
+})();
+
+// ============================================
+// 継続記録フィルタ機能
+// ============================================
+let currentNoteTypeFilter = 'all';
+let currentImportanceFilter = 'all';
+let currentTextFilter = '';
+
+window.filterNotesByType = function(type) {
+  currentNoteTypeFilter = type;
+  applyNoteFilters();
+  updateFilterChips('noteTypeFilter', type);
+  localStorage.setItem('noteTypeFilter', type);
+};
+
+window.filterNotesByImportance = function(importance) {
+  currentImportanceFilter = importance;
+  applyNoteFilters();
+  updateFilterChips('noteImportanceFilter', importance);
+  localStorage.setItem('noteImportanceFilter', importance);
+};
+
+window.filterNotesByText = function(text) {
+  currentTextFilter = text.toLowerCase();
+  applyNoteFilters();
+  localStorage.setItem('noteTextFilter', text);
+};
+
+function updateFilterChips(filterId, active) {
+  const chips = document.querySelectorAll('#' + filterId + ' .filter-chip');
+  chips.forEach(chip => {
+    chip.classList.toggle('active', chip.dataset.filter === active);
+  });
+}
+
+function applyNoteFilters() {
+  const noteCards = document.querySelectorAll('[data-note-type][data-note-importance]');
+  let visibleCount = 0;
+
+  noteCards.forEach(card => {
+    const noteType = card.dataset.noteType || 'other';
+    const importance = card.dataset.noteImportance || 'medium';
+    const content = (card.textContent || '').toLowerCase();
+
+    const typeMatch = currentNoteTypeFilter === 'all' || noteType === currentNoteTypeFilter;
+    const importanceMatch = currentImportanceFilter === 'all' || importance === currentImportanceFilter;
+    const textMatch = !currentTextFilter || content.includes(currentTextFilter);
+
+    const shouldShow = typeMatch && importanceMatch && textMatch;
+    card.style.display = shouldShow ? '' : 'none';
+
+    if (shouldShow) visibleCount++;
+  });
+
+  // フィルタ結果が空の場合のメッセージ表示（オプション）
+  const emptyMsg = document.querySelector('.notes-empty-message');
+  if (emptyMsg) {
+    emptyMsg.style.display = visibleCount === 0 ? 'block' : 'none';
+  }
+}
+
+// ページ読込時にフィルタ状態を復元
+(function restoreNoteFilters() {
+  const savedTypeFilter = localStorage.getItem('noteTypeFilter') || 'all';
+  const savedImportanceFilter = localStorage.getItem('noteImportanceFilter') || 'all';
+  const savedTextFilter = localStorage.getItem('noteTextFilter') || '';
+
+  currentNoteTypeFilter = savedTypeFilter;
+  currentImportanceFilter = savedImportanceFilter;
+  currentTextFilter = savedTextFilter;
+
+  updateFilterChips('noteTypeFilter', savedTypeFilter);
+  updateFilterChips('noteImportanceFilter', savedImportanceFilter);
+
+  const searchInput = document.getElementById('noteSearchInput');
+  if (searchInput) {
+    searchInput.value = savedTextFilter;
+  }
+
+  applyNoteFilters();
 })();
 </script>
 

@@ -321,6 +321,15 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
         # フォーム用のスピードダイアルアクション
         context['form_actions'] = [
             {
+                'id': 'search-action',
+                'type': 'modal',
+                'modal_target': '#searchModal',
+                'icon': 'bi-search',
+                'label': '銘柄を探す',
+                'aria_label': '銘柄や日記を検索',
+                'condition': True
+            },
+            {
                 'id': 'quick-add',
                 'type': 'quick-add',
                 'url': '#',
@@ -458,7 +467,16 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         context['notes_by_topic'] = grouped
         # 入力チップ/サジェスト用（直近使用順 = date降順での初出順、未分類を除く）
         context['note_topics'] = [t for t in grouped if t]
-        
+
+        # 活動履歴タイムライン（取引・分割・継続記録を統合）
+        note_events = [
+            {'type': 'note', 'date': n.date, 'data': n}
+            for n in notes
+        ]
+        all_events = combined + note_events
+        all_events.sort(key=lambda e: e['date'], reverse=True)
+        context['event_timeline'] = all_events
+
         # 関連日記
         # 銘柄コードが空の場合は同一銘柄グループとして扱わない（空同士がまとめられるのを防ぐ）
         if self.object.stock_symbol:
@@ -484,9 +502,11 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
             excerpt = re.sub(r'<[^>]+>', '', excerpt_src).strip()
             if len(excerpt) > 60:
                 excerpt = excerpt[:60] + '…'
+            reason_labels = [v.get('label', '') for v in item['via']]
             related_unified.append({
                 'diary': d,
                 'via': item['via'],
+                'reason_labels': reason_labels,
                 'score': item['score'],
                 'is_manual': d.id in manual_linked_ids,
                 'excerpt': excerpt,
@@ -500,6 +520,15 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
                 'url': reverse_lazy('stockdiary:home'),
                 'icon': 'bi-arrow-left',
                 'label': '戻る'
+            },
+            {
+                'id': 'add-note',
+                'type': 'modal',
+                'modal_target': '#addNoteSheet',
+                'icon': 'bi-chat-dots',
+                'label': '記録を追加',
+                'aria_label': '新しい継続記録を追加',
+                'condition': True
             },
             {
                 'type': 'modal',  # 🆕 モーダル専用タイプ
@@ -533,8 +562,7 @@ class StockDiaryCreateView(LoginRequiredMixin, CreateView):
     model = StockDiary
     form_class = StockDiaryForm
     template_name = 'stockdiary/diary_form.html'
-    success_url = reverse_lazy('stockdiary:home')
-    
+
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['user'] = self.request.user
@@ -581,6 +609,8 @@ class StockDiaryCreateView(LoginRequiredMixin, CreateView):
         cache.delete(f'mention_map_u{self.request.user.id}')
         return response
 
+    def get_success_url(self):
+        return reverse('stockdiary:detail', kwargs={'pk': self.object.pk})
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -588,15 +618,20 @@ class StockDiaryCreateView(LoginRequiredMixin, CreateView):
         # スピードダイアルアクション
         context['form_actions'] = [
             {
+                'type': 'submit',
+                'icon': 'bi-check-lg',
+                'label': '保存',
+                'aria_label': '日記を保存',
+                'condition': True
+            },
+            {
                 'type': 'back',
                 'url': reverse_lazy('stockdiary:home'),
                 'icon': 'bi-arrow-left',
                 'label': '戻る'
             }
         ]
-        
-        
-        
+
         return context
     
 
@@ -654,13 +689,14 @@ class StockDiaryUpdateView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Upda
     
     def form_valid(self, form):
         response = super().form_valid(form)
-        
+
         image_file = form.cleaned_data.get('image')
         if image_file:
             success = self.object.process_and_save_image(image_file)
             if not success:
                 messages.warning(self.request, '日記は更新されましたが、画像の処理に失敗しました。')
 
+        messages.success(self.request, '日記を更新しました')
         cache.delete(f'mention_map_u{self.request.user.id}')
         return response
 
@@ -1464,6 +1500,12 @@ def diary_list(request):
             from datetime import timedelta
             cutoff = timezone.now().date() - timedelta(days=30)
             queryset = queryset.filter(latest_disclosure_date__gte=cutoff)
+
+        # 未記録フィルター（継続記録がない日記）
+        no_notes = request.GET.get('no_notes', '')
+        if no_notes:
+            from django.db.models import Count
+            queryset = queryset.annotate(note_count=Count('notes')).filter(note_count=0)
 
         # ソート
         sort = request.GET.get('sort', '')
