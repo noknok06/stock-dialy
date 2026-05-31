@@ -1684,7 +1684,7 @@ button.read-more { font-family: inherit; cursor: pointer; }
         {% if note_topics %}
         <div class="topic-chips mb-2">
           {% for t in note_topics %}
-          <button type="button" class="topic-chip" onclick="setQnTopic(this, '{{ t|escapejs }}')">
+          <button type="button" class="topic-chip btn btn-sm btn-outline-secondary" onclick="setQnTopic(this, '{{ t|escapejs }}')">
             # {{ t }}
           </button>
           {% endfor %}
@@ -2085,18 +2085,11 @@ document.addEventListener('DOMContentLoaded', function() {
               topics.forEach(function(topic) {
                 var btn = document.createElement('button');
                 btn.type = 'button';
-                btn.className = 'topic-chip';
+                btn.className = 'topic-chip btn btn-sm btn-outline-secondary';
                 btn.textContent = '# ' + topic;
                 btn.onclick = function() {
-                  console.log('[dynamic-chip click] Topic chip clicked:', topic);
                   setQnTopic(this, topic);
                 };
-                btn.style.padding = '0.4rem 0.8rem';
-                btn.style.border = '1px solid #ddd';
-                btn.style.borderRadius = '1rem';
-                btn.style.background = 'white';
-                btn.style.cursor = 'pointer';
-                btn.style.fontSize = '0.875rem';
                 topicChipsContainer.appendChild(btn);
               });
             }
@@ -2701,5 +2694,5 @@ document.addEventListener('click', function(e) {
 })();
 </script>
 
-<script src="{% static 'js/card-swipe-note.js' %}?v={{ STATIC_VERSION }}"></script>
+<script src="{% static 'js/card-swipe-note.js' %}"></script>
 {% endblock %}

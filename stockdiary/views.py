@@ -332,6 +332,7 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
                 topic__isnull=False
             ).exclude(topic='').values_list('topic', flat=True).distinct().order_by('topic')
             diary.note_topics = list(topics)
+            logger.info(f'[StockDiaryListView] diary_id={diary.id}, note_topics={diary.note_topics}')
 
         # フォーム用のスピードダイアルアクション
         context['form_actions'] = [

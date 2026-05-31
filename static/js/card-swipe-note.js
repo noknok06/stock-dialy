@@ -142,6 +142,7 @@
   function openSheet(header) {
     var stockName = header.dataset.stockName || '';
     var noteUrl   = header.dataset.quickNoteUrl || '';
+    var noteTopic = header.dataset.noteTopics || '';
 
     var titleEl = document.getElementById('qnSheetTitle');
     if (titleEl) {
@@ -152,6 +153,25 @@
     if (urlInput) urlInput.value = noteUrl;
 
     resetForm();
+
+    // 日記ごとの topics を動的に topic-chips に設定
+    var topicChipsContainer = document.querySelector('.bottom-sheet-body .topic-chips');
+    if (topicChipsContainer) {
+      topicChipsContainer.innerHTML = '';
+      if (noteTopic) {
+        var topics = noteTopic.split('|').filter(t => t.trim());
+        topics.forEach(function(topic) {
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'topic-chip btn btn-sm btn-outline-secondary';
+          btn.textContent = '# ' + topic;
+          btn.onclick = function() {
+            setQnTopic(this, topic);
+          };
+          topicChipsContainer.appendChild(btn);
+        });
+      }
+    }
 
     if (typeof openBottomSheet === 'function') {
       openBottomSheet('quickNoteFromHomeSheet');
