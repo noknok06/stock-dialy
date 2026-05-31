@@ -1136,7 +1136,7 @@ button.read-more { font-family: inherit; cursor: pointer; }
     </button>
   </div>
 
-  <div class="sidebar-content">
+  <form id="sidebarSearchForm" method="GET" action="{% url 'stockdiary:home' %}" class="sidebar-content">
 
     <!-- 1. 検索セクション -->
     <div class="sidebar-section">
@@ -1144,7 +1144,7 @@ button.read-more { font-family: inherit; cursor: pointer; }
         <i class="bi bi-search"></i> 検索
       </label>
       <input type="text" class="form-control form-control-sm" id="sidebarSearchInput"
-             placeholder="銘柄名やコード" form="optimizedSearchForm" name="query">
+             placeholder="銘柄名やコード" name="query">
     </div>
 
     <!-- 2. よく使う検索プリセット -->
@@ -1171,7 +1171,7 @@ button.read-more { font-family: inherit; cursor: pointer; }
       </label>
       <div>
         <label class="filter-group-label" for="sidebarTagFilter">タグ</label>
-        <select class="form-select form-select-sm sidebar-filter" id="sidebarTagFilter" form="optimizedSearchForm" name="tag">
+        <select class="form-select form-select-sm sidebar-filter" id="sidebarTagFilter" name="tag">
           <option value="">すべてのタグ</option>
           {% for tag in tags %}
             <option value="{{ tag.id }}"
@@ -1183,7 +1183,7 @@ button.read-more { font-family: inherit; cursor: pointer; }
       </div>
       <div class="mt-2">
         <label class="filter-group-label" for="sidebarSectorFilter">業種</label>
-        <select class="form-select form-select-sm sidebar-filter" id="sidebarSectorFilter" form="optimizedSearchForm" name="sector">
+        <select class="form-select form-select-sm sidebar-filter" id="sidebarSectorFilter" name="sector">
           <option value="">すべての業種</option>
           {% for sector in sectors %}
             <option value="{{ sector }}" {% if request.GET.sector == sector %}selected{% endif %}>{{ sector }}</option>
@@ -1192,7 +1192,7 @@ button.read-more { font-family: inherit; cursor: pointer; }
       </div>
       <div class="mt-2">
         <label class="filter-group-label" for="sidebarTransactionDateRangeFilter">直近の取引</label>
-        <select class="form-select form-select-sm sidebar-filter" id="sidebarTransactionDateRangeFilter" form="optimizedSearchForm" name="transaction_date_range">
+        <select class="form-select form-select-sm sidebar-filter" id="sidebarTransactionDateRangeFilter" name="transaction_date_range">
           <option value="">指定なし</option>
           <option value="1w" {% if request.GET.transaction_date_range == '1w' %}selected{% endif %}>1週間以内</option>
           <option value="1m" {% if request.GET.transaction_date_range == '1m' %}selected{% endif %}>1ヶ月以内</option>
@@ -1203,7 +1203,7 @@ button.read-more { font-family: inherit; cursor: pointer; }
       </div>
       <div class="mt-2">
         <label class="filter-group-label" for="sidebarDisclosureFilter">開示書類の更新</label>
-        <select class="form-select form-select-sm sidebar-filter" id="sidebarDisclosureFilter" form="optimizedSearchForm" name="disclosure">
+        <select class="form-select form-select-sm sidebar-filter" id="sidebarDisclosureFilter" name="disclosure">
           <option value="">指定なし</option>
           <option value="new" {% if request.GET.disclosure == 'new' %}selected{% endif %}>直近1週間</option>
           <option value="recent" {% if request.GET.disclosure == 'recent' %}selected{% endif %}>直近1ヶ月</option>
@@ -1211,7 +1211,7 @@ button.read-more { font-family: inherit; cursor: pointer; }
       </div>
       <div class="mt-2">
         <label class="filter-group-label" for="sidebarDateRangeFilter">購入時期</label>
-        <select class="form-select form-select-sm sidebar-filter" id="sidebarDateRangeFilter" form="optimizedSearchForm" name="date_range">
+        <select class="form-select form-select-sm sidebar-filter" id="sidebarDateRangeFilter" name="date_range">
           <option value="">指定なし</option>
           <option value="1w" {% if request.GET.date_range == '1w' %}selected{% endif %}>直近1週間</option>
           <option value="1m" {% if request.GET.date_range == '1m' %}selected{% endif %}>直近1ヶ月</option>
@@ -1227,7 +1227,7 @@ button.read-more { font-family: inherit; cursor: pointer; }
       <label class="sidebar-label">
         <i class="bi bi-sort-down"></i> ソート
       </label>
-      <select class="form-select form-select-sm" id="sidebarSortFilter" form="optimizedSearchForm" name="sort">
+      <select class="form-select form-select-sm" id="sidebarSortFilter" name="sort">
         <option value="" {% if not request.GET.sort %}selected{% endif %}>デフォルト</option>
         <option value="date_desc" {% if request.GET.sort == 'date_desc' %}selected{% endif %}>更新日（新しい順）</option>
         <option value="date_asc" {% if request.GET.sort == 'date_asc' %}selected{% endif %}>更新日（古い順）</option>
@@ -1244,7 +1244,7 @@ button.read-more { font-family: inherit; cursor: pointer; }
         <i class="bi bi-arrow-counterclockwise me-1"></i>リセット
       </button>
     </div>
-  </div>
+  </form>
 </aside>
 
 <!-- サイドバー トグルボタン（collapsed時に表示） -->
@@ -1283,7 +1283,6 @@ button.read-more { font-family: inherit; cursor: pointer; }
           id="optimizedSearchForm"
           class="d-lg-none">
 
-      {% csrf_token %}
       <input type="hidden" id="noNotesFilter" name="no_notes" value="">
 
       <!-- 検索バー行 -->
@@ -1378,7 +1377,7 @@ button.read-more { font-family: inherit; cursor: pointer; }
     <div class="filter-panel-body">
       <div>
         <label class="filter-group-label" for="tagFilter">タグ</label>
-        <select class="form-select" id="tagFilter" name="tag" form="optimizedSearchForm">
+        <select class="form-select" id="tagFilter" name="tag">
           <option value="">すべてのタグ</option>
           {% for tag in tags %}
             <option value="{{ tag.id }}"
@@ -1390,7 +1389,7 @@ button.read-more { font-family: inherit; cursor: pointer; }
       </div>
       <div>
         <label class="filter-group-label" for="sectorFilter">業種</label>
-        <select class="form-select" id="sectorFilter" name="sector" form="optimizedSearchForm">
+        <select class="form-select" id="sectorFilter" name="sector">
           <option value="">すべての業種</option>
           {% for sector in sectors %}
             <option value="{{ sector }}" {% if request.GET.sector == sector %}selected{% endif %}>{{ sector }}</option>
@@ -1399,7 +1398,7 @@ button.read-more { font-family: inherit; cursor: pointer; }
       </div>
       <div>
         <label class="filter-group-label" for="transactionDateRangeFilter">直近の取引</label>
-        <select class="form-select" id="transactionDateRangeFilter" name="transaction_date_range" form="optimizedSearchForm">
+        <select class="form-select" id="transactionDateRangeFilter" name="transaction_date_range">
           <option value="">指定なし</option>
           <option value="1w" {% if request.GET.transaction_date_range == '1w' %}selected{% endif %}>1週間以内に取引</option>
           <option value="1m" {% if request.GET.transaction_date_range == '1m' %}selected{% endif %}>1ヶ月以内に取引</option>
@@ -1410,7 +1409,7 @@ button.read-more { font-family: inherit; cursor: pointer; }
       </div>
       <div>
         <label class="filter-group-label" for="disclosureFilter">開示書類の更新</label>
-        <select class="form-select" id="disclosureFilter" name="disclosure" form="optimizedSearchForm">
+        <select class="form-select" id="disclosureFilter" name="disclosure">
           <option value="">指定なし</option>
           <option value="new" {% if request.GET.disclosure == 'new' %}selected{% endif %}>直近1週間に更新あり</option>
           <option value="recent" {% if request.GET.disclosure == 'recent' %}selected{% endif %}>直近1ヶ月に更新あり</option>
@@ -1418,7 +1417,7 @@ button.read-more { font-family: inherit; cursor: pointer; }
       </div>
       <div>
         <label class="filter-group-label" for="dateRangeFilter">購入時期</label>
-        <select class="form-select" id="dateRangeFilter" name="date_range" form="optimizedSearchForm">
+        <select class="form-select" id="dateRangeFilter" name="date_range">
           <option value="">指定なし</option>
           <option value="1w" {% if request.GET.date_range == '1w' %}selected{% endif %}>直近1週間に購入</option>
           <option value="1m" {% if request.GET.date_range == '1m' %}selected{% endif %}>直近1ヶ月に購入</option>
@@ -1906,6 +1905,59 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('optimizedSearchForm').addEventListener('submit', function() {
     setTimeout(updateFilterBadges, 100);
   });
+
+  // フィルターパネルの要素の値を optimizedSearchForm に同期
+  ['tagFilter', 'sectorFilter', 'transactionDateRangeFilter', 'disclosureFilter', 'dateRangeFilter'].forEach(function(id) {
+    var elem = document.getElementById(id);
+    if (elem) {
+      elem.addEventListener('change', function() {
+        // フォーム内の対応する要素の値を更新（存在する場合）
+        var formElem = document.querySelector('#optimizedSearchForm [name="' + elem.name + '"]');
+        if (formElem) {
+          formElem.value = elem.value;
+        }
+        // フォーム送信
+        htmx.trigger(document.getElementById('optimizedSearchForm'), 'submit');
+      });
+    }
+  });
+
+  // PC用サイドバーフォームの自動送信（change イベント時）
+  var sidebarForm = document.getElementById('sidebarSearchForm');
+  if (sidebarForm) {
+    // フォーム送信前に空のパラメータを削除
+    sidebarForm.addEventListener('submit', function(e) {
+      // フォーム内の全ての input/select を取得
+      var inputs = sidebarForm.querySelectorAll('input, select');
+      inputs.forEach(function(input) {
+        // 空の値の要素を削除
+        if (input.value === '' && input.type !== 'hidden') {
+          input.disabled = true;  // disabled すると form 送信時に含まれない
+        }
+      });
+    });
+
+    // サイドバーの select/input 要素の change イベントをリッスン
+    ['sidebarTagFilter', 'sidebarSectorFilter', 'sidebarTransactionDateRangeFilter', 'sidebarDisclosureFilter', 'sidebarDateRangeFilter', 'sidebarSortFilter'].forEach(function(id) {
+      var elem = document.getElementById(id);
+      if (elem) {
+        elem.addEventListener('change', function() {
+          sidebarForm.submit();
+        });
+      }
+    });
+
+    // 検索入力のエンター押下時に送信
+    var searchInput = document.getElementById('sidebarSearchInput');
+    if (searchInput) {
+      searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          sidebarForm.submit();
+        }
+      });
+    }
+  }
 });
 
 // オフライン時のエラー処理
@@ -2271,10 +2323,9 @@ document.addEventListener('click', function(e) {
   const form = document.getElementById('optimizedSearchForm');
   const STORAGE_KEY = 'sidebarCollapsed';
 
-  if (!sidebar || !toggleBtn) return;
+  if (!sidebar || !form) return;
 
-  // PC のみで toggle 機能を有効化
-  if (window.innerWidth < 992) return;
+  const isPCView = window.innerWidth >= 992;
 
   // 初期状態を restore
   function restoreState() {
@@ -2300,17 +2351,21 @@ document.addEventListener('click', function(e) {
     localStorage.setItem(STORAGE_KEY, 'false');
   }
 
-  // トグルボタンのクリックハンドラ
-  toggleBtn.addEventListener('click', function(e) {
-    e.stopPropagation();
-    expandSidebar();
-  });
+  // トグルボタンのクリックハンドラ（PC ビューのみ）
+  if (isPCView && toggleBtn) {
+    toggleBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      expandSidebar();
+    });
+  }
 
-  // close ボタンのクリックハンドラ
-  closeBtn?.addEventListener('click', function(e) {
-    e.stopPropagation();
-    collapseSidebar();
-  });
+  // close ボタンのクリックハンドラ（PC ビューのみ）
+  if (isPCView && closeBtn) {
+    closeBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      collapseSidebar();
+    });
+  }
 
   // よく使う検索プリセット関数
   window.applyQuickSearch = function(preset) {
@@ -2358,8 +2413,21 @@ document.addEventListener('click', function(e) {
     });
   });
 
-  // 初期化
-  restoreState();
+  // 検索入力フィールドのEnterキーで検索実行
+  const searchInput = document.getElementById('sidebarSearchInput');
+  if (searchInput) {
+    searchInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        htmx.trigger(form, 'submit');
+      }
+    });
+  }
+
+  // 初期化（PC ビューのみ）
+  if (isPCView) {
+    restoreState();
+  }
 })();
 </script>
 

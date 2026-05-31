@@ -461,21 +461,14 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         # テーマ別（スレッド集約）ビュー用。date降順を保持し、未分類は最後に回す。
         grouped = OrderedDict()
         for note in notes:
-            grouped.setdefault(note.topic or '', []).append(note)
+            topic = note.topic or ''
+            grouped.setdefault(topic, []).append(note)
+            note._topic = topic
         if '' in grouped:
             grouped.move_to_end('')
         context['notes_by_topic'] = grouped
         # 入力チップ/サジェスト用（直近使用順 = date降順での初出順、未分類を除く）
         context['note_topics'] = [t for t in grouped if t]
-
-        # 活動履歴タイムライン（取引・分割・継続記録を統合）
-        note_events = [
-            {'type': 'note', 'date': n.date, 'data': n}
-            for n in notes
-        ]
-        all_events = combined + note_events
-        all_events.sort(key=lambda e: e['date'], reverse=True)
-        context['event_timeline'] = all_events
 
         # 関連日記
         # 銘柄コードが空の場合は同一銘柄グループとして扱わない（空同士がまとめられるのを防ぐ）
@@ -490,7 +483,6 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
             )
 
         context['related_diaries'] = all_related_diaries.exclude(id=self.object.id)
-        context['timeline_diaries'] = all_related_diaries
 
         # 関連日記（統合版）: 希少性スコアでランキングしつつ、手動リンクの解除UI・本文抜粋を併設
         manual_linked_ids = set(self.object.linked_diaries.values_list('id', flat=True))

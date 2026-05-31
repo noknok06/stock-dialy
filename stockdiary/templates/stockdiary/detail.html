@@ -626,6 +626,7 @@
   display: inline-flex;
   align-items: center;
   padding: 0.25rem 0;
+  margin-right: 0.25rem;
 }
 
 .filter-chip {
@@ -638,6 +639,23 @@
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .filter-label {
+    font-size: 0.75rem;
+    margin-right: 0.25rem;
+  }
+
+  .filter-chip {
+    padding: 0.25rem 0.6rem;
+    font-size: 0.75rem;
+  }
+
+  .filter-chip i {
+    font-size: 0.8rem;
+    margin-right: 0.25rem;
+  }
 }
 
 .filter-chip:hover {
@@ -1477,138 +1495,6 @@
   color: var(--dm-muted);
 }
 
-/* ========== 活動履歴タイムライン ========== */
-.event-timeline {
-  list-style: none;
-  padding: 1rem 0;
-  margin: 0;
-  position: relative;
-}
-
-.event-timeline .timeline-item {
-  position: relative;
-  padding-left: 3rem;
-  margin-bottom: 2rem;
-  animation: slideInLeft 0.3s ease-out;
-}
-
-.event-timeline .timeline-item::before {
-  content: '';
-  position: absolute;
-  left: 0.5rem;
-  top: 0.5rem;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--primary-color);
-  border: 3px solid var(--bg-primary);
-  box-shadow: 0 0 0 3px var(--border-color);
-  transition: all 0.2s ease;
-}
-
-.event-timeline .timeline-item::after {
-  content: '';
-  position: absolute;
-  left: calc(0.5rem + 6px - 1px);
-  top: 2.5rem;
-  width: 2px;
-  height: calc(100% + 1rem);
-  background: var(--border-light);
-}
-
-.event-timeline .timeline-item:last-child::after {
-  display: none;
-}
-
-.event-timeline .event-transaction::before {
-  background: var(--primary-color);
-}
-
-.event-timeline .event-split::before {
-  background: var(--warning-color);
-}
-
-.event-timeline .event-note::before {
-  background: var(--success-color);
-}
-
-.event-timeline .timeline-date {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  display: block;
-  margin-bottom: 0.5rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.event-timeline .timeline-card {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius-md);
-  transition: all 0.2s ease;
-  border-left: 4px solid var(--primary-color);
-}
-
-.event-timeline .event-transaction .timeline-card {
-  border-left-color: var(--primary-color);
-}
-
-.event-timeline .event-split .timeline-card {
-  border-left-color: var(--warning-color);
-}
-
-.event-timeline .event-note .timeline-card {
-  border-left-color: var(--success-color);
-}
-
-.event-timeline .timeline-card:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateX(2px);
-}
-
-.transaction-event,
-.split-event,
-.note-event {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.note-content {
-  color: var(--text-secondary);
-  line-height: 1.5;
-}
-
-.note-content p {
-  margin: 0.5rem 0;
-  word-break: break-word;
-}
-
-.event-timeline .badge {
-  font-size: 0.75rem;
-  padding: 0.4rem 0.6rem;
-  font-weight: 600;
-}
-
-@media (max-width: 768px) {
-  .event-timeline .timeline-item {
-    padding-left: 2.5rem;
-  }
-
-  .event-timeline .timeline-item::before {
-    left: 0.25rem;
-    width: 10px;
-    height: 10px;
-  }
-
-  .event-timeline .timeline-item::after {
-    left: calc(0.25rem + 5px - 1px);
-    top: 2.2rem;
-  }
-}
-
-/* Dark mode対応 */
 .dark-mode .event-timeline .timeline-item::before,
 [data-theme="dark"] .event-timeline .timeline-item::before {
   border-color: var(--dm-card-bg);
@@ -1816,32 +1702,6 @@
             <div class="tab-label">通知</div>
           </button>
         </li>
-
-        <li class="improved-tab-item" role="presentation">
-          <button class="improved-tab-link" id="events-tab" data-bs-toggle="tab" data-bs-target="#events-content"
-            type="button" role="tab" aria-controls="events-content" aria-selected="false">
-            <div class="tab-icon">
-              <i class="bi bi-clock-history"></i>
-              {% if event_timeline %}
-              {% include "stockdiary/components/_badge.html" with type="info" text=event_timeline|length size="sm" %}
-              {% endif %}
-            </div>
-            <div class="tab-label">活動履歴</div>
-          </button>
-        </li>
-
-        {% if related_diaries %}
-        <li class="improved-tab-item" role="presentation">
-          <button class="improved-tab-link" id="timeline-tab" data-bs-toggle="tab" data-bs-target="#timeline-content"
-            type="button" role="tab" aria-controls="timeline-content" aria-selected="false">
-            <div class="tab-icon">
-              <i class="bi bi-clock-history"></i>
-              {% include "stockdiary/components/_badge.html" with type="info" text=related_diaries.count size="sm" %}
-            </div>
-            <div class="tab-label">タイムライン</div>
-          </button>
-        </li>
-        {% endif %}
 
         {% if diary.stock_symbol %}
         <li class="improved-tab-item" role="presentation">
@@ -2269,29 +2129,9 @@
           </div>
 
           {% if notes %}
-          <!-- フィルタバー: note_type / importance / 検索 -->
+          <!-- フィルタバー: importance / 検索 -->
           <div class="notes-filter-bar mb-3">
-            <div class="d-flex flex-wrap gap-2 mb-2" id="noteTypeFilter">
-              <button type="button" class="filter-chip active" data-filter="all" onclick="filterNotesByType('all')">
-                すべて
-              </button>
-              <button type="button" class="filter-chip" data-filter="analysis" onclick="filterNotesByType('analysis')">
-                分析
-              </button>
-              <button type="button" class="filter-chip" data-filter="news" onclick="filterNotesByType('news')">
-                ニュース
-              </button>
-              <button type="button" class="filter-chip" data-filter="earnings" onclick="filterNotesByType('earnings')">
-                決算
-              </button>
-              <button type="button" class="filter-chip" data-filter="insight" onclick="filterNotesByType('insight')">
-                気づき
-              </button>
-              <button type="button" class="filter-chip" data-filter="risk" onclick="filterNotesByType('risk')">
-                リスク
-              </button>
-            </div>
-            <div class="d-flex flex-wrap gap-2 mb-2" id="noteImportanceFilter">
+            <div id="noteImportanceFilter" style="display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 0.75rem;">
               <span class="filter-label">重要度:</span>
               <button type="button" class="filter-chip active" data-filter="all" onclick="filterNotesByImportance('all')">
                 すべて
@@ -2329,7 +2169,7 @@
               <div class="topic-index-left">
                 {% if topic %}<span class="topic-tag"># {{ topic }}</span>
                 {% else %}<span class="topic-tag topic-tag--muted">未分類</span>{% endif %}
-                <span class="topic-index-count">{{ topic_notes|length }}件</span>
+                <span class="topic-index-count" data-total-count="{{ topic_notes|length }}" data-match-count="{{ topic_notes|length }}">{{ topic_notes|length }}件</span>
               </div>
               <div class="topic-index-right">
                 <span class="topic-index-date">{{ topic_notes.0.date|date:"m/d" }}</span>
@@ -2357,108 +2197,6 @@
             {% endfor %}
           </div>
         </div>
-
-        <!-- タイムラインタブ -->
-        {% if related_diaries %}
-        <div class="tab-pane fade" id="timeline-content" role="tabpanel" aria-labelledby="timeline-tab">
-          <div class="timeline-section mobile-optimized">
-            <h3 class="section-title mb-3">
-              <i class="bi bi-clock-history"></i>
-              {{ diary.stock_symbol }} の投資履歴
-            </h3>
-            
-            <ol class="timeline-list mobile-optimized">
-              {% for timeline_diary in timeline_diaries %}
-              <li class="timeline-item mobile-optimized 
-                {% if timeline_diary.sell_date %}sold
-                {% elif timeline_diary.is_memo or timeline_diary.purchase_price is None or timeline_diary.purchase_quantity is None %}memo
-                {% else %}active{% endif %}
-                {% if timeline_diary.id == diary.id %}current{% endif %}">
-                
-                <div class="timeline-date mb-2">
-                  {% include "stockdiary/components/_date_display.html" with date=timeline_diary.first_purchase_date %}
-                  {% if timeline_diary.id == diary.id %}
-                    {% include "stockdiary/components/_badge.html" with type="warning" text="現在表示中" extra_class="ms-2" %}
-                  {% endif %}
-                </div>
-
-                {% if timeline_diary.id == diary.id %}
-                <div class="timeline-card current mobile-optimized">
-                  <div class="timeline-card-header">
-                    <div class="timeline-stock-info">
-                      <h6>{{ timeline_diary.stock_name }}</h6>
-                    </div>
-                    <div class="timeline-badges">
-                      {% if timeline_diary.is_memo %}
-                        {% include "stockdiary/components/_badge.html" with type="info" text="メモ" %}
-                      {% endif %}
-                    </div>
-                  </div>
-
-                  {% if not timeline_diary.is_memo and timeline_diary.purchase_price is not None and timeline_diary.purchase_quantity is not None %}
-                  <div class="timeline-price-info">
-                    {% include "stockdiary/components/_price_display.html" with price=timeline_diary.purchase_price quantity=timeline_diary.purchase_quantity %}
-                  </div>
-                  {% endif %}
-
-                  <div class="timeline-content markdown-content">
-                    {{ timeline_diary.reason|render_markdown_with_mentions:mention_map|truncatewords_html:30 }}
-                  </div>
-                </div>
-                {% else %}
-                <a href="{% url 'stockdiary:detail' timeline_diary.id %}" class="timeline-card mobile-optimized">
-                  <div class="timeline-card-header">
-                    <div class="timeline-stock-info">
-                      <h6>{{ timeline_diary.stock_name }}</h6>
-                    </div>
-                    <div class="timeline-badges">
-                      {% if timeline_diary.is_memo %}
-                        {% include "stockdiary/components/_badge.html" with type="info" text="メモ" %}
-                      {% endif %}
-                    </div>
-                  </div>
-
-                  {% if not timeline_diary.is_memo and timeline_diary.purchase_price is not None and timeline_diary.purchase_quantity is not None %}
-                  <div class="timeline-price-info">
-                    {% include "stockdiary/components/_profit_display.html" with profit=timeline_diary.realized_profit %}
-                    × {{ timeline_diary.current_quantity }}株
-                  </div>
-                  {% endif %}
-
-                  <div class="timeline-content markdown-content">
-                    {{ timeline_diary.reason|render_markdown_with_mentions:mention_map|truncatewords_html:20 }}
-                  </div>
-
-                  {% if timeline_diary.tags.exists %}
-                  <div class="timeline-tags mt-2">
-                    {% for tag in timeline_diary.tags.all|slice:":3" %}
-                      {% include "stockdiary/components/_badge.html" with type="secondary" text=tag.name extra_class="me-1" %}
-                    {% endfor %}
-                  </div>
-                  {% endif %}
-                </a>
-                {% endif %}
-              </li>
-              {% endfor %}
-            </ol>
-
-            {% if related_diaries_count > 10 %}
-            <div class="text-center mt-3">
-              <a href="{% url 'stockdiary:home' %}?query={{ diary.stock_symbol }}"
-                class="btn btn-outline-primary">
-                すべての記録を表示 (全{{ total_related_count }}件)
-              </a>
-            </div>
-            {% endif %}
-
-            {% if current_diary_index is not None %}
-            <div class="text-center text-muted mt-3 small">
-              <span>{{ current_diary_index|add:1 }}</span> / <span>{{ total_related_count }}</span> 件目
-            </div>
-            {% endif %}
-          </div>
-        </div>
-        {% endif %}
 
 
         <!-- EDINETタブ: 開示書類 -->
@@ -4224,16 +3962,8 @@ window.showReportModal = function(el) {
 // ============================================
 // 継続記録フィルタ機能
 // ============================================
-let currentNoteTypeFilter = 'all';
 let currentImportanceFilter = 'all';
 let currentTextFilter = '';
-
-window.filterNotesByType = function(type) {
-  currentNoteTypeFilter = type;
-  applyNoteFilters();
-  updateFilterChips('noteTypeFilter', type);
-  localStorage.setItem('noteTypeFilter', type);
-};
 
 window.filterNotesByImportance = function(importance) {
   currentImportanceFilter = importance;
@@ -4256,22 +3986,46 @@ function updateFilterChips(filterId, active) {
 }
 
 function applyNoteFilters() {
-  const noteCards = document.querySelectorAll('[data-note-type][data-note-importance]');
+  // note-card-store を除外して、現在表示中のビュー内の note cards のみを対象
+  const cardStore = document.getElementById('note-card-store');
+  const noteCards = Array.from(document.querySelectorAll('[data-note-type][data-note-importance]'))
+    .filter(card => !cardStore || !cardStore.contains(card));
+
   let visibleCount = 0;
+  const topicMatches = {};
 
   noteCards.forEach(card => {
-    const noteType = card.dataset.noteType || 'other';
     const importance = card.dataset.noteImportance || 'medium';
     const content = (card.textContent || '').toLowerCase();
+    const topic = card.dataset.noteTopic || '';
 
-    const typeMatch = currentNoteTypeFilter === 'all' || noteType === currentNoteTypeFilter;
     const importanceMatch = currentImportanceFilter === 'all' || importance === currentImportanceFilter;
     const textMatch = !currentTextFilter || content.includes(currentTextFilter);
 
-    const shouldShow = typeMatch && importanceMatch && textMatch;
+    const shouldShow = importanceMatch && textMatch;
     card.style.display = shouldShow ? '' : 'none';
 
-    if (shouldShow) visibleCount++;
+    if (shouldShow) {
+      visibleCount++;
+      topicMatches[topic] = (topicMatches[topic] || 0) + 1;
+    }
+  });
+
+  // テーマ別のマッチ数を更新
+  document.querySelectorAll('.topic-index-row').forEach(row => {
+    const topic = row.dataset.topic;
+    const countSpan = row.querySelector('.topic-index-count');
+    const totalCount = parseInt(countSpan.dataset.totalCount) || 0;
+    const matchCount = topicMatches[topic] || 0;
+
+    countSpan.dataset.matchCount = matchCount;
+
+    // フィルター（テキスト検索または重要度）が適用されている場合、マッチ数を表示
+    const hasFilter = currentTextFilter || currentImportanceFilter !== 'all';
+    countSpan.textContent = hasFilter ? `${matchCount}/${totalCount}件` : `${totalCount}件`;
+
+    // ヒット数が0の場合は薄くする
+    row.style.opacity = matchCount === 0 && hasFilter ? '0.5' : '1';
   });
 
   // フィルタ結果が空の場合のメッセージ表示（オプション）
@@ -4283,15 +4037,12 @@ function applyNoteFilters() {
 
 // ページ読込時にフィルタ状態を復元
 (function restoreNoteFilters() {
-  const savedTypeFilter = localStorage.getItem('noteTypeFilter') || 'all';
   const savedImportanceFilter = localStorage.getItem('noteImportanceFilter') || 'all';
   const savedTextFilter = localStorage.getItem('noteTextFilter') || '';
 
-  currentNoteTypeFilter = savedTypeFilter;
   currentImportanceFilter = savedImportanceFilter;
   currentTextFilter = savedTextFilter;
 
-  updateFilterChips('noteTypeFilter', savedTypeFilter);
   updateFilterChips('noteImportanceFilter', savedImportanceFilter);
 
   const searchInput = document.getElementById('noteSearchInput');
