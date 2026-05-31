@@ -1170,6 +1170,16 @@ button.read-more { font-family: inherit; cursor: pointer; }
         <i class="bi bi-funnel"></i> フィルター
       </label>
       <div>
+        <label class="filter-group-label" for="sidebarStatusFilter">ステータス</label>
+        <select class="form-select form-select-sm sidebar-filter" id="sidebarStatusFilter" name="status">
+          <option value="all" {% if request.GET.status == 'all' or not request.GET.status %}selected{% endif %}>すべて</option>
+          <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>保有中</option>
+          <option value="sold" {% if request.GET.status == 'sold' %}selected{% endif %}>売却済み</option>
+          <option value="memo" {% if request.GET.status == 'memo' %}selected{% endif %}>メモのみ</option>
+        </select>
+      </div>
+
+      <div>
         <label class="filter-group-label" for="sidebarTagFilter">タグ</label>
         <select class="form-select form-select-sm sidebar-filter" id="sidebarTagFilter" name="tag">
           <option value="">すべてのタグ</option>
@@ -1435,7 +1445,7 @@ button.read-more { font-family: inherit; cursor: pointer; }
 
   <!-- 日記コンテナ -->
   <div id="diary-container" class="home-diary-grid">
-    <!-- コンテンツはHTMXで動的に読み込まれます -->
+    {% include "stockdiary/partials/diary_list.html" with diaries=diaries page_obj=page_obj %}
   </div>
 </main><!-- /.home-main -->
 </div><!-- /.home-layout -->
@@ -1873,9 +1883,8 @@ function resetSearch() {
 // ── 初期ロード ──
 document.addEventListener('DOMContentLoaded', function() {
   // 初回コンテンツ読み込み
-  var statusParam = new URLSearchParams(window.location.search).get('status') || 'active';
-  var initialUrl = '{% url "stockdiary:diary_list" %}?' + (window.location.search.slice(1) || 'status=' + statusParam);
-  htmx.ajax('GET', initialUrl, { target: '#diary-container', swap: 'innerHTML' });
+  // ※ 初期表示はサーバー側でレンダリング済み（diary_list.html パーシャルをインクルード）
+  // フィルター変更時のHTMXリクエストで動的更新を行う
 
   // フィルターバッジの初期表示
   setTimeout(updateFilterBadges, 50);

@@ -176,8 +176,8 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
         if sector:
             queryset = queryset.filter(sector__iexact=sector)
         
-        # 🔧 保有状態フィルター（デフォルトで保有中のみ表示）
-        status = self.request.GET.get('status', 'active')  # デフォルト値を'active'に設定
+        # 🔧 保有状態フィルター（デフォルトですべて表示）
+        status = self.request.GET.get('status', 'all')  # デフォルト値を'all'に設定
         if status == 'active':
             # 保有中: 保有数が0より大きい
             queryset = queryset.filter(current_quantity__gt=0)
