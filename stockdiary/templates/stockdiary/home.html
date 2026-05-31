@@ -754,22 +754,28 @@
 
 /* ========================================
    カードスクロールスナップ（モバイル）
-   一覧で次のカードにスムーズに移れる
+   proximity モードで自然なガイドレールを提供。
+   ゆっくりスクロールは吸着、高速フリックは複数カードを飛び越え可能。
    ======================================== */
 @media (max-width: 991px) {
   html {
-    scroll-snap-type: y mandatory;
+    scroll-snap-type: y proximity;
     scroll-behavior: smooth;
-  }
-  /* bodyをスナップポイントにすることで、ページ最上部（フィルターエリア）を
-     mandatory時でも確実にたどり着けるスナップ位置として登録する */
-  body {
-    scroll-snap-align: start;
   }
   .diary-article {
     scroll-snap-align: start;
-    scroll-snap-stop: always;
-    scroll-margin-top: 1rem;
+    scroll-margin-top: 0.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-snap-type: none !important;
+    scroll-behavior: auto !important;
+  }
+  .diary-article {
+    scroll-snap-align: none !important;
+    scroll-margin-top: 0 !important;
   }
 }
 
