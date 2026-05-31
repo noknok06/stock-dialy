@@ -2200,16 +2200,26 @@ window.qnSubmitNote = function() {
   formData.append('content', content);
   formData.append('topic', topic);
   formData.append('importance', importance);
-  formData.append('csrfmiddlewaretoken', document.querySelector('input[name="csrfmiddlewaretoken"]').value);
+  var csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]')?.value || '';
+  formData.append('csrfmiddlewaretoken', csrfToken);
 
-  console.log('[qnSubmitNote] Sending FormData with topic:', topic);
+  console.log('[qnSubmitNote] Sending POST to:', noteUrl);
+  console.log('[qnSubmitNote] FormData entries:');
+  console.log('  - content:', content);
+  console.log('  - topic:', topic);
+  console.log('  - importance:', importance);
+  console.log('  - csrftoken:', csrfToken ? 'present' : 'MISSING');
 
   fetch(noteUrl, {
     method: 'POST',
     body: formData
   })
-  .then(response => response.json())
+  .then(response => {
+    console.log('[qnSubmitNote] Response status:', response.status);
+    return response.json();
+  })
   .then(data => {
+    console.log('[qnSubmitNote] Response data:', data);
     if (data.success) {
       alert(data.message);
       closeBottomSheet('quickNoteFromHomeSheet');
@@ -2225,7 +2235,7 @@ window.qnSubmitNote = function() {
     }
   })
   .catch(error => {
-    console.error('Error:', error);
+    console.error('[qnSubmitNote] Error:', error);
     alert('エラーが発生しました');
   });
 };
