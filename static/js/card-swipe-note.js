@@ -171,58 +171,7 @@
     if (ta) { ta.value = ''; updateQnCharCount(); }
   }
 
-  // ============================================================
-  // フォーム送信
-  // ============================================================
-  function submitNote() {
-    var urlInput  = document.getElementById('qnNoteUrl');
-    var ta        = document.getElementById('qnContent');
-    var typeBtn   = document.querySelector('.qn-type-btn.active');
-    var impBtn    = document.querySelector('.qn-importance-btn.active');
-    var submitBtn = document.getElementById('qnSubmitBtn');
-
-    if (!urlInput || !ta || !urlInput.value) return;
-
-    var content = ta.value.trim();
-    if (!content) {
-      if (typeof showToast === 'function') showToast('内容を入力してください', 'warning');
-      return;
-    }
-
-    if (submitBtn) submitBtn.disabled = true;
-
-    fetch(urlInput.value, {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: {
-        'X-CSRFToken': getCsrfToken(),
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        content:    content,
-        note_type:  typeBtn ? typeBtn.dataset.value : 'analysis',
-        importance: impBtn  ? impBtn.dataset.value  : 'medium',
-      }),
-    })
-    .then(function (res) { return res.json(); })
-    .then(function (data) {
-      if (data.success) {
-        if (typeof closeBottomSheet === 'function') {
-          closeBottomSheet('quickNoteFromHomeSheet');
-        }
-        if (typeof showToast === 'function') showToast('継続記録を追加しました', 'success');
-        incrementNoteBadge(urlInput.value);
-      } else {
-        if (typeof showToast === 'function') showToast(data.message || 'エラーが発生しました', 'danger');
-      }
-    })
-    .catch(function () {
-      if (typeof showToast === 'function') showToast('送信に失敗しました。もう一度お試しください。', 'danger');
-    })
-    .finally(function () {
-      if (submitBtn) submitBtn.disabled = false;
-    });
-  }
+  // フォーム送信は home.html の window.qnSubmitNote で定義
 
   // ============================================================
   // 継続タブのバッジカウントを1増やす
@@ -305,7 +254,7 @@
   // ============================================================
   // グローバル公開
   // ============================================================
-  window.qnSubmitNote        = submitNote;
+  // qnSubmitNote は home.html で定義（topic パラメータ対応版）
   window.updateQnCharCount   = updateQnCharCount;
   // フッターボタン等の外部から openSheet を呼べるよう公開
   window.openQuickNoteSheet  = openSheet;
