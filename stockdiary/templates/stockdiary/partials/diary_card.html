@@ -7,8 +7,10 @@
 
   <!-- ========== ヘッダー部分 ========== -->
   <header class="diary-header"
+          data-diary-id="{{ diary.id }}"
           data-quick-note-url="{% url 'stockdiary:quick_add_note' diary.id %}"
-          data-stock-name="{{ diary.stock_name|escapejs }}">
+          data-stock-name="{{ diary.stock_name|escapejs }}"
+          data-note-topics="{{ diary.note_topics|join:'|' }}">
     <div class="diary-header-inner">
       <div class="diary-title-row">
         <h3 class="diary-name">

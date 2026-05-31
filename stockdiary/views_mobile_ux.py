@@ -140,6 +140,7 @@ def quick_add_note(request, diary_id):
             diary=diary,
             date=timezone.now().date(),
             content=content,
+            topic=request.POST.get('topic', '').strip(),
             note_type=request.POST.get('note_type', 'other'),
             importance=request.POST.get('importance', 'medium')
         )

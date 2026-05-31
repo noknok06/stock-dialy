@@ -1675,16 +1675,26 @@ button.read-more { font-family: inherit; cursor: pointer; }
       {% csrf_token %}
       <input type="hidden" id="qnNoteUrl">
 
-      <!-- ノートタイプ -->
+      <!-- タイトル（topic） -->
       <div class="mb-3">
-        <label class="form-label small fw-semibold text-muted">種別</label>
-        <div class="d-flex gap-2 flex-wrap">
-          <button type="button" class="qn-type-btn active" data-value="analysis">分析</button>
-          <button type="button" class="qn-type-btn" data-value="news">ニュース</button>
-          <button type="button" class="qn-type-btn" data-value="earnings">決算</button>
-          <button type="button" class="qn-type-btn" data-value="insight">気づき</button>
-          <button type="button" class="qn-type-btn" data-value="risk">リスク</button>
+        <label for="qnTopic" class="form-label small fw-semibold text-muted">
+          <i class="bi bi-tag me-1"></i>タイトル
+          <small class="text-muted ms-2" style="font-size: 0.75rem; font-weight: 400;">同じ話題を束ねます</small>
+        </label>
+        {% if note_topics %}
+        <div class="topic-chips mb-2" style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+          {% for t in note_topics %}
+          <button type="button" class="topic-chip" onclick="setQnTopic(this, '{{ t|escapejs }}')" style="padding: 0.4rem 0.8rem; border: 1px solid #ddd; border-radius: 1rem; background: white; cursor: pointer; font-size: 0.875rem;">
+            # {{ t }}
+          </button>
+          {% endfor %}
         </div>
+        {% endif %}
+        <input type="text" class="form-control form-control-sm" id="qnTopic" name="topic"
+               maxlength="50" placeholder="例：ナフサの影響" list="qn-topic-list" autocomplete="off">
+        <datalist id="qn-topic-list">
+          {% for t in note_topics %}<option value="{{ t }}"></option>{% endfor %}
+        </datalist>
       </div>
 
       <!-- 本文 -->
@@ -2047,6 +2057,57 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
+  // クイックノート：タイトル topic-chips UI
+  // (詳細ページと同じ方式)
+
+  // diary カードの「記録を追加」ボタンをクリックした時に、クイックノートボトムシートを開く
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('.note-add-btn')) {
+      e.stopPropagation();
+      var header = e.target.closest('.diary-header');
+      if (header) {
+        var noteUrl = header.dataset.quickNoteUrl;
+        var stockName = header.dataset.stockName;
+        var noteTopic = header.dataset.noteTopics || '';
+        if (noteUrl) {
+          document.getElementById('qnNoteUrl').value = noteUrl;
+          document.getElementById('qnSheetTitle').textContent = stockName + ' に記録を追加';
+
+          // 日記ごとの topics を動的に topic-chips に設定
+          var topicChipsContainer = document.querySelector('.bottom-sheet-body .topic-chips');
+          if (topicChipsContainer) {
+            topicChipsContainer.innerHTML = '';
+            if (noteTopic) {
+              var topics = noteTopic.split('|').filter(t => t.trim());
+              topics.forEach(function(topic) {
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'topic-chip';
+                btn.textContent = '# ' + topic;
+                btn.onclick = function() { setQnTopic(this, topic); };
+                btn.style.padding = '0.4rem 0.8rem';
+                btn.style.border = '1px solid #ddd';
+                btn.style.borderRadius = '1rem';
+                btn.style.background = 'white';
+                btn.style.cursor = 'pointer';
+                btn.style.fontSize = '0.875rem';
+                topicChipsContainer.appendChild(btn);
+              });
+            }
+          }
+
+          // フォームをリセット
+          document.getElementById('qnTopic').value = '';
+          document.getElementById('qnContent').value = '';
+          document.querySelectorAll('.qn-importance-btn').forEach(function(b) { b.classList.remove('active'); });
+          document.querySelector('.qn-importance-btn[data-value="medium"]').classList.add('active');
+
+          openBottomSheet('quickNoteFromHomeSheet');
+        }
+      }
+    }
+  });
+
   // PC用サイドバーフォームの自動送信（change イベント時）
   var sidebarForm = document.getElementById('sidebarSearchForm');
   if (sidebarForm) {
@@ -2096,6 +2157,61 @@ htmx.on('htmx:beforeRequest', function(evt) {
     }
   }
 });
+
+// クイックノート：タイトル topic-chip クリックハンドラ
+window.setQnTopic = function(el, value) {
+  var topicEl = document.getElementById('qnTopic');
+  if (topicEl) topicEl.value = value;
+  document.querySelectorAll('.topic-chip').forEach(function(c) { c.classList.remove('active'); });
+  if (el) el.classList.add('active');
+};
+
+// クイックノート：記録送信
+window.qnSubmitNote = function() {
+  var noteUrl = document.getElementById('qnNoteUrl').value;
+  var content = document.getElementById('qnContent').value.trim();
+  var topic = document.getElementById('qnTopic').value.trim();
+  var importance = document.querySelector('.qn-importance-btn.active')?.dataset.value || 'medium';
+
+  if (!content) {
+    alert('記録内容を入力してください');
+    return;
+  }
+
+  // FormData を使用して POST リクエストを送信
+  var formData = new FormData();
+  formData.append('content', content);
+  formData.append('topic', topic);
+  formData.append('importance', importance);
+  formData.append('csrfmiddlewaretoken', document.querySelector('input[name="csrfmiddlewaretoken"]').value);
+
+  fetch(noteUrl, {
+    method: 'POST',
+    body: formData
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      alert(data.message);
+      closeBottomSheet('quickNoteFromHomeSheet');
+      // フォームをリセット
+      document.getElementById('qnTopic').value = '';
+      document.getElementById('qnContent').value = '';
+      document.querySelector('.qn-importance-btn.active').classList.remove('active');
+      document.querySelector('.qn-importance-btn[data-value="medium"]').classList.add('active');
+      // ページをリロード（日記一覧を更新）
+      location.reload();
+    } else {
+      alert('エラー: ' + data.message);
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    alert('エラーが発生しました');
+  });
+};
+
+// オフライン時のエラー処理
 </script>
 
 <script>

@@ -317,7 +317,15 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
         # 検索パラメータを保持
         context['current_query'] = self.request.GET.urlencode()
         context['current_params'] = self.request.GET
-        
+
+        # 日記ごとの既存タイトル（topic）リストを取得し、各 diary オブジェクトに追加
+        for diary in context['diaries']:
+            topics = DiaryNote.objects.filter(
+                diary=diary,
+                topic__isnull=False
+            ).exclude(topic='').values_list('topic', flat=True).distinct().order_by('topic')
+            diary.note_topics = list(topics)
+
         # フォーム用のスピードダイアルアクション
         context['form_actions'] = [
             {
