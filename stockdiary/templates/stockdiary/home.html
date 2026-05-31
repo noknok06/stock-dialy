@@ -1684,7 +1684,10 @@ button.read-more { font-family: inherit; cursor: pointer; }
         <!-- 日記ごとの topic-chips は JavaScript で動的に生成される -->
         <div class="topic-chips mb-2" style="display: flex; flex-wrap: wrap; gap: 0.5rem;"></div>
         <input type="text" class="form-control form-control-sm" id="qnTopic" name="topic"
-               maxlength="50" placeholder="例：ナフサの影響" autocomplete="off">
+               maxlength="50" placeholder="例：ナフサの影響" autocomplete="off" list="qn-topic-list">
+        <datalist id="qn-topic-list">
+          {% for t in note_topics %}<option value="{{ t }}"></option>{% endfor %}
+        </datalist>
       </div>
 
       <!-- 本文 -->
