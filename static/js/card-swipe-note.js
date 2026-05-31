@@ -159,16 +159,23 @@
   }
 
   function resetForm() {
-    // ノートタイプ: analysis をデフォルト
-    document.querySelectorAll('.qn-type-btn').forEach(function (btn) {
-      btn.classList.toggle('active', btn.dataset.value === 'analysis');
-    });
+    // テーマをリセット
+    var topicEl = document.getElementById('qnTopic');
+    if (topicEl) topicEl.value = '';
+
     // 重要度: medium をデフォルト
     document.querySelectorAll('.qn-importance-btn').forEach(function (btn) {
       btn.classList.toggle('active', btn.dataset.value === 'medium');
     });
+
+    // 本文をリセット
     var ta = document.getElementById('qnContent');
     if (ta) { ta.value = ''; updateQnCharCount(); }
+
+    // topic-chips の active クラスをリセット
+    document.querySelectorAll('.topic-chip').forEach(function (btn) {
+      btn.classList.remove('active');
+    });
   }
 
   // フォーム送信は home.html の window.qnSubmitNote で定義
