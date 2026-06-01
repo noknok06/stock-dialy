@@ -106,22 +106,22 @@
 
   <!-- ========== タブナビゲーション ========== -->
   <nav class="diary-tabs" role="tablist">
-    <button class="tab-btn{% if not diary.notes_first %} active{% endif %}"
+    <button class="tab-btn active"
             data-tab="reason-{{ diary.id }}"
             role="tab"
-            aria-selected="{% if diary.notes_first %}false{% else %}true{% endif %}"
+            aria-selected="true"
             aria-controls="reason-{{ diary.id }}">
       <i class="bi bi-journal-text"></i>
       <span class="tab-label">{% if diary.is_memo %}メモ{% else %}理由{% endif %}</span>
     </button>
 
     {% if diary.notes.exists %}
-    <button class="tab-btn{% if diary.notes_first %} active{% endif %}"
+    <button class="tab-btn"
             data-tab="notes-{{ diary.id }}"
             data-diary-id="{{ diary.id }}"
             data-loaded="false"
             role="tab"
-            aria-selected="{% if diary.notes_first %}true{% else %}false{% endif %}"
+            aria-selected="false"
             aria-controls="notes-{{ diary.id }}">
       <i class="bi bi-journals"></i>
       <span class="tab-label">継続</span>
@@ -148,10 +148,9 @@
   <div class="diary-tab-content">
     
     <!-- 理由タブ -->
-    <div class="tab-panel{% if not diary.notes_first %} active{% endif %}"
+    <div class="tab-panel active"
          id="reason-{{ diary.id }}"
-         role="tabpanel"
-         {% if diary.notes_first %}style="display: none;"{% endif %}>
+         role="tabpanel">
 
       <!-- 省略テキスト: タップで展開（150文字超の場合のみ） -->
       <div class="panel-text markdown-content{% if diary.reason|length > 150 %} panel-text--truncated{% endif %}"
@@ -186,10 +185,10 @@
 
     <!-- 継続記録タブ -->
     {% if diary.notes.exists %}
-    <div class="tab-panel{% if diary.notes_first %} active panel-scrollable{% endif %}"
+    <div class="tab-panel"
          id="notes-{{ diary.id }}"
          role="tabpanel"
-         style="display: {% if diary.notes_first %}block{% else %}none{% endif %};">
+         style="display: none;">
       <div class="panel-skeleton">
         <div class="skeleton-line skeleton-line--lg"></div>
         <div class="skeleton-line skeleton-line--md"></div>
