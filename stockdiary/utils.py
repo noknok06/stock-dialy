@@ -168,7 +168,6 @@ def annotate_search_matches(diaries, query: str):
         - match_note:         一致した継続記録（DiaryNote）または None
         - match_note_count:   一致した継続記録の件数（int）
         - match_note_snippet: 一致した継続記録本文の抜粋（str）
-        - notes_first:        継続記録だけに一致した場合 True（カードの既定タブ制御用）
 
     queryset は prefetch_related('notes') 済みであることを前提とし、
     追加クエリを発行しない（表示中のページ分のみを対象に Python で判定）。
@@ -188,7 +187,6 @@ def annotate_search_matches(diaries, query: str):
             diary.match_note = None
             diary.match_note_count = 0
             diary.match_note_snippet = ''
-            diary.notes_first = False
             continue
 
         ql = q.lstrip('@').strip().lower() if q.startswith('@') else q.lower()
@@ -212,8 +210,6 @@ def annotate_search_matches(diaries, query: str):
         diary.match_note_snippet = (
             _make_search_snippet(matched_notes[0].content or '', ql) if matched_notes else ''
         )
-        # 継続記録だけに一致した場合は、カードの既定タブを「継続」にする
-        diary.notes_first = bool(matched_notes) and not diary.match_name and not diary.match_body
 
     return diaries
 
