@@ -62,3 +62,47 @@ document.addEventListener('click', function(e) {
     }
   }
 });
+
+// 検索ヒットで継続/取引タブが既定アクティブになっているカードの内容を初期ロードする。
+// （タブの遅延ロードはクリック駆動のため、初期表示分は明示的に読み込む必要がある）
+function loadInitiallyActiveContentTabs(root) {
+  if (typeof htmx === 'undefined') return;
+  (root || document).querySelectorAll('.diary-article').forEach(article => {
+    const btn = article.querySelector(
+      '.tab-btn.active[data-loaded="false"][data-diary-id]'
+    );
+    if (!btn) return;
+
+    const targetId = btn.getAttribute('data-tab') || '';
+    const isContentTab = targetId.includes('notes') || targetId.includes('transactions');
+    if (!isContentTab) return;
+
+    const diaryId = btn.getAttribute('data-diary-id');
+    const tabType = targetId.includes('notes') ? 'notes' : 'details';
+
+    // 継続/取引タブでは画像を折りたたんで表示領域を最大化
+    const figure = article.querySelector('.diary-figure');
+    if (figure) {
+      figure.classList.add('figure-collapsed');
+      if (window.matchMedia('(max-width: 767px)').matches) {
+        figure.style.display = 'none';
+      }
+    }
+
+    htmx.ajax('GET', `/stockdiary/tab-content/${diaryId}/${tabType}/`, {
+      target: `#${targetId}`,
+      swap: 'innerHTML'
+    }).then(() => {
+      btn.setAttribute('data-loaded', 'true');
+    });
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => loadInitiallyActiveContentTabs(document));
+
+// 検索（HTMX）でカード一覧が差し替わった後にも初期ロードを実行
+document.body.addEventListener('htmx:afterSwap', function(evt) {
+  if (evt.detail.target && evt.detail.target.id === 'diary-container') {
+    loadInitiallyActiveContentTabs(evt.detail.target);
+  }
+});
