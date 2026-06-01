@@ -1412,6 +1412,7 @@ button.read-more { font-family: inherit; cursor: pointer; }
           hx-target="#diary-container"
           hx-indicator="#search-indicator"
           hx-push-url="true"
+          hx-include="#filterPanel"
           id="optimizedSearchForm"
           class="d-lg-none">
 
@@ -1578,93 +1579,6 @@ button.read-more { font-family: inherit; cursor: pointer; }
 {% endif %}
 
 {% include 'speed_dial.html' with actions=form_actions %}
-
-<!-- 検索・フィルタパネル（モーダル） -->
-<div class="modal fade" id="searchModal" tabindex="-1" aria-labelledby="searchModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="searchModalLabel">
-          <i class="bi bi-search me-2"></i>銘柄を探す
-        </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
-      </div>
-      <div class="modal-body">
-        <form id="searchFilterForm" method="GET" action="{% url 'stockdiary:home' %}">
-          <!-- テキスト検索 -->
-          <div class="mb-3">
-            <label for="searchQuery" class="form-label">銘柄名またはコード</label>
-            <input type="text" class="form-control" id="searchQuery" name="q" placeholder="銘柄名や銘柄コード" value="{{ search_query }}">
-          </div>
-
-          <!-- タグフィルタ -->
-          <div class="mb-3">
-            <label class="form-label">タグで絞込</label>
-            <div id="tagFilterContainer" class="d-flex flex-wrap gap-2">
-              {% for tag in tags %}
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="tags" value="{{ tag.id }}" id="tag_{{ tag.id }}">
-                <label class="form-check-label" for="tag_{{ tag.id }}">
-                  {{ tag.name }}
-                </label>
-              </div>
-              {% endfor %}
-            </div>
-          </div>
-
-          <!-- 日付レンジ -->
-          <div class="mb-3">
-            <label for="dateRangeStart" class="form-label">初回購入日（開始）</label>
-            <input type="date" class="form-control" id="dateRangeStart" name="date_from">
-          </div>
-          <div class="mb-3">
-            <label for="dateRangeEnd" class="form-label">初回購入日（終了）</label>
-            <input type="date" class="form-control" id="dateRangeEnd" name="date_to">
-          </div>
-
-          <!-- ステータスフィルタ -->
-          <div class="mb-3">
-            <label class="form-label">ステータス</label>
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" name="status" value="holding" id="status_holding" checked>
-              <label class="form-check-label" for="status_holding">保有中</label>
-            </div>
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" name="status" value="sold" id="status_sold" checked>
-              <label class="form-check-label" for="status_sold">売却済</label>
-            </div>
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" name="status" value="memo" id="status_memo" checked>
-              <label class="form-check-label" for="status_memo">メモのみ</label>
-            </div>
-          </div>
-
-          <!-- プリセット検索 -->
-          <div class="mb-3">
-            <label class="form-label">よく使う検索</label>
-            <div class="btn-group w-100" role="group">
-              <button type="button" class="btn btn-outline-secondary btn-sm" onclick="applyPreset('recent')">
-                <i class="bi bi-clock-history me-1"></i>最近更新
-              </button>
-              <button type="button" class="btn btn-outline-secondary btn-sm" onclick="applyPreset('unrecorded')">
-                <i class="bi bi-exclamation-circle me-1"></i>未記録
-              </button>
-              <button type="button" class="btn btn-outline-secondary btn-sm" onclick="applyPreset('highearning')">
-                <i class="bi bi-graph-up me-1"></i>含み益大
-              </button>
-            </div>
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
-        <button type="button" class="btn btn-primary" onclick="document.getElementById('searchFilterForm').submit()">
-          <i class="bi bi-search me-2"></i>検索
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
 
 <!-- ホームからのクイックノート追加シート -->
 <div class="bottom-sheet" id="quickNoteFromHomeSheet" aria-hidden="true">

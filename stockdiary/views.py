@@ -338,8 +338,8 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
         context['form_actions'] = [
             {
                 'id': 'search-action',
-                'type': 'modal',
-                'modal_target': '#searchModal',
+                'type': 'search',
+                'url': reverse_lazy('stockdiary:explore'),
                 'icon': 'bi-search',
                 'label': '銘柄を探す',
                 'aria_label': '銘柄や日記を検索',
@@ -531,8 +531,9 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
             },
             {
                 'id': 'add-note',
-                'type': 'modal',
-                'modal_target': '#addNoteSheet',
+                'type': 'bottom-sheet',
+                'sheet_id': 'addNoteSheet',
+                'onclick': 'resetNoteFormToAdd();',
                 'icon': 'bi-chat-dots',
                 'label': '記録を追加',
                 'aria_label': '新しい継続記録を追加',
