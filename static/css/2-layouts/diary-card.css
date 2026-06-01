@@ -110,6 +110,104 @@
   transform: translateY(0);
 }
 
+/* ========== 検索ヒット箇所 ========== */
+.diary-search-hits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin-top: 0.625rem;
+}
+
+.search-hit-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: rgba(245, 158, 11, 0.15);
+  color: #b45309;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.search-hit-badge i {
+  font-size: 0.7rem;
+}
+
+.search-hit-badge--note {
+  background: rgba(16, 185, 129, 0.15);
+  color: #047857;
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+.diary-search-note-snippet {
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.625rem;
+  border-left: 3px solid rgba(16, 185, 129, 0.5);
+  background: rgba(16, 185, 129, 0.06);
+  border-radius: 0 6px 6px 0;
+  font-size: 0.8125rem;
+}
+
+.diary-search-note-snippet .snippet-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.7rem;
+  color: var(--text-300, #6b7280);
+  margin-bottom: 0.2rem;
+}
+
+.diary-search-note-snippet .snippet-topic {
+  font-weight: 600;
+}
+
+.diary-search-note-snippet .snippet-text {
+  line-height: 1.5;
+  color: var(--text-200, #374151);
+  word-break: break-word;
+}
+
+/* 検索キーワードのハイライト（highlight フィルタが付与する span） */
+.search-highlight {
+  background: rgba(245, 158, 11, 0.35);
+  border-radius: 3px;
+  padding: 0 1px;
+  font-weight: 600;
+}
+
+/* ダークモード */
+.dark-mode .search-hit-badge,
+[data-theme="dark"] .search-hit-badge {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+.dark-mode .search-hit-badge--note,
+[data-theme="dark"] .search-hit-badge--note {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+.dark-mode .diary-search-note-snippet,
+[data-theme="dark"] .diary-search-note-snippet {
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.dark-mode .diary-search-note-snippet .snippet-text,
+[data-theme="dark"] .diary-search-note-snippet .snippet-text {
+  color: var(--dm-text-200, #d1d5db);
+}
+
+.dark-mode .search-highlight,
+[data-theme="dark"] .search-highlight {
+  background: rgba(245, 158, 11, 0.4);
+  color: #fff;
+}
+
 /* ========== Figure ========== */
 .diary-figure {
   margin: 0 -1rem 1rem;

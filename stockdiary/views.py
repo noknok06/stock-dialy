@@ -55,7 +55,6 @@ logger = logging.getLogger(__name__)
 DIARY_LIST_PAGE_SIZE = 10        # 日記一覧 HTMX パーシャルおよびFBV
 DIARY_LIST_INITIAL_SIZE = 4      # 日記一覧 CBV 初期表示
 NOTIFICATION_LIST_PAGE_SIZE = 20 # 通知一覧
-EXPLORE_PAGE_SIZE = 20           # Explore検索結果
 
 import json
 import re
@@ -142,21 +141,15 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
     paginate_by = DIARY_LIST_INITIAL_SIZE
     
     def get_queryset(self):
-        from .utils import search_diaries_by_hashtag
+        from .utils import apply_diary_search, search_diaries_by_hashtag
 
         queryset = StockDiary.objects.filter(user=self.request.user).order_by('-updated_at')
         queryset = queryset.select_related('user').prefetch_related('tags', 'notes')
 
-        # 検索クエリ（銘柄名、コード、内容、メモ）
+        # 検索クエリ（銘柄名・コード・投資理由・メモ・業種・継続記録を全文検索）
         query = self.request.GET.get('query', '').strip()
         if query:
-            queryset = queryset.filter(
-                Q(stock_name__icontains=query) |
-                Q(stock_symbol__icontains=query) |
-                Q(reason__icontains=query) |
-                Q(memo__icontains=query) |
-                Q(sector__icontains=query)
-            )
+            queryset = apply_diary_search(queryset, query)
 
         # ハッシュタグフィルター
         hashtag = self.request.GET.get('hashtag', '').strip()
@@ -334,17 +327,12 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
             diary.note_topics = list(topics)
             logger.info(f'[StockDiaryListView] diary_id={diary.id}, note_topics={diary.note_topics}')
 
+        # 検索ヒット箇所（銘柄名／日記本文／継続記録）を各 diary に付与
+        from .utils import annotate_search_matches
+        annotate_search_matches(context['diaries'], self.request.GET.get('query', ''))
+
         # フォーム用のスピードダイアルアクション
         context['form_actions'] = [
-            {
-                'id': 'search-action',
-                'type': 'search',
-                'url': reverse_lazy('stockdiary:explore'),
-                'icon': 'bi-search',
-                'label': '銘柄を探す',
-                'aria_label': '銘柄や日記を検索',
-                'condition': True
-            },
             {
                 'id': 'quick-add',
                 'type': 'quick-add',
@@ -1414,7 +1402,7 @@ class ServeImageView(LoginRequiredMixin, View):
 # ==========================================
 def diary_list(request):
     """日記リストを表示するビュー（HTMX対応）"""
-    from .utils import search_diaries_by_hashtag
+    from .utils import apply_diary_search, search_diaries_by_hashtag
 
     is_htmx = request.headers.get('HX-Request') == 'true' or request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 
@@ -1425,16 +1413,10 @@ def diary_list(request):
         queryset = StockDiary.objects.filter(user=request.user).order_by('-updated_at')
         queryset = queryset.select_related('user').prefetch_related('tags', 'notes')
 
-        # 検索クエリ
+        # 検索クエリ（銘柄名・コード・投資理由・メモ・業種・継続記録を全文検索）
         query = request.GET.get('query', '').strip()
         if query:
-            queryset = queryset.filter(
-                Q(stock_name__icontains=query) |
-                Q(stock_symbol__icontains=query) |
-                Q(reason__icontains=query) |
-                Q(memo__icontains=query) |
-                Q(sector__icontains=query)
-            )
+            queryset = apply_diary_search(queryset, query)
 
         # ハッシュタグフィルター
         hashtag = request.GET.get('hashtag', '').strip()
@@ -1560,7 +1542,11 @@ def diary_list(request):
             diaries = paginator.page(page)
         except (PageNotAnInteger, EmptyPage):
             diaries = paginator.page(1)
-        
+
+        # 検索ヒット箇所（銘柄名／日記本文／継続記録）を各 diary に付与
+        from .utils import annotate_search_matches
+        annotate_search_matches(diaries.object_list, query)
+
         tags = Tag.objects.filter(user=request.user)
         
         # 業種リスト
@@ -3288,103 +3274,6 @@ class DiaryGraphView(LoginRequiredMixin, TemplateView):
         )
         return context
 
-
-class ExploreView(LoginRequiredMixin, ListView):
-    """
-    全文検索ページ（Obsidian風）
-    日記の投資理由・メモ・継続記録・@ハッシュタグを横断検索する。
-    """
-    model = StockDiary
-    template_name = 'stockdiary/explore.html'
-    context_object_name = 'diaries'
-    paginate_by = EXPLORE_PAGE_SIZE
-
-    def get_queryset(self):
-        from .utils import search_diaries_by_hashtag
-
-        qs = StockDiary.objects.filter(user=self.request.user).order_by('-updated_at')
-        qs = qs.prefetch_related('tags', 'notes')
-
-        q = self.request.GET.get('q', '').strip()
-        if q:
-            search_type = self.request.GET.get('search_type', 'all')
-            if search_type == 'reason':
-                qs = qs.filter(Q(reason__icontains=q) | Q(memo__icontains=q))
-            elif search_type == 'note':
-                qs = qs.filter(notes__content__icontains=q).distinct()
-            elif search_type == 'hashtag':
-                qs = search_diaries_by_hashtag(qs, q)
-            else:  # all
-                qs = qs.filter(
-                    Q(stock_name__icontains=q) |
-                    Q(stock_symbol__icontains=q) |
-                    Q(reason__icontains=q) |
-                    Q(memo__icontains=q) |
-                    Q(notes__content__icontains=q)
-                ).distinct()
-
-        # ステータスフィルター
-        status = self.request.GET.get('status', '')
-        if status == 'holding':
-            qs = qs.filter(current_quantity__gt=0)
-        elif status == 'sold':
-            qs = qs.filter(transaction_count__gt=0, current_quantity=0)
-        elif status == 'memo':
-            qs = qs.filter(transaction_count=0)
-
-        # 業種フィルター
-        sector = self.request.GET.get('sector', '').strip()
-        if sector:
-            qs = qs.filter(sector=sector)
-
-        # タグフィルター
-        tag_id = self.request.GET.get('tag', '').strip()
-        if tag_id:
-            try:
-                qs = qs.filter(tags__id=int(tag_id))
-            except (ValueError, TypeError):
-                pass
-
-        return qs
-
-    def get_context_data(self, **kwargs):
-        from .utils import get_all_hashtags_from_queryset
-
-        context = super().get_context_data(**kwargs)
-        user = self.request.user
-
-        q           = self.request.GET.get('q', '').strip()
-        search_type = self.request.GET.get('search_type', 'all')
-        status      = self.request.GET.get('status', '')
-        sector      = self.request.GET.get('sector', '').strip()
-        tag_id      = self.request.GET.get('tag', '').strip()
-
-        context['q']           = q
-        context['search_type'] = search_type
-        context['status']      = status
-        context['sector']      = sector
-        context['tag_id']      = tag_id
-
-        # 全ユーザー日記からハッシュタグ一覧を取得（上位20件）
-        all_diaries = StockDiary.objects.filter(user=user).only('reason')
-        context['top_hashtags'] = get_all_hashtags_from_queryset(all_diaries)[:20]
-
-        # タグ一覧
-        context['tags'] = Tag.objects.filter(user=user).order_by('name')
-
-        # 業種一覧
-        context['sectors'] = (
-            StockDiary.objects.filter(user=user)
-            .exclude(sector='')
-            .values_list('sector', flat=True)
-            .distinct()
-            .order_by('sector')
-        )
-
-        # 総日記数
-        context['total_diary_count'] = StockDiary.objects.filter(user=user).count()
-
-        return context
 
 # ============================================================
 # EDINET連携: 開示書類パネル（HTMXパーシャル）

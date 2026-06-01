@@ -127,11 +127,6 @@ path('api/create/', api.api_create_diary, name='api_create'),
     path('api/diary-graph/data/', api_views.diary_graph_data, name='api_diary_graph_data'),
 
     # ==========================================
-    # 全文探索ページ（Obsidian風検索）
-    # ==========================================
-    path('explore/', views.ExploreView.as_view(), name='explore'),
-
-    # ==========================================
     # EDINET連携（開示書類パネル）
     # ==========================================
     path('<int:diary_id>/edinet-panel/', views.edinet_panel, name='edinet_panel'),

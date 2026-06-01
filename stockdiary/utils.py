@@ -98,11 +98,120 @@ def search_diaries_by_hashtag(queryset, hashtag: str):
     if not tag:
         return queryset
 
-    # reasonフィールドで @タグ の形式を検索
+    # 投資理由（reason）と継続記録（DiaryNote.content）の両方から @タグ を検索
     # 前後に空白や改行がある場合も考慮
     return queryset.filter(
-        Q(reason__icontains=f'@{tag}')
-    )
+        Q(reason__icontains=f'@{tag}') |
+        Q(notes__content__icontains=f'@{tag}')
+    ).distinct()
+
+
+def apply_diary_search(queryset, query: str):
+    """日記の全文検索を適用する。
+
+    銘柄名・銘柄コード・投資理由・メモ・業種に加え、
+    継続記録（DiaryNote.content / topic）も横断して検索する。
+    `@タグ` のみが入力された場合は search_diaries_by_hashtag に委譲する。
+
+    Args:
+        queryset: StockDiary の QuerySet
+        query: 検索文字列
+
+    Returns:
+        絞り込まれた QuerySet（notes 結合による重複は distinct で排除）
+    """
+    from django.db.models import Q
+
+    q = (query or '').strip()
+    if not q:
+        return queryset
+
+    # 単独の @タグ はハッシュタグ検索（reason + 継続記録）に委譲
+    if q.startswith('@') and ' ' not in q and '　' not in q:
+        return search_diaries_by_hashtag(queryset, q)
+
+    return queryset.filter(
+        Q(stock_name__icontains=q) |
+        Q(stock_symbol__icontains=q) |
+        Q(reason__icontains=q) |
+        Q(memo__icontains=q) |
+        Q(sector__icontains=q) |
+        Q(notes__content__icontains=q) |
+        Q(notes__topic__icontains=q)
+    ).distinct()
+
+
+def _make_search_snippet(text: str, query: str, radius: int = 40) -> str:
+    """検索語の周辺を切り出した抜粋テキストを返す（ハイライトは呼び出し側で行う）。"""
+    if not text or not query:
+        return ''
+    lower = text.lower()
+    idx = lower.find(query.lower())
+    if idx == -1:
+        return text[:radius * 2].strip()
+    start = max(0, idx - radius)
+    end = min(len(text), idx + len(query) + radius)
+    snippet = text[start:end].strip()
+    if start > 0:
+        snippet = '…' + snippet
+    if end < len(text):
+        snippet = snippet + '…'
+    return snippet
+
+
+def annotate_search_matches(diaries, query: str):
+    """表示中の日記リストに、検索語がどこにヒットしたかの情報を付与する。
+
+    各 diary に以下の属性を設定する:
+        - match_name:         銘柄名・銘柄コードに一致したか（bool）
+        - match_body:         投資理由・メモ・業種に一致したか（bool）
+        - match_note:         一致した継続記録（DiaryNote）または None
+        - match_note_snippet: 一致した継続記録本文の抜粋（str）
+
+    queryset は prefetch_related('notes') 済みであることを前提とし、
+    追加クエリを発行しない（表示中のページ分のみを対象に Python で判定）。
+
+    Args:
+        diaries: StockDiary の反復可能オブジェクト（ページの object_list 等）
+        query: 検索文字列
+
+    Returns:
+        diaries（同じオブジェクトを属性付きで返す）
+    """
+    q = (query or '').strip()
+    for diary in diaries:
+        if not q:
+            diary.match_name = False
+            diary.match_body = False
+            diary.match_note = None
+            diary.match_note_snippet = ''
+            continue
+
+        ql = q.lstrip('@').strip().lower() if q.startswith('@') else q.lower()
+
+        diary.match_name = (
+            ql in (diary.stock_name or '').lower()
+            or ql in (diary.stock_symbol or '').lower()
+        )
+        diary.match_body = (
+            ql in (diary.reason or '').lower()
+            or ql in (diary.memo or '').lower()
+            or ql in (diary.sector or '').lower()
+        )
+
+        match_note = None
+        snippet = ''
+        for note in diary.notes.all():
+            content = note.content or ''
+            topic = note.topic or ''
+            if ql in content.lower() or ql in topic.lower():
+                match_note = note
+                snippet = _make_search_snippet(content, ql)
+                break
+        diary.match_note = match_note
+        diary.match_note_snippet = snippet
+
+    return diaries
 
 
 def hub_weight(diary_count: int) -> float:
