@@ -338,8 +338,8 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
         context['form_actions'] = [
             {
                 'id': 'search-action',
-                'type': 'modal',
-                'modal_target': '#searchModal',
+                'type': 'search',
+                'url': reverse_lazy('stockdiary:explore'),
                 'icon': 'bi-search',
                 'label': '銘柄を探す',
                 'aria_label': '銘柄や日記を検索',
