@@ -52,9 +52,17 @@ def get_note_image_path(instance, filename):
 
 class StockDiary(models.Model):
     """株式投資日記（基本情報のみ）"""
+    CURRENCY_CHOICES = [
+        ('JPY', '円'),
+        ('USD', '米ドル'),
+    ]
+
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     stock_symbol = models.CharField(max_length=50, blank=True, db_index=True, verbose_name='銘柄コード')
     stock_name = models.CharField(max_length=100, verbose_name='銘柄名')
+    currency = models.CharField(
+        max_length=3, choices=CURRENCY_CHOICES, default='JPY', verbose_name='通貨'
+    )
     reason = models.TextField(verbose_name='投資理由', blank=True, max_length=5000)
     tags = models.ManyToManyField(Tag, blank=True)
     memo = models.TextField(blank=True, max_length=1000, verbose_name='メモ')
@@ -136,6 +144,16 @@ class StockDiary(models.Model):
     def is_short(self):
         """信用売り（ショートポジション）かどうか"""
         return self.current_quantity < 0
+
+    @property
+    def currency_symbol(self):
+        """通貨記号（¥ / $）"""
+        return '$' if self.currency == 'USD' else '¥'
+
+    @property
+    def currency_unit(self):
+        """通貨の接尾辞表示（円 / ドル）"""
+        return 'ドル' if self.currency == 'USD' else '円'
 
     @property
     def recent_disclosure_status(self):
@@ -249,7 +267,7 @@ class Transaction(models.Model):
 
     def __str__(self):
         type_display = self.get_transaction_type_display()
-        return f"{self.diary.stock_name} - {type_display} {self.quantity}株 @ {self.price}円"
+        return f"{self.diary.stock_name} - {type_display} {self.quantity}株 @ {self.price}{self.diary.currency_unit}"
 
     def clean(self):
         """バリデーション"""

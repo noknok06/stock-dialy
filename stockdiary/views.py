@@ -1746,6 +1746,8 @@ def api_stock_diaries(request, symbol):
                 'total_sell_amount': float(cash_stats['total_sell_amount']) if cash_stats['total_sell_amount'] else None,
                 'realized_profit': float(cash_stats['realized_profit']) if cash_stats['realized_profit'] else None,
                 'transaction_count': diary.transaction_count,
+                # 通貨表示用（為替変換なし・元通貨で表示）
+                'currency_unit': diary.currency_unit,
             })
         
         return JsonResponse({
@@ -2873,16 +2875,20 @@ class TradingDashboardView(LoginRequiredMixin, TemplateView):
         days = period_mapping.get(period)
 
         # ✅ 現物取引のみを取得
+        # 為替変換は行わないため、円建て（JPY）の日記のみを集計対象とする。
+        # （USD など他通貨の日記は通貨混在を避けるため本ダッシュボードの合計には含めない）
         if days:
             start_date = today - timedelta(days=days)
             period_transactions = Transaction.objects.filter(
                 diary__user=user,
+                diary__currency='JPY',
                 transaction_date__gte=start_date,
                 is_margin=False  # ✅ 信用取引を除外
             )
         else:
             period_transactions = Transaction.objects.filter(
                 diary__user=user,
+                diary__currency='JPY',
                 is_margin=False  # ✅ 信用取引を除外
             )
 
@@ -2892,8 +2898,8 @@ class TradingDashboardView(LoginRequiredMixin, TemplateView):
             id__in=diary_ids_in_period
         ).select_related('user')
 
-        # 全日記
-        all_diaries = StockDiary.objects.filter(user=user)
+        # 全日記（円建てのみ）
+        all_diaries = StockDiary.objects.filter(user=user, currency='JPY')
 
         # ========== CompanyMasterから業種情報を取得 ==========
         from company_master.models import CompanyMaster

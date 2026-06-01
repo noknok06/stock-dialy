@@ -1,5 +1,4 @@
 # stockdiary/api.py
-import re
 import traceback
 import requests
 from decimal import Decimal
@@ -12,6 +11,7 @@ from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from company_master.models import CompanyMaster
 from .models import StockDiary
+from .utils import is_japanese_stock, detect_currency
 from tags.models import Tag
 
 from django.core.exceptions import ValidationError
@@ -48,11 +48,6 @@ def load_stock_data():
         print(f"Error loading stock data: {str(e)}")
         print(traceback.format_exc())
         return {}
-
-
-def is_japanese_stock(code):
-    """日本株コードか判定（例: 7203, 262A, 1234D など数字+任意1文字）"""
-    return bool(re.fullmatch(r'\d{3,4}[A-Z]?', code, re.IGNORECASE))
 
 
 @login_required
@@ -120,11 +115,12 @@ def get_stock_info(request, stock_code):
                 'price': price,
                 'change_percent': change_percent,
                 'market': market,
-                'industry': industry  # 業種情報
+                'industry': industry,  # 業種情報
+                'currency': detect_currency(stock_code)  # 通貨（JPY/USD）
             }
-            
+
             return JsonResponse(response_data)
-                
+
         except Exception as e:
             # Yahoo APIでエラーが発生した場合でも、会社名だけは返す
             if company_name:
@@ -133,6 +129,7 @@ def get_stock_info(request, stock_code):
                     'company_name': company_name,
                     'market': market_from_master or "東証",
                     'industry': industry_from_master or "不明",
+                    'currency': detect_currency(stock_code),
                     'source': 'company_master'
                 })
             else:

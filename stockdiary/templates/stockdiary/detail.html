@@ -1619,7 +1619,7 @@
             <div class="profit-value">
               <span class="profit-icon">{% if diary.realized_profit > 0 %}↗{% else %}↘{% endif %}</span>
               <span>{{ diary.realized_profit|floatformat:0|intcomma }}</span>
-              <span class="profit-unit">円</span>
+              <span class="profit-unit">{{ diary|currency_unit }}</span>
             </div>
           </div>
           {% endif %}
@@ -1629,7 +1629,7 @@
             <div class="price-detail-card">
               <div class="price-detail-label">平均取得単価</div>
               <div class="price-detail-value">
-                {{ diary.average_purchase_price|floatformat:2|intcomma }}<span class="unit">円</span>
+                {{ diary.average_purchase_price|floatformat:2|intcomma }}<span class="unit">{{ diary|currency_unit }}</span>
               </div>
             </div>
             
@@ -1803,7 +1803,7 @@
                   <div class="info-content-improved">
                     <div class="info-label-improved">平均取得単価</div>
                     <div class="info-value-improved">
-                      {% include "stockdiary/components/_price_display.html" with price=diary.average_purchase_price %}
+                      {% include "stockdiary/components/_price_display.html" with price=diary.average_purchase_price currency=diary.currency_unit %}
                     </div>
                   </div>
                 </div>
@@ -1824,7 +1824,7 @@
                   </div>
                   <div class="info-content-improved">
                     <div class="info-label-improved">総取得原価(信用含む)</div>
-                    <div class="info-value-improved">{{ diary.total_cost|intcomma_float:0 }}円</div>
+                    <div class="info-value-improved">{{ diary.total_cost|intcomma_float:0 }}{{ diary|currency_unit }}</div>
                   </div>
                 </div>
 
@@ -1836,7 +1836,7 @@
                   <div class="info-content-improved">
                     <div class="info-label-improved">実現損益(信用含む)</div>
                     <div class="info-value-improved">
-                      {% include "stockdiary/components/_profit_display.html" with profit=diary.realized_profit %}
+                      {% include "stockdiary/components/_profit_display.html" with profit=diary.realized_profit currency=diary.currency_unit %}
                     </div>
                   </div>
                 </div>
@@ -2058,9 +2058,9 @@
                         {% if event.data.is_margin %}<span class="badge bg-warning"><i class="bi bi-percent"></i>信用</span>{% endif %}
                       </div>
                       <div class="mt-2 small">
-                        <div><strong>単価:</strong> ¥{{ event.data.price|floatformat:0 }}</div>
+                        <div><strong>単価:</strong> {{ diary|currency_symbol }}{{ event.data.price|floatformat:0 }}</div>
                         <div><strong>数量:</strong> {{ event.data.quantity }} 株</div>
-                        <div><strong>金額:</strong> ¥{{ event.data.amount|floatformat:0 }}</div>
+                        <div><strong>金額:</strong> {{ diary|currency_symbol }}{{ event.data.amount|floatformat:0 }}</div>
                         {% if event.data.memo %}<div class="mt-2 text-muted">{{ event.data.memo|truncatewords:20 }}</div>{% endif %}
                       </div>
                     </div>
@@ -2095,7 +2095,7 @@
                       </div>
                       <div class="note-content small">
                         {% if event.data.current_price %}
-                          <div class="text-muted mb-1"><strong>価格:</strong> ¥{{ event.data.current_price|floatformat:0 }} ({% if event.data.get_price_change %}{{ event.data.get_price_change }}%{% endif %})</div>
+                          <div class="text-muted mb-1"><strong>価格:</strong> {{ diary|currency_symbol }}{{ event.data.current_price|floatformat:0 }} ({% if event.data.get_price_change %}{{ event.data.get_price_change }}%{% endif %})</div>
                         {% endif %}
                         <p class="markdown-content">{{ event.data.content|truncatewords:30 }}</p>
                       </div>
@@ -3409,7 +3409,7 @@ window.showReportModal = function(el) {
         </div>
         <div class="d-flex gap-2 mb-3">
           <div class="flex-grow-1">
-            <label class="form-label-improved">単価（円）<span class="text-danger ms-1">*</span></label>
+            <label class="form-label-improved">単価（{{ diary|currency_unit }}）<span class="text-danger ms-1">*</span></label>
             <input type="number" class="form-input-improved" name="price"
                    step="0.01" min="0.01" placeholder="例: 1000.00" required>
           </div>
@@ -3597,7 +3597,7 @@ window.showReportModal = function(el) {
           </label>
           <div class="input-group">
             <input type="number" class="form-control form-input-improved" id="note_current_price" name="current_price"
-                   placeholder="円" step="0.01">
+                   placeholder="{{ diary|currency_unit }}" step="0.01">
             <button type="button" class="btn btn-outline-primary" id="fetch-note-price" data-stock-symbol="{{ diary.stock_symbol }}">
               <i class="bi bi-arrow-repeat"></i>
               <span class="d-none d-sm-inline ms-1">取得</span>
@@ -3670,11 +3670,12 @@ window.showReportModal = function(el) {
     if (isNaN(num)) return;
 
     var prefix = num >= 0 ? '+' : '';
-    profitEl.textContent = prefix + '0円';
+    var currencyUnit = '{{ diary|currency_unit }}';
+    profitEl.textContent = prefix + '0' + currencyUnit;
 
     /* アニメーション開始を少し遅らせる */
     setTimeout(function () {
-      animateCountUp(profitEl, num, 900, prefix, '円');
+      animateCountUp(profitEl, num, 900, prefix, currencyUnit);
     }, 300);
   }
 

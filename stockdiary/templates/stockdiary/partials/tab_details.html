@@ -67,7 +67,7 @@
             平均単価
           </div>
           <div class="summary-value">
-            {{ diary.average_purchase_price|floatformat:2|intcomma }}円
+            {{ diary.average_purchase_price|floatformat:2|intcomma }}{{ diary|currency_unit }}
           </div>
         </div>
         {% endif %}
@@ -79,7 +79,7 @@
             実現損益
           </div>
           <div class="summary-value {% if diary.realized_profit > 0 %}text-success{% elif diary.realized_profit < 0 %}text-danger{% endif %}">
-            {% if diary.realized_profit > 0 %}+{% endif %}{{ diary.realized_profit|intcomma_float:0 }}円
+            {% if diary.realized_profit > 0 %}+{% endif %}{{ diary.realized_profit|intcomma_float:0 }}{{ diary|currency_unit }}
           </div>
         </div>
         {% endif %}
@@ -103,10 +103,10 @@
             </div>
             <div class="text-end">
               <div class="small">
-                {{ transaction.price|floatformat:2|intcomma }}円 × {{ transaction.quantity|floatformat:0 }}株
+                {{ transaction.price|floatformat:2|intcomma }}{{ diary|currency_unit }} × {{ transaction.quantity|floatformat:0 }}株
               </div>
               <div class="small text-muted">
-                計: {{ transaction.amount|intcomma_float:0 }}円
+                計: {{ transaction.amount|intcomma_float:0 }}{{ diary|currency_unit }}
               </div>
             </div>
           </div>

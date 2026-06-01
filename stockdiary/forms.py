@@ -3,6 +3,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.core.validators import ProhibitNullCharactersValidator, MaxLengthValidator
 from .models import StockDiary, Transaction, StockSplit, DiaryNote, sanitize_text_content
+from .utils import detect_currency
 from tags.models import Tag
 from decimal import Decimal
 
@@ -48,7 +49,7 @@ class StockDiaryForm(forms.ModelForm):
             'min': '0.01',
             'placeholder': '例: 1000.00'
         }),
-        label="購入単価（円）"
+        label="購入単価"
     )
     
     initial_purchase_quantity = forms.DecimalField(
@@ -67,7 +68,7 @@ class StockDiaryForm(forms.ModelForm):
     class Meta:
         model = StockDiary
         fields = [
-            'stock_symbol', 'stock_name', 'reason',
+            'stock_symbol', 'stock_name', 'currency', 'reason',
             'memo', 'tags', 'sector'
         ]
         widgets = {
@@ -76,6 +77,7 @@ class StockDiaryForm(forms.ModelForm):
                 'placeholder': '日本株: 7203 など',
                 'maxlength': '50',
             }),
+            'currency': forms.Select(attrs={'class': 'form-select'}),
             'stock_name': forms.TextInput(attrs={
                 'class': 'form-control', 
                 'required': 'required',
@@ -111,8 +113,11 @@ class StockDiaryForm(forms.ModelForm):
         
         # ラベル設定
         self.fields['stock_symbol'].label = "銘柄コード（任意）"
-        self.fields['stock_symbol'].help_text = "米国株も検索可能ですが、為替対応はありません。"
+        self.fields['stock_symbol'].help_text = "日本株コードは円建て、それ以外は米ドル建てとして自動判定します。"
         self.fields['stock_symbol'].required = False
+        self.fields['currency'].label = "通貨"
+        self.fields['currency'].help_text = "銘柄コードから自動判定されます。必要に応じて変更できます。"
+        self.fields['currency'].required = False
         self.fields['reason'].label = "投資理由 / 分析内容"
         self.fields['reason'].help_text = "Markdown対応。タグは @タグ名 の形式で記述すると検索可能になります（例: @成長株 @配当）"
         self.fields['memo'].label = "追加メモ"
@@ -180,8 +185,18 @@ class StockDiaryForm(forms.ModelForm):
                 self.add_error('initial_purchase_quantity', '購入数量を入力してください')
             elif initial_quantity <= 0:
                 self.add_error('initial_purchase_quantity', '購入数量は正の数を入力してください')
-        
+
         return cleaned_data
+
+    def save(self, commit=True):
+        diary = super().save(commit=False)
+        # 新規作成時は銘柄コードから通貨を自動判定（編集時はフォームの値を尊重＝手動上書き可）
+        if diary._state.adding:
+            diary.currency = detect_currency(diary.stock_symbol)
+        if commit:
+            diary.save()
+            self.save_m2m()
+        return diary
 
 
 class TransactionForm(forms.ModelForm):
@@ -226,7 +241,7 @@ class TransactionForm(forms.ModelForm):
         labels = {
             'transaction_type': '取引種別',
             'transaction_date': '取引日',
-            'price': '単価（円）',
+            'price': '単価',
             'quantity': '数量（株）',
             'memo': 'メモ'
         }
@@ -239,7 +254,11 @@ class TransactionForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.diary = kwargs.pop('diary', None)
         super(TransactionForm, self).__init__(*args, **kwargs)
-        
+
+        # 取引対象の日記の通貨に合わせて単価ラベルを切り替える
+        if self.diary is not None:
+            self.fields['price'].label = f'単価（{self.diary.currency_unit}）'
+
         # 初期値設定（新規作成時）
         if not self.instance.pk:
             from django.utils import timezone
@@ -253,7 +272,7 @@ class TransactionForm(forms.ModelForm):
             if price <= 0:
                 raise ValidationError('単価は正の数を入力してください')
             if price > Decimal('9999999.99'):
-                raise ValidationError('単価は999万9999円以下で入力してください')
+                raise ValidationError('単価は9999999.99以下で入力してください')
         return price
 
     def clean_quantity(self):
