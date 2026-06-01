@@ -49,6 +49,28 @@ def extract_hashtags(text: str) -> List[str]:
     return unique_tags
 
 
+def is_japanese_stock(code: str) -> bool:
+    """日本株コードか判定（例: 7203, 262A, 1234D など数字+任意1文字）"""
+    if not code:
+        return False
+    return bool(re.fullmatch(r'\d{3,4}[A-Z]?', code, re.IGNORECASE))
+
+
+def detect_currency(stock_symbol: str) -> str:
+    """銘柄コードから通貨を判定する。
+
+    日本株コード（数字3〜4桁+任意1文字）なら 'JPY'、
+    それ以外（米国株ティッカー等）は 'USD' とみなす。
+
+    Args:
+        stock_symbol: 銘柄コード（例: '7203', 'AAPL'）
+
+    Returns:
+        'JPY' または 'USD'
+    """
+    return 'JPY' if is_japanese_stock(stock_symbol) else 'USD'
+
+
 def get_all_hashtags_from_queryset(queryset) -> List[dict]:
     """
     QuerySetから全てのハッシュタグを抽出し、使用回数とともに返す

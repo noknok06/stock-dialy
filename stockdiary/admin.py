@@ -21,7 +21,7 @@ class TransactionInline(admin.TabularInline):
         """取引金額を表示"""
         if obj.price and obj.quantity:
             amount = obj.price * obj.quantity
-            return f'¥{amount:,.0f}'
+            return f'{obj.diary.currency_symbol}{amount:,.0f}'
         return '-'
     amount_display.short_description = '金額'
 
@@ -162,7 +162,7 @@ class StockDiaryAdmin(admin.ModelAdmin):
     def average_price_display(self, obj):
         """平均取得単価を表示"""
         if obj.average_purchase_price:
-            return f'¥{obj.average_purchase_price:,.2f}'
+            return f'{obj.currency_symbol}{obj.average_purchase_price:,.2f}'
         return '-'
     average_price_display.short_description = '平均単価'
     average_price_display.admin_order_field = 'average_purchase_price'
@@ -170,8 +170,8 @@ class StockDiaryAdmin(admin.ModelAdmin):
     def realized_profit_display(self, obj):
         """実現損益を色付きで表示"""
         if obj.realized_profit == 0:
-            return '¥0'
-        
+            return f'{obj.currency_symbol}0'
+
         color = '#28a745' if obj.realized_profit > 0 else '#dc3545'
         sign = '+' if obj.realized_profit > 0 else ''
         
@@ -184,8 +184,8 @@ class StockDiaryAdmin(admin.ModelAdmin):
         # ✅ 修正: 数値を先にフォーマットしてから連結
         return format_html(
             '<span style="color: {}; font-weight: bold;">{}</span>',
-            color, 
-            f'{sign}{obj.realized_profit:,.0f}円'
+            color,
+            f'{sign}{obj.realized_profit:,.0f}{obj.currency_unit}'
         )
     realized_profit_display.short_description = '実現損益'
     realized_profit_display.admin_order_field = 'realized_profit'
@@ -211,7 +211,7 @@ class StockDiaryAdmin(admin.ModelAdmin):
             print(f"\n=== {diary.stock_name} の取引順序 ===")
             for i, t in enumerate(transactions, 1):
                 print(f"{i}. {t.transaction_date} {t.get_transaction_type_display()} "
-                    f"{t.quantity}株 @ {t.price}円 (作成: {t.created_at})")
+                    f"{t.quantity}株 @ {t.price}{diary.currency_unit} (作成: {t.created_at})")
             
             diary.update_aggregates()
             
@@ -343,19 +343,19 @@ class TransactionAdmin(admin.ModelAdmin):
     
     def price_display(self, obj):
         """単価を表示"""
-        return f'¥{obj.price:,.2f}'
+        return f'{obj.diary.currency_symbol}{obj.price:,.2f}'
     price_display.short_description = '単価'
     price_display.admin_order_field = 'price'
-    
+
     def quantity_display(self, obj):
         """数量を表示"""
         return f'{obj.quantity:,.2f}株'
     quantity_display.short_description = '数量'
     quantity_display.admin_order_field = 'quantity'
-    
+
     def amount_display(self, obj):
         """金額を表示"""
-        return f'¥{obj.amount:,.0f}'
+        return f'{obj.diary.currency_symbol}{obj.amount:,.0f}'
     amount_display.short_description = '金額'
     
     def quantity_after_display(self, obj):
@@ -540,7 +540,7 @@ class DiaryNoteAdmin(admin.ModelAdmin):
     def current_price_display(self, obj):
         """記録時価格を表示"""
         if obj.current_price:
-            return f'¥{obj.current_price:,.2f}'
+            return f'{obj.diary.currency_symbol}{obj.current_price:,.2f}'
         return '-'
     current_price_display.short_description = '記録時価格'
     current_price_display.admin_order_field = 'current_price'

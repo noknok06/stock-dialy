@@ -904,26 +904,29 @@ function renderDiaryList(diaries, stockName) {
             statusBadge = '<span class="badge bg-light text-dark">-</span>';
         }
         
+        // 通貨単位（為替変換なし・元通貨で表示）
+        const cur = diary.currency_unit || '円';
+
         // 購入情報の作成
         let purchaseInfo = '';
         if (diary.average_purchase_price && diary.current_quantity) {
             const avgPrice = parseFloat(diary.average_purchase_price);
             const currentQty = parseFloat(diary.current_quantity);
-            purchaseInfo = `平均単価: ${avgPrice.toLocaleString()}円 / 保有数: ${currentQty.toFixed(2)}株`;
+            purchaseInfo = `平均単価: ${avgPrice.toLocaleString()}${cur} / 保有数: ${currentQty.toFixed(2)}株`;
         } else if (diary.total_buy_amount) {
             const totalBuy = parseFloat(diary.total_buy_amount);
-            purchaseInfo = `総購入額: ${totalBuy.toLocaleString()}円`;
+            purchaseInfo = `総購入額: ${totalBuy.toLocaleString()}${cur}`;
         } else {
             purchaseInfo = '取引情報なし';
         }
-        
+
         // 売却情報の作成
         let sellInfo = '';
         if (diary.is_sold_out && diary.realized_profit !== null && diary.realized_profit !== undefined) {
             const profit = parseFloat(diary.realized_profit);
             const profitClass = profit > 0 ? 'text-success' : (profit < 0 ? 'text-danger' : 'text-muted');
             const profitSign = profit > 0 ? '+' : '';
-            sellInfo = `<div class="small ${profitClass} mt-1">実現損益: ${profitSign}${profit.toLocaleString()}円</div>`;
+            sellInfo = `<div class="small ${profitClass} mt-1">実現損益: ${profitSign}${profit.toLocaleString()}${cur}</div>`;
         }
         
         // 日付の表示

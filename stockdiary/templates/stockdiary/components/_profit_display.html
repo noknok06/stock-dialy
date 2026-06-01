@@ -1,20 +1,20 @@
 {% load stockdiary_filters %}
 {% load humanize %}
 
-{% with display_style=style|default:"inline" decimal_places=decimals|default:0 show_sign=always_show_sign|default:True %}
+{% with display_style=style|default:"inline" decimal_places=decimals|default:0 show_sign=always_show_sign|default:True currency_unit=currency|default:"円" %}
 
 {% if profit is not None %}
   {% if display_style == "badge" %}
     <span class="badge {% if profit > 0 %}bg-success{% elif profit < 0 %}bg-danger{% else %}bg-secondary{% endif %} {% if size %}badge-{{ size }}{% endif %}"
           data-profit-value="{{ profit|floatformat:0 }}"
           data-profit-prefix="{% if profit > 0 and show_sign %}+{% endif %}"
-          data-profit-suffix="円">
+          data-profit-suffix="{{ currency_unit }}">
       {% if show_icon %}
         {% if profit > 0 %}<i class="bi bi-graph-up-arrow me-1"></i>
         {% elif profit < 0 %}<i class="bi bi-graph-down-arrow me-1"></i>
         {% endif %}
       {% endif %}
-      {% if profit > 0 and show_sign %}+{% endif %}{{ profit|intcomma_float:decimal_places }}円
+      {% if profit > 0 and show_sign %}+{% endif %}{{ profit|intcomma_float:decimal_places }}{{ currency_unit }}
     </span>
     
   {% elif display_style == "card" %}
@@ -23,7 +23,7 @@
       <div class="profit-label">{{ label }}</div>
       {% endif %}
       <div class="profit-value">
-        {% if profit > 0 and show_sign %}+{% endif %}{{ profit|intcomma_float:decimal_places }}<span class="profit-unit">円</span>
+        {% if profit > 0 and show_sign %}+{% endif %}{{ profit|intcomma_float:decimal_places }}<span class="profit-unit">{{ currency_unit }}</span>
       </div>
     </div>
     
@@ -36,7 +36,7 @@
         {% elif profit < 0 %}<i class="bi bi-graph-down-arrow me-1"></i>
         {% endif %}
       {% endif %}
-      {% if profit > 0 and show_sign %}+{% endif %}{{ profit|intcomma_float:decimal_places }}円
+      {% if profit > 0 and show_sign %}+{% endif %}{{ profit|intcomma_float:decimal_places }}{{ currency_unit }}
     </span>
   {% endif %}
 {% endif %}

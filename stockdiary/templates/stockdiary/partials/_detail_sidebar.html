@@ -35,7 +35,7 @@
     <div class="profit-value">
       <span class="profit-icon">{% if diary.realized_profit > 0 %}↗{% else %}↘{% endif %}</span>
       <span>{{ diary.realized_profit|floatformat:0|intcomma }}</span>
-      <span class="profit-unit">円</span>
+      <span class="profit-unit">{{ diary|currency_unit }}</span>
     </div>
   </div>
   {% endif %}
@@ -44,7 +44,7 @@
     <div class="sidebar-metric">
       <div class="sidebar-metric-label">平均取得単価</div>
       <div class="sidebar-metric-value">
-        {{ diary.average_purchase_price|floatformat:2|intcomma }}<span class="unit">円</span>
+        {{ diary.average_purchase_price|floatformat:2|intcomma }}<span class="unit">{{ diary|currency_unit }}</span>
       </div>
     </div>
     {% if diary.current_quantity > 0 %}
@@ -59,7 +59,7 @@
     <div class="sidebar-metric">
       <div class="sidebar-metric-label">取得総額</div>
       <div class="sidebar-metric-value">
-        {{ diary.total_cost|floatformat:0|intcomma }}<span class="unit">円</span>
+        {{ diary.total_cost|floatformat:0|intcomma }}<span class="unit">{{ diary|currency_unit }}</span>
       </div>
     </div>
     {% endif %}
@@ -67,7 +67,7 @@
     <div class="sidebar-metric">
       <div class="sidebar-metric-label">実現損益</div>
       <div class="sidebar-metric-value {% if diary.realized_profit > 0 %}positive{% elif diary.realized_profit < 0 %}negative{% endif %}">
-        {{ diary.realized_profit|floatformat:0|intcomma }}<span class="unit">円</span>
+        {{ diary.realized_profit|floatformat:0|intcomma }}<span class="unit">{{ diary|currency_unit }}</span>
       </div>
     </div>
     {% endif %}
@@ -115,7 +115,7 @@
       <span class="text-truncate" style="flex:1;">{{ rd.stock_name }}</span>
       {% if rd.realized_profit %}
       <span style="font-size:0.75rem; {% if rd.realized_profit > 0 %}color:var(--success-color){% else %}color:var(--danger-color){% endif %}; white-space:nowrap;">
-        {{ rd.realized_profit|floatformat:0|intcomma }}円
+        {{ rd.realized_profit|floatformat:0|intcomma }}{{ rd|currency_unit }}
       </span>
       {% endif %}
     </a>

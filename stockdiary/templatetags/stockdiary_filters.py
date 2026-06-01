@@ -10,6 +10,32 @@ import bleach
 
 register = template.Library()
 
+
+def _currency_code(obj):
+    """日記オブジェクト・文字列・dict から通貨コード（JPY/USD）を取り出す"""
+    if obj is None:
+        return 'JPY'
+    # StockDiary など currency 属性を持つオブジェクト
+    code = getattr(obj, 'currency', None)
+    if code is None and isinstance(obj, dict):
+        code = obj.get('currency')
+    if code is None and isinstance(obj, str):
+        code = obj
+    return code if code in ('JPY', 'USD') else 'JPY'
+
+
+@register.filter(name='currency_symbol')
+def currency_symbol(obj):
+    """通貨記号（¥ / $）を返す。日記オブジェクトまたは通貨コードを受け取る。"""
+    return '$' if _currency_code(obj) == 'USD' else '¥'
+
+
+@register.filter(name='currency_unit')
+def currency_unit(obj):
+    """通貨の接尾辞（円 / ドル）を返す。日記オブジェクトまたは通貨コードを受け取る。"""
+    return 'ドル' if _currency_code(obj) == 'USD' else '円'
+
+
 @register.filter(name='get_item')
 def get_item(dictionary, key):
     """辞書からキーの値を取得するカスタムフィルタ"""

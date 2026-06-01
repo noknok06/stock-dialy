@@ -42,7 +42,7 @@
     {% if note.current_price %}
     <div class="note-price">
       <span class="price-label">記録時</span>
-      <span class="price-value">{{ note.current_price|floatformat:0|intcomma }}円</span>
+      <span class="price-value">{{ note.current_price|floatformat:0|intcomma }}{{ diary|currency_unit }}</span>
       
       {% with change=note.get_price_change %}
         {% if change %}
