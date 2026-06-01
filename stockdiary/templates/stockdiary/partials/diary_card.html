@@ -77,7 +77,7 @@
         <span class="search-hit-badge"><i class="bi bi-journal-text"></i>日記に一致</span>
       {% endif %}
       {% if diary.match_note %}
-        <span class="search-hit-badge search-hit-badge--note"><i class="bi bi-journals"></i>継続記録に一致</span>
+        <span class="search-hit-badge search-hit-badge--note"><i class="bi bi-journals"></i>継続記録{% if diary.match_note_count > 1 %} {{ diary.match_note_count }}件{% endif %}に一致</span>
       {% endif %}
     </div>
     {% endif %}
@@ -106,22 +106,22 @@
 
   <!-- ========== タブナビゲーション ========== -->
   <nav class="diary-tabs" role="tablist">
-    <button class="tab-btn active" 
+    <button class="tab-btn{% if not diary.notes_first %} active{% endif %}"
             data-tab="reason-{{ diary.id }}"
             role="tab"
-            aria-selected="true"
+            aria-selected="{% if diary.notes_first %}false{% else %}true{% endif %}"
             aria-controls="reason-{{ diary.id }}">
       <i class="bi bi-journal-text"></i>
       <span class="tab-label">{% if diary.is_memo %}メモ{% else %}理由{% endif %}</span>
     </button>
-    
+
     {% if diary.notes.exists %}
-    <button class="tab-btn" 
+    <button class="tab-btn{% if diary.notes_first %} active{% endif %}"
             data-tab="notes-{{ diary.id }}"
             data-diary-id="{{ diary.id }}"
             data-loaded="false"
             role="tab"
-            aria-selected="false"
+            aria-selected="{% if diary.notes_first %}true{% else %}false{% endif %}"
             aria-controls="notes-{{ diary.id }}">
       <i class="bi bi-journals"></i>
       <span class="tab-label">継続</span>
@@ -148,9 +148,10 @@
   <div class="diary-tab-content">
     
     <!-- 理由タブ -->
-    <div class="tab-panel active"
+    <div class="tab-panel{% if not diary.notes_first %} active{% endif %}"
          id="reason-{{ diary.id }}"
-         role="tabpanel">
+         role="tabpanel"
+         {% if diary.notes_first %}style="display: none;"{% endif %}>
 
       <!-- 省略テキスト: タップで展開（150文字超の場合のみ） -->
       <div class="panel-text markdown-content{% if diary.reason|length > 150 %} panel-text--truncated{% endif %}"
@@ -185,10 +186,10 @@
 
     <!-- 継続記録タブ -->
     {% if diary.notes.exists %}
-    <div class="tab-panel"
+    <div class="tab-panel{% if diary.notes_first %} active panel-scrollable{% endif %}"
          id="notes-{{ diary.id }}"
          role="tabpanel"
-         style="display: none;">
+         style="display: {% if diary.notes_first %}block{% else %}none{% endif %};">
       <div class="panel-skeleton">
         <div class="skeleton-line skeleton-line--lg"></div>
         <div class="skeleton-line skeleton-line--md"></div>

@@ -166,7 +166,9 @@ def annotate_search_matches(diaries, query: str):
         - match_name:         銘柄名・銘柄コードに一致したか（bool）
         - match_body:         投資理由・メモ・業種に一致したか（bool）
         - match_note:         一致した継続記録（DiaryNote）または None
+        - match_note_count:   一致した継続記録の件数（int）
         - match_note_snippet: 一致した継続記録本文の抜粋（str）
+        - notes_first:        継続記録だけに一致した場合 True（カードの既定タブ制御用）
 
     queryset は prefetch_related('notes') 済みであることを前提とし、
     追加クエリを発行しない（表示中のページ分のみを対象に Python で判定）。
@@ -184,7 +186,9 @@ def annotate_search_matches(diaries, query: str):
             diary.match_name = False
             diary.match_body = False
             diary.match_note = None
+            diary.match_note_count = 0
             diary.match_note_snippet = ''
+            diary.notes_first = False
             continue
 
         ql = q.lstrip('@').strip().lower() if q.startswith('@') else q.lower()
@@ -199,17 +203,17 @@ def annotate_search_matches(diaries, query: str):
             or ql in (diary.sector or '').lower()
         )
 
-        match_note = None
-        snippet = ''
-        for note in diary.notes.all():
-            content = note.content or ''
-            topic = note.topic or ''
-            if ql in content.lower() or ql in topic.lower():
-                match_note = note
-                snippet = _make_search_snippet(content, ql)
-                break
-        diary.match_note = match_note
-        diary.match_note_snippet = snippet
+        matched_notes = [
+            note for note in diary.notes.all()
+            if ql in (note.content or '').lower() or ql in (note.topic or '').lower()
+        ]
+        diary.match_note = matched_notes[0] if matched_notes else None
+        diary.match_note_count = len(matched_notes)
+        diary.match_note_snippet = (
+            _make_search_snippet(matched_notes[0].content or '', ql) if matched_notes else ''
+        )
+        # 継続記録だけに一致した場合は、カードの既定タブを「継続」にする
+        diary.notes_first = bool(matched_notes) and not diary.match_name and not diary.match_body
 
     return diaries
 
