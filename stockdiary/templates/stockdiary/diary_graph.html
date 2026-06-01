@@ -118,18 +118,22 @@
 
   <!-- フォーカスモードバナー -->
   <div id="focus-mode-banner" class="focus-mode-banner" style="display:none;" role="status" aria-live="polite">
-    <i class="bi bi-crosshair me-2 text-primary"></i>
-    <span id="focus-banner-label" class="fw-semibold me-1"></span>の関連のみ表示中
-    <span id="focus-banner-count" class="badge bg-primary ms-2"></span>
-    <label class="ms-3 me-1 small text-muted" for="focus-depth-select">深さ</label>
-    <select id="focus-depth-select" class="form-select form-select-sm" style="width:auto;" title="間接的に繋がる要素を何ホップ先まで表示するか">
-      <option value="1">1 ホップ</option>
-      <option value="2" selected>2 ホップ</option>
-      <option value="3">3 ホップ</option>
-    </select>
-    <button id="focus-banner-exit" class="btn btn-sm btn-outline-secondary ms-auto" type="button">
-      <i class="bi bi-x me-1"></i>解除
-    </button>
+    <div class="focus-banner-info">
+      <i class="bi bi-crosshair text-primary"></i>
+      <span><span id="focus-banner-label" class="fw-semibold"></span>の関連のみ表示中</span>
+      <span id="focus-banner-count" class="badge bg-primary"></span>
+    </div>
+    <div class="focus-banner-controls">
+      <label class="focus-depth-label small text-muted" for="focus-depth-select">深さ</label>
+      <select id="focus-depth-select" class="form-select form-select-sm focus-depth-select" title="間接的に繋がる要素を何ホップ先まで表示するか">
+        <option value="1">1 ホップ</option>
+        <option value="2" selected>2 ホップ</option>
+        <option value="3">3 ホップ</option>
+      </select>
+      <button id="focus-banner-exit" class="btn btn-sm btn-outline-secondary" type="button">
+        <i class="bi bi-x me-1"></i>解除
+      </button>
+    </div>
   </div>
 
   <!-- グラフエリア（グラフ本体 + サイドパネル） -->
