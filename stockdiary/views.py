@@ -531,8 +531,9 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
             },
             {
                 'id': 'add-note',
-                'type': 'modal',
-                'modal_target': '#addNoteSheet',
+                'type': 'bottom-sheet',
+                'sheet_id': 'addNoteSheet',
+                'onclick': 'resetNoteFormToAdd();',
                 'icon': 'bi-chat-dots',
                 'label': '記録を追加',
                 'aria_label': '新しい継続記録を追加',
