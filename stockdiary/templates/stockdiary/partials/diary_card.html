@@ -66,6 +66,34 @@
     </div>
   </header>
 
+  <!-- ========== 検索ヒット箇所 ========== -->
+  {% if request.GET.query %}
+    {% if diary.match_name or diary.match_body or diary.match_note %}
+    <div class="diary-search-hits">
+      {% if diary.match_name %}
+        <span class="search-hit-badge"><i class="bi bi-bookmark-star"></i>銘柄名に一致</span>
+      {% endif %}
+      {% if diary.match_body %}
+        <span class="search-hit-badge"><i class="bi bi-journal-text"></i>日記に一致</span>
+      {% endif %}
+      {% if diary.match_note %}
+        <span class="search-hit-badge search-hit-badge--note"><i class="bi bi-journals"></i>継続記録に一致</span>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% if diary.match_note %}
+    <div class="diary-search-note-snippet">
+      <div class="snippet-meta">
+        <i class="bi bi-journals"></i>
+        {% if diary.match_note.topic %}<span class="snippet-topic">{{ diary.match_note.topic }}</span>{% endif %}
+        <span class="snippet-date">{{ diary.match_note.date|date:"Y/m/d" }}</span>
+      </div>
+      <div class="snippet-text">{{ diary.match_note_snippet|escape|highlight:request.GET.query }}</div>
+    </div>
+    {% endif %}
+  {% endif %}
+
   <!-- ========== 画像（あれば） ========== -->
   {% if diary.image_url %}
   <figure class="diary-figure">
