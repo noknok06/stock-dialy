@@ -1,6 +1,6 @@
 # earnings_analysis/services/gemini_service.py
 
-import google.generativeai as genai
+from google import genai
 from django.conf import settings
 from django.utils import timezone
 from typing import Dict, Any, Optional
@@ -20,6 +20,7 @@ class GeminiReportGenerator:
     def __init__(self):
         self.api_key = getattr(settings, 'GEMINI_API_KEY', None)
         self.api_available = self.api_key is not None
+        self.client = None
         self.model = None
         self.initialization_error = None
         
@@ -34,8 +35,8 @@ class GeminiReportGenerator:
             return
         
         try:
-            genai.configure(api_key=self.api_key)
-            self.model = genai.GenerativeModel(self.model_name)
+            self.client = genai.Client(api_key=self.api_key)
+            self.model = self.model_name
             logger.info(f"GEMINI API初期化完了: {self.model_name}")
         except Exception as e:
             logger.error(f"GEMINI API初期化エラー: {e}")
@@ -64,9 +65,10 @@ class GeminiReportGenerator:
             prompt = self._create_prompt(disclosure_dict, report_type)
             logger.info(f"レポート生成開始: {report_type}, model={self.model_name}")
             
-            response = self.model.generate_content(
-                prompt,
-                generation_config=genai.types.GenerationConfig(
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=prompt,
+                config=genai.types.GenerateContentConfig(
                     max_output_tokens=self.max_tokens,
                     temperature=self.temperature,
                 )

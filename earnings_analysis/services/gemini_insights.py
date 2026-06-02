@@ -1,5 +1,5 @@
 # earnings_analysis/services/gemini_insights.py（メタデータ強化版）
-import google.generativeai as genai
+from google import genai
 import logging
 from django.conf import settings
 from django.utils import timezone
@@ -16,17 +16,18 @@ class GeminiInsightsGenerator:
         # 環境変数からAPIキーを取得
         api_key = getattr(settings, 'GEMINI_API_KEY', None)
         self.api_available = api_key is not None
+        self.client = None
         self.model = None
         self.initialization_error = None
-        
+
         if not api_key:
             logger.warning("GEMINI_API_KEYが設定されていません")
             self.initialization_error = "API_KEY_MISSING"
             return
-        
+
         try:
-            genai.configure(api_key=api_key)
-            self.model = genai.GenerativeModel("gemini-2.5-flash-lite")
+            self.client = genai.Client(api_key=api_key)
+            self.model = "gemini-2.5-flash-lite"
             logger.info("Gemini APIが正常に初期化されました")
         except Exception as e:
             logger.error(f"Gemini API初期化エラー: {e}")
@@ -57,8 +58,8 @@ class GeminiInsightsGenerator:
             prompt = self._build_investment_prompt(analysis_result, document_info)
             
             logger.debug("Gemini APIにリクエスト送信中...")
-            response = self.model.generate_content(prompt)
-            
+            response = self.client.models.generate_content(model=self.model, contents=prompt)
+
             if hasattr(response, "text") and response.text:
                 logger.info("Gemini APIから有効な応答を受信")
                 parsed_result = self._parse_gemini_response(response.text, analysis_result)
