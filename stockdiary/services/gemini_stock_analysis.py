@@ -1,7 +1,7 @@
 """
 Gemini APIを使った複数銘柄の投資比較分析サービス
 """
-import google.generativeai as genai
+from google import genai
 import logging
 import json
 import re
@@ -17,6 +17,7 @@ class GeminiStockAnalyzer:
     def __init__(self):
         api_key = getattr(settings, 'GEMINI_API_KEY', None)
         self.api_available = bool(api_key)
+        self.client = None
         self.model = None
         self.initialization_error = None
 
@@ -26,8 +27,8 @@ class GeminiStockAnalyzer:
             return
 
         try:
-            genai.configure(api_key=api_key)
-            self.model = genai.GenerativeModel("gemini-2.5-flash-lite")
+            self.client = genai.Client(api_key=api_key)
+            self.model = "gemini-2.5-flash-lite"
             logger.info("GeminiStockAnalyzer: API初期化完了")
         except Exception as e:
             logger.error(f"Gemini初期化エラー: {e}")
@@ -60,7 +61,7 @@ class GeminiStockAnalyzer:
         prompt = self._build_prompt(stocks_data, news_map)
         try:
             logger.info(f"Gemini API呼び出し開始: {len(stocks_data)}銘柄")
-            response = self.model.generate_content(prompt)
+            response = self.client.models.generate_content(model=self.model, contents=prompt)
             if response.text:
                 parsed = self._parse_response(response.text, stocks_data)
                 if parsed.get('api_success'):

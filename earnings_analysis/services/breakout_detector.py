@@ -71,14 +71,15 @@ class BreakoutDetector:
 
     def _init_gemini(self):
         """Gemini API初期化（失敗してもデグレードしない）"""
+        self.client = None
         self.model = None
         api_key = getattr(settings, 'GEMINI_API_KEY', None)
         if not api_key:
             return
         try:
-            import google.generativeai as genai
-            genai.configure(api_key=api_key)
-            self.model = genai.GenerativeModel("gemini-2.5-flash-lite")
+            from google import genai
+            self.client = genai.Client(api_key=api_key)
+            self.model = "gemini-2.5-flash-lite"
         except Exception as e:
             logger.warning(f"BreakoutDetector Gemini初期化失敗（ルールベース分析のみ実行）: {e}")
 
@@ -302,7 +303,7 @@ class BreakoutDetector:
         """
         try:
             prompt = self._build_gemini_prompt(ai, pattern_keys, document_info)
-            response = self.model.generate_content(prompt)
+            response = self.client.models.generate_content(model=self.model, contents=prompt)
             if not response or not response.text:
                 return None
             return self._parse_gemini_response(response.text)

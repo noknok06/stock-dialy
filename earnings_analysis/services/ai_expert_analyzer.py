@@ -1,5 +1,5 @@
 # earnings_analysis/services/ai_expert_analyzer.py (API容量制限対応・専門家考察追加版)
-import google.generativeai as genai
+from google import genai
 import logging
 from django.conf import settings
 from django.utils import timezone
@@ -32,6 +32,7 @@ class AIExpertAnalyzer:
     def __init__(self):
         api_key = getattr(settings, 'GEMINI_API_KEY', None)
         self.api_available = api_key is not None
+        self.client = None
         self.model = None
         self.initialization_error = None
         self.last_api_error = None
@@ -46,14 +47,14 @@ class AIExpertAnalyzer:
             return
         
         try:
-            import google.generativeai as genai
-            genai.configure(api_key=api_key)
-            self.model = genai.GenerativeModel("gemini-2.5-flash-lite")
+            from google import genai
+            self.client = genai.Client(api_key=api_key)
+            self.model = "gemini-2.5-flash-lite"
             self.api_available = True
             logger.info("AI Expert Analyzer初期化成功")
-            
+
         except ImportError as e:
-            self.initialization_error = f"google-generativeaiモジュールがインストールされていません: {e}"
+            self.initialization_error = f"google-genaiモジュールがインストールされていません: {e}"
             logger.error(self.initialization_error)
             self.model = None
             self.api_available = False
@@ -164,7 +165,7 @@ class AIExpertAnalyzer:
             prompt = self._build_expert_analysis_prompt(document_text, document_info, basic_analysis)
             
             logger.info("Gemini API呼び出し開始...")
-            response = self.model.generate_content(prompt)
+            response = self.client.models.generate_content(model=self.model, contents=prompt)
             logger.info("Gemini API呼び出し完了")
             
             # レスポンスのエラーチェック
