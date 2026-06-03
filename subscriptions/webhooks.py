@@ -10,6 +10,7 @@ from django.views.decorators.http import require_POST
 from django.db import transaction
 from django.contrib.auth import get_user_model
 from django.utils import timezone
+from datetime import datetime, timezone as dt_timezone
 
 from subscriptions.models import SubscriptionPlan, UserSubscription, StripeCustomer, SubscriptionEvent
 from ads.models import UserAdPreference
@@ -94,8 +95,8 @@ def handle_checkout_session_completed(event):
             stripe_subscription = stripe.Subscription.retrieve(stripe_subscription_id)
             
             # 請求期間情報の保存
-            current_period_start = timezone.datetime.fromtimestamp(stripe_subscription.current_period_start, tz=timezone.utc)
-            current_period_end = timezone.datetime.fromtimestamp(stripe_subscription.current_period_end, tz=timezone.utc)
+            current_period_start = timezone.datetime.fromtimestamp(stripe_subscription.current_period_start, tz=dt_timezone.utc)
+            current_period_end = timezone.datetime.fromtimestamp(stripe_subscription.current_period_end, tz=dt_timezone.utc)
             
             # 顧客IDの保存
             customer_id = session.get('customer')
@@ -189,8 +190,8 @@ def handle_subscription_created(event):
             return
         
         # 請求期間情報の保存
-        current_period_start = timezone.datetime.fromtimestamp(subscription.get('current_period_start'), tz=timezone.utc)
-        current_period_end = timezone.datetime.fromtimestamp(subscription.get('current_period_end'), tz=timezone.utc)
+        current_period_start = timezone.datetime.fromtimestamp(subscription.get('current_period_start'), tz=dt_timezone.utc)
+        current_period_end = timezone.datetime.fromtimestamp(subscription.get('current_period_end'), tz=dt_timezone.utc)
         
         # サブスクリプション情報の取得または作成
         old_plan = None
@@ -272,10 +273,10 @@ def handle_subscription_updated(event):
         
         # 請求期間情報の更新
         if 'current_period_start' in subscription:
-            user_subscription.current_period_start = timezone.datetime.fromtimestamp(subscription.get('current_period_start'), tz=timezone.utc)
-        
+            user_subscription.current_period_start = timezone.datetime.fromtimestamp(subscription.get('current_period_start'), tz=dt_timezone.utc)
+            
         if 'current_period_end' in subscription:
-            user_subscription.current_period_end = timezone.datetime.fromtimestamp(subscription.get('current_period_end'), tz=timezone.utc)
+            user_subscription.current_period_end = timezone.datetime.fromtimestamp(subscription.get('current_period_end'), tz=dt_timezone.utc)
         
         if status == 'active':
             # アイテムから価格情報を取得

@@ -10,7 +10,9 @@ from django.utils.decorators import method_decorator
 from django.views import View
 import stripe
 from django.conf import settings
+
 from django.utils import timezone
+from datetime import datetime, timezone as dt_timezone
 
 from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import render, get_object_or_404, redirect
@@ -501,7 +503,7 @@ class DowngradeView(LoginRequiredMixin, TemplateView):
                     
                     # 次の請求日のタイムスタンプを取得
                     current_period_end = stripe_sub.current_period_end
-                    end_date = timezone.datetime.fromtimestamp(current_period_end, tz=timezone.utc)
+                    end_date = timezone.datetime.fromtimestamp(current_period_end, tz=dt_timezone.utc)
                     
                     # 次の請求日にダウングレードするようスケジュール
                     subscription.scheduled_downgrade_to = free_plan
@@ -1172,8 +1174,8 @@ def admin_sync_subscription(request, id):
         # ステータスが active の場合のみ更新
         if stripe_sub.status == 'active':
             # 請求期間情報の更新
-            subscription.current_period_start = timezone.datetime.fromtimestamp(stripe_sub.current_period_start, tz=timezone.utc)
-            subscription.current_period_end = timezone.datetime.fromtimestamp(stripe_sub.current_period_end, tz=timezone.utc)
+            subscription.current_period_start = timezone.datetime.fromtimestamp(stripe_sub.current_period_start, tz=dt_timezone.utc)
+            subscription.current_period_end = timezone.datetime.fromtimestamp(stripe_sub.current_period_end, tz=dt_timezone.utc)
             
             # キャンセル予定の確認
             if stripe_sub.cancel_at_period_end and not subscription.scheduled_downgrade_to:

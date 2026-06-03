@@ -6,6 +6,7 @@ from django.db.models import Q, Count, Avg, F, Sum, Min, Max, Case, When, Value,
 from django.db.models.functions import Coalesce
 from django.db.models.functions import TruncMonth, ExtractWeekDay, Length
 from django.utils import timezone
+from datetime import datetime, timezone as dt_timezone
 from django.utils.html import strip_tags
 from django.utils.safestring import mark_safe
 from django.template.defaultfilters import truncatechars_html
@@ -1267,7 +1268,7 @@ class DiarySummaryView(LoginRequiredMixin, TemplateView):
                 or search_query.lower() in s['symbol'].lower()
             ]
 
-        _epoch = timezone.datetime(1970, 1, 1, tzinfo=timezone.utc)
+        _epoch = datetime(1970, 1, 1, tzinfo=dt_timezone.utc)
         sort_mapping = {
             'updated_desc': (lambda x: x['latest_date'] or _epoch, True),
             'updated_asc': (lambda x: x['latest_date'] or _epoch, False),
