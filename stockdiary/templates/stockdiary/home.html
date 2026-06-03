@@ -1228,6 +1228,275 @@ button.read-more { font-family: inherit; cursor: pointer; }
   color: #fff;
 }
 
+/* ============================================
+   日記一覧 リニューアル スタイル
+   ============================================ */
+
+/* ── ページ見出しのサブタイトル ── */
+.diary-page-header .page-header-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.diary-page-header .page-title {
+  margin-bottom: 0;
+  letter-spacing: -0.01em;
+}
+
+.page-subtitle {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-200);
+  line-height: 1.4;
+}
+
+.page-subtitle-dot {
+  margin: 0 0.35rem;
+  opacity: 0.55;
+}
+
+.page-subtitle-count {
+  font-weight: 600;
+  color: var(--text-100);
+}
+
+.dark-mode .page-subtitle,
+[data-theme="dark"] .page-subtitle { color: var(--dm-muted-foreground); }
+
+.dark-mode .page-subtitle-count,
+[data-theme="dark"] .page-subtitle-count { color: var(--dm-foreground); }
+
+/* ── サイドバー「よく使う」プリセット ── */
+.sidebar-preset-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.sidebar-preset-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  background: transparent;
+  border: 1px solid var(--bg-300);
+  border-radius: var(--radius-md);
+  color: var(--text-100);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.sidebar-preset-btn i { color: var(--accent-200); font-size: 0.95rem; }
+
+.sidebar-preset-btn:hover {
+  background: var(--bg-200);
+  border-color: var(--accent-200);
+}
+
+.sidebar-preset-btn.is-active {
+  background: rgba(0, 102, 140, 0.08);
+  border-color: var(--accent-200);
+  color: var(--accent-200);
+}
+
+.dark-mode .sidebar-preset-btn,
+[data-theme="dark"] .sidebar-preset-btn {
+  background: transparent;
+  border-color: var(--dm-border);
+  color: var(--dm-foreground);
+}
+
+.dark-mode .sidebar-preset-btn:hover,
+[data-theme="dark"] .sidebar-preset-btn:hover {
+  background: var(--dm-bg-200);
+}
+
+/* ── サイドバー「ステータス」（件数バッジ付きラジオ） ── */
+.sidebar-status-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.sidebar-status-option {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  user-select: none;
+}
+
+.sidebar-status-option:hover { background: var(--bg-200); }
+
+.sidebar-status-option.is-selected {
+  background: rgba(0, 102, 140, 0.08);
+  color: var(--accent-200);
+  font-weight: 600;
+}
+
+.sidebar-status-radio {
+  accent-color: var(--accent-200);
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.sidebar-status-label {
+  flex: 1;
+  font-size: 0.875rem;
+}
+
+.sidebar-status-count {
+  font-size: 0.825rem;
+  color: var(--text-200);
+  font-variant-numeric: tabular-nums;
+}
+
+.sidebar-status-option.is-selected .sidebar-status-count {
+  color: var(--accent-200);
+}
+
+.dark-mode .sidebar-status-option:hover,
+[data-theme="dark"] .sidebar-status-option:hover { background: var(--dm-bg-200); }
+
+.dark-mode .sidebar-status-count,
+[data-theme="dark"] .sidebar-status-count { color: var(--dm-muted-foreground); }
+
+/* ── サイドバー：折りたたみセクション ── */
+.sidebar-details > summary.sidebar-details-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  list-style: none;
+  margin-bottom: 0.5rem;
+  user-select: none;
+}
+
+.sidebar-details > summary.sidebar-details-summary::-webkit-details-marker { display: none; }
+
+.sidebar-details > summary.sidebar-details-summary::after {
+  content: "";
+  display: inline-block;
+  width: 0;
+  height: 0;
+  margin-left: 0.2rem;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid currentColor;
+  opacity: 0.55;
+  transition: transform 0.15s ease;
+}
+
+.sidebar-details[open] > summary.sidebar-details-summary::after {
+  transform: rotate(180deg);
+}
+
+.sidebar-details-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.25rem;
+}
+
+/* ── モバイル：ステータスタブの件数バッジ ── */
+.status-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.status-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: rgba(0, 0, 0, 0.08);
+  color: var(--text-200);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.6;
+  font-variant-numeric: tabular-nums;
+}
+
+.status-tab.active .status-tab-count {
+  background: rgba(255, 255, 255, 0.25);
+  color: white;
+}
+
+.dark-mode .status-tab-count,
+[data-theme="dark"] .status-tab-count {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--dm-muted-foreground);
+}
+
+/* ── モバイル：直近ハッシュタグチップ ── */
+.recent-hashtag-chips {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+
+.recent-hashtag-chips::-webkit-scrollbar { display: none; }
+
+.recent-hashtag-chip {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--bg-300);
+  border-radius: 999px;
+  background: var(--bg-100);
+  color: var(--text-100);
+  font-size: 0.825rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
+}
+
+.recent-hashtag-chip:hover {
+  background: var(--bg-200);
+  border-color: var(--accent-200);
+}
+
+.recent-hashtag-chip.is-active {
+  background: var(--accent-200);
+  border-color: var(--accent-200);
+  color: white;
+}
+
+.recent-hashtag-at {
+  margin-right: 1px;
+  opacity: 0.7;
+  font-weight: 600;
+}
+
+.dark-mode .recent-hashtag-chip,
+[data-theme="dark"] .recent-hashtag-chip {
+  background: var(--dm-bg-200);
+  border-color: var(--dm-border);
+  color: var(--dm-foreground);
+}
+
+.dark-mode .recent-hashtag-chip:hover,
+[data-theme="dark"] .recent-hashtag-chip:hover {
+  border-color: var(--accent-200);
+}
+
 </style>
 {% endblock %}
 
@@ -1269,108 +1538,147 @@ button.read-more { font-family: inherit; cursor: pointer; }
              placeholder="銘柄名・投資理由・継続記録・@タグ" name="query">
     </div>
 
-    <!-- 2. よく使う検索プリセット -->
+    <!-- 2. よく使う -->
     <div class="sidebar-section">
       <label class="sidebar-label">
-        <i class="bi bi-star"></i> よく使う検索
+        <i class="bi bi-star"></i> よく使う
       </label>
-      <div class="d-flex flex-column gap-2">
-        <button type="button" class="btn btn-sm btn-outline-secondary text-start"
+      <div class="sidebar-preset-list">
+        <button type="button" class="sidebar-preset-btn{% if request.GET.sort == 'date_desc' %} is-active{% endif %}"
                 onclick="applyQuickSearch('recent')">
-          <i class="bi bi-clock-history me-1"></i>最近更新
+          <i class="bi bi-clock-history"></i>
+          <span>最近更新</span>
         </button>
-        <button type="button" class="btn btn-sm btn-outline-secondary text-start"
+        <button type="button" class="sidebar-preset-btn{% if request.GET.sort == 'profit_desc' %} is-active{% endif %}"
                 onclick="applyQuickSearch('profit')">
-          <i class="bi bi-graph-up me-1"></i>含み益大
+          <i class="bi bi-graph-up-arrow"></i>
+          <span>含み益が大きい</span>
         </button>
       </div>
     </div>
 
-    <!-- 3. フィルターセクション -->
+    <!-- 3. ステータス（件数バッジ付き） -->
     <div class="sidebar-section">
       <label class="sidebar-label">
-        <i class="bi bi-funnel"></i> フィルター
+        <i class="bi bi-funnel"></i> ステータス
       </label>
-      <div>
-        <label class="filter-group-label" for="sidebarStatusFilter">ステータス</label>
-        <select class="form-select form-select-sm sidebar-filter" id="sidebarStatusFilter" name="status">
-          <option value="all" {% if request.GET.status == 'all' or not request.GET.status %}selected{% endif %}>すべて</option>
-          <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>保有中</option>
-          <option value="sold" {% if request.GET.status == 'sold' %}selected{% endif %}>売却済み</option>
-          <option value="memo" {% if request.GET.status == 'memo' %}selected{% endif %}>メモのみ</option>
-        </select>
-      </div>
-
-      <div>
-        <label class="filter-group-label" for="sidebarTagFilter">タグ</label>
-        <select class="form-select form-select-sm sidebar-filter" id="sidebarTagFilter" name="tag">
-          <option value="">すべてのタグ</option>
-          {% for tag in tags %}
-            <option value="{{ tag.id }}"
-              {% if request.GET.tag|stringformat:"i" == tag.id|stringformat:"i" %}selected{% endif %}>
-              {{ tag.name }}
-            </option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="mt-2">
-        <label class="filter-group-label" for="sidebarSectorFilter">業種</label>
-        <select class="form-select form-select-sm sidebar-filter" id="sidebarSectorFilter" name="sector">
-          <option value="">すべての業種</option>
-          {% for sector in sectors %}
-            <option value="{{ sector }}" {% if request.GET.sector == sector %}selected{% endif %}>{{ sector }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="mt-2">
-        <label class="filter-group-label" for="sidebarTransactionDateRangeFilter">直近の取引</label>
-        <select class="form-select form-select-sm sidebar-filter" id="sidebarTransactionDateRangeFilter" name="transaction_date_range">
-          <option value="">指定なし</option>
-          <option value="1w" {% if request.GET.transaction_date_range == '1w' %}selected{% endif %}>1週間以内</option>
-          <option value="1m" {% if request.GET.transaction_date_range == '1m' %}selected{% endif %}>1ヶ月以内</option>
-          <option value="3m" {% if request.GET.transaction_date_range == '3m' %}selected{% endif %}>3ヶ月以内</option>
-          <option value="6m" {% if request.GET.transaction_date_range == '6m' %}selected{% endif %}>6ヶ月以内</option>
-          <option value="1y" {% if request.GET.transaction_date_range == '1y' %}selected{% endif %}>1年以内</option>
-        </select>
-      </div>
-      <div class="mt-2">
-        <label class="filter-group-label" for="sidebarDisclosureFilter">開示書類の更新</label>
-        <select class="form-select form-select-sm sidebar-filter" id="sidebarDisclosureFilter" name="disclosure">
-          <option value="">指定なし</option>
-          <option value="new" {% if request.GET.disclosure == 'new' %}selected{% endif %}>直近1週間</option>
-          <option value="recent" {% if request.GET.disclosure == 'recent' %}selected{% endif %}>直近1ヶ月</option>
-        </select>
-      </div>
-      <div class="mt-2">
-        <label class="filter-group-label" for="sidebarDateRangeFilter">購入時期</label>
-        <select class="form-select form-select-sm sidebar-filter" id="sidebarDateRangeFilter" name="date_range">
-          <option value="">指定なし</option>
-          <option value="1w" {% if request.GET.date_range == '1w' %}selected{% endif %}>直近1週間</option>
-          <option value="1m" {% if request.GET.date_range == '1m' %}selected{% endif %}>直近1ヶ月</option>
-          <option value="3m" {% if request.GET.date_range == '3m' %}selected{% endif %}>直近3ヶ月</option>
-          <option value="6m" {% if request.GET.date_range == '6m' %}selected{% endif %}>直近6ヶ月</option>
-          <option value="1y" {% if request.GET.date_range == '1y' %}selected{% endif %}>直近1年</option>
-        </select>
+      <div class="sidebar-status-list">
+        {% for opt in sidebar_status_options %}{% endfor %}
+        <label class="sidebar-status-option{% if request.GET.status == 'all' or not request.GET.status %} is-selected{% endif %}">
+          <input type="radio" name="status" value="all"
+                 {% if request.GET.status == 'all' or not request.GET.status %}checked{% endif %}
+                 data-target="statusFilter"
+                 class="sidebar-status-radio sidebar-filter">
+          <span class="sidebar-status-label">すべて</span>
+          <span class="sidebar-status-count">·&nbsp;{{ total_diary_count }}</span>
+        </label>
+        <label class="sidebar-status-option{% if request.GET.status == 'active' %} is-selected{% endif %}">
+          <input type="radio" name="status" value="active"
+                 {% if request.GET.status == 'active' %}checked{% endif %}
+                 data-target="statusFilter"
+                 class="sidebar-status-radio sidebar-filter">
+          <span class="sidebar-status-label">保有中</span>
+          <span class="sidebar-status-count">·&nbsp;{{ active_holdings_count }}</span>
+        </label>
+        <label class="sidebar-status-option{% if request.GET.status == 'sold' %} is-selected{% endif %}">
+          <input type="radio" name="status" value="sold"
+                 {% if request.GET.status == 'sold' %}checked{% endif %}
+                 data-target="statusFilter"
+                 class="sidebar-status-radio sidebar-filter">
+          <span class="sidebar-status-label">売却済み</span>
+          <span class="sidebar-status-count">·&nbsp;{{ sold_count }}</span>
+        </label>
+        <label class="sidebar-status-option{% if request.GET.status == 'memo' %} is-selected{% endif %}">
+          <input type="radio" name="status" value="memo"
+                 {% if request.GET.status == 'memo' %}checked{% endif %}
+                 data-target="statusFilter"
+                 class="sidebar-status-radio sidebar-filter">
+          <span class="sidebar-status-label">記録のみ</span>
+          <span class="sidebar-status-count">·&nbsp;{{ memo_count }}</span>
+        </label>
       </div>
     </div>
 
-    <!-- 4. ソートセクション -->
-    <div class="sidebar-section">
-      <label class="sidebar-label">
+    <!-- 4. 詳細フィルター（折りたたみ） -->
+    <details class="sidebar-section sidebar-details"
+             {% if request.GET.tag or request.GET.sector or request.GET.transaction_date_range or request.GET.disclosure or request.GET.date_range %}open{% endif %}>
+      <summary class="sidebar-label sidebar-details-summary">
+        <i class="bi bi-sliders2"></i> 詳細フィルター
+      </summary>
+      <div class="sidebar-details-body">
+        <div>
+          <label class="filter-group-label" for="sidebarTagFilter">タグ</label>
+          <select class="form-select form-select-sm sidebar-filter" id="sidebarTagFilter" name="tag">
+            <option value="">すべてのタグ</option>
+            {% for tag in tags %}
+              <option value="{{ tag.id }}"
+                {% if request.GET.tag|stringformat:"i" == tag.id|stringformat:"i" %}selected{% endif %}>
+                {{ tag.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mt-2">
+          <label class="filter-group-label" for="sidebarSectorFilter">業種</label>
+          <select class="form-select form-select-sm sidebar-filter" id="sidebarSectorFilter" name="sector">
+            <option value="">すべての業種</option>
+            {% for sector in sectors %}
+              <option value="{{ sector }}" {% if request.GET.sector == sector %}selected{% endif %}>{{ sector }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mt-2">
+          <label class="filter-group-label" for="sidebarTransactionDateRangeFilter">直近の取引</label>
+          <select class="form-select form-select-sm sidebar-filter" id="sidebarTransactionDateRangeFilter" name="transaction_date_range">
+            <option value="">指定なし</option>
+            <option value="1w" {% if request.GET.transaction_date_range == '1w' %}selected{% endif %}>1週間以内</option>
+            <option value="1m" {% if request.GET.transaction_date_range == '1m' %}selected{% endif %}>1ヶ月以内</option>
+            <option value="3m" {% if request.GET.transaction_date_range == '3m' %}selected{% endif %}>3ヶ月以内</option>
+            <option value="6m" {% if request.GET.transaction_date_range == '6m' %}selected{% endif %}>6ヶ月以内</option>
+            <option value="1y" {% if request.GET.transaction_date_range == '1y' %}selected{% endif %}>1年以内</option>
+          </select>
+        </div>
+        <div class="mt-2">
+          <label class="filter-group-label" for="sidebarDisclosureFilter">開示書類の更新</label>
+          <select class="form-select form-select-sm sidebar-filter" id="sidebarDisclosureFilter" name="disclosure">
+            <option value="">指定なし</option>
+            <option value="new" {% if request.GET.disclosure == 'new' %}selected{% endif %}>直近1週間</option>
+            <option value="recent" {% if request.GET.disclosure == 'recent' %}selected{% endif %}>直近1ヶ月</option>
+          </select>
+        </div>
+        <div class="mt-2">
+          <label class="filter-group-label" for="sidebarDateRangeFilter">購入時期</label>
+          <select class="form-select form-select-sm sidebar-filter" id="sidebarDateRangeFilter" name="date_range">
+            <option value="">指定なし</option>
+            <option value="1w" {% if request.GET.date_range == '1w' %}selected{% endif %}>直近1週間</option>
+            <option value="1m" {% if request.GET.date_range == '1m' %}selected{% endif %}>直近1ヶ月</option>
+            <option value="3m" {% if request.GET.date_range == '3m' %}selected{% endif %}>直近3ヶ月</option>
+            <option value="6m" {% if request.GET.date_range == '6m' %}selected{% endif %}>直近6ヶ月</option>
+            <option value="1y" {% if request.GET.date_range == '1y' %}selected{% endif %}>直近1年</option>
+          </select>
+        </div>
+      </div>
+    </details>
+
+    <!-- 5. ソート（折りたたみ） -->
+    <details class="sidebar-section sidebar-details" {% if request.GET.sort and request.GET.sort != 'date_desc' and request.GET.sort != 'profit_desc' %}open{% endif %}>
+      <summary class="sidebar-label sidebar-details-summary">
         <i class="bi bi-sort-down"></i> ソート
-      </label>
-      <select class="form-select form-select-sm" id="sidebarSortFilter" name="sort">
-        <option value="" {% if not request.GET.sort %}selected{% endif %}>デフォルト</option>
-        <option value="date_desc" {% if request.GET.sort == 'date_desc' %}selected{% endif %}>更新日（新しい順）</option>
-        <option value="date_asc" {% if request.GET.sort == 'date_asc' %}selected{% endif %}>更新日（古い順）</option>
-        <option value="profit_desc" {% if request.GET.sort == 'profit_desc' %}selected{% endif %}>含み益（大きい順）</option>
-        <option value="profit_asc" {% if request.GET.sort == 'profit_asc' %}selected{% endif %}>含み益（小さい順）</option>
-        <option value="name" {% if request.GET.sort == 'name' %}selected{% endif %}>銘柄名（A→Z）</option>
-        <option value="symbol" {% if request.GET.sort == 'symbol' %}selected{% endif %}>銘柄コード（A→Z）</option>
-      </select>
-    </div>
+      </summary>
+      <div class="sidebar-details-body">
+        <select class="form-select form-select-sm sidebar-filter" id="sidebarSortFilter" name="sort">
+          <option value="" {% if not request.GET.sort %}selected{% endif %}>デフォルト</option>
+          <option value="date_desc" {% if request.GET.sort == 'date_desc' %}selected{% endif %}>更新日（新しい順）</option>
+          <option value="date_asc" {% if request.GET.sort == 'date_asc' %}selected{% endif %}>更新日（古い順）</option>
+          <option value="profit_desc" {% if request.GET.sort == 'profit_desc' %}selected{% endif %}>含み益（大きい順）</option>
+          <option value="profit_asc" {% if request.GET.sort == 'profit_asc' %}selected{% endif %}>含み益（小さい順）</option>
+          <option value="name" {% if request.GET.sort == 'name' %}selected{% endif %}>銘柄名（A→Z）</option>
+          <option value="symbol" {% if request.GET.sort == 'symbol' %}selected{% endif %}>銘柄コード（A→Z）</option>
+        </select>
+      </div>
+    </details>
 
-    <!-- 5. リセットボタン -->
+    <!-- 6. リセットボタン -->
     <div class="sidebar-section">
       <button type="button" class="btn btn-sm btn-outline-secondary w-100" id="sidebarResetBtn">
         <i class="bi bi-arrow-counterclockwise me-1"></i>リセット
@@ -1385,12 +1693,17 @@ button.read-more { font-family: inherit; cursor: pointer; }
 </button>
 
 <main class="home-main">
-  <div class="page-header page-header-with-actions mb-4">
+  <div class="page-header page-header-with-actions diary-page-header mb-4">
     <div class="page-header-content">
       <h1 class="page-title">
         <i class="bi bi-journal-richtext"></i>
         <span>株式日記</span>
       </h1>
+      <p class="page-subtitle">
+        あなたの投資思考の記録
+        <span class="page-subtitle-dot">·</span>
+        <span class="page-subtitle-count">{{ total_diary_count }}件</span>
+      </p>
     </div>
     <div class="page-header-actions">
       <a href="{% url 'stockdiary:diary_summary' %}" class="btn btn-outline-primary me-2">
@@ -1469,17 +1782,44 @@ button.read-more { font-family: inherit; cursor: pointer; }
       <div class="status-tabs-wrapper">
         <div class="status-tabs" role="tablist">
           <button type="button" class="status-tab{% if not request.GET.status or request.GET.status == 'active' %} active{% endif %}"
-                  data-status="active" role="tab">保有中</button>
+                  data-status="active" role="tab">
+            <span>保有中</span>
+            <span class="status-tab-count">{{ active_holdings_count }}</span>
+          </button>
           <button type="button" class="status-tab{% if request.GET.status == 'all' %} active{% endif %}"
-                  data-status="all" role="tab">すべて</button>
+                  data-status="all" role="tab">
+            <span>すべて</span>
+            <span class="status-tab-count">{{ total_diary_count }}</span>
+          </button>
           <button type="button" class="status-tab{% if request.GET.status == 'sold' %} active{% endif %}"
-                  data-status="sold" role="tab">売却済み</button>
+                  data-status="sold" role="tab">
+            <span>売却済み</span>
+            <span class="status-tab-count">{{ sold_count }}</span>
+          </button>
           <button type="button" class="status-tab{% if request.GET.status == 'memo' %} active{% endif %}"
-                  data-status="memo" role="tab">メモ</button>
+                  data-status="memo" role="tab">
+            <span>メモ</span>
+            <span class="status-tab-count">{{ memo_count }}</span>
+          </button>
         </div>
         <input type="hidden" name="status" id="statusFilter"
                value="{{ request.GET.status|default:'active' }}">
       </div>
+
+      <!-- 直近で使われているハッシュタグのクイックチップ -->
+      {% if recent_hashtags %}
+      <div class="recent-hashtag-chips" role="list" aria-label="よく使うハッシュタグ">
+        {% for ht in recent_hashtags %}
+          <button type="button"
+                  class="recent-hashtag-chip{% if request.GET.hashtag == ht.tag %} is-active{% endif %}"
+                  data-hashtag="{{ ht.tag }}"
+                  role="listitem"
+                  aria-label="ハッシュタグ {{ ht.tag }} で絞り込み">
+            <span class="recent-hashtag-at">@</span>{{ ht.tag }}
+          </button>
+        {% endfor %}
+      </div>
+      {% endif %}
 
       <!-- アクティブフィルターチップ（JS で動的生成） -->
       <div class="active-filters" id="activeFilters" style="display:none"></div>
@@ -1673,6 +2013,28 @@ document.querySelectorAll('.status-tab').forEach(function(tab) {
   tab.addEventListener('click', function() {
     setStatusTab(this.dataset.status);
     htmx.trigger(document.getElementById('optimizedSearchForm'), 'submit');
+  });
+});
+
+// ── 直近ハッシュタグチップ ──
+document.querySelectorAll('.recent-hashtag-chip').forEach(function(chip) {
+  chip.addEventListener('click', function() {
+    var hashtag = this.dataset.hashtag || '';
+    var hashtagInput = document.getElementById('hashtagFilter');
+    if (!hashtagInput) return;
+    // 同じチップ再タップでトグル解除
+    if (this.classList.contains('is-active')) {
+      hashtagInput.value = '';
+      this.classList.remove('is-active');
+    } else {
+      hashtagInput.value = hashtag;
+      document.querySelectorAll('.recent-hashtag-chip').forEach(function(c) {
+        c.classList.remove('is-active');
+      });
+      this.classList.add('is-active');
+    }
+    htmx.trigger(document.getElementById('optimizedSearchForm'), 'submit');
+    setTimeout(updateFilterBadges, 100);
   });
 });
 

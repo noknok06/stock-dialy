@@ -3,6 +3,14 @@
 
 <article class="diary-article" data-diary-id="{{ diary.id }}">
 
+  {% if diary.stock_symbol %}
+  <a href="{% url 'stockdiary:detail' diary.id %}"
+     class="diary-code-strip{% if diary.current_quantity > 0 %} diary-code-strip--active{% elif diary.transaction_count > 0 %} diary-code-strip--sold{% else %} diary-code-strip--memo{% endif %}"
+     aria-label="{{ diary.stock_name }} {{ diary.stock_symbol }}">
+    <span class="diary-code-strip-text">{{ diary.stock_symbol }}</span>
+  </a>
+  {% endif %}
+
   <div class="card-body-inner">
 
   <!-- ========== ヘッダー部分 ========== -->

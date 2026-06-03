@@ -306,7 +306,16 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
         context['realized_profit'] = stats['total_profit'] or Decimal('0')
         context['sold_count'] = stats['sold_count'] or 0
         context['memo_count'] = stats['memo_count'] or 0
-        
+        context['total_diary_count'] = (
+            context['active_holdings_count']
+            + context['sold_count']
+            + context['memo_count']
+        )
+
+        # 直近で使われているハッシュタグ（モバイル：タブ下のクイックチップ用）
+        from .utils import get_all_hashtags_from_queryset
+        context['recent_hashtags'] = get_all_hashtags_from_queryset(all_diaries_qs)[:5]
+
         # 検索パラメータを保持
         context['current_query'] = self.request.GET.urlencode()
         context['current_params'] = self.request.GET

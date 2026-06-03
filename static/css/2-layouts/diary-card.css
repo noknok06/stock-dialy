@@ -847,3 +847,98 @@
     border-width: 2px;
   }
 }
+
+/* ========================================
+   Stock Code Strip (left rail) — モック準拠
+   ======================================== */
+.diary-article:has(.diary-code-strip) {
+  padding-left: 3.25rem;
+}
+
+.diary-code-strip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-200);
+  color: var(--text-200);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  text-decoration: none;
+  border-right: 1px solid var(--border-light);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.diary-code-strip:hover {
+  background: var(--bg-300);
+  color: var(--text-100);
+}
+
+.diary-code-strip-text {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  letter-spacing: 0.08em;
+}
+
+/* ステータス別アクセントカラー */
+.diary-code-strip--active {
+  background: rgba(0, 102, 140, 0.08);
+  color: var(--accent-200);
+}
+.diary-code-strip--active:hover {
+  background: rgba(0, 102, 140, 0.16);
+  color: var(--accent-200);
+}
+
+.diary-code-strip--sold {
+  background: rgba(120, 120, 120, 0.10);
+  color: var(--text-200);
+}
+
+.diary-code-strip--memo {
+  background: var(--bg-200);
+  color: var(--text-200);
+}
+
+/* 既存の左端ライン (::before) はチップがある時は控えめに */
+.diary-article:has(.diary-code-strip)::before {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .diary-article:has(.diary-code-strip) {
+    padding-left: 4rem;
+  }
+  .diary-code-strip {
+    width: 3rem;
+    font-size: 0.85rem;
+    border-top-left-radius: var(--radius-lg);
+    border-bottom-left-radius: var(--radius-lg);
+  }
+}
+
+.dark-mode .diary-code-strip,
+[data-theme="dark"] .diary-code-strip {
+  background: var(--dm-bg-200);
+  color: var(--dm-muted-foreground);
+  border-right-color: var(--dm-border);
+}
+
+.dark-mode .diary-code-strip--active,
+[data-theme="dark"] .diary-code-strip--active {
+  background: rgba(64, 158, 200, 0.14);
+  color: var(--accent-200);
+}
+
+.dark-mode .diary-code-strip:hover,
+[data-theme="dark"] .diary-code-strip:hover {
+  background: var(--dm-bg-300);
+  color: var(--dm-foreground);
+}
