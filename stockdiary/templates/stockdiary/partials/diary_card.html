@@ -3,14 +3,6 @@
 
 <article class="diary-article" data-diary-id="{{ diary.id }}">
 
-  {% if diary.stock_symbol %}
-  <a href="{% url 'stockdiary:detail' diary.id %}"
-     class="diary-code-strip{% if diary.current_quantity > 0 %} diary-code-strip--active{% elif diary.transaction_count > 0 %} diary-code-strip--sold{% else %} diary-code-strip--memo{% endif %}"
-     aria-label="{{ diary.stock_name }} {{ diary.stock_symbol }}">
-    <span class="diary-code-strip-text">{{ diary.stock_symbol }}</span>
-  </a>
-  {% endif %}
-
   <div class="card-body-inner">
 
   <!-- ========== ヘッダー部分 ========== -->
@@ -54,17 +46,6 @@
         {% endif %}
       </div>
 
-      <!-- タグ行 - 独立 -->
-      {% if diary.tags.all %}
-      <div class="diary-tags-row">
-        {% for tag in diary.tags.all %}
-          <span class="tag-pill diary-tag" data-tag-id="{{ tag.id }}">
-            <i class="bi bi-tag-fill"></i>
-            {{ tag.name }}
-          </span>
-        {% endfor %}
-      </div>
-      {% endif %}
     </div><!-- /.diary-header-inner -->
 
     <!-- アクションパネル（左スワイプで露出） -->
@@ -223,6 +204,18 @@
   </div>
 
   </div><!-- /.card-body-inner -->
+
+  <!-- ========== タグ行（フッター上部） ========== -->
+  {% if diary.tags.all %}
+  <div class="diary-tags-row diary-tags-row--footer">
+    {% for tag in diary.tags.all %}
+      <span class="tag-pill diary-tag" data-tag-id="{{ tag.id }}">
+        <i class="bi bi-tag-fill"></i>
+        {{ tag.name }}
+      </span>
+    {% endfor %}
+  </div>
+  {% endif %}
 
   <!-- ========== フッター ========== -->
   <footer class="diary-footer">
