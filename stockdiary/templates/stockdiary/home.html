@@ -952,8 +952,13 @@ button.read-more { font-family: inherit; cursor: pointer; }
     padding: 1.5rem;
     transition: width 0.3s ease, opacity 0.3s ease;
     opacity: 1;
-    position: relative;
-    overflow: hidden;
+    /* スクロール追従：上部に固定 */
+    position: sticky;
+    top: 1rem;
+    align-self: flex-start;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 
   .home-sidebar.collapsed {
