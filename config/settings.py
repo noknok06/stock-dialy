@@ -150,6 +150,7 @@ LOCAL_APPS = [
     'contact',
     'earnings_analysis',
     'margin_tracking',
+    'diary_templates',
 ]
 
 # インストール済みアプリ
@@ -741,4 +742,4 @@ Q_CLUSTER = {
     'orm': 'default',      # Redis不要: Django ORM (PostgreSQL) をブローカーとして使用
 }
 
-STATIC_VERSION = '1.2.282'
+STATIC_VERSION = '1.2.284'
