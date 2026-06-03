@@ -50,27 +50,67 @@
   word-break: break-word;
 }
 
-.diary-code {
-  display: inline-block;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--text-200);
-  background: var(--bg-200);
-  border: 1px solid var(--border-light);
-  border-radius: 6px;
-  padding: 0.1rem 0.45rem;
-  margin-left: 0.5rem;
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.02em;
-  vertical-align: middle;
+/* ========== 銘柄コード アイコン（ヘッダ左上） ========== */
+.diary-header-inner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
 }
 
-.dark-mode .diary-code,
-[data-theme="dark"] .diary-code {
-  background: var(--dm-bg-200);
-  border-color: var(--dm-border);
-  color: var(--dm-muted-foreground);
+.diary-header-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.diary-code-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #7ec8e3 0%, #4a90c2 100%);
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  text-decoration: none;
+  box-shadow: 0 4px 10px rgba(74, 144, 194, 0.25);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.diary-code-icon:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(74, 144, 194, 0.32);
+  color: #ffffff;
+}
+
+.diary-code-icon--sold {
+  background: linear-gradient(135deg, #c9c9d1 0%, #8b8d99 100%);
+  box-shadow: 0 4px 10px rgba(120, 120, 130, 0.22);
+}
+.diary-code-icon--sold:hover {
+  box-shadow: 0 6px 14px rgba(120, 120, 130, 0.28);
+}
+
+.diary-code-icon--memo {
+  background: linear-gradient(135deg, #d6d6db 0%, #a8a8b0 100%);
+  box-shadow: 0 4px 10px rgba(150, 150, 160, 0.22);
+}
+
+@media (min-width: 768px) {
+  .diary-code-icon {
+    width: 3.5rem;
+    height: 3.5rem;
+    font-size: 1rem;
+  }
+}
+
+.dark-mode .diary-code-icon,
+[data-theme="dark"] .diary-code-icon {
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
 }
 
 .diary-profit-pill {
@@ -721,11 +761,6 @@
 .dark-mode .diary-name,
 [data-theme="dark"] .diary-name {
   color: var(--dm-foreground);
-}
-
-.dark-mode .diary-code,
-[data-theme="dark"] .diary-code {
-  color: var(--dm-muted-foreground);
 }
 
 .dark-mode .tag-pill,
