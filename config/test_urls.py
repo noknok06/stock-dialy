@@ -27,6 +27,7 @@ urlpatterns = [
     path('users/', include('users.urls')),
     path('', include('stockdiary.urls')),
     path('tags/', include('tags.urls')),
+    path('diary-templates/', include('diary_templates.urls')),
     path('analysis/', include('analysis_template.urls')),
     path('company_master/', include('company_master.urls')),
     path('copomo/', include('earnings_analysis.urls', namespace='copomo')),
