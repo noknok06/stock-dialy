@@ -9,7 +9,7 @@
 """
 
 from django.http import JsonResponse
-from django.views.decorators.http import require_POST, require_GET
+from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.urls import reverse
@@ -241,60 +241,3 @@ def quick_add_transaction(request, diary_id):
         }, status=500)
 
 
-@login_required
-@require_GET
-def get_template_suggestions(request):
-    """
-    投資スタイルテンプレート取得API
-    """
-    templates = {
-        'growth': {
-            'name': '成長株投資',
-            'icon': '🚀',
-            'template': """## 注目理由
-- 業績の成長性が高い
-- 市場シェア拡大中
-
-## リスク
-- 割高感に注意"""
-        },
-        'dividend': {
-            'name': '配当投資',
-            'icon': '💰',
-            'template': """## 配当情報
-- 配当利回り: %
-- 配当性向: %
-
-## 安定性
-- 業績安定"""
-        },
-        'value': {
-            'name': 'バリュー投資',
-            'icon': '📊',
-            'template': """## バリュエーション
-- PER:
-- PBR:
-- 割安と判断した理由: """
-        },
-        'swing': {
-            'name': 'スイングトレード',
-            'icon': '📈',
-            'template': """## エントリー条件
-- テクニカル指標:
-- 目標価格:
-- 損切りライン: """
-        },
-    }
-
-    template_key = request.GET.get('template')
-
-    if template_key and template_key in templates:
-        return JsonResponse({
-            'success': True,
-            'template': templates[template_key]
-        })
-    else:
-        return JsonResponse({
-            'success': True,
-            'templates': templates
-        })

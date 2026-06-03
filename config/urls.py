@@ -67,6 +67,7 @@ urlpatterns = [
     # メインアプリケーション
     path('stockdiary/', include('stockdiary.urls')),  # stockdiary アプリのURL
     path('tags/', include('tags.urls')),
+    path('diary-templates/', include('diary_templates.urls')),
     path('analysis_template/', include('analysis_template.urls')),
     path('company_master/', include('company_master.urls')),
     

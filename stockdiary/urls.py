@@ -25,7 +25,6 @@ urlpatterns = [
     path('quick/create/', views_mobile_ux.quick_create_diary, name='quick_create'),
     path('quick/<int:diary_id>/note/', views_mobile_ux.quick_add_note, name='quick_add_note'),
     path('quick/<int:diary_id>/transaction/', views_mobile_ux.quick_add_transaction, name='quick_add_transaction'),
-    path('api/templates/', views_mobile_ux.get_template_suggestions, name='api_templates'),
 
     # ==========================================
     # 取引管理
