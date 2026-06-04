@@ -398,7 +398,7 @@
   function initDetailPriceCardMagic() {
     if (window.matchMedia('(hover: none)').matches) return;
 
-    document.querySelectorAll('.price-detail-card').forEach(function (card) {
+    document.querySelectorAll('.price-detail-card, .position-card').forEach(function (card) {
       if (card.dataset.magicInit) return;
       card.dataset.magicInit = '1';
 

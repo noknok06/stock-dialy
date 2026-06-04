@@ -31,7 +31,7 @@
 
   {% if diary.realized_profit != 0 %}
   <div class="profit-hero-card {% if diary.realized_profit < 0 %}loss{% endif %} mb-3">
-    <div class="profit-label">評価損益</div>
+    <div class="profit-label">実現損益</div>
     <div class="profit-value">
       <span class="profit-icon">{% if diary.realized_profit > 0 %}↗{% else %}↘{% endif %}</span>
       <span>{{ diary.realized_profit|floatformat:0|intcomma }}</span>
@@ -60,14 +60,6 @@
       <div class="sidebar-metric-label">取得総額</div>
       <div class="sidebar-metric-value">
         {{ diary.total_cost|floatformat:0|intcomma }}<span class="unit">{{ diary|currency_unit }}</span>
-      </div>
-    </div>
-    {% endif %}
-    {% if diary.realized_profit != 0 %}
-    <div class="sidebar-metric">
-      <div class="sidebar-metric-label">実現損益</div>
-      <div class="sidebar-metric-value {% if diary.realized_profit > 0 %}positive{% elif diary.realized_profit < 0 %}negative{% endif %}">
-        {{ diary.realized_profit|floatformat:0|intcomma }}<span class="unit">{{ diary|currency_unit }}</span>
       </div>
     </div>
     {% endif %}

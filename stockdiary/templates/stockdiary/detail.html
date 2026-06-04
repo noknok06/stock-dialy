@@ -1624,39 +1624,39 @@
         </div>
 
         <!-- 価格サマリー -->
-        {% if not diary.is_memo and diary.average_purchase_price %}
-        <div class="price-summary">
-          <!-- 損益を最上部に表示（最重要情報） -->
-          {% if diary.realized_profit != 0 %}
-          <div class="profit-hero-card {% if diary.realized_profit < 0 %}loss{% endif %}">
-            <div class="profit-label">評価損益</div>
-            <div class="profit-value">
-              <span class="profit-icon">{% if diary.realized_profit > 0 %}↗{% else %}↘{% endif %}</span>
-              <span>{{ diary.realized_profit|floatformat:0|intcomma }}</span>
-              <span class="profit-unit">{{ diary|currency_unit }}</span>
-            </div>
-          </div>
-          {% endif %}
-          
-          <!-- 取得単価と保有数を2x2グリッドで表示 -->
-          <div class="price-details-grid">
-            <div class="price-detail-card">
-              <div class="price-detail-label">平均取得単価</div>
-              <div class="price-detail-value">
-                {{ diary.average_purchase_price|floatformat:2|intcomma }}<span class="unit">{{ diary|currency_unit }}</span>
-              </div>
-            </div>
-            
-            {% if diary.current_quantity > 0 %}
-            <div class="price-detail-card">
-              <div class="price-detail-label">保有数量</div>
-              <div class="price-detail-value">
-                {{ diary.current_quantity|floatformat:0 }}<span class="unit">株</span>
+        {% if not diary.is_memo %}
+          {% if diary.realized_profit != 0 or diary.average_purchase_price %}
+          <div class="price-summary">
+            <!-- 実現損益（最重要情報）。売却済みでも表示 -->
+            {% if diary.realized_profit != 0 %}
+            <div class="profit-hero-card {% if diary.realized_profit < 0 %}loss{% endif %}">
+              <div class="profit-label">実現損益</div>
+              <div class="profit-value">
+                <span class="profit-icon">{% if diary.realized_profit > 0 %}↗{% else %}↘{% endif %}</span>
+                <span>{{ diary.realized_profit|floatformat:0|intcomma }}</span>
+                <span class="profit-unit">{{ diary|currency_unit }}</span>
               </div>
             </div>
             {% endif %}
+
+            <!-- 保有ポジション（株数・平均取得単価・取得総額をまとめて表示） -->
+            {% if diary.average_purchase_price and diary.current_quantity > 0 %}
+            <div class="position-card">
+              <div class="position-headline">
+                <span class="position-qty">{{ diary.current_quantity|floatformat:0 }}</span><span class="position-qty-unit">株</span>
+                <span class="position-at">@</span>
+                <span class="position-price">{{ diary.average_purchase_price|floatformat:2|intcomma }}</span><span class="position-price-unit">{{ diary|currency_unit }}</span>
+              </div>
+              {% if diary.total_cost %}
+              <div class="position-subline">
+                <span class="position-sub-label">取得総額</span>
+                <span class="position-sub-value">{{ diary.total_cost|floatformat:0|intcomma }}<span class="position-sub-unit">{{ diary|currency_unit }}</span></span>
+              </div>
+              {% endif %}
+            </div>
+            {% endif %}
           </div>
-        </div>
+          {% endif %}
         {% endif %}
       </div>
     </div>
