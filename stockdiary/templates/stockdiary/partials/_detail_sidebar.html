@@ -23,7 +23,7 @@
   </ul>
 </nav>
 
-{% if not diary.is_memo and diary.average_purchase_price %}
+{% if not diary.is_memo and diary.average_purchase_price or diary.realized_profit %}
 <div class="detail-sidebar-card">
   <div class="detail-sidebar-card-title">
     <i class="bi bi-graph-up-arrow"></i> 投資ステータス
@@ -31,7 +31,7 @@
 
   {% if diary.realized_profit != 0 %}
   <div class="profit-hero-card {% if diary.realized_profit < 0 %}loss{% endif %} mb-3">
-    <div class="profit-label">評価損益</div>
+    <div class="profit-label">実現損益</div>
     <div class="profit-value">
       <span class="profit-icon">{% if diary.realized_profit > 0 %}↗{% else %}↘{% endif %}</span>
       <span>{{ diary.realized_profit|floatformat:0|intcomma }}</span>
@@ -41,12 +41,14 @@
   {% endif %}
 
   <div class="sidebar-metrics-grid">
+    {% if diary.average_purchase_price %}
     <div class="sidebar-metric">
       <div class="sidebar-metric-label">平均取得単価</div>
       <div class="sidebar-metric-value">
         {{ diary.average_purchase_price|floatformat:2|intcomma }}<span class="unit">{{ diary|currency_unit }}</span>
       </div>
     </div>
+    {% endif %}
     {% if diary.current_quantity > 0 %}
     <div class="sidebar-metric">
       <div class="sidebar-metric-label">保有数量</div>
@@ -60,14 +62,6 @@
       <div class="sidebar-metric-label">取得総額</div>
       <div class="sidebar-metric-value">
         {{ diary.total_cost|floatformat:0|intcomma }}<span class="unit">{{ diary|currency_unit }}</span>
-      </div>
-    </div>
-    {% endif %}
-    {% if diary.realized_profit != 0 %}
-    <div class="sidebar-metric">
-      <div class="sidebar-metric-label">実現損益</div>
-      <div class="sidebar-metric-value {% if diary.realized_profit > 0 %}positive{% elif diary.realized_profit < 0 %}negative{% endif %}">
-        {{ diary.realized_profit|floatformat:0|intcomma }}<span class="unit">{{ diary|currency_unit }}</span>
       </div>
     </div>
     {% endif %}
