@@ -522,12 +522,6 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         # スピードダイアルアクション
         context['diary_actions'] = [
             {
-                'type': 'back',
-                'url': reverse_lazy('stockdiary:home'),
-                'icon': 'bi-arrow-left',
-                'label': '戻る'
-            },
-            {
                 'id': 'add-note',
                 'type': 'bottom-sheet',
                 'sheet_id': 'addNoteSheet',
@@ -538,22 +532,13 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
                 'condition': True
             },
             {
-                'type': 'modal',  # 🆕 モーダル専用タイプ
-                'modal_target': '#notificationModal',  # 🆕 モーダルのID
-                'icon': 'bi-bell',
-                'label': '通知設定'
-            },
-            {
-                'type': 'edit',
-                'url': reverse_lazy('stockdiary:update', kwargs={'pk': self.object.id}),
-                'icon': 'bi-pencil',
-                'label': '編集'
-            },
-            {
-                'type': 'delete',
-                'url': reverse_lazy('stockdiary:delete', kwargs={'pk': self.object.id}),
-                'icon': 'bi-trash',
-                'label': '削除'
+                'id': 'add-transaction',
+                'type': 'bottom-sheet',
+                'sheet_id': 'addTransactionSheet',
+                'icon': 'bi-cart-plus',
+                'label': '取引を追加',
+                'aria_label': '取引を追加',
+                'condition': True
             }
         ]
 
