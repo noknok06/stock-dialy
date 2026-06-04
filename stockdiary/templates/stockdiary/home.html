@@ -821,34 +821,6 @@
 }
 .note-action-panel i { font-size: 1.25rem; }
 
-/* 継続記録「＋」ボタン: ホバー可能デバイスのみ表示 */
-.note-add-btn {
-  display: none;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: 1.5px solid var(--accent-200);
-  border-radius: 50%;
-  background: transparent;
-  color: var(--accent-200);
-  font-size: 1rem;
-  cursor: pointer;
-  margin-left: 8px;
-  flex-shrink: 0;
-  transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease;
-  -webkit-tap-highlight-color: transparent;
-}
-@media (hover: hover) {
-  .note-add-btn {
-    display: flex;
-  }
-  .note-add-btn:hover {
-    background: var(--accent-200);
-    color: white;
-  }
-}
-
 /* ダークモード対応 */
 .dark-mode .diary-header-inner,
 [data-theme="dark"] .diary-header-inner {
@@ -885,43 +857,6 @@
   color: var(--primary-color, #4a6da7);
 }
 
-/* ========================================
-   日記本文 インライン展開UI
-   ======================================== */
-
-/* 省略テキスト: タップ可能を示す */
-.panel-text--truncated { cursor: pointer; }
-
-/* 展開後は省略テキストを隠す */
-.panel-text--truncated.is-hidden { display: none; }
-
-/* CSS Grid で 0 → auto 高さアニメーション */
-.panel-text-expand-wrap {
-  display: grid;
-  grid-template-rows: 0fr;
-  transition: grid-template-rows 0.35s ease;
-}
-.panel-text-expand-wrap.is-open {
-  grid-template-rows: 1fr;
-}
-/* 直接の子要素 (.panel-text--full) を overflow:hidden + min-height:0 にすることで
-   grid-template-rows: 0fr 時に高さ 0 にクリップされる */
-.panel-text-expand-wrap > .panel-text--full {
-  overflow: hidden;
-  min-height: 0;
-}
-
-/* 展開/折りたたみボタン */
-button.read-more { font-family: inherit; cursor: pointer; }
-.read-more--toggle { gap: 0.375rem; }
-.read-more__icon { transition: transform 0.3s ease; }
-.read-more--toggle[aria-expanded="true"] .read-more__icon {
-  transform: rotate(180deg);
-}
-
-/* カード展開時: 高さ制限・グラデーションオーバーレイを解除 */
-.card-text-expanded .card-body-inner { max-height: none !important; }
-.card-text-expanded .card-body-inner::after { display: none !important; }
 
 /* ========== PC左サイドバー（統合・開閉制御版） ========== */
 
@@ -1716,10 +1651,9 @@ button.read-more { font-family: inherit; cursor: pointer; }
         <span class="d-none d-sm-inline">銘柄サマリー</span>
         <span class="d-sm-none">サマリー</span>
       </a>
-      <a href="{% url 'stockdiary:create' %}" class="btn btn-primary">
+      <a href="{% url 'stockdiary:create' %}" class="btn btn-primary d-none d-lg-inline-flex align-items-center">
         <i class="bi bi-plus-lg me-1"></i>
-        <span class="d-none d-sm-inline">新規作成</span>
-        <span class="d-sm-none">作成</span>
+        <span>新規作成</span>
       </a>
     </div>
   </div>
@@ -2347,53 +2281,6 @@ document.addEventListener('DOMContentLoaded', function() {
   // クイックノート：タイトル topic-chips UI
   // (詳細ページと同じ方式)
 
-  // diary カードの「記録を追加」ボタンをクリックした時に、クイックノートボトムシートを開く
-  document.addEventListener('click', function(e) {
-    if (e.target.closest('.note-add-btn')) {
-      e.stopPropagation();
-      var header = e.target.closest('.diary-header');
-      if (header) {
-        var noteUrl = header.dataset.quickNoteUrl;
-        var stockName = header.dataset.stockName;
-        var noteTopic = header.dataset.noteTopics || '';
-        if (noteUrl) {
-          document.getElementById('qnNoteUrl').value = noteUrl;
-          document.getElementById('qnSheetTitle').textContent = stockName + ' に記録を追加';
-
-          // 日記ごとの topics を動的に topic-chips に設定
-          var topicChipsContainer = document.querySelector('.bottom-sheet-body .topic-chips');
-          console.log('[diary-card click] topicChipsContainer:', topicChipsContainer);
-          console.log('[diary-card click] noteTopic from data-note-topics:', noteTopic);
-          if (topicChipsContainer) {
-            topicChipsContainer.innerHTML = '';
-            if (noteTopic) {
-              var topics = noteTopic.split('|').filter(t => t.trim());
-              console.log('[diary-card click] Parsed topics:', topics);
-              topics.forEach(function(topic) {
-                var btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'topic-chip btn btn-sm btn-outline-secondary';
-                btn.textContent = '# ' + topic;
-                btn.onclick = function() {
-                  setQnTopic(this, topic);
-                };
-                topicChipsContainer.appendChild(btn);
-              });
-            }
-          }
-
-          // フォームをリセット
-          document.getElementById('qnTopic').value = '';
-          document.getElementById('qnContent').value = '';
-          document.querySelectorAll('.qn-importance-btn').forEach(function(b) { b.classList.remove('active'); });
-          document.querySelector('.qn-importance-btn[data-value="medium"]').classList.add('active');
-
-          openBottomSheet('quickNoteFromHomeSheet');
-        }
-      }
-    }
-  });
-
   // PC用サイドバーフォームの自動送信（change イベント時）
   var sidebarForm = document.getElementById('sidebarSearchForm');
   if (sidebarForm) {
@@ -2764,7 +2651,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // カード高さ制限: はみ出し検出 → グラデーションオーバーレイ表示
-// ※ フッターのラベル変更は削除。「続きを読む」は .read-more--toggle ボタンが担う
+// ※ 一覧では理由本文を3行クリップ表示。全文は「詳細を見る」へ誘導
 function applyCardTruncation() {
   if (window.innerWidth >= 768) return;
   document.querySelectorAll('.card-body-inner').forEach(inner => {
@@ -2794,76 +2681,6 @@ document.addEventListener('click', function(e) {
     e.target.classList.add('active');
   }
 });
-
-// ── 日記本文 インライン展開/折りたたみ ──
-(function () {
-  function toggleExpand(tabPanel) {
-    var truncated  = tabPanel.querySelector('.panel-text--truncated');
-    var expandWrap = tabPanel.querySelector('.panel-text-expand-wrap');
-    var btn        = tabPanel.querySelector('.read-more--toggle');
-    if (!expandWrap || !truncated) return;
-
-    var isOpen  = expandWrap.classList.contains('is-open');
-    var article = tabPanel.closest('.diary-article');
-
-    if (!isOpen) {
-      // 展開
-      truncated.classList.add('is-hidden');
-      truncated.setAttribute('aria-expanded', 'true');
-      expandWrap.classList.add('is-open');
-      if (btn) {
-        btn.setAttribute('aria-expanded', 'true');
-        btn.querySelector('.read-more__label').textContent = '折りたたむ';
-      }
-      if (article) {
-        article.classList.add('card-text-expanded');
-        article.classList.remove('card-truncated');
-      }
-    } else {
-      // 折りたたみ
-      expandWrap.classList.remove('is-open');
-      truncated.classList.remove('is-hidden');
-      truncated.setAttribute('aria-expanded', 'false');
-      if (btn) {
-        btn.setAttribute('aria-expanded', 'false');
-        btn.querySelector('.read-more__label').textContent = '続きを読む';
-      }
-      if (article) {
-        article.classList.remove('card-text-expanded');
-        // card-truncated を再評価（カードが画面高を超えていれば再追加）
-        var inner = article.querySelector('.card-body-inner');
-        if (inner && window.innerWidth < 768) {
-          if (inner.scrollHeight > inner.clientHeight + 2) {
-            article.classList.add('card-truncated');
-          }
-        }
-      }
-    }
-  }
-
-  // クリック（省略テキスト or トグルボタン）
-  document.addEventListener('click', function (e) {
-    // テキスト内のリンクはそのまま遷移させる
-    if (e.target.tagName === 'A' || e.target.closest('a')) return;
-
-    var truncated = e.target.closest('.panel-text--truncated');
-    var toggleBtn = e.target.closest('.read-more--toggle');
-    if (!truncated && !toggleBtn) return;
-
-    var tabPanel = (truncated || toggleBtn).closest('.tab-panel');
-    if (tabPanel) toggleExpand(tabPanel);
-  });
-
-  // Enter / Space でキーボード操作
-  document.addEventListener('keydown', function (e) {
-    if (e.key !== 'Enter' && e.key !== ' ') return;
-    var truncated = document.activeElement && document.activeElement.closest('.panel-text--truncated');
-    if (!truncated) return;
-    e.preventDefault();
-    var tabPanel = truncated.closest('.tab-panel');
-    if (tabPanel) toggleExpand(tabPanel);
-  });
-})();
 
 // ========== PC左サイドバー 開閉制御 ==========
 (function() {
