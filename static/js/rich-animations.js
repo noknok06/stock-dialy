@@ -406,12 +406,13 @@
         const rect = card.getBoundingClientRect();
         const x = ((e.clientX - rect.left) / rect.width * 100).toFixed(1);
         const y = ((e.clientY - rect.top) / rect.height * 100).toFixed(1);
-        card.style.background =
-          'radial-gradient(circle at ' + x + '% ' + y + '%, rgba(113,196,239,0.12) 0%, var(--bg-200) 60%)';
+        // backgroundImage で重ねることで、テーマ依存の background-color（ライト/ダーク）を保ったまま光彩を表示
+        card.style.backgroundImage =
+          'radial-gradient(circle at ' + x + '% ' + y + '%, rgba(113,196,239,0.12) 0%, transparent 60%)';
       });
 
       card.addEventListener('mouseleave', function () {
-        card.style.background = '';
+        card.style.backgroundImage = '';
       });
     });
   }
