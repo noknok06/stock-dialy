@@ -286,7 +286,7 @@
 .diary-figure img {
   width: 100%;
   height: auto;
-  max-height: 200px;
+  max-height: 160px;
   object-fit: cover;
   display: block;
   cursor: pointer;
@@ -501,26 +501,17 @@
   margin-bottom: 0;
 }
 
-.read-more {
-  display: inline-flex;
-  align-items: center;
-  color: var(--accent-200);
-  text-decoration: none;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  transition: gap 0.2s ease, background 0.2s ease;
-  padding: 0.625rem 0.875rem;
-  min-height: 44px;
-  border-radius: var(--radius-md);
-  background: rgba(113, 196, 239, 0.08);
-  border: 1px solid rgba(113, 196, 239, 0.2);
-  margin-top: 0.5rem;
+/* 一覧カードの理由本文: 3行クリップ（全文は「詳細を見る」へ） */
+.panel-text--clamp {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
 }
-
-.read-more:hover {
-  gap: 0.375rem;
-  background: rgba(113, 196, 239, 0.15);
-}
+.panel-text--clamp > :first-child { margin-top: 0; }
+.panel-text--clamp p,
+.panel-text--clamp ul,
+.panel-text--clamp ol { margin-bottom: 0; }
 
 .panel-loading {
   display: flex;
@@ -831,13 +822,6 @@
   color: var(--accent-100);
 }
 
-.dark-mode .read-more,
-[data-theme="dark"] .read-more {
-  color: var(--accent-100);
-  background: rgba(113, 196, 239, 0.1);
-  border-color: rgba(113, 196, 239, 0.25);
-}
-
 /* ========================================
    カード高さ制限（モバイル）
    ======================================== */
@@ -875,7 +859,6 @@
   .diary-figure img,
   .tab-btn,
   .view-detail,
-  .read-more,
   .tag-pill,
   .tab-panel {
     transition: none;

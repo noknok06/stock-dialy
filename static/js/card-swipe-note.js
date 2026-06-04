@@ -79,15 +79,6 @@
           snapBack(inner);
         }
       });
-
-      // デスクトップ用「＋」ボタン
-      var addBtn = header.querySelector('.note-add-btn');
-      if (addBtn) {
-        addBtn.addEventListener('click', function (e) {
-          e.stopPropagation();
-          openSheet(header);
-        });
-      }
     });
   }
 

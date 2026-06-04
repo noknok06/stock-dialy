@@ -27,10 +27,6 @@
               {{ diary.stock_name }}
             </a>
           </h3>
-
-          <button class="note-add-btn" type="button" aria-label="継続記録を追加">
-            <i class="bi bi-plus-lg"></i>
-          </button>
         </div>
 
         <div class="diary-meta-row">
@@ -147,34 +143,14 @@
          id="reason-{{ diary.id }}"
          role="tabpanel">
 
-      <!-- 省略テキスト: タップで展開（150文字超の場合のみ） -->
-      <div class="panel-text markdown-content{% if diary.reason|length > 150 %} panel-text--truncated{% endif %}"
-           {% if diary.reason|length > 150 %}role="button" tabindex="0" aria-expanded="false" aria-label="全文を表示"{% endif %}>
+      <!-- 一覧では3行までクリップ表示（全文は「詳細を見る」へ） -->
+      <div class="panel-text markdown-content panel-text--clamp">
         {% if request.GET.query %}
-          {{ diary.reason|render_markdown|highlight:request.GET.query|truncatechars_html:150 }}
+          {{ diary.reason|render_markdown|highlight:request.GET.query }}
         {% else %}
-          {{ diary.reason|render_markdown|truncatechars_html:150 }}
+          {{ diary.reason|render_markdown }}
         {% endif %}
       </div>
-
-      {% if diary.reason|length > 150 %}
-      <!-- 全文（CSS Grid アニメーションで下に展開） -->
-      <div class="panel-text-expand-wrap">
-        <div class="panel-text markdown-content panel-text--full">
-          {% if request.GET.query %}
-            {{ diary.reason|render_markdown|highlight:request.GET.query }}
-          {% else %}
-            {{ diary.reason|render_markdown }}
-          {% endif %}
-        </div>
-      </div>
-
-      <!-- 展開/折りたたみボタン -->
-      <button type="button" class="read-more read-more--toggle" aria-expanded="false">
-        <span class="read-more__label">続きを読む</span>
-        <i class="bi bi-chevron-down read-more__icon"></i>
-      </button>
-      {% endif %}
 
     </div>
 
