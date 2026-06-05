@@ -16,7 +16,8 @@
   const VERTICAL_LIMIT = 30;   // 縦移動がこれを超えたらスクロールと判定 (px)
   const HAPTIC_MS      = 15;
 
-  let currentOpenHeader = null; // 現在アクションパネルが開いているヘッダー
+  let currentOpenHeader = null;      // 現在アクションパネルが開いているヘッダー
+  let currentOpenDirection = null;   // 'left' | 'right'
 
   // ============================================================
   // スワイプハンドラのバインド
@@ -34,6 +35,7 @@
       header.addEventListener('touchstart', function (e) {
         // アクションパネルへのタップは JS で処理するため除外
         if (e.target.closest('.note-action-panel')) return;
+        if (e.target.closest('.exclude-action-panel')) return;
         startX = e.touches[0].clientX;
         startY = e.touches[0].clientY;
         moveX = 0;
@@ -45,7 +47,7 @@
       header.addEventListener('touchmove', function (e) {
         if (!isTracking) return;
 
-        var diffX = startX - e.touches[0].clientX; // 左スワイプで正
+        var diffX = startX - e.touches[0].clientX; // 左スワイプで正、右スワイプで負
         var diffY = Math.abs(e.touches[0].clientY - startY);
 
         // 縦スクロール判定
@@ -58,15 +60,17 @@
           return;
         }
 
-        // 右スワイプ: パネルを閉じる
-        if (diffX < 0) {
-          snapBack(inner);
-          return;
-        }
-
         e.preventDefault(); // 水平スクロールを防止
-        moveX = Math.min(diffX, PANEL_WIDTH);
-        inner.style.transform = 'translateX(-' + moveX + 'px)';
+
+        if (diffX > 0) {
+          // 左スワイプ: note パネルを露出（内側を左へ）
+          moveX = Math.min(diffX, PANEL_WIDTH);
+          inner.style.transform = 'translateX(-' + moveX + 'px)';
+        } else {
+          // 右スワイプ: exclude パネルを露出（内側を右へ）
+          moveX = Math.max(diffX, -PANEL_WIDTH); // 負の値、最大 -PANEL_WIDTH
+          inner.style.transform = 'translateX(' + (-moveX) + 'px)';
+        }
       }, { passive: false });
 
       header.addEventListener('touchend', function () {
@@ -74,7 +78,11 @@
         isTracking = false;
 
         if (moveX >= SNAP_THRESHOLD) {
-          openPanel(header, inner);
+          // 左スワイプ確定: note パネルを開く
+          openPanel(header, inner, 'left');
+        } else if (moveX <= -SNAP_THRESHOLD) {
+          // 右スワイプ確定: exclude パネルを開く
+          openExcludePanel(header, inner);
         } else {
           snapBack(inner);
         }
@@ -94,6 +102,7 @@
     inner.style.transition = 'transform 0.2s ease';
     inner.style.transform  = 'translateX(-' + PANEL_WIDTH + 'px)';
     currentOpenHeader = header;
+    currentOpenDirection = 'left';
     if (navigator.vibrate) navigator.vibrate(HAPTIC_MS);
 
     // アクションパネルのタップ: 一度だけバインド
@@ -103,7 +112,33 @@
       panel.addEventListener('click', function () {
         snapBack(inner);
         currentOpenHeader = null;
+        currentOpenDirection = null;
         openSheet(header);
+      });
+    }
+  }
+
+  function openExcludePanel(header, inner) {
+    // 他に開いているパネルを閉じる
+    if (currentOpenHeader && currentOpenHeader !== header) {
+      closePanel(currentOpenHeader);
+    }
+
+    inner.style.transition = 'transform 0.2s ease';
+    inner.style.transform  = 'translateX(' + PANEL_WIDTH + 'px)';
+    currentOpenHeader = header;
+    currentOpenDirection = 'right';
+    if (navigator.vibrate) navigator.vibrate(HAPTIC_MS);
+
+    // 除外パネルのタップ: 一度だけバインド
+    var panel = header.querySelector('.exclude-action-panel');
+    if (panel && !panel._excludeTapBound) {
+      panel._excludeTapBound = true;
+      panel.addEventListener('click', function () {
+        snapBack(inner);
+        currentOpenHeader = null;
+        currentOpenDirection = null;
+        toggleExclude(header);
       });
     }
   }
@@ -118,12 +153,63 @@
     inner.style.transform  = 'translateX(0)';
   }
 
+  // ============================================================
+  // 除外フラグのトグル
+  // ============================================================
+  function toggleExclude(header) {
+    var url = header.dataset.toggleExcludeUrl;
+    if (!url) return;
+
+    var csrfToken = getCsrfToken();
+    var article = header.closest('.diary-article');
+
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': csrfToken,
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+    })
+    .then(function (res) {
+      if (!res.ok) throw new Error('toggle failed');
+      // サーバーの状態を反映: data属性とパネル表示を更新
+      var isNowExcluded = header.dataset.isExcluded !== 'true';
+      header.dataset.isExcluded = isNowExcluded ? 'true' : 'false';
+
+      // パネルのアイコン・ラベルを切り替え
+      var panel = header.querySelector('.exclude-action-panel');
+      if (panel) {
+        panel.innerHTML = isNowExcluded
+          ? '<i class="bi bi-eye"></i><span>解除</span>'
+          : '<i class="bi bi-eye-slash"></i><span>除外</span>';
+        panel.setAttribute('aria-label', isNowExcluded ? '除外を解除する' : '一覧・グラフから除外する');
+        panel._excludeTapBound = false; // 再バインドを許可
+      }
+
+      // カードのグレーアウトを切り替え
+      if (article) {
+        article.classList.toggle('diary-article--excluded', isNowExcluded);
+        // 除外済み一覧で解除した場合はカードを削除
+        var statusInput = document.getElementById('statusFilter');
+        if (!isNowExcluded && statusInput && statusInput.value === 'excluded') {
+          article.style.transition = 'opacity 0.3s ease';
+          article.style.opacity = '0';
+          setTimeout(function () { article.remove(); }, 300);
+        }
+      }
+    })
+    .catch(function (err) {
+      console.error('除外フラグの切り替えに失敗しました:', err);
+    });
+  }
+
   // ヘッダー外タップでパネルを閉じる
   document.addEventListener('touchstart', function (e) {
     if (!currentOpenHeader) return;
     if (!currentOpenHeader.contains(e.target)) {
       closePanel(currentOpenHeader);
       currentOpenHeader = null;
+      currentOpenDirection = null;
     }
   }, { passive: true });
 
