@@ -107,6 +107,9 @@ class StockDiary(models.Model):
         max_length=50, blank=True, verbose_name='最新開示種別'
     )
 
+    # 除外フラグ（一覧・グラフから非表示にするが記録は保持）
+    is_excluded = models.BooleanField(default=False, verbose_name='除外フラグ', db_index=True)
+
     # システム情報
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -117,6 +120,7 @@ class StockDiary(models.Model):
             models.Index(fields=['user', 'stock_symbol']),
             models.Index(fields=['user', 'current_quantity']),
             models.Index(fields=['user', '-updated_at']),
+            models.Index(fields=['user', 'is_excluded']),
         ]
         verbose_name = '株式日記'
         verbose_name_plural = '株式日記'

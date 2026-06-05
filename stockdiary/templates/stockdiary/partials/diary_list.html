@@ -26,10 +26,11 @@
           {% endif %}
           
           {% if request.GET.status %}
-            <span class="ms-2">保有状態: 
+            <span class="ms-2">保有状態:
               {% if request.GET.status == 'active' %}保有中
               {% elif request.GET.status == 'sold' %}売却済み
               {% elif request.GET.status == 'memo' %}メモのみ
+              {% elif request.GET.status == 'excluded' %}除外済み
               {% endif %}
             </span>
           {% endif %}

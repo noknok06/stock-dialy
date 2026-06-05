@@ -184,9 +184,16 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
         elif status == 'memo':
             # メモのみ: 取引がない
             queryset = queryset.filter(transaction_count=0)
+        elif status == 'excluded':
+            # 除外済み: is_excluded=True のみ表示
+            queryset = queryset.filter(is_excluded=True)
         elif status == 'all':
             # すべて表示（フィルターなし）
             pass
+
+        # 除外済みフィルタ以外はデフォルトで除外日記を非表示
+        if status != 'excluded':
+            queryset = queryset.filter(is_excluded=False)
         
         # 🆕 トランザクション期間フィルター（created_at基準）
         transaction_date_range = self.request.GET.get('transaction_date_range', '')
@@ -290,8 +297,8 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
         ).exclude(sector='').values_list('sector', flat=True).distinct().order_by('sector')
         context['sectors'] = list(sectors)
         
-        # カレンダー表示用にすべての日記データを追加（統計も同一クエリで取得）
-        all_diaries_qs = StockDiary.objects.filter(user=self.request.user)
+        # カレンダー表示用にすべての日記データを追加（統計も同一クエリで取得、除外日記は含めない）
+        all_diaries_qs = StockDiary.objects.filter(user=self.request.user, is_excluded=False)
         context['all_diaries'] = all_diaries_qs.defer(
             'reason', 'memo', 'created_at', 'updated_at',
         )
@@ -312,6 +319,9 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
             + context['sold_count']
             + context['memo_count']
         )
+        context['excluded_count'] = StockDiary.objects.filter(
+            user=self.request.user, is_excluded=True
+        ).count()
 
         # 直近で使われているハッシュタグ（モバイル：タブ下のクイックチップ用）
         from .utils import get_all_hashtags_from_queryset
@@ -1442,7 +1452,13 @@ def diary_list(request):
             )
         elif status == 'memo':
             queryset = queryset.filter(transaction_count=0)
-        
+        elif status == 'excluded':
+            queryset = queryset.filter(is_excluded=True)
+
+        # 除外済みフィルタ以外はデフォルトで除外日記を非表示
+        if status != 'excluded':
+            queryset = queryset.filter(is_excluded=False)
+
         # 日付範囲フィルター
         date_range = request.GET.get('date_range', '')
         if date_range:
@@ -3607,3 +3623,15 @@ def edinet_xbrl_analyze(request, diary_id):
 
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@require_POST
+def toggle_exclude_diary(request, diary_id):
+    """日記の除外フラグをトグルする（HTMX対応）"""
+    diary = get_object_or_404(StockDiary, pk=diary_id, user=request.user)
+    diary.is_excluded = not diary.is_excluded
+    diary.save(update_fields=['is_excluded'])
+    if request.headers.get('HX-Request') == 'true':
+        return render(request, 'stockdiary/partials/_exclude_toggle_button.html', {'diary': diary})
+    return redirect('stockdiary:detail', pk=diary_id)
