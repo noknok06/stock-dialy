@@ -50,12 +50,13 @@
         var diffX = startX - e.touches[0].clientX; // 左スワイプで正、右スワイプで負
         var diffY = Math.abs(e.touches[0].clientY - startY);
 
-        // 縦スクロール判定: 絶対値ではなく角度ベース（iOS の斜め動作に対応）
+        // 方向未確定の間は transform を適用しない
         if (isScrolling === null) {
           var totalDist = Math.abs(diffX) + diffY;
           if (totalDist > 5) {
             isScrolling = diffY > Math.abs(diffX); // 縦成分が横成分を上回ればスクロール
           }
+          return; // 方向確定まで何もしない
         }
         if (isScrolling) {
           isTracking = false;
