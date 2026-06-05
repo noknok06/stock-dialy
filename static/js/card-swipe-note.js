@@ -50,9 +50,12 @@
         var diffX = startX - e.touches[0].clientX; // 左スワイプで正、右スワイプで負
         var diffY = Math.abs(e.touches[0].clientY - startY);
 
-        // 縦スクロール判定
+        // 縦スクロール判定: 絶対値ではなく角度ベース（iOS の斜め動作に対応）
         if (isScrolling === null) {
-          isScrolling = diffY > VERTICAL_LIMIT;
+          var totalDist = Math.abs(diffX) + diffY;
+          if (totalDist > 5) {
+            isScrolling = diffY > Math.abs(diffX); // 縦成分が横成分を上回ればスクロール
+          }
         }
         if (isScrolling) {
           isTracking = false;
@@ -86,6 +89,12 @@
         } else {
           snapBack(inner);
         }
+      });
+
+      header.addEventListener('touchcancel', function () {
+        if (!isTracking) return;
+        isTracking = false;
+        snapBack(inner);
       });
     });
   }
