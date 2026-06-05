@@ -183,7 +183,7 @@
           ? '<i class="bi bi-eye"></i><span>解除</span>'
           : '<i class="bi bi-eye-slash"></i><span>除外</span>';
         panel.setAttribute('aria-label', isNowExcluded ? '除外を解除する' : '一覧・グラフから除外する');
-        panel._excludeTapBound = false; // 再バインドを許可
+        // _excludeTapBound はリセットしない: リスナーは再利用し二重バインドを防ぐ
       }
 
       // カードのグレーアウトを切り替え
@@ -312,6 +312,8 @@
   function getCsrfToken() {
     var el = document.querySelector('[name=csrfmiddlewaretoken]');
     if (el) return el.value;
+    var meta = document.querySelector('meta[name=csrf-token]');
+    if (meta) return meta.getAttribute('content');
     var match = document.cookie.match(/csrftoken=([^;]+)/);
     return match ? match[1] : '';
   }
