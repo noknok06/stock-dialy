@@ -1536,6 +1536,14 @@
           <span class="sidebar-status-label">記録のみ</span>
           <span class="sidebar-status-count">·&nbsp;{{ memo_count }}</span>
         </label>
+        <label class="sidebar-status-option{% if request.GET.status == 'excluded' %} is-selected{% endif %}">
+          <input type="radio" name="status" value="excluded"
+                 {% if request.GET.status == 'excluded' %}checked{% endif %}
+                 data-target="statusFilter"
+                 class="sidebar-status-radio sidebar-filter">
+          <span class="sidebar-status-label"><i class="bi bi-eye-slash me-1"></i>除外済み</span>
+          <span class="sidebar-status-count">·&nbsp;{{ excluded_count }}</span>
+        </label>
       </div>
     </div>
 
@@ -1739,6 +1747,11 @@
                   data-status="memo" role="tab">
             <span>メモ</span>
             <span class="status-tab-count">{{ memo_count }}</span>
+          </button>
+          <button type="button" class="status-tab{% if request.GET.status == 'excluded' %} active{% endif %}"
+                  data-status="excluded" role="tab">
+            <span><i class="bi bi-eye-slash"></i> 除外済み</span>
+            <span class="status-tab-count">{{ excluded_count }}</span>
           </button>
         </div>
         <input type="hidden" name="status" id="statusFilter"

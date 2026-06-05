@@ -1,0 +1,12 @@
+<button type="button"
+        class="dropdown-item{% if diary.is_excluded %} text-warning{% endif %}"
+        hx-post="{% url 'stockdiary:toggle_exclude' diary.id %}"
+        hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+        hx-target="this"
+        hx-swap="outerHTML">
+  {% if diary.is_excluded %}
+    <i class="bi bi-eye me-2"></i>除外を解除する
+  {% else %}
+    <i class="bi bi-eye-slash me-2"></i>一覧・グラフから除外する
+  {% endif %}
+</button>

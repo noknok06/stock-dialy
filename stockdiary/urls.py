@@ -18,6 +18,7 @@ urlpatterns = [
     path('<int:pk>/', views.StockDiaryDetailView.as_view(), name='detail'),
     path('<int:pk>/update/', views.StockDiaryUpdateView.as_view(), name='update'),
     path('<int:pk>/delete/', views.StockDiaryDeleteView.as_view(), name='delete'),
+    path('<int:diary_id>/toggle-exclude/', views.toggle_exclude_diary, name='toggle_exclude'),
 
     # ==========================================
     # 🆕 クイック記録（モバイルUX）

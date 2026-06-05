@@ -1513,6 +1513,12 @@
 
 {% block content %}
 <div class="diary-detail-container">
+  {% if diary.is_excluded %}
+  <div class="alert alert-warning d-flex align-items-center gap-2 mb-3" role="alert">
+    <i class="bi bi-eye-slash-fill"></i>
+    <span>この日記は一覧・グラフから除外されています。</span>
+  </div>
+  {% endif %}
   <!-- 操作バー -->
   <div class="action-bar">
     <a href="{% url 'stockdiary:home' %}" class="back-link">
@@ -1545,6 +1551,9 @@
                     data-bs-target="#notificationModal">
               <i class="bi bi-bell me-2"></i>通知設定
             </button>
+          </li>
+          <li>
+            {% include "stockdiary/partials/_exclude_toggle_button.html" %}
           </li>
           <li><hr class="dropdown-divider"></li>
           <li>

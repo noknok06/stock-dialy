@@ -601,7 +601,7 @@ def diary_graph_data(request):
         if not edge_modes:
             edge_modes = ['tag']
 
-        all_user_qs = StockDiary.objects.filter(user=user)
+        all_user_qs = StockDiary.objects.filter(user=user, is_excluded=False)
 
         # --- primary: フィルター条件に合う日記 ---
         primary_qs = all_user_qs
@@ -864,6 +864,7 @@ def diary_detail_graph_data(request, diary_id):
                 StockDiary.objects.filter(
                     user=request.user,
                     stock_symbol=focal.stock_symbol,
+                    is_excluded=False,
                 ).exclude(id=focal.id).values_list('id', flat=True)
             )
             neighbor_ids |= same_symbol_ids
@@ -877,6 +878,7 @@ def diary_detail_graph_data(request, diary_id):
                     StockDiary.objects.filter(
                         user=request.user,
                         stock_symbol__in=mentioned_codes,
+                        is_excluded=False,
                     ).exclude(id=focal.id).values_list('id', flat=True)
                 )
                 neighbor_ids |= mentioned_ids

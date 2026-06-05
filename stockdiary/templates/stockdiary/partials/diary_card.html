@@ -1,7 +1,7 @@
 {% load stockdiary_filters %}
 {% load humanize %}
 
-<article class="diary-article" data-diary-id="{{ diary.id }}">
+<article class="diary-article{% if diary.is_excluded %} diary-article--excluded{% endif %}" data-diary-id="{{ diary.id }}">
 
   <div class="card-body-inner">
 
@@ -205,6 +205,18 @@
       <i class="bi bi-box-arrow-up-right"></i>
       <span class="view-detail-label">詳細を見る</span>
     </a>
+    {% if diary.is_excluded %}
+    <button type="button"
+            class="note-add-footer-btn"
+            hx-post="{% url 'stockdiary:toggle_exclude' diary.id %}"
+            hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+            hx-target="closest article"
+            hx-swap="delete"
+            aria-label="{{ diary.stock_name }}の除外を解除">
+      <i class="bi bi-eye"></i>
+      <span>除外を解除</span>
+    </button>
+    {% else %}
     <button type="button"
             class="note-add-footer-btn"
             data-diary-header=".diary-article[data-diary-id='{{ diary.id }}'] .diary-header"
@@ -212,6 +224,7 @@
       <i class="bi bi-plus-lg"></i>
       <span>記録追加</span>
     </button>
+    {% endif %}
   </footer>
 
 </article>

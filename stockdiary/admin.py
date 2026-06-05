@@ -51,15 +51,15 @@ class StockDiaryAdmin(admin.ModelAdmin):
     """株式日記の管理画面"""
     
     list_display = (
-        'id', 'stock_name_link', 'stock_symbol', 'user', 'status_badge',
-        'current_quantity_display', 'average_price_display', 
-        'realized_profit_display', 'transaction_count', 
+        'id', 'stock_name_link', 'stock_symbol', 'user', 'is_excluded', 'status_badge',
+        'current_quantity_display', 'average_price_display',
+        'realized_profit_display', 'transaction_count',
         'first_purchase_date', 'created_at'
     )
-    
+
     list_filter = (
-        'user', 'sector', 'created_at', 'first_purchase_date',
-        'transaction_count',  # 取引回数でフィルタリング可能に
+        'user', 'sector', 'is_excluded', 'created_at', 'first_purchase_date',
+        'transaction_count',
     )
     
     search_fields = (
@@ -79,7 +79,7 @@ class StockDiaryAdmin(admin.ModelAdmin):
         ('基本情報', {
             'fields': (
                 'user', 'stock_symbol', 'stock_name', 'sector',
-                'reason', 'memo', 'tags'
+                'reason', 'memo', 'tags', 'is_excluded'
             )
         }),
         ('画像', {
