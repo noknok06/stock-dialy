@@ -787,7 +787,7 @@
 .diary-header {
   display: grid;
   overflow: hidden;
-  touch-action: pan-y; /* 縦スクロールはブラウザに委譲、水平スワイプはJSで処理 */
+  touch-action: none; /* iOS が水平スワイプを奪わないよう全タッチをJSに委譲 */
 }
 .diary-header-inner {
   grid-row: 1;
@@ -796,6 +796,7 @@
   z-index: 1;
   background: var(--bg-100);
   will-change: transform;
+  touch-action: none; /* タッチターゲット自体にも設定（iOS対応） */
   overflow: hidden; /* BFC化: 子要素の margin-bottom を inner 内に封じ込め、
                        grid 行高さが inner の border-box と一致するようにする */
 }
