@@ -799,6 +799,27 @@
   overflow: hidden; /* BFC化: 子要素の margin-bottom を inner 内に封じ込め、
                        grid 行高さが inner の border-box と一致するようにする */
 }
+.exclude-action-panel {
+  grid-row: 1;
+  grid-column: 1;
+  justify-self: start; /* 左端に寄せる */
+  align-self: stretch;
+  width: 80px;
+  z-index: 0;
+  background: var(--warning-500, #d97706);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+}
+.exclude-action-panel i { font-size: 1.25rem; }
+
 .note-action-panel {
   /* グリッドの同セルに配置 → 高さが inner と自動一致 */
   grid-row: 1;
