@@ -3430,17 +3430,15 @@ window.showReportModal = function(el) {
             <option value="sell">売却</option>
           </select>
         </div>
-        <div class="d-flex gap-2 mb-3">
-          <div class="flex-grow-1">
-            <label class="form-label-improved">単価（{{ diary|currency_unit }}）<span class="text-danger ms-1">*</span></label>
-            <input type="number" class="form-input-improved" name="price"
-                   step="0.01" min="0.01" placeholder="例: 1000.00" required>
-          </div>
-          <div class="flex-grow-1">
-            <label class="form-label-improved">数量（株）<span class="text-danger ms-1">*</span></label>
-            <input type="number" class="form-input-improved" name="quantity"
-                   step="1" min="1" placeholder="例: 100" required>
-          </div>
+        <div class="mb-3">
+          <label class="form-label-improved">単価（{{ diary|currency_unit }}）<span class="text-danger ms-1">*</span></label>
+          <input type="number" class="form-input-improved" name="price" inputmode="decimal"
+                 step="0.01" min="0.01" placeholder="例: 1000.00" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label-improved">数量（株）<span class="text-danger ms-1">*</span></label>
+          <input type="number" class="form-input-improved" name="quantity" inputmode="numeric"
+                 step="1" min="1" placeholder="例: 100" required>
         </div>
         <div class="mb-3">
           <label class="form-label-improved">メモ（任意）</label>
@@ -3484,7 +3482,7 @@ window.showReportModal = function(el) {
         </div>
         <div class="mb-3">
           <label class="form-label-improved">分割比率<span class="text-danger ms-1">*</span></label>
-          <input type="number" class="form-input-improved" name="split_ratio"
+          <input type="number" class="form-input-improved" name="split_ratio" inputmode="decimal"
                  step="0.0001" min="0.0001" placeholder="例: 2.0" required>
           <small class="form-text-improved">1株が何株になるか（例: 1→2株なら「2.0」）</small>
         </div>

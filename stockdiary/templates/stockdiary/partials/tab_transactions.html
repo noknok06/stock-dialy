@@ -226,11 +226,11 @@
         
         <div class="transaction-item-improved mb-3" id="transaction-{{ transaction.id }}">
           <div class="transaction-header-improved">
-            <div class="transaction-date-improved">
-              <i class="bi bi-calendar-date me-1"></i>
-              {{ transaction.transaction_date|date:"Y年m月d日" }}
-            </div>
-            <div class="transaction-actions-improved">
+            <div class="transaction-meta-improved">
+              <span class="transaction-date-improved">
+                <i class="bi bi-calendar-date me-1"></i>
+                {{ transaction.transaction_date|date:"Y/m/d" }}
+              </span>
               <span class="badge {% if transaction.transaction_type == 'buy' %}badge-primary{% else %}badge-danger{% endif %}">
                 {{ transaction.get_transaction_type_display }}
               </span>
@@ -240,10 +240,12 @@
                 <i class="bi bi-lightning-charge me-1"></i>信用
               </span>
               {% endif %}
-              <button class="btn-icon btn-success-icon" onclick="showEditForm({{ transaction.id }})">
+            </div>
+            <div class="transaction-actions-improved">
+              <button class="btn-icon btn-icon--sm btn-success-icon" onclick="showEditForm({{ transaction.id }})">
                 <i class="bi bi-pencil"></i>
               </button>
-              <button class="btn-icon btn-danger-icon" onclick="deleteTransaction({{ transaction.id }}, '{{ transaction.transaction_date|date:"Y年m月d日" }}')">
+              <button class="btn-icon btn-icon--sm btn-danger-icon" onclick="deleteTransaction({{ transaction.id }}, '{{ transaction.transaction_date|date:"Y年m月d日" }}')">
                 <i class="bi bi-trash"></i>
               </button>
             </div>
@@ -311,13 +313,13 @@
                 
                 <div class="col-md-6">
                   <label class="form-label-improved">単価（{{ diary|currency_unit }}）</label>
-                  <input type="number" class="form-input-improved" name="price" 
+                  <input type="number" class="form-input-improved" name="price" inputmode="decimal"
                         value="{{ transaction.price }}" step="0.01" min="0.01" required>
                 </div>
-                
+
                 <div class="col-md-6">
                   <label class="form-label-improved">数量（株）</label>
-                  <input type="number" class="form-input-improved" name="quantity" 
+                  <input type="number" class="form-input-improved" name="quantity" inputmode="numeric"
                         value="{{ transaction.quantity }}" step="1" min="1" required>
                 </div>
                 
@@ -357,23 +359,26 @@
         {% with split=item.data %}
         <div class="split-item-improved mb-3">
           <div class="split-header-improved">
-            <div class="split-date-improved">
-              <i class="bi bi-scissors me-1"></i>
-              {{ split.split_date|date:"Y年m月d日" }}
-            </div>
-            <div class="split-actions-improved">
+            <div class="split-meta-improved">
+              <span class="split-date-improved">
+                <i class="bi bi-scissors me-1"></i>
+                {{ split.split_date|date:"Y/m/d" }}
+              </span>
               <span class="badge badge-info">株式分割</span>
               {% if split.is_applied %}
                 <span class="badge badge-success">適用済み</span>
-              {% else %}
-                <button class="btn-icon" onclick="applySplit({{ split.id }})">
-                  <i class="bi bi-check-circle me-1"></i>適用
-                </button>
-                <button class="btn-icon btn-danger-icon" onclick="deleteSplit({{ split.id }})">
-                  <i class="bi bi-trash"></i>
-                </button>
               {% endif %}
             </div>
+            {% if not split.is_applied %}
+            <div class="split-actions-improved">
+              <button class="btn-icon btn-icon--sm" onclick="applySplit({{ split.id }})">
+                <i class="bi bi-check-circle me-1"></i>適用
+              </button>
+              <button class="btn-icon btn-icon--sm btn-danger-icon" onclick="deleteSplit({{ split.id }})">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+            {% endif %}
           </div>
 
           <div class="split-body-improved">
@@ -739,13 +744,23 @@
   color: var(--primary-color);
 }
 
+/* 日付＋バッジの左グループ */
+.transaction-meta-improved,
+.split-meta-improved {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.5rem;
+  min-width: 0;
+}
+
 /* アクション部分の余白改善 */
 .transaction-actions-improved,
 .split-actions-improved {
   display: flex;
-  gap: 0.625rem;
+  gap: 0.5rem;
   align-items: center;
-  flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 /* ボディ部分を柔軟に */
@@ -914,30 +929,50 @@
     padding: 1rem;
   }
   
+  /* ヘッダーは1行を維持（日付＋バッジ左 / 編集・削除右端） */
   .transaction-header-improved,
   .split-header-improved {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-    padding-bottom: 0.875rem;
-    margin-bottom: 0.875rem;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding-bottom: 0.75rem;
+    margin-bottom: 0.75rem;
   }
-  
+
   .transaction-actions-improved,
   .split-actions-improved {
-    width: 100%;
-    justify-content: space-between;
+    width: auto;
+    justify-content: flex-end;
   }
-  
+
+  /* 明細は2列グリッド、金額は全幅で強調 */
   .transaction-details-improved,
   .split-details-improved {
-    grid-template-columns: 1fr;
-    gap: 0.625rem;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
   }
-  
+
+  .detail-item-improved.highlight {
+    grid-column: 1 / -1;
+  }
+
   .detail-item-improved {
-    min-height: 60px;
-    padding: 0.625rem;
+    min-height: auto;
+    padding: 0.5rem 0.625rem;
+  }
+
+  /* カード間隔を詰めてスクロール量を削減 */
+  .transaction-list-improved > .transaction-item-improved:not(:last-child),
+  .transaction-list-improved > .split-item-improved:not(:last-child),
+  .transaction-list-improved > .form-card-improved:not(:last-child) {
+    margin-bottom: 0.75rem;
+  }
+
+  /* インライン編集フォームの入力をタッチしやすく */
+  .form-card-improved .form-input-improved {
+    min-height: 48px;
+    font-size: 1rem;
   }
   
   .detail-label-improved {
