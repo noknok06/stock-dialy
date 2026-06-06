@@ -29,12 +29,12 @@ def extract_hashtags(text: str) -> List[str]:
     if not text:
         return []
 
-    # ハッシュタグのパターン: @の後に日本語、英数字、アンダースコアが続く
+    # ハッシュタグのパターン: @の後に日本語、英数字、アンダースコア、& が続く
     # [\u3040-\u309F] - ひらがな
     # [\u30A0-\u30FF] - カタカナ
     # [\u4E00-\u9FFF] - 漢字
-    # [a-zA-Z0-9_] - 英数字とアンダースコア
-    pattern = r'@([\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF\uFF66-\uFF9Fa-zA-Z0-9_]+)'
+    # [a-zA-Z0-9_&] - 英数字・アンダースコア・&（「M&A」のような表記に対応）
+    pattern = r'@([\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF\uFF66-\uFF9Fa-zA-Z0-9_&]+)'
 
     matches = re.findall(pattern, text)
 
