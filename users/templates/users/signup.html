@@ -1,788 +1,321 @@
-{% extends 'base.html' %}
-
-{% block title %}アカウント登録 | カブログ{% endblock %}
-
-{% block head %}
-{{ block.super }}
+{% load static %}<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>アカウント登録 | カブログ</title>
+<link rel="icon" type="image/svg+xml" href="{% static 'images/icon-192.svg' %}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 <style>
-  :root {
-    /* Modern Design System Variables */
-    --primary-500: #0891b2;
-    --primary-600: #0e7490;
-    --primary-700: #155e75;
-    --primary-50: #ecfeff;
-    --primary-100: #cffafe;
-
-    --secondary-500: #3b82f6;
-    --secondary-600: #2563eb;
-
-    --accent-500: #8b5cf6;
-    --accent-600: #7c3aed;
-
-    --neutral-50: #f9fafb;
-    --neutral-100: #f3f4f6;
-    --neutral-200: #e5e7eb;
-    --neutral-300: #d1d5db;
-    --neutral-400: #9ca3af;
-    --neutral-500: #6b7280;
-    --neutral-600: #4b5563;
-    --neutral-700: #374151;
-    --neutral-800: #1f2937;
-    --neutral-900: #111827;
-
-    --success: #10b981;
-    --warning: #f59e0b;
-    --error: #ef4444;
-    --info: #3b82f6;
-
-    --background: #ffffff;
-    --surface: #f9fafb;
-    --surface-elevated: #ffffff;
-
-    --text-primary: #111827;
-    --text-secondary: #4b5563;
-    --text-tertiary: #6b7280;
-    --text-inverse: #ffffff;
-
-    --border-primary: #e5e7eb;
-    --border-secondary: #d1d5db;
-
-    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-
-    --radius-sm: 0.375rem;
-    --radius-md: 0.5rem;
-    --radius-lg: 0.75rem;
-    --radius-xl: 1rem;
-    --radius-2xl: 1.5rem;
-
-    --duration-200: 200ms;
-    --duration-300: 300ms;
-    --duration-500: 500ms;
-
-    --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
-    --ease-out: cubic-bezier(0, 0, 0.2, 1);
-  }
-
-  /* Hero Section */
-  .signup-hero {
-    background: linear-gradient(135deg, var(--primary-500) 0%, var(--secondary-500) 100%);
-    color: var(--text-inverse);
-    padding: 4rem 0;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .signup-hero::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background-image:
-      radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
-      radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
-  }
-
-  .signup-hero-content {
-    position: relative;
-    z-index: 2;
-    text-align: center;
-    max-width: 48rem;
-    margin: 0 auto;
-  }
-
-  .signup-hero h1 {
-    color: var(--text-inverse);
-    font-size: clamp(2rem, 4vw, 3rem);
-    font-weight: 800;
-    margin-bottom: 1rem;
-    letter-spacing: -0.02em;
-  }
-
-  .signup-hero p {
-    font-size: 1.125rem;
-    opacity: 0.9;
-    line-height: 1.6;
-  }
-
-  /* Container */
-  .signup-container {
-    padding: 3rem 0;
-  }
-
-  /* Signup Card */
-  .signup-card {
-    max-width: 600px;
-    margin: 0 auto;
-    background: var(--surface-elevated);
-    border: 1px solid var(--border-primary);
-    border-radius: var(--radius-2xl);
-    box-shadow: var(--shadow-xl);
-    overflow: hidden;
-    transition: all var(--duration-300) var(--ease-out);
-  }
-
-  .signup-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  }
-
-  .signup-card-header {
-    background: linear-gradient(135deg, var(--surface) 0%, var(--neutral-100) 100%);
-    padding: 2rem;
-    text-align: center;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .signup-card-header::before {
-    content: '';
-    position: absolute;
-    top: -20px;
-    right: -20px;
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    background: rgba(8, 145, 178, 0.1);
-  }
-
-  .signup-card-header h3 {
-    color: var(--primary-600);
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-    font-size: 1.75rem;
-    position: relative;
-    z-index: 2;
-  }
-
-  .signup-card-header p {
-    color: var(--text-secondary);
-    margin-bottom: 0;
-    position: relative;
-    z-index: 2;
-  }
-
-  .signup-card-body {
-    padding: 2.5rem;
-  }
-
-  /* Form Styles */
-  .form-group {
-    margin-bottom: 1.5rem;
-  }
-
-  .form-label {
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 0.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.95rem;
-  }
-
-  .form-control {
-    border: 2px solid var(--border-primary);
-    border-radius: var(--radius-lg);
-    padding: 0.875rem 1rem;
-    font-size: 1rem;
-    transition: all var(--duration-200) var(--ease-in-out);
-    background: var(--surface-elevated);
-    color: var(--text-primary);
-    height: auto;
-  }
-
-  .form-control:focus {
-    border-color: var(--primary-500);
-    box-shadow: 0 0 0 0.25rem rgba(8, 145, 178, 0.25);
-    outline: none;
-    background: var(--background);
-  }
-
-  /* Password Help Text */
-  .password-help {
-    background: var(--surface);
-    border: 1px solid var(--border-primary);
-    border-radius: var(--radius-md);
-    padding: 1rem;
-    margin-top: 0.5rem;
-    font-size: 0.875rem;
-  }
-
-  .password-help h6 {
-    color: var(--text-primary);
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    font-size: 0.875rem;
-  }
-
-  .password-requirements {
-    list-style: none;
-    padding-left: 0;
-    margin-bottom: 0;
-  }
-
-  .password-requirements li {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.25rem;
-    color: var(--text-secondary);
-    font-size: 0.8rem;
-  }
-
-  .password-requirements i {
-    color: var(--success);
-    font-size: 0.75rem;
-  }
-
-  /* Submit Button */
-  .signup-btn {
-    background: linear-gradient(135deg, var(--primary-500) 0%, var(--secondary-500) 100%);
-    color: var(--text-inverse);
-    border: none;
-    border-radius: var(--radius-xl);
-    padding: 0.875rem 2rem;
-    font-size: 1rem;
-    font-weight: 600;
-    transition: all var(--duration-300) var(--ease-out);
-    box-shadow: var(--shadow-md);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    width: 100%;
-  }
-
-  .signup-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-xl);
-    color: var(--text-inverse);
-  }
-
-  .signup-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
-  }
-
-  /* Google Signup */
-  .signup-divider {
-    display: flex;
-    align-items: center;
-    margin: 2rem 0;
-  }
-
-  .signup-divider::before,
-  .signup-divider::after {
-    content: "";
-    flex: 1;
-    height: 1px;
-    background: linear-gradient(to right, transparent, var(--border-primary), transparent);
-  }
-
-  .signup-divider span {
-    padding: 0 1.5rem;
-    color: var(--text-tertiary);
-    font-size: 0.9rem;
-    font-weight: 500;
-  }
-
-  .google-signup-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-    border: 2px solid var(--border-primary);
-    border-radius: var(--radius-lg);
-    padding: 0.875rem 1rem;
-    font-size: 1rem;
-    font-weight: 500;
-    transition: all var(--duration-200) var(--ease-in-out);
-    background: var(--surface-elevated);
-    color: var(--text-primary);
-    width: 100%;
-    text-decoration: none;
-  }
-
-  .google-signup-btn:hover {
-    border-color: var(--border-secondary);
-    background: var(--surface);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
-    color: var(--text-primary);
-  }
-
-  /* Footer */
-  .signup-footer {
-    text-align: center;
-    margin-top: 2rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid var(--border-primary);
-  }
-
-  .signup-footer p {
-    color: var(--text-secondary);
-    margin-bottom: 0;
-  }
-
-  .signup-footer a {
-    color: var(--primary-500);
-    text-decoration: none;
-    font-weight: 600;
-    transition: all var(--duration-200) var(--ease-in-out);
-  }
-
-  .signup-footer a:hover {
-    color: var(--primary-600);
-    text-decoration: underline;
-  }
-
-  /* Error Styles */
-  .alert {
-    border: none;
-    border-radius: var(--radius-lg);
-    padding: 1rem 1.5rem;
-    margin-bottom: 1.5rem;
-    display: flex;
-    align-items: flex-start;
-    gap: 0.75rem;
-  }
-
-  .alert-danger {
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.05) 100%);
-    border-left: 4px solid var(--error);
-    color: var(--error);
-  }
-
-  .text-danger {
-    color: var(--error);
-    font-size: 0.875rem;
-    margin-top: 0.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-  }
-
-  /* Features List */
-  .signup-features {
-    background: var(--surface);
-    border: 1px solid var(--border-primary);
-    border-radius: var(--radius-lg);
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-  }
-
-  .signup-features h5 {
-    color: var(--text-primary);
-    font-weight: 600;
-    margin-bottom: 1rem;
-    font-size: 1rem;
-  }
-
-  .features-list {
-    list-style: none;
-    padding-left: 0;
-    margin-bottom: 0;
-  }
-
-  .features-list li {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 0.75rem;
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-  }
-
-  .features-list li:last-child {
-    margin-bottom: 0;
-  }
-
-  .features-list i {
-    color: var(--success);
-    font-size: 1rem;
-    width: 1rem;
-    text-align: center;
-  }
-
-  /* Animations */
-  .fade-in {
-    opacity: 0;
-    transform: translateY(2rem);
-    transition: all 0.6s var(--ease-out);
-  }
-
-  .fade-in.visible {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  /* Responsive Design */
-  @media (max-width: 768px) {
-    .signup-hero {
-      padding: 3rem 0;
-    }
-
-    .signup-container {
-      padding: 2rem 1rem;
-    }
-
-    .signup-card-header {
-      padding: 1.5rem;
-    }
-
-    .signup-card-body {
-      padding: 1.5rem;
-    }
-  }
-
-  /* ダークモード基本スタイル */
-  .dark-mode .signup-container,
-  [data-theme="dark"] .signup-container {
-    background-color: var(--dm-background, #0f172a);
-  }
-
-  .dark-mode .signup-card,
-  [data-theme="dark"] .signup-card {
-    background: var(--dm-card, #1e293b);
-    border-color: var(--dm-border, #334155);
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
-  }
-
-  .dark-mode .signup-card-header,
-  [data-theme="dark"] .signup-card-header {
-    background: linear-gradient(135deg, rgba(71, 85, 105, 0.3) 0%, rgba(51, 65, 85, 0.3) 100%);
-  }
-
-  .dark-mode .signup-card-header h3,
-  [data-theme="dark"] .signup-card-header h3 {
-    color: var(--dm-primary, #3b82f6);
-  }
-
-  .dark-mode .signup-card-header p,
-  [data-theme="dark"] .signup-card-header p {
-    color: var(--dm-muted-foreground, #94a3b8);
-  }
-
-  .dark-mode .signup-card-body,
-  [data-theme="dark"] .signup-card-body {
-    background-color: var(--dm-card, #1e293b);
-  }
-
-  /* フィーチャーリスト */
-  .dark-mode .signup-features,
-  [data-theme="dark"] .signup-features {
-    background: rgba(71, 85, 105, 0.2);
-    border-color: var(--dm-border, #334155);
-  }
-
-  .dark-mode .signup-features h5,
-  [data-theme="dark"] .signup-features h5 {
-    color: var(--dm-foreground, #f1f5f9);
-  }
-
-  .dark-mode .features-list li,
-  [data-theme="dark"] .features-list li {
-    color: var(--dm-muted-foreground, #94a3b8);
-  }
-
-  .dark-mode .features-list i,
-  [data-theme="dark"] .features-list i {
-    color: var(--dm-success, #10b981);
-  }
-
-  /* フォーム要素 */
-  .dark-mode .form-label,
-  [data-theme="dark"] .form-label {
-    color: var(--dm-foreground, #f1f5f9);
-  }
-
-  .dark-mode .form-control,
-  [data-theme="dark"] .form-control {
-    background: rgba(71, 85, 105, 0.3);
-    border-color: var(--dm-border, #334155);
-    color: var(--dm-foreground, #f1f5f9);
-  }
-
-  .dark-mode .form-control:focus,
-  [data-theme="dark"] .form-control:focus {
-    background: rgba(71, 85, 105, 0.4);
-    border-color: var(--dm-primary, #3b82f6);
-    box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25);
-  }
-
-  .dark-mode .form-control::placeholder,
-  [data-theme="dark"] .form-control::placeholder {
-    color: var(--dm-muted-foreground, #94a3b8);
-  }
-
-  /* パスワードヘルプ */
-  .dark-mode .password-help,
-  [data-theme="dark"] .password-help {
-    background: rgba(71, 85, 105, 0.2);
-    border-color: var(--dm-border, #334155);
-  }
-
-  .dark-mode .password-help h6,
-  [data-theme="dark"] .password-help h6 {
-    color: var(--dm-foreground, #f1f5f9);
-  }
-
-  .dark-mode .password-requirements li,
-  [data-theme="dark"] .password-requirements li {
-    color: var(--dm-muted-foreground, #94a3b8);
-  }
-
-  .dark-mode .password-requirements i,
-  [data-theme="dark"] .password-requirements i {
-    color: var(--dm-success, #10b981);
-  }
-
-  /* Googleサインアップボタン */
-  .dark-mode .google-signup-btn,
-  [data-theme="dark"] .google-signup-btn {
-    background: rgba(71, 85, 105, 0.3);
-    border-color: var(--dm-border, #334155);
-    color: var(--dm-foreground, #f1f5f9);
-  }
-
-  .dark-mode .google-signup-btn:hover,
-  [data-theme="dark"] .google-signup-btn:hover {
-    background: rgba(71, 85, 105, 0.5);
-    border-color: var(--dm-muted, #475569);
-    color: var(--dm-foreground, #f1f5f9);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
-  }
-
-  /* ディバイダー */
-  .dark-mode .signup-divider::before,
-  .dark-mode .signup-divider::after,
-  [data-theme="dark"] .signup-divider::before,
-  [data-theme="dark"] .signup-divider::after {
-    background: linear-gradient(to right, transparent, var(--dm-border, #334155), transparent);
-  }
-
-  .dark-mode .signup-divider span,
-  [data-theme="dark"] .signup-divider span {
-    color: var(--dm-muted-foreground, #94a3b8);
-  }
-
-  /* フッター */
-  .dark-mode .signup-footer,
-  [data-theme="dark"] .signup-footer {
-    border-top-color: var(--dm-border, #334155);
-  }
-
-  .dark-mode .signup-footer p,
-  [data-theme="dark"] .signup-footer p {
-    color: var(--dm-muted-foreground, #94a3b8);
-  }
-
-  .dark-mode .signup-footer a,
-  [data-theme="dark"] .signup-footer a {
-    color: var(--dm-primary, #3b82f6);
-  }
-
-  .dark-mode .signup-footer a:hover,
-  [data-theme="dark"] .signup-footer a:hover {
-    color: var(--dm-primary-hover, #2563eb);
-  }
-
-  /* アラート */
-  .dark-mode .alert-danger,
-  [data-theme="dark"] .alert-danger {
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.1) 100%);
-    border-left-color: var(--dm-destructive, #ef4444);
-    color: var(--dm-destructive, #ef4444);
-  }
-
-  .dark-mode .text-danger,
-  [data-theme="dark"] .text-danger {
-    color: var(--dm-destructive, #ef4444);
-  }
+:root{
+  --ink:#0a0f1e;--ink2:#0f1628;
+  --cyan:#06b6d4;--cyan-d:#0891b2;--blue:#3b82f6;--violet:#7c3aed;
+  --paper:#fbfaf7;--paper2:#f4f2ec;--line:#e9e6df;
+  --t1:#0f172a;--t2:#51596b;--t3:#8a91a3;
+  --grad:linear-gradient(120deg,#22d3ee 0%,#3b82f6 60%,#6366f1 100%);
+  --grad-soft:linear-gradient(135deg,#06b6d4,#3b82f6);
+  --fz-jp:'Noto Sans JP';--fz:'Inter','Noto Sans JP';
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--fz),sans-serif;color:var(--t1);background:var(--paper);-webkit-font-smoothing:antialiased;line-height:1.6}
+a{text-decoration:none;color:inherit}
+img{display:block;max-width:100%}
+.jp{font-family:var(--fz-jp),sans-serif}
+.grad-txt{background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+
+.page{display:grid;grid-template-columns:1.05fr .95fr;min-height:100vh;align-items:stretch}
+
+/* ---------- LEFT brand panel (sticky) ---------- */
+.brandside{position:sticky;top:0;height:100vh;background:radial-gradient(120% 120% at 25% -10%,#16213b 0%,var(--ink) 58%);color:#fff;overflow:hidden;
+  display:flex;flex-direction:column;padding:46px 54px}
+.mesh{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.mesh i{position:absolute;border-radius:50%;filter:blur(72px);opacity:.55}
+.mesh .m1{width:520px;height:520px;top:-160px;left:-120px;background:radial-gradient(circle,rgba(6,182,212,.6),transparent 65%)}
+.mesh .m2{width:500px;height:500px;bottom:-200px;right:-130px;background:radial-gradient(circle,rgba(99,102,241,.5),transparent 65%)}
+.mesh .m3{width:320px;height:320px;top:42%;left:46%;background:radial-gradient(circle,rgba(124,58,237,.32),transparent 65%)}
+.grid-lines{position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);background-size:54px 54px;mask-image:radial-gradient(120% 90% at 30% 10%,#000 30%,transparent 78%);-webkit-mask-image:radial-gradient(120% 90% at 30% 10%,#000 30%,transparent 78%)}
+.brandside>*{position:relative;z-index:2}
+.bs-logo{display:flex;align-items:center;gap:11px;font-weight:800;font-size:20px;letter-spacing:-.01em;color:#fff}
+.bs-logo .mk{width:38px;height:38px;border-radius:11px;background:#fff;padding:6px;box-shadow:0 6px 18px rgba(6,182,212,.35);display:flex;align-items:center;justify-content:center}
+.bs-main{flex:1;display:flex;flex-direction:column;justify-content:center;max-width:440px;padding:30px 0}
+.bs-eyebrow{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;padding:.5rem 1rem;border-radius:999px;font-size:13px;font-weight:600;
+  background:rgba(6,182,212,.13);border:1px solid rgba(6,182,212,.32);color:#7ee8fa;margin-bottom:26px}
+.bs-eyebrow .dot{width:7px;height:7px;border-radius:50%;background:#22d3ee;box-shadow:0 0 10px #22d3ee;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.bs-main h1{font-family:var(--fz-jp);font-weight:800;font-size:clamp(32px,3.4vw,46px);line-height:1.2;letter-spacing:-.01em;margin-bottom:18px}
+.bs-main p.sub{font-size:17px;color:rgba(255,255,255,.74);line-height:1.8;margin-bottom:32px}
+.bs-list{list-style:none;display:flex;flex-direction:column;gap:15px}
+.bs-list li{display:flex;align-items:center;gap:13px;font-size:15.5px;color:rgba(255,255,255,.82)}
+.bs-list .ic{width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.bs-foot{display:flex;align-items:center;gap:26px;border-top:1px solid rgba(255,255,255,.1);padding-top:24px;margin-top:6px}
+.bs-stat .n{font-size:24px;font-weight:800}
+.bs-stat .l{font-size:12.5px;color:rgba(255,255,255,.55)}
+.bs-chip{position:absolute;right:48px;top:54px;z-index:3;display:flex;align-items:center;gap:11px;background:rgba(255,255,255,.96);
+  border-radius:15px;padding:11px 15px;box-shadow:0 18px 44px rgba(3,8,22,.4);animation:float 5s ease-in-out infinite;white-space:nowrap}
+.bs-chip .ci{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:19px;background:linear-gradient(135deg,#7c3aed,#4f46e5)}
+.bs-chip .cl{display:block;font-size:11.5px;color:#8a91a3;font-weight:600;line-height:1.2}
+.bs-chip .cv{display:block;font-size:16px;font-weight:800;color:#0f172a;line-height:1.25}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+
+/* ---------- RIGHT form panel ---------- */
+.formside{display:flex;align-items:center;justify-content:center;padding:48px 40px;background:var(--paper)}
+.formwrap{width:100%;max-width:430px}
+.form-logo{display:none;align-items:center;gap:10px;font-weight:800;font-size:19px;margin-bottom:26px;justify-content:center;color:var(--t1)}
+.form-logo .mk{width:34px;height:34px;border-radius:10px;background:#fff;padding:5px;box-shadow:0 4px 14px rgba(6,182,212,.2);display:flex;align-items:center;justify-content:center}
+.fh{margin-bottom:26px}
+.fh .pretitle{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cyan-d);margin-bottom:8px}
+.fh h2{font-family:var(--fz-jp);font-size:29px;font-weight:800;letter-spacing:-.01em;margin-bottom:8px}
+.fh p{font-size:15px;color:var(--t2)}
+.alert{display:none;align-items:flex-start;gap:10px;background:#fee2e2;border:1px solid #fecaca;color:#dc2626;border-radius:14px;padding:.85rem 1rem;font-size:14px;margin-bottom:20px}
+.alert.show{display:flex}
+.alert i{flex-shrink:0;margin-top:2px}
+.alert ul{list-style:none;margin:0;padding:0}
+.field{margin-bottom:17px}
+.field>label{display:flex;align-items:center;gap:6px;font-family:var(--fz-jp);font-weight:600;font-size:14px;color:var(--t1);margin-bottom:8px}
+.field>label i{color:var(--cyan-d)}
+.control{position:relative}
+.control .lead-ic{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:var(--t3);font-size:17px;transition:color .25s;pointer-events:none;z-index:2}
+.control input,.control .form-control{width:100%;height:52px;border:1.5px solid var(--line);border-radius:14px;background:#fff;font-family:var(--fz);font-size:16px;color:var(--t1);
+  padding:0 48px 0 46px;transition:border-color .25s,box-shadow .25s;display:block}
+.control input::placeholder{color:var(--t3)}
+.control input:focus,.control .form-control:focus{outline:none;border-color:var(--cyan-d);box-shadow:0 0 0 4px rgba(8,145,178,.12)}
+.control input:focus~.lead-ic,.control .form-control:focus~.lead-ic{color:var(--cyan-d)}
+.control input.ok{border-color:#10b981}
+.control input.ok~.lead-ic{color:#10b981}
+.toggle-pw{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:38px;height:38px;border:none;background:transparent;color:var(--t3);
+  border-radius:10px;cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center;transition:color .2s,background .2s;z-index:2}
+.toggle-pw:hover{color:var(--cyan-d);background:var(--paper2)}
+.match{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:18px;color:#10b981;opacity:0;transition:opacity .2s;z-index:2}
+.match.show{opacity:1}
+.fld-err{color:#dc2626;font-size:13px;margin-top:6px;display:flex;align-items:flex-start;gap:5px}
+.fld-err i{flex-shrink:0;margin-top:2px}
+
+/* strength meter */
+.strength{margin-top:10px}
+.strength-bars{display:flex;gap:6px;margin-bottom:7px}
+.strength-bars span{flex:1;height:5px;border-radius:99px;background:var(--line);transition:background .3s}
+.strength-label{font-size:12.5px;color:var(--t3);display:flex;align-items:center;gap:6px}
+.strength-label b{font-weight:700}
+
+/* requirements */
+.reqs{list-style:none;margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:7px 14px}
+.reqs li{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--t3);transition:color .25s}
+.reqs li i{font-size:13px;transition:color .25s}
+.reqs li.met{color:var(--t2)}
+.reqs li.met i{color:#10b981}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.55em;width:100%;height:54px;border:none;cursor:pointer;
+  font-family:var(--fz);font-weight:600;font-size:16px;border-radius:14px;transition:transform .2s,box-shadow .2s,background .2s,border-color .2s;text-decoration:none}
+.btn-primary{background:var(--grad-soft);color:#fff;box-shadow:0 10px 28px rgba(8,145,178,.34);margin-top:8px}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 16px 38px rgba(8,145,178,.46);color:#fff}
+.btn-primary:active{transform:translateY(0) scale(.99)}
+.divider{display:flex;align-items:center;gap:16px;margin:24px 0;color:var(--t3);font-size:13.5px;font-weight:500}
+.divider::before,.divider::after{content:"";flex:1;height:1px;background:linear-gradient(to right,transparent,var(--line),transparent)}
+.btn-google{background:#fff;border:1.5px solid var(--line);color:var(--t1)}
+.btn-google:hover{border-color:#cbd2dd;transform:translateY(-2px);box-shadow:0 12px 28px rgba(15,23,42,.08);color:var(--t1)}
+.btn-google svg{width:21px;height:21px}
+.ffoot{text-align:center;margin-top:26px;font-size:14.5px;color:var(--t2)}
+.ffoot a{color:var(--cyan-d);font-weight:700}
+.ffoot a:hover{text-decoration:underline}
+.legal{text-align:center;margin-top:20px;font-size:12px;color:var(--t3);line-height:1.7}
+.legal a{color:var(--t2);text-decoration:underline}
+
+/* ---------- responsive ---------- */
+@media(max-width:900px){
+  .page{grid-template-columns:1fr}
+  .brandside{display:none}
+  .form-logo{display:flex}
+  .formside{min-height:100vh;padding:40px 22px;background:radial-gradient(120% 50% at 50% -8%,#eef4f8 0%,var(--paper) 42%)}
+  .fh{text-align:center}
+}
+@media(max-width:430px){
+  .fh h2{font-size:25px}
+  .formside{padding:32px 18px}
+  .reqs{grid-template-columns:1fr}
+}
 </style>
-{% endblock %}
+</head>
+<body>
+<div class="page">
 
-{% block content %}
-<!-- Hero Section -->
-<section class="signup-hero">
-  <div class="container">
-    <div class="signup-hero-content">
-      <h1>アカウント登録</h1>
-      <p>カブログで投資記録を始めて、より良い投資家になりましょう</p>
+  <!-- LEFT — brand -->
+  <aside class="brandside">
+    <div class="mesh"><i class="m1"></i><i class="m2"></i><i class="m3"></i></div>
+    <div class="grid-lines"></div>
+    <a class="bs-logo" href="{% url 'landing_page' %}"><span class="mk"><img src="{% static 'images/icon-192.svg' %}" alt="カブログ"></span>カブログ</a>
+    <div class="bs-chip"><span class="ci"><i class="bi bi-diagram-3"></i></span><span><span class="cl">投資知識グラフ</span><span class="cv jp">使うほど育つ</span></span></div>
+
+    <div class="bs-main">
+      <span class="bs-eyebrow"><span class="dot"></span>30秒で登録完了・無料</span>
+      <h1 class="jp">今日から、<span class="grad-txt">記録が資産に。</span></h1>
+      <p class="sub jp">投資の「なぜ」を残す習慣を、いま始めましょう。すべての機能を無料でご利用いただけます。</p>
+      <ul class="bs-list jp">
+        <li><span class="ic" style="background:rgba(6,182,212,.18);color:#22d3ee"><i class="bi bi-journal-richtext"></i></span>投資理由をMarkdownで記録</li>
+        <li><span class="ic" style="background:rgba(167,139,250,.18);color:#a78bfa"><i class="bi bi-diagram-3"></i></span>関連グラフで知識を可視化</li>
+        <li><span class="ic" style="background:rgba(52,211,153,.18);color:#34d399"><i class="bi bi-bank"></i></span>楽天・SBIのCSVを一括取込</li>
+      </ul>
     </div>
-  </div>
-</section>
 
-<div class="signup-container">
-  <div class="container">
-    <div class="signup-card fade-in">
-      <div class="signup-card-header">
-        <h3>無料アカウント作成</h3>
-        <p>すべての機能を無料でご利用いただけます</p>
+    <div class="bs-foot">
+      <div class="bs-stat"><div class="n">10,000+</div><div class="l">記録された投資判断</div></div>
+      <div class="bs-stat"><div class="n">¥0</div><div class="l">基本利用はずっと無料</div></div>
+    </div>
+  </aside>
+
+  <!-- RIGHT — form -->
+  <main class="formside">
+    <div class="formwrap">
+      <a class="form-logo" href="{% url 'landing_page' %}"><span class="mk"><img src="{% static 'images/icon-192.svg' %}" alt="カブログ"></span>カブログ</a>
+
+      <div class="fh">
+        <div class="pretitle">Create account</div>
+        <h2 class="jp">無料アカウント作成</h2>
+        <p class="jp">すべての機能を無料でご利用いただけます</p>
       </div>
 
-      <div class="signup-card-body">
-        <!-- Features -->
-        <div class="signup-features">
-          <h5>カブログでできること</h5>
-          <ul class="features-list">
-            <li>
-              <i class="bi bi-check-circle-fill"></i>
-              投資記録の管理と分析
-            </li>
-            <li>
-              <i class="bi bi-check-circle-fill"></i>
-              ポートフォリオの可視化
-            </li>
-            <li>
-              <i class="bi bi-check-circle-fill"></i>
-              カスタム分析テンプレート
-            </li>
-            <li>
-              <i class="bi bi-check-circle-fill"></i>
-              決算レポートの整理
-            </li>
+      {% if form.non_field_errors %}
+      <div class="alert show jp">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <ul>{% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}</ul>
+      </div>
+      {% endif %}
+
+      {% if google_oauth_enabled %}
+      <a href="/accounts/google/login/" class="btn btn-google" style="margin-bottom:6px">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M21.35,11.1H12.18V13.83H18.69C18.36,17.64 15.19,19.27 12.19,19.27C8.36,19.27 5,16.25 5,12C5,7.9 8.2,4.73 12.2,4.73C15.29,4.73 17.1,6.7 17.1,6.7L19,4.72C19,4.72 16.56,2 12.1,2C6.42,2 2.03,6.8 2.03,12C2.03,17.05 6.16,22 12.25,22C17.6,22 21.5,18.33 21.5,12.91C21.5,11.76 21.35,11.1 21.35,11.1Z" fill="#4285F4"></path>
+          <path d="M3.89,10.16L6.06,11.87C6.93,9.54 9.34,7.93 12.18,7.93C14.08,7.93 15.53,8.73 16.46,9.91L18.36,8C16.94,6.53 14.82,5.57 12.18,5.57C8.07,5.57 4.53,8.18 3.89,10.16Z" fill="#EA4335"></path>
+          <path d="M12.18,18.43C9.92,18.43 7.95,17.43 6.7,15.86L4.5,17.6C6.25,19.74 9.04,21 12.18,21C15.34,21 18.12,19.5 19.67,17.04L17.5,15.39C16.46,17.14 14.68,18.43 12.18,18.43Z" fill="#FBBC05"></path>
+          <path d="M20.5,12.25L21.18,11.13H12.18V13.83H18.69C18.42,15.2 17.66,16.29 16.5,17.04L18.67,18.7C20.16,17.14 21,14.83 21,12.25Z" fill="#4285F4"></path>
+        </svg>
+        <span class="jp">Googleアカウントで登録</span>
+      </a>
+
+      <div class="divider jp">または</div>
+      {% endif %}
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        <div class="field">
+          <label for="{{ form.username.id_for_label }}"><i class="bi bi-person-fill"></i>ユーザー名</label>
+          <div class="control">
+            {{ form.username }}
+            <span class="lead-ic"><i class="bi bi-person"></i></span>
+          </div>
+          {% if form.username.errors %}<div class="fld-err jp"><i class="bi bi-exclamation-circle"></i>{{ form.username.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div class="field">
+          <label for="{{ form.email.id_for_label }}"><i class="bi bi-envelope-fill"></i>メールアドレス</label>
+          <div class="control">
+            {{ form.email }}
+            <span class="lead-ic"><i class="bi bi-envelope"></i></span>
+          </div>
+          {% if form.email.errors %}<div class="fld-err jp"><i class="bi bi-exclamation-circle"></i>{{ form.email.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div class="field">
+          <label for="{{ form.password1.id_for_label }}"><i class="bi bi-shield-lock-fill"></i>パスワード</label>
+          <div class="control">
+            {{ form.password1 }}
+            <span class="lead-ic"><i class="bi bi-lock"></i></span>
+            <button type="button" class="toggle-pw" id="togglePw" aria-label="パスワードを表示"><i class="bi bi-eye"></i></button>
+          </div>
+          {% if form.password1.errors %}<div class="fld-err jp"><i class="bi bi-exclamation-circle"></i>{{ form.password1.errors.0 }}</div>{% endif %}
+          <div class="strength" id="strength" style="display:none">
+            <div class="strength-bars"><span></span><span></span><span></span><span></span></div>
+            <div class="strength-label">強度: <b id="strengthText">—</b></div>
+          </div>
+          <ul class="reqs jp" id="reqs">
+            <li data-req="len"><i class="bi bi-circle"></i>8文字以上</li>
+            <li data-req="alpha"><i class="bi bi-circle"></i>英字を含む</li>
+            <li data-req="notnum"><i class="bi bi-circle"></i>数字のみは避ける</li>
+            <li data-req="common"><i class="bi bi-circle"></i>よくある語は避ける</li>
           </ul>
         </div>
 
-        {% if google_oauth_enabled %}
-        <!-- Google Signup Option -->
-        <a href="/accounts/google/login/" class="google-signup-btn">
-          <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
-            <g transform="matrix(1, 0, 0, 1, 0, 0)">
-              <path
-                d="M21.35,11.1H12.18V13.83H18.69C18.36,17.64 15.19,19.27 12.19,19.27C8.36,19.27 5,16.25 5,12C5,7.9 8.2,4.73 12.2,4.73C15.29,4.73 17.1,6.7 17.1,6.7L19,4.72C19,4.72 16.56,2 12.1,2C6.42,2 2.03,6.8 2.03,12C2.03,17.05 6.16,22 12.25,22C17.6,22 21.5,18.33 21.5,12.91C21.5,11.76 21.35,11.1 21.35,11.1V11.1Z"
-                fill="#4285F4"></path>
-            </g>
-          </svg>
-          Googleアカウントで登録
-        </a>
-
-        <div class="signup-divider">
-          <span>または</span>
-        </div>
-        {% endif %}
-
-        <!-- Signup Form -->
-        <form method="post" novalidate>
-          {% csrf_token %}
-
-          {% if form.non_field_errors %}
-          <div class="alert alert-danger">
-            <i class="bi bi-exclamation-triangle-fill"></i>
-            <div>
-              {% for error in form.non_field_errors %}
-              {{ error }}
-              {% endfor %}
-            </div>
-          </div>
-          {% endif %}
-
-          <div class="form-group">
-            <label for="{{ form.username.id_for_label }}" class="form-label">
-              <i class="bi bi-person"></i>
-              ユーザー名
-            </label>
-            {{ form.username }}
-            {% if form.username.errors %}
-            <div class="text-danger">
-              <i class="bi bi-exclamation-circle"></i>
-              {{ form.username.errors.0 }}
-            </div>
-            {% endif %}
-          </div>
-
-          <div class="form-group">
-            <label for="{{ form.email.id_for_label }}" class="form-label">
-              <i class="bi bi-envelope"></i>
-              メールアドレス
-            </label>
-            {{ form.email }}
-            {% if form.email.errors %}
-            <div class="text-danger">
-              <i class="bi bi-exclamation-circle"></i>
-              {{ form.email.errors.0 }}
-            </div>
-            {% endif %}
-          </div>
-
-          <div class="form-group">
-            <label for="{{ form.password1.id_for_label }}" class="form-label">
-              <i class="bi bi-shield-lock"></i>
-              パスワード
-            </label>
-            {{ form.password1 }}
-            {% if form.password1.errors %}
-            <div class="text-danger">
-              <i class="bi bi-exclamation-circle"></i>
-              {{ form.password1.errors.0 }}
-            </div>
-            {% endif %}
-            {% if form.password1.help_text %}
-            <div class="password-help">
-              <h6>パスワードの要件</h6>
-              <ul class="password-requirements">
-                <li><i class="bi bi-check-circle-fill"></i> 8文字以上</li>
-                <li><i class="bi bi-check-circle-fill"></i> よく使われるパスワードは避ける</li>
-                <li><i class="bi bi-check-circle-fill"></i> 数字のみは避ける</li>
-                <li><i class="bi bi-check-circle-fill"></i> 個人情報と類似しない</li>
-              </ul>
-            </div>
-            {% endif %}
-          </div>
-
-          <div class="form-group">
-            <label for="{{ form.password2.id_for_label }}" class="form-label">
-              <i class="bi bi-shield-check"></i>
-              パスワード (確認)
-            </label>
+        <div class="field">
+          <label for="{{ form.password2.id_for_label }}"><i class="bi bi-shield-check"></i>パスワード（確認）</label>
+          <div class="control">
             {{ form.password2 }}
-            {% if form.password2.errors %}
-            <div class="text-danger">
-              <i class="bi bi-exclamation-circle"></i>
-              {{ form.password2.errors.0 }}
-            </div>
-            {% endif %}
+            <span class="lead-ic"><i class="bi bi-shield-lock"></i></span>
+            <span class="match" id="match"><i class="bi bi-check-circle-fill"></i></span>
           </div>
-
-          <button type="submit" class="signup-btn">
-            <i class="bi bi-person-plus"></i>
-            アカウントを作成
-          </button>
-        </form>
-
-        <div class="signup-footer">
-          <p>すでにアカウントをお持ちの方は <a href="{% url 'users:login' %}">ログイン</a>
-          </p>
+          {% if form.password2.errors %}<div class="fld-err jp"><i class="bi bi-exclamation-circle"></i>{{ form.password2.errors.0 }}</div>{% endif %}
         </div>
-      </div>
+
+        <button type="submit" class="btn btn-primary"><i class="bi bi-person-plus-fill"></i>アカウントを作成</button>
+      </form>
+
+      <p class="ffoot jp">すでにアカウントをお持ちの方は <a href="{% url 'users:login' %}">ログイン</a></p>
+      <p class="legal jp">登録することで、<a href="/ads/terms/">利用規約</a>および<a href="/ads/privacy-policy/">プライバシーポリシー</a>に同意したものとみなされます。</p>
     </div>
-  </div>
+  </main>
 </div>
 
 <script>
-  document.addEventListener('DOMContentLoaded', function () {
-    // Intersection Observer for animations
-    const observerOptions = {
-      threshold: 0.1,
-      rootMargin: '0px 0px -50px 0px'
-    };
+  const pw = document.getElementById('{{ form.password1.id_for_label }}');
+  const pw2 = document.getElementById('{{ form.password2.id_for_label }}');
+  const tg = document.getElementById('togglePw');
+  const strength = document.getElementById('strength');
+  const strengthText = document.getElementById('strengthText');
+  const bars = document.querySelectorAll('.strength-bars span');
+  const match = document.getElementById('match');
+  const reqEls = {
+    len: document.querySelector('[data-req="len"]'),
+    alpha: document.querySelector('[data-req="alpha"]'),
+    notnum: document.querySelector('[data-req="notnum"]'),
+    common: document.querySelector('[data-req="common"]')
+  };
+  const COMMON = ['password','12345678','qwerty','11111111','kabulog','00000000','123456789'];
 
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
-          observer.unobserve(entry.target);
-        }
-      });
-    }, observerOptions);
-
-    document.querySelectorAll('.fade-in').forEach(el => {
-      observer.observe(el);
+  if (pw && tg) {
+    tg.addEventListener('click', () => {
+      const show = pw.type === 'password';
+      pw.type = show ? 'text' : 'password';
+      tg.innerHTML = show ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>';
     });
+  }
+
+  function evalPw(v){
+    const len = v.length >= 8;
+    const alpha = /[a-zA-Z]/.test(v);
+    const notnum = v.length > 0 && !/^\d+$/.test(v);
+    const common = v.length > 0 && !COMMON.includes(v.toLowerCase());
+    return {len, alpha, notnum, common};
+  }
+  function setReq(el, met){
+    if (!el) return;
+    el.classList.toggle('met', met);
+    el.querySelector('i').className = met ? 'bi bi-check-circle-fill' : 'bi bi-circle';
+  }
+
+  if (pw) pw.addEventListener('input', () => {
+    const v = pw.value;
+    strength.style.display = v ? 'block' : 'none';
+    const r = evalPw(v);
+    setReq(reqEls.len, r.len); setReq(reqEls.alpha, r.alpha); setReq(reqEls.notnum, r.notnum); setReq(reqEls.common, r.common);
+    let score = [r.len, r.alpha, r.notnum, r.common].filter(Boolean).length;
+    if (v.length >= 12 && score >= 4) score = 4;
+    const colors = ['#ef4444','#f59e0b','#3b82f6','#10b981'];
+    const labels = ['弱い','普通','良い','強い'];
+    bars.forEach((b,i)=> b.style.background = i < score ? colors[Math.min(score-1,3)] : 'var(--line)');
+    strengthText.textContent = v ? labels[Math.max(0,Math.min(score-1,3))] : '—';
+    strengthText.style.color = v ? colors[Math.max(0,Math.min(score-1,3))] : 'var(--t3)';
+    checkMatch();
   });
+
+  function checkMatch(){
+    if (!pw || !pw2) return;
+    const ok = pw2.value.length > 0 && pw.value === pw2.value;
+    match.classList.toggle('show', ok);
+    pw2.classList.toggle('ok', ok);
+  }
+  if (pw2) pw2.addEventListener('input', checkMatch);
 </script>
-{% endblock %}
+</body>
+</html>
