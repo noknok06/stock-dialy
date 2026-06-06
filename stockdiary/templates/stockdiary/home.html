@@ -2634,7 +2634,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     applyTagFilter(tagId, tagName);
   }
-  
+
   function applyTagFilter(tagId, tagName) {
     const tagFilterSelect = document.getElementById('tagFilter');
     if (tagFilterSelect) {
@@ -2645,23 +2645,73 @@ document.addEventListener('DOMContentLoaded', function() {
     if (searchForm) {
       htmx.trigger(searchForm, 'submit');
       window.scrollTo({ top: 0, behavior: 'smooth' });
-      showFilterNotification(tagName);
+      showFilterNotification(`タグ「${tagName}」でフィルタリング中`, 'bi-tag-fill');
     }
   }
-  
-  function showFilterNotification(tagName) {
+
+  function setupHashtagClickHandlers() {
+    const hashtagElements = document.querySelectorAll('.diary-hashtag');
+
+    hashtagElements.forEach(hashtag => {
+      hashtag.removeEventListener('click', handleHashtagClick);
+      hashtag.addEventListener('click', handleHashtagClick);
+      hashtag.style.cursor = 'pointer';
+      hashtag.style.transition = 'all 0.2s ease';
+
+      hashtag.addEventListener('mouseenter', function() {
+        this.style.transform = 'scale(1.05)';
+        this.style.opacity = '0.8';
+      });
+
+      hashtag.addEventListener('mouseleave', function() {
+        this.style.transform = 'scale(1)';
+        this.style.opacity = '1';
+      });
+    });
+  }
+
+  function handleHashtagClick(event) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const hashtagElement = event.currentTarget;
+    const hashtag = hashtagElement.getAttribute('data-hashtag');
+
+    if (!hashtag) {
+      console.warn('ハッシュタグが見つかりません');
+      return;
+    }
+
+    applyHashtagFilter(hashtag);
+  }
+
+  function applyHashtagFilter(hashtag) {
+    const hashtagInput = document.getElementById('hashtagFilter');
+    if (hashtagInput) {
+      hashtagInput.value = hashtag;
+    }
+
+    const searchForm = document.getElementById('optimizedSearchForm');
+    if (searchForm) {
+      htmx.trigger(searchForm, 'submit');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      showFilterNotification(`@${hashtag} でフィルタリング中`, 'bi-at');
+    }
+  }
+
+  function showFilterNotification(label, iconClass) {
     const existingNotification = document.querySelector('.filter-notification');
     if (existingNotification) {
       existingNotification.remove();
     }
-    
+
     const notification = document.createElement('div');
     notification.className = 'filter-notification';
     notification.innerHTML = `
-      <i class="bi bi-tag-fill me-2"></i>
-      タグ「${tagName}」でフィルタリング中
+      <i class="bi ${iconClass || 'bi-tag-fill'} me-2"></i>
+      ${label}
     `;
-    
+
     document.body.appendChild(notification);
     
     setTimeout(() => {
@@ -2679,10 +2729,12 @@ document.addEventListener('DOMContentLoaded', function() {
   document.body.addEventListener('htmx:afterSwap', function(event) {
     if (event.detail.target.id === 'diary-container') {
       setTimeout(setupTagClickHandlers, 100);
+      setTimeout(setupHashtagClickHandlers, 100);
     }
   });
 
   setupTagClickHandlers();
+  setupHashtagClickHandlers();
 });
 
 // カード高さ制限: はみ出し検出 → グラデーションオーバーレイ表示

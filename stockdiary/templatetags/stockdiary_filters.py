@@ -11,6 +11,13 @@ import bleach
 register = template.Library()
 
 
+@register.filter(name='extract_hashtags')
+def extract_hashtags_filter(text):
+    """本文から @ハッシュタグ を抽出する（stockdiary.utils.extract_hashtags への委譲）"""
+    from ..utils import extract_hashtags
+    return extract_hashtags(text)
+
+
 def _currency_code(obj):
     """日記オブジェクト・文字列・dict から通貨コード（JPY/USD）を取り出す"""
     if obj is None:

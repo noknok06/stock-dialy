@@ -164,6 +164,25 @@
   transform: translateY(0);
 }
 
+/* ========== @ハッシュタグ ピル（通常タグと区別する配色） ========== */
+.hashtag-pill {
+  background: rgba(168, 130, 230, 0.12);
+  color: var(--accent-purple, #8a63d2);
+  border-color: rgba(168, 130, 230, 0.35);
+}
+
+.hashtag-pill:hover {
+  background: rgba(168, 130, 230, 0.9);
+  color: white;
+  box-shadow: 0 2px 4px rgba(168, 130, 230, 0.35);
+}
+
+.hashtag-at {
+  margin-right: 1px;
+  opacity: 0.7;
+  font-weight: 700;
+}
+
 /* ========== 検索ヒット箇所 ========== */
 .diary-search-hits {
   display: flex;
@@ -769,6 +788,19 @@
 .dark-mode .tag-pill:hover,
 [data-theme="dark"] .tag-pill:hover {
   background: var(--accent-100);
+  color: white;
+}
+
+.dark-mode .hashtag-pill,
+[data-theme="dark"] .hashtag-pill {
+  background: rgba(168, 130, 230, 0.2);
+  color: #c4aef0;
+  border-color: rgba(168, 130, 230, 0.4);
+}
+
+.dark-mode .hashtag-pill:hover,
+[data-theme="dark"] .hashtag-pill:hover {
+  background: rgba(168, 130, 230, 0.9);
   color: white;
 }
 
