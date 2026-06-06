@@ -1,0 +1,36 @@
+/* feature-tour.css
+ * driver.js（機能ツアー）のポップオーバーを
+ * アプリのフォント・ダークモードに合わせる上書きスタイル
+ */
+
+.driver-popover {
+  font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  border-radius: 12px;
+}
+
+.driver-popover-title {
+  font-weight: 700;
+}
+
+body.dark-mode .driver-popover,
+html[data-theme="dark"] .driver-popover {
+  background-color: var(--card, #1e293b);
+  color: var(--foreground, #f1f5f9);
+}
+
+body.dark-mode .driver-popover-title,
+html[data-theme="dark"] .driver-popover-title,
+body.dark-mode .driver-popover-description,
+html[data-theme="dark"] .driver-popover-description {
+  color: var(--foreground, #f1f5f9);
+}
+
+body.dark-mode .driver-popover-arrow,
+html[data-theme="dark"] .driver-popover-arrow {
+  border-color: var(--card, #1e293b);
+}
+
+body.dark-mode .driver-popover-progress-text,
+html[data-theme="dark"] .driver-popover-progress-text {
+  color: var(--muted, #94a3b8);
+}
