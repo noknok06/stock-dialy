@@ -889,3 +889,34 @@ body.dark-mode .graph-stage.is-fullscreen .graph-legend-bar,
 [data-theme="dark"] .graph-stage.is-fullscreen .graph-legend-bar {
   background: color-mix(in srgb, var(--dm-card, #1e1e2e) 90%, transparent);
 }
+
+/* ================================================================
+   軸フィルター / 軸凡例 (v3)
+   ================================================================ */
+
+/* 軸カラードット（ラベル前の小さな丸） */
+.axis-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  vertical-align: middle;
+  margin-right: 2px;
+  flex-shrink: 0;
+}
+
+/* 軸フィルターチェック: 選択時に各軸色で塗りつぶし */
+#axis-theme:checked          + label { background: #7c3aed !important; border-color: #7c3aed !important; color: #fff !important; }
+#axis-business_model:checked + label { background: #0891b2 !important; border-color: #0891b2 !important; color: #fff !important; }
+#axis-risk:checked           + label { background: #dc2626 !important; border-color: #dc2626 !important; color: #fff !important; }
+#axis-capital_policy:checked + label { background: #16a34a !important; border-color: #16a34a !important; color: #fff !important; }
+#axis-macro:checked          + label { background: #d97706 !important; border-color: #d97706 !important; color: #fff !important; }
+#axis-event:checked          + label { background: #6b7280 !important; border-color: #6b7280 !important; color: #fff !important; }
+
+/* 軸凡例（axis カラーモード時のみ表示） */
+#legend-axis {
+  display: flex;
+}
+#legend-axis.legend-hidden {
+  display: none;
+}
