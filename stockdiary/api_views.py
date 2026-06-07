@@ -601,6 +601,11 @@ def diary_graph_data(request):
         if not edge_modes:
             edge_modes = ['tag']
 
+        # 軸フィルター（カンマ区切り。指定がある場合はそのタグ軸のみ表示）
+        VALID_AXES = {'theme', 'business_model', 'risk', 'capital_policy', 'macro', 'event'}
+        axis_raw = request.GET.get('axes', '').strip()
+        axis_filter = {a.strip() for a in axis_raw.split(',') if a.strip() in VALID_AXES} if axis_raw else set()
+
         all_user_qs = StockDiary.objects.filter(user=user, is_excluded=False)
 
         # --- primary: フィルター条件に合う日記 ---
@@ -689,14 +694,21 @@ def diary_graph_data(request):
                 all_edges.append({'source': s, 'target': t, 'edge_type': 'manual', 'weight': 1.0})
 
         # ====================================================
-        # tag モード: タグハブノード
+        # tag モード: タグハブノード（軸フィルター適用）
         # ====================================================
         if 'tag' in edge_modes:
             hub_data = get_tag_graph_data(primary_diaries)
+            filtered_tag_ids = set()
             for hub in hub_data['tag_nodes']:
+                if axis_filter and hub.get('axis') not in axis_filter:
+                    continue
                 hub['link_count'] = hub.get('diary_count', 0)
                 hub_nodes_map[hub['id']] = hub
-            all_edges.extend(hub_data['edges'])
+                filtered_tag_ids.add(hub['id'])
+            for e in hub_data['edges']:
+                if axis_filter and e.get('target') not in filtered_tag_ids:
+                    continue
+                all_edges.append(e)
 
         # ====================================================
         # sector モード: 業種ハブノード（CompanyMaster で補完）
@@ -806,6 +818,7 @@ def diary_graph_data(request):
                 'total_nodes': len(all_nodes),
                 'total_edges': len(all_edges),
                 'modes': edge_modes,
+                'axes': list(axis_filter) if axis_filter else [],
             },
         })
 

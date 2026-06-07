@@ -236,7 +236,7 @@ def annotate_search_matches(diaries, query: str):
     return diaries
 
 
-def hub_weight(diary_count: int) -> float:
+def hub_weight(diary_count: int) -> float:  # noqa: keep for sector/hashtag modes
     """ハブの次数(diary_count)から逆頻度の重みを算出する。
 
     少数の銘柄しか結ばないハブ（希少な関連）ほど強く、
@@ -275,11 +275,15 @@ def get_tag_graph_data(diaries_qs) -> Dict[str, Any]:
         for tag in diary.tags.all():
             tag_diary_count[tag.pk] += 1
             if tag.pk not in tag_meta:
-                tag_meta[tag.pk] = {'name': tag.name}
+                tag_meta[tag.pk] = {
+                    'name': tag.name,
+                    'axis': getattr(tag, 'axis', 'theme'),
+                }
             edges.append({
                 'source': diary.pk,
                 'target': f'tag_{tag.pk}',
                 'edge_type': 'tag',
+                'axis': getattr(tag, 'axis', 'theme'),
             })
 
     # 全カウント確定後に逆頻度の重みを付与
@@ -293,6 +297,7 @@ def get_tag_graph_data(diaries_qs) -> Dict[str, Any]:
             'node_type': 'tag',
             'tag_name': meta['name'],
             'tag_pk': pk,
+            'axis': meta.get('axis', 'theme'),
             'diary_count': tag_diary_count[pk],
             'weight': hub_weight(tag_diary_count[pk]),
             'is_isolated': tag_diary_count[pk] <= 1,
@@ -504,24 +509,31 @@ RELATED_NOISE_MAX = 25
 
 
 def compute_related_strength(focal, user, limit: int = 12) -> List[dict]:
-    """フォーカル日記に対する他日記の「関連の強さ」を希少性で重み付けして算出する。
+    """フォーカル日記に対する他日記の「関連の強さ」を軸重み×IDF で算出する。
 
-    複数の弱い関連より、希少なタグや明示的リンク・言及といった強い関連を上位に出す。
-    付けすぎたタグ／業種（多数の銘柄が共有するもの）は RELATED_NOISE_MAX で除外し、
-    グラフが密でも「読める」関連発見の導線にする。
+    [Phase 1+2 更新]
+    - 共通タグのスコアを「軸重み × IDF」で計算（希少なテーマタグほど強く）
+    - 最小条件: イベント軸以外の共有タグ2つ以上、または高希少テーマタグ1つ
+    - イベント軸タグは関連度計算から除外
 
     Returns:
         score 降順の [{'diary': StockDiary, 'score': float,
                        'via': [{'type': str, 'label': str}]}] （最大 limit 件）
     """
+    import math
     from django.db.models import Q
     from .models import StockDiary, DiaryNote
+    from .tag_axis_config import (
+        AXIS_WEIGHTS, MIN_SHARED_TAGS, HIGH_RARITY_IDF_THRESHOLD, RELATED_NOISE_MAX,
+    )
 
     scores: Dict[int, float] = defaultdict(float)
     reasons: Dict[int, List[dict]] = defaultdict(list)
     diary_cache: Dict[int, Any] = {}
 
     others = StockDiary.objects.filter(user=user).exclude(id=focal.id)
+    # IDF 計算用の総銘柄数（ポートフォリオ全体）
+    N = StockDiary.objects.filter(user=user, is_excluded=False).count() or 1
 
     def _add(did: int, score: float, via: dict) -> None:
         scores[did] += score
@@ -543,14 +555,53 @@ def compute_related_strength(focal, user, limit: int = 12) -> List[dict]:
             diary_cache[d.id] = d
             _add(d.id, 1.0, {'type': 'manual', 'label': '手動リンク'})
 
-    # 3. 共通タグ（希少なほど強い・付けすぎは除外）
-    for tag in focal.tags.all():
-        ids = list(others.filter(tags=tag).values_list('id', flat=True))
-        if not ids or len(ids) > RELATED_NOISE_MAX:
-            continue
-        w = hub_weight(len(ids) + 1)
-        for did in ids:
-            _add(did, w, {'type': 'tag', 'label': f'共通タグ「{tag.name}」'})
+    # 3. 共通タグ（軸重み × IDF + 最小条件 + ノイズ除外）
+    focal_tags = list(focal.tags.select_related('parent').all())
+    # イベント軸は関連度計算から除外
+    effective_focal_tags = [t for t in focal_tags if getattr(t, 'axis', 'theme') != 'event']
+
+    if effective_focal_tags:
+        # tag_id → 共有している他日記のset（ノイズ上限でフィルタ済み）
+        tag_diary_map: Dict[int, set] = {}
+        for tag in effective_focal_tags:
+            ids = set(others.filter(tags=tag).values_list('id', flat=True))
+            if ids and len(ids) <= RELATED_NOISE_MAX:
+                tag_diary_map[tag.id] = ids
+
+        # diary_id → 共有タグリスト
+        shared_tag_map: Dict[int, List] = defaultdict(list)
+        tag_by_id = {t.id: t for t in effective_focal_tags}
+        for tag_id, diary_ids in tag_diary_map.items():
+            for did in diary_ids:
+                shared_tag_map[did].append(tag_by_id[tag_id])
+
+        for did, shared_tags in shared_tag_map.items():
+            # 最小条件チェック（FR-6）
+            theme_tags = [t for t in shared_tags if getattr(t, 'axis', 'theme') == 'theme']
+            has_high_rarity_theme = False
+            for t in theme_tags:
+                df = max(t.df, 1) if getattr(t, 'df', 0) > 0 else len(tag_diary_map.get(t.id, set())) + 1
+                idf = math.log(N / df)
+                if idf >= HIGH_RARITY_IDF_THRESHOLD:
+                    has_high_rarity_theme = True
+                    break
+
+            if len(shared_tags) < MIN_SHARED_TAGS and not has_high_rarity_theme:
+                continue
+
+            # スコア: Σ w_axis(t) × idf(t)
+            for tag in shared_tags:
+                axis = getattr(tag, 'axis', 'theme')
+                w = AXIS_WEIGHTS.get(axis, 0.5)
+                df = max(tag.df, 1) if getattr(tag, 'df', 0) > 0 else len(tag_diary_map.get(tag.id, set())) + 1
+                idf = math.log(N / df)
+                axis_labels = {
+                    'theme': 'テーマ', 'business_model': 'BM',
+                    'risk': 'リスク', 'capital_policy': '資本政策',
+                    'macro': 'マクロ', 'event': 'イベント',
+                }
+                label = f'@{tag.name}（{axis_labels.get(axis, axis)}）'
+                _add(did, w * idf, {'type': 'tag', 'label': label})
 
     # 4. 同業種（希少なほど強い・付けすぎは除外）
     sector = (focal.sector or '').strip()

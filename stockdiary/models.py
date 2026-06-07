@@ -543,7 +543,7 @@ class NotificationLog(models.Model):
     is_clicked = models.BooleanField(default=False)
     sent_at = models.DateTimeField(auto_now_add=True)
     read_at = models.DateTimeField(null=True, blank=True)
-    
+
     class Meta:
         verbose_name = '通知履歴'
         verbose_name_plural = '通知履歴'
@@ -551,3 +551,39 @@ class NotificationLog(models.Model):
         indexes = [
             models.Index(fields=['user', 'is_read', '-sent_at']),
         ]
+
+
+class DiaryTagDirection(models.Model):
+    """日記×タグ単位の方向属性（FR-4）。
+
+    同一タグを共有しても方向が逆（例: 銀行は@金利上昇↑、REITは↓）の場合、
+    正の関連ではなく逆相関候補として扱うためのメタデータ。
+    """
+    DIRECTION_UP      = 'up'
+    DIRECTION_DOWN    = 'down'
+    DIRECTION_NEUTRAL = 'neutral'
+
+    DIRECTION_CHOICES = [
+        (DIRECTION_UP,      '↑ プラス影響'),
+        (DIRECTION_DOWN,    '↓ マイナス影響'),
+        (DIRECTION_NEUTRAL, '→ 中立'),
+    ]
+
+    diary     = models.ForeignKey(
+        'StockDiary', on_delete=models.CASCADE, related_name='tag_directions',
+    )
+    tag       = models.ForeignKey(
+        'tags.Tag', on_delete=models.CASCADE, related_name='diary_directions',
+    )
+    direction = models.CharField(
+        max_length=10, choices=DIRECTION_CHOICES, default=DIRECTION_NEUTRAL,
+        verbose_name='影響方向',
+    )
+
+    class Meta:
+        unique_together = ['diary', 'tag']
+        verbose_name = 'タグ方向属性'
+        verbose_name_plural = 'タグ方向属性'
+
+    def __str__(self):
+        return f'{self.diary.stock_name} × @{self.tag.name} ({self.direction})'

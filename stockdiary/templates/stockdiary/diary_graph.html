@@ -84,6 +84,36 @@
           {% endfor %}
         </select>
         {% endif %}
+
+        <div class="ctrl-vsep"></div>
+
+        <span class="ctrl-label">軸</span>
+        <div class="btn-group btn-group-sm" role="group" aria-label="タグ軸フィルター" id="axis-filter-group">
+          <input type="checkbox" class="btn-check axis-filter-check" id="axis-theme"          value="theme"          autocomplete="off" checked>
+          <label class="btn btn-outline-secondary axis-label-theme" for="axis-theme" title="テーマ（AI・防衛・ヘルスケア等）">
+            <span class="axis-dot" style="background:#7c3aed;"></span><span class="d-none d-md-inline">テーマ</span>
+          </label>
+          <input type="checkbox" class="btn-check axis-filter-check" id="axis-business_model" value="business_model" autocomplete="off" checked>
+          <label class="btn btn-outline-secondary" for="axis-business_model" title="ビジネスモデル（成長戦略・商社等）">
+            <span class="axis-dot" style="background:#0891b2;"></span><span class="d-none d-md-inline">BM</span>
+          </label>
+          <input type="checkbox" class="btn-check axis-filter-check" id="axis-risk"           value="risk"           autocomplete="off" checked>
+          <label class="btn btn-outline-secondary" for="axis-risk" title="リスク（地政学・規制等）">
+            <span class="axis-dot" style="background:#dc2626;"></span><span class="d-none d-md-inline">リスク</span>
+          </label>
+          <input type="checkbox" class="btn-check axis-filter-check" id="axis-capital_policy" value="capital_policy" autocomplete="off" checked>
+          <label class="btn btn-outline-secondary" for="axis-capital_policy" title="資本政策（高配当・株主還元等）">
+            <span class="axis-dot" style="background:#16a34a;"></span><span class="d-none d-md-inline">資本</span>
+          </label>
+          <input type="checkbox" class="btn-check axis-filter-check" id="axis-macro"          value="macro"          autocomplete="off" checked>
+          <label class="btn btn-outline-secondary" for="axis-macro" title="マクロ感応（金利・為替等）">
+            <span class="axis-dot" style="background:#d97706;"></span><span class="d-none d-md-inline">マクロ</span>
+          </label>
+          <input type="checkbox" class="btn-check axis-filter-check" id="axis-event"          value="event"          autocomplete="off">
+          <label class="btn btn-outline-secondary" for="axis-event" title="イベント（決算・M&amp;A等）※関連度計算対象外">
+            <span class="axis-dot" style="background:#6b7280;"></span><span class="d-none d-md-inline">イベント</span>
+          </label>
+        </div>
       </div>
 
       <!-- ツール行（検索・色・ラベル・ズーム） -->
@@ -100,6 +130,7 @@
           <option value="status">色: ステータス</option>
           <option value="sector" selected>色: 業種</option>
           <option value="profit">色: 損益</option>
+          <option value="axis">色: 軸（タグ種別）</option>
         </select>
         <div class="ctrl-tools">
           <button class="btn btn-outline-secondary btn-sm" id="resetZoom" title="ズームリセット">
@@ -217,6 +248,16 @@
       <span class="small text-muted align-items-center gap-1 legend-hidden" id="legend-sector-node">
         <svg width="14" height="14" viewBox="-7 -7 14 14"><rect x="-5.5" y="-5.5" width="11" height="11" rx="2.5" fill="#d97706" stroke="white" stroke-width="1.5"/></svg>業種
       </span>
+    </div>
+    <!-- 軸凡例（axis カラーモード時に表示） -->
+    <div id="legend-axis" class="gap-2 flex-wrap align-items-center legend-hidden">
+      <span class="small text-muted">軸:</span>
+      <span class="small text-muted d-flex align-items-center gap-1"><span class="graph-legend-dot" style="background:#7c3aed;"></span>テーマ</span>
+      <span class="small text-muted d-flex align-items-center gap-1"><span class="graph-legend-dot" style="background:#0891b2;"></span>BM</span>
+      <span class="small text-muted d-flex align-items-center gap-1"><span class="graph-legend-dot" style="background:#dc2626;"></span>リスク</span>
+      <span class="small text-muted d-flex align-items-center gap-1"><span class="graph-legend-dot" style="background:#16a34a;"></span>資本政策</span>
+      <span class="small text-muted d-flex align-items-center gap-1"><span class="graph-legend-dot" style="background:#d97706;"></span>マクロ</span>
+      <span class="small text-muted d-flex align-items-center gap-1"><span class="graph-legend-dot" style="background:#6b7280;"></span>イベント</span>
     </div>
     <!-- コード参照凡例 -->
     <span class="small text-muted d-flex align-items-center gap-1 legend-hidden" id="legend-mention-edge">

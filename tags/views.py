@@ -13,10 +13,23 @@ from subscriptions.mixins import SubscriptionLimitCheckMixin
 class TagForm(forms.ModelForm):
     class Meta:
         model = Tag
-        fields = ['name']
+        fields = ['name', 'axis', 'parent']
         widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control'})
+            'name':   forms.TextInput(attrs={'class': 'form-control'}),
+            'axis':   forms.Select(attrs={'class': 'form-select'}),
+            'parent': forms.Select(attrs={'class': 'form-select'}),
         }
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['parent'].required = False
+        self.fields['parent'].empty_label = '（なし）'
+        if user is not None:
+            self.fields['parent'].queryset = Tag.objects.filter(user=user).exclude(
+                pk=self.instance.pk if self.instance.pk else None
+            )
+        else:
+            self.fields['parent'].queryset = Tag.objects.none()
 
 class TagListView(LoginRequiredMixin, ListView):
     model = Tag
@@ -193,7 +206,12 @@ class TagCreateView(SubscriptionLimitCheckMixin, LoginRequiredMixin, CreateView)
     form_class = TagForm
     template_name = 'tags/tag_form.html'
     success_url = reverse_lazy('tags:list')
-    
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
     def form_valid(self, form):
         form.instance.user = self.request.user
         return super().form_valid(form)
@@ -218,7 +236,12 @@ class TagUpdateView(LoginRequiredMixin, UpdateView):
     form_class = TagForm
     template_name = 'tags/tag_form.html'
     success_url = reverse_lazy('tags:list')
-    
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
     def get_queryset(self):
         return Tag.objects.filter(user=self.request.user)
 

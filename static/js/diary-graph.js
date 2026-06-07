@@ -1,14 +1,13 @@
 /**
- * diary-graph.js  v2
+ * diary-graph.js  v3
  * 日記関連グラフ可視化モジュール
  * D3.js v7 を使用した force-directed graph
  *
- * 新機能:
- *   - 接続モード: manual / tag / sector / hashtag
- *   - タグハブノード（六角形）・業種ハブノード（角丸四角）・@ハッシュタグノード（三角）
- *   - グラフ内検索（銘柄名・コードでハイライト）
- *   - カラーモード: status / sector / profit
- *   - クリック時サイドパネル
+ * v3 追加機能:
+ *   - タグ軸フィルター（テーマ/BM/リスク/資本政策/マクロ/イベント）
+ *   - カラーモード: axis（タグ軸で色分け）
+ *   - タグハブノードを軸色で描画
+ *   - ツールチップ/サイドパネルに軸ラベル表示
  */
 (function () {
   'use strict';
@@ -35,11 +34,31 @@
     mention: '#f59e0b',
   };
 
-  // ハブノード色
+  // ハブノード色（タグはデフォルト。軸色分けモードでは AXIS_COLORS を使う）
   const HUB_COLOR = {
     tag:     '#7c3aed',
     sector:  '#d97706',
     hashtag: '#7c3aed',  // タグと統合（同色）
+  };
+
+  // タグ軸ごとの色（tag_axis_config.py と対応）
+  const AXIS_COLORS = {
+    theme:          '#7c3aed',
+    business_model: '#0891b2',
+    risk:           '#dc2626',
+    capital_policy: '#16a34a',
+    macro:          '#d97706',
+    event:          '#6b7280',
+  };
+
+  // タグ軸の日本語ラベル
+  const AXIS_LABELS = {
+    theme:          'テーマ',
+    business_model: 'ビジネスモデル',
+    risk:           'リスク',
+    capital_policy: '資本政策',
+    macro:          'マクロ感応',
+    event:          'イベント',
   };
 
   // セクター色パレット
@@ -75,6 +94,8 @@
       this.currentTag       = '';
       this.currentEdgeModes = new Set(config.defaultEdgeModes || ['tag']);
       this.currentColorMode = 'sector';
+      // 軸フィルター（デフォルト: イベント以外を全選択）
+      this.currentAxes = new Set(['theme', 'business_model', 'risk', 'capital_policy', 'macro']);
       this.searchQuery      = '';
       this.sectorColorMap   = {};
       this.focusNodeId      = null;
@@ -127,6 +148,17 @@
           this._fetchAndRender();
         });
       }
+
+      // 軸フィルターチェックボックス
+      document.querySelectorAll('.axis-filter-check').forEach(cb => {
+        cb.addEventListener('change', () => {
+          this.currentAxes = new Set(
+            [...document.querySelectorAll('.axis-filter-check')]
+              .filter(c => c.checked).map(c => c.value)
+          );
+          this._fetchAndRender();
+        });
+      });
 
       // タグ統合ボタン（tag + hashtag を同時制御）
       const unifiedTagCb = document.getElementById('mode-tag-unified');
@@ -193,6 +225,7 @@
         colorSel.addEventListener('change', e => {
           this.currentColorMode = e.target.value;
           this._applyColorMode();
+          this._updateLegend();
         });
       }
 
@@ -280,6 +313,9 @@
         params.set('tag', this.currentTag);
       }
       params.set('edge_modes', [...this.currentEdgeModes].join(','));
+      if (this.currentAxes.size > 0 && this.currentAxes.size < 6) {
+        params.set('axes', [...this.currentAxes].join(','));
+      }
 
       try {
         const resp = await fetch(`${this.apiUrl}?${params.toString()}`, {
@@ -483,11 +519,13 @@
             .classed('secondary-node', !d.is_primary);
         } else if (d.node_type === 'tag') {
           const r = hubRadiusScale(d.link_count || 0);
+          const axisColor = AXIS_COLORS[d.axis] || HUB_COLOR.tag;
           el.append('polygon')
             .attr('points', _hexPoints(r))
-            .attr('fill', HUB_COLOR.tag)
+            .attr('fill', axisColor)
             .attr('stroke', 'white')
-            .attr('stroke-width', 2);
+            .attr('stroke-width', 2)
+            .attr('data-axis-color', axisColor);
         } else if (d.node_type === 'sector') {
           const r  = hubRadiusScale(d.link_count || 0);
           const s  = r * 1.5;
@@ -659,10 +697,27 @@
     // ==============================
     _applyColorMode() {
       const mode = this.currentColorMode;
+      const axisLegend = document.getElementById('legend-axis');
+
       document.querySelectorAll('.graph-node').forEach(el => {
         const id   = el.dataset.id;
         const node = this.allNodes.find(n => String(n.id) === id);
-        if (!node || node.node_type !== 'diary') return;
+        if (!node) return;
+
+        if (node.node_type !== 'diary') {
+          // タグハブノードは常に軸色で表示（axis カラーモードでより鮮明に）
+          if (node.node_type === 'tag') {
+            const poly = el.querySelector('polygon');
+            if (poly) {
+              const axisColor = AXIS_COLORS[node.axis] || HUB_COLOR.tag;
+              const opacity = mode === 'axis' ? 1 : 0.85;
+              poly.style.fill = axisColor;
+              poly.style.opacity = opacity;
+            }
+          }
+          return;
+        }
+
         const circle = el.querySelector('circle');
         if (!circle) return;
         if (mode === 'status') {
@@ -672,8 +727,14 @@
         } else if (mode === 'profit') {
           const p = node.realized_profit || 0;
           circle.style.fill = p > 0 ? '#10b981' : p < 0 ? '#ef4444' : '#9ca3af';
+        } else if (mode === 'axis') {
+          // diary ノードはステータス色（axis モードでもグレー統一）
+          circle.style.fill = '';
         }
       });
+
+      // 軸凡例の表示切り替え
+      if (axisLegend) axisLegend.classList.toggle('legend-hidden', mode !== 'axis');
     }
 
     // ==============================
@@ -685,6 +746,7 @@
       const secLeg  = document.getElementById('legend-sector-node');
       const hubWrap = document.getElementById('legend-hubs');
       const mentionLeg = document.getElementById('legend-mention-edge');
+      const axisLeg = document.getElementById('legend-axis');
 
       const toggle = (el, show) => el && el.classList.toggle('legend-hidden', !show);
       const hasTag = modes.has('tag') || modes.has('hashtag');
@@ -693,6 +755,7 @@
       const hasHub = hasTag || modes.has('sector');
       toggle(hubWrap, hasHub);
       toggle(mentionLeg, modes.has('mention'));
+      toggle(axisLeg, this.currentColorMode === 'axis');
     }
 
     // ==============================
@@ -786,9 +849,14 @@
     _showTooltip(event, d) {
       let html = '';
       if (d.node_type === 'tag') {
+        const axisColor = AXIS_COLORS[d.axis] || '#7c3aed';
+        const axisLabel = AXIS_LABELS[d.axis] || d.axis || 'テーマ';
         html = `
-          <div class="tt-name"><i class="bi bi-tag-fill me-1" style="color:#7c3aed;"></i>${_esc(d.tag_name)}</div>
-          <div class="tt-meta">タグ &nbsp;|&nbsp; 接続銘柄: ${d.diary_count || 0}件</div>
+          <div class="tt-name"><i class="bi bi-tag-fill me-1" style="color:${axisColor};"></i>${_esc(d.tag_name)}</div>
+          <div class="tt-meta">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${axisColor};margin-right:4px;"></span>${_esc(axisLabel)}軸
+            &nbsp;|&nbsp; 接続銘柄: ${d.diary_count || 0}件
+          </div>
           <div class="tt-hint">クリックで詳細パネル</div>`;
       } else if (d.node_type === 'sector') {
         html = `
@@ -847,10 +915,16 @@
       let html  = '';
 
       if (d.node_type === 'tag') {
-        title = `<i class="bi bi-tag-fill me-1" style="color:#7c3aed;"></i>${_esc(d.tag_name)}`;
+        const axisColor = AXIS_COLORS[d.axis] || '#7c3aed';
+        const axisLabel = AXIS_LABELS[d.axis] || d.axis || 'テーマ';
+        title = `<i class="bi bi-tag-fill me-1" style="color:${axisColor};"></i>${_esc(d.tag_name)}`;
         html  = `
           <div class="side-panel-section">
-            <div class="side-panel-label">種別</div><div>タグ（ハブノード）</div>
+            <div class="side-panel-label">軸</div>
+            <div>
+              <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${axisColor};margin-right:6px;"></span>
+              ${_esc(axisLabel)}
+            </div>
           </div>
           <div class="side-panel-section">
             <div class="side-panel-label">接続銘柄数</div><div>${d.diary_count || 0} 件</div>
