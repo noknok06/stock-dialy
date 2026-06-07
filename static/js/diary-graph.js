@@ -78,6 +78,7 @@
       this.loadingEl = document.getElementById('graph-loading');
       this.emptyEl   = document.getElementById('graph-empty');
       this.tooltipEl = document.getElementById('graph-tooltip');
+      this.hintEl    = document.getElementById('graph-hint');
       this.statsEl   = document.getElementById('graph-stats');
       this.sidePanel = document.getElementById('graph-side-panel');
       this.sidePanelBody  = document.getElementById('side-panel-body');
@@ -632,9 +633,19 @@
       nodeSel.each(function(d) {
         const el = d3.select(this);
         if (d.node_type === 'diary') {
+          const r = radiusScale(d.link_count || 0);
           el.append('circle')
-            .attr('r', radiusScale(d.link_count || 0))
+            .attr('r', r)
             .classed('secondary-node', !d.is_primary);
+          // 銘柄コードをノード内にアイコン的に表示（十分な大きさのノードのみ）
+          if (r >= 13 && d.stock_symbol) {
+            el.append('text')
+              .attr('class', 'node-code')
+              .attr('text-anchor', 'middle')
+              .attr('dy', '0.34em')
+              .style('font-size', Math.min(r * 0.62, 11).toFixed(1) + 'px')
+              .text(d.stock_symbol);
+          }
         } else if (d.node_type === 'tag') {
           const r = hubRadiusScale(d.link_count || 0);
           const axisColor = AXIS_COLORS[d.axis] || HUB_COLOR.tag;
@@ -993,16 +1004,16 @@
         const sign   = profit > 0 ? '+' : '';
         const pStr   = profit === 0 ? '-' : sign + profit.toLocaleString('ja-JP') + '円';
         const pClass = profit > 0 ? 'positive' : profit < 0 ? 'negative' : '';
-        const statusMap = {
-          holding: '<span style="color:#10b981;">●</span> 保有中',
-          sold:    '<span style="color:#ef4444;">●</span> 売却済み',
-          memo:    '<span style="color:#9ca3af;">●</span> メモ',
-        };
+        const statusInfo = {
+          holding: { c: '#10b981', t: '保有中' },
+          sold:    { c: '#ef4444', t: '売却済み' },
+          memo:    { c: '#9ca3af', t: 'メモ' },
+        }[d.status] || { c: '#9ca3af', t: d.status };
         html = `
-          <div class="tt-name">${_esc(d.stock_name)}</div>
+          <div class="tt-name"><span class="tt-badge" style="background:${statusInfo.c};">${_esc(statusInfo.t)}</span>${_esc(d.stock_name)}</div>
           <div class="tt-symbol">${_esc(d.stock_symbol || '-')} &nbsp;/&nbsp; ${_esc(d.sector)}</div>
           <div class="tt-profit ${pClass}">実現損益: ${pStr}</div>
-          <div class="tt-meta">${statusMap[d.status] || d.status} &nbsp;|&nbsp; 接続: ${d.link_count}本</div>
+          <div class="tt-meta">接続: ${d.link_count}本</div>
           <div class="tt-hint">クリックで詳細パネル</div>`;
       }
       this.tooltipEl.innerHTML = html;
@@ -1034,17 +1045,21 @@
       let title = '';
       let html  = '';
 
-      if (d.node_type === 'tag') {
+      if (d.node_type === 'tag' || d.node_type === 'hashtag') {
+        const isHash    = d.node_type === 'hashtag';
         const axisColor = AXIS_COLORS[d.axis] || '#7c3aed';
         const axisLabel = AXIS_LABELS[d.axis] || d.axis || 'テーマ';
-        title = `<i class="bi bi-tag-fill me-1" style="color:${axisColor};"></i>${_esc(d.tag_name)}`;
+        const icon      = isHash ? 'bi-hash' : 'bi-tag-fill';
+        title = `<i class="bi ${icon} me-1" style="color:${axisColor};"></i>${isHash ? '@' : ''}${_esc(d.tag_name)}`;
         html  = `
           <div class="side-panel-section">
             <div class="side-panel-label">軸</div>
             <div>
-              <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${axisColor};margin-right:6px;"></span>
-              ${_esc(axisLabel)}
+              <span class="sp-cdot d-inline-block" style="background:${axisColor};margin-right:6px;"></span>${_esc(axisLabel)}
             </div>
+          </div>
+          <div class="side-panel-section">
+            <div class="side-panel-label">種別</div><div>${isHash ? '@ハッシュタグ' : 'タグ'}（ハブノード）</div>
           </div>
           <div class="side-panel-section">
             <div class="side-panel-label">接続銘柄数</div><div>${d.diary_count || 0} 件</div>
@@ -1058,33 +1073,22 @@
           <div class="side-panel-section">
             <div class="side-panel-label">接続銘柄数</div><div>${d.diary_count || 0} 件</div>
           </div>`;
-      } else if (d.node_type === 'hashtag') {
-        const htAxisColor = AXIS_COLORS[d.axis] || '#7c3aed';
-        const htAxisLabel = AXIS_LABELS[d.axis] || d.axis || 'テーマ';
-        title = `<i class="bi bi-hash me-1" style="color:${htAxisColor};"></i>@${_esc(d.tag_name)}`;
-        html  = `
-          <div class="side-panel-section">
-            <div class="side-panel-label">軸</div>
-            <div><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${htAxisColor};margin-right:4px;"></span>${htAxisLabel}</div>
-          </div>
-          <div class="side-panel-section">
-            <div class="side-panel-label">種別</div><div>@ハッシュタグ（ハブノード）</div>
-          </div>
-          <div class="side-panel-section">
-            <div class="side-panel-label">接続銘柄数</div><div>${d.diary_count || 0} 件</div>
-          </div>`;
       } else {
-        const profit  = d.realized_profit || 0;
-        const sign    = profit > 0 ? '+' : '';
-        const pStr    = profit === 0 ? '-' : sign + profit.toLocaleString('ja-JP') + '円';
-        const pColor  = profit > 0 ? 'text-success' : profit < 0 ? 'text-danger' : 'text-muted';
-        const badgeMap = {
-          holding: '<span class="badge bg-success">保有中</span>',
-          sold:    '<span class="badge bg-danger">売却済み</span>',
-          memo:    '<span class="badge bg-secondary">メモ</span>',
-        };
+        const profit = d.realized_profit || 0;
+        const sign   = profit > 0 ? '+' : '';
+        const pStr   = profit === 0 ? '-' : sign + profit.toLocaleString('ja-JP');
+        const pClass = profit > 0 ? 'pos' : profit < 0 ? 'neg' : 'zero';
+        const statusInfo = {
+          holding: { c: '#10b981', t: '保有中' },
+          sold:    { c: '#ef4444', t: '売却済み' },
+          memo:    { c: '#9ca3af', t: 'メモ' },
+        }[d.status] || { c: '#9ca3af', t: d.status };
         title = _esc(d.stock_name || '-');
         html  = `
+          <div class="sp-hero">
+            <span class="sp-badge" style="background:${statusInfo.c};">${_esc(statusInfo.t)}</span>
+            ${profit === 0 ? '' : `<div class="sp-profit ${pClass}">${sign}${Math.abs(profit).toLocaleString('ja-JP')}<span>円</span></div>`}
+          </div>
           <div class="side-panel-section">
             <div class="side-panel-label">銘柄コード</div><div>${_esc(d.stock_symbol || '-')}</div>
           </div>
@@ -1092,18 +1096,26 @@
             <div class="side-panel-label">業種</div><div>${_esc(d.sector || '未分類')}</div>
           </div>
           <div class="side-panel-section">
-            <div class="side-panel-label">ステータス</div><div>${badgeMap[d.status] || d.status}</div>
-          </div>
-          <div class="side-panel-section">
-            <div class="side-panel-label">実現損益</div>
-            <div class="${pColor} fw-semibold">${pStr}</div>
-          </div>
-          <div class="side-panel-section">
             <div class="side-panel-label">接続数</div><div>${d.link_count || 0} 本</div>
-          </div>
+          </div>`;
+      }
+
+      // 関連ノード（関連する銘柄・タグ・業種）リスト — クリックでそのノードへ
+      const conns = this._neighborsOf(d.id);
+      if (conns.length > 0) {
+        html += `
+          <div class="side-panel-section">
+            <div class="side-panel-label">関連ノード (${conns.length})</div>
+            <div class="sp-conn-list">${conns.map(c => this._connRow(c)).join('')}</div>
+          </div>`;
+      }
+
+      // 日記詳細CTA（diaryノードのみ）
+      if (d.node_type === 'diary' && d.url) {
+        html += `
           <div class="side-panel-footer mt-3">
-            <a href="${_esc(d.url)}" class="btn btn-primary btn-sm w-100">
-              <i class="bi bi-journal-text me-1"></i>日記の詳細を見る
+            <a href="${_esc(d.url)}" class="sp-cta">
+              <i class="bi bi-journal-text"></i>日記の詳細を見る
             </a>
           </div>`;
       }
@@ -1121,6 +1133,14 @@
       this.sidePanel.classList.add('open');
       document.getElementById('graph-wrapper').classList.add('panel-open');
 
+      // 関連ノードクリック → そのノードのパネルへ切り替え
+      this.sidePanelBody.querySelectorAll('[data-goto]').forEach(row => {
+        row.addEventListener('click', () => {
+          const target = this.allNodes.find(n => String(n.id) === row.dataset.goto);
+          if (target) this._openSidePanel(target);
+        });
+      });
+
       const focusBtn = document.getElementById('focus-mode-btn');
       if (focusBtn) {
         focusBtn.addEventListener('click', () => {
@@ -1129,6 +1149,41 @@
           this._enterFocusMode(nid);
         });
       }
+    }
+
+    // 隣接ノード（オブジェクト配列）を返す
+    _neighborsOf(id) {
+      if (!this._adj) this._buildAdjacency();
+      const set = this._adj.get(String(id)) || new Set();
+      return [...set]
+        .map(nid => this.allNodes.find(n => String(n.id) === nid))
+        .filter(Boolean);
+    }
+
+    // 関連ノード1行ぶんのHTMLを生成
+    _connRow(c) {
+      let color, sub, name, prefix = '';
+      if (c.node_type === 'diary') {
+        const statusColor = { holding: '#10b981', sold: '#ef4444', memo: '#9ca3af' };
+        color = statusColor[c.status] || '#9ca3af';
+        sub   = c.stock_symbol || '銘柄';
+        name  = c.stock_name || '';
+      } else if (c.node_type === 'sector') {
+        color = '#d97706';
+        sub   = '業種';
+        name  = c.sector_name || '';
+      } else {
+        // tag / hashtag
+        color  = AXIS_COLORS[c.axis] || '#7c3aed';
+        sub    = c.node_type === 'hashtag' ? 'ハッシュタグ' : 'タグ';
+        name   = c.tag_name || '';
+        prefix = c.node_type === 'hashtag' ? '@' : '';
+      }
+      return `<button type="button" class="sp-conn" data-goto="${_esc(String(c.id))}">
+        <span class="sp-cdot" style="background:${color};"></span>
+        <span class="sp-cname">${prefix}${_esc(name)}</span>
+        <span class="sp-ck">${_esc(sub)}</span>
+      </button>`;
     }
 
     _closeSidePanel() {
@@ -1391,17 +1446,20 @@
       this.svgEl.style.display     = 'none';
       this.emptyEl.style.display   = 'none';
       if (this.statsEl) this.statsEl.style.display = 'none';
+      if (this.hintEl)  this.hintEl.style.display  = 'none';
     }
     _showGraph() {
       this.loadingEl.style.display = 'none';
       this.svgEl.style.display     = 'block';
       this.emptyEl.style.display   = 'none';
+      if (this.hintEl)  this.hintEl.style.display  = '';
     }
     _showEmpty() {
       this.loadingEl.style.display = 'none';
       this.svgEl.style.display     = 'none';
       this.emptyEl.style.display   = 'flex';
       if (this.statsEl) this.statsEl.style.display = 'none';
+      if (this.hintEl)  this.hintEl.style.display  = 'none';
     }
     _showError(msg) {
       this.loadingEl.innerHTML = `

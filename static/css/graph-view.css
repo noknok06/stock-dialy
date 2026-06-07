@@ -45,9 +45,12 @@
 }
 
 /* ---- SVG本体 ---- */
+/* ドット格子の背景（subtle なグリッドで「キャンバス感」を出す） */
 #diary-graph-svg {
   display: block;
   background-color: var(--bg-200, #f5f4f1);
+  background-image: radial-gradient(circle at 1px 1px, rgba(0, 102, 140, 0.07) 1px, transparent 0);
+  background-size: 26px 26px;
   cursor: grab;
 }
 #diary-graph-svg:active {
@@ -302,14 +305,38 @@
 #legend-hashtag-node:not(.legend-hidden) { display: inline-flex; }
 
 /* ================================================================
-   統計バッジ（グラフ右下）
+   統計バッジ（グラフ右下）— ダークなフローティングピル
    ================================================================ */
 .graph-stats-badge {
   position: absolute;
-  bottom: 10px;
+  bottom: 12px;
   right: 12px;
+  display: flex;
+  gap: 6px;
+  z-index: 5;
   pointer-events: none;
-  opacity: 0.75;
+}
+.gsb-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(26, 32, 38, 0.72);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.gsb-pill i {
+  font-size: 10px;
+  opacity: 0.85;
+}
+.gsb-pill-axis {
+  background: rgba(124, 58, 237, 0.82);
 }
 
 /* ================================================================
@@ -919,4 +946,191 @@ body.dark-mode .graph-stage.is-fullscreen .graph-legend-bar,
 }
 #legend-axis.legend-hidden {
   display: none;
+}
+
+/* ================================================================
+   操作ヒント（グラフ右上のフローティングバッジ）
+   ================================================================ */
+.graph-hint {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 254, 251, 0.9);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 11px;
+  padding: 6px 11px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-200, #566069);
+  pointer-events: none;
+}
+.graph-hint i {
+  color: var(--accent-200, #00668c);
+}
+/* 全画面時は終了ボタンと重なるため非表示。狭い画面でも隠す */
+.graph-stage.is-fullscreen .graph-hint {
+  display: none;
+}
+@media (max-width: 640px) {
+  .graph-hint {
+    display: none;
+  }
+}
+body.dark-mode .graph-hint,
+[data-theme="dark"] .graph-hint {
+  background: rgba(30, 30, 46, 0.85);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.65);
+}
+
+/* ================================================================
+   ノード内の銘柄コードラベル（円ノードの中央に白文字）
+   ================================================================ */
+.graph-node .node-code {
+  fill: #fff;
+  font-weight: 700;
+  pointer-events: none;
+  user-select: none;
+  font-family: var(--font-family-base);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ================================================================
+   ツールチップ: ステータス色バッジ
+   ================================================================ */
+.graph-tooltip .tt-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 999px;
+  color: #fff;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+/* ================================================================
+   サイドパネル装飾（ヒーロー損益・関連ノード・CTA）
+   ================================================================ */
+.sp-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 0.85rem;
+}
+.sp-badge {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #fff;
+}
+.sp-profit {
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.sp-profit span {
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin-left: 2px;
+}
+.sp-profit.pos { color: #10b981; }
+.sp-profit.neg { color: #ef4444; }
+.sp-profit.zero { color: var(--text-200, #6b7280); }
+
+/* 関連ノードリスト */
+.sp-conn-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.sp-conn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 9px;
+  border-radius: 9px;
+  border: none;
+  width: 100%;
+  text-align: left;
+  background: var(--bg-200, #f5f4f1);
+  color: inherit;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.sp-conn:hover {
+  background: var(--bg-300, #e7e5e0);
+}
+.sp-conn .sp-cdot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.sp-conn .sp-cname {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp-conn .sp-ck {
+  margin-left: auto;
+  font-size: 0.68rem;
+  color: var(--text-300, #9aa1aa);
+  flex-shrink: 0;
+}
+
+/* グラデーションCTAボタン */
+.sp-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.6rem;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #71c4ef 0%, #00668c 100%);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.85rem;
+  box-shadow: 0 6px 16px rgba(0, 102, 140, 0.28);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.sp-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px rgba(0, 102, 140, 0.38);
+  color: #fff;
+}
+
+body.dark-mode .sp-conn,
+[data-theme="dark"] .sp-conn {
+  background: rgba(255, 255, 255, 0.05);
+}
+body.dark-mode .sp-conn:hover,
+[data-theme="dark"] .sp-conn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+body.dark-mode .sp-conn .sp-ck,
+[data-theme="dark"] .sp-conn .sp-ck {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+/* ダークモード: ドット格子背景を白系の微ドットに */
+body.dark-mode #diary-graph-svg,
+[data-theme="dark"] #diary-graph-svg {
+  background-image: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.05) 1px, transparent 0);
+  background-size: 26px 26px;
 }

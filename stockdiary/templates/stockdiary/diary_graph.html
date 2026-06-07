@@ -245,6 +245,11 @@
       <!-- SVGグラフ本体 -->
       <svg id="diary-graph-svg" class="graph-canvas" style="display:none;"></svg>
 
+      <!-- 操作ヒント（右上・グラフ表示時のみJSで表示） -->
+      <div id="graph-hint" class="graph-hint" style="display:none;">
+        <i class="bi bi-hand-index"></i>ドラッグで移動・ホイールでズーム
+      </div>
+
       <!-- 空状態 -->
       <div id="graph-empty" class="graph-canvas">
         <div class="text-center text-muted py-4">
@@ -257,11 +262,11 @@
         </div>
       </div>
 
-      <!-- 統計バッジ（右下に浮かせる） -->
+      <!-- 統計バッジ（右下に浮かせる・ダークなフローティングピル） -->
       <div id="graph-stats" class="graph-stats-badge" style="display:none;">
-        <span id="stats-nodes" class="badge bg-secondary me-1"></span>
-        <span id="stats-edges" class="badge bg-secondary me-1"></span>
-        <span id="stats-axis-info" class="badge bg-primary" style="display:none;"></span>
+        <span class="gsb-pill"><i class="bi bi-circle-fill"></i><span id="stats-nodes"></span></span>
+        <span class="gsb-pill"><i class="bi bi-share-fill"></i><span id="stats-edges"></span></span>
+        <span id="stats-axis-info" class="gsb-pill gsb-pill-axis" style="display:none;"></span>
       </div>
 
       <!-- 全画面終了ボタン（全画面モード時のみ表示） -->
