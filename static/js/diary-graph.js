@@ -93,7 +93,7 @@
       this.currentStatuses  = new Set(['holding']);
       this.currentTag       = '';
       this.currentEdgeModes = new Set(config.defaultEdgeModes || ['tag']);
-      this.currentColorMode = 'sector';
+      this.currentColorMode = 'axis';
       // 軸フィルター（デフォルト: テーマのみ。ユーザーが追加可）
       this.currentAxes = new Set(['theme']);
       this.searchQuery      = '';
@@ -1018,6 +1018,24 @@
       if (!meta || !this.statsEl) return;
       document.getElementById('stats-nodes').textContent = `${meta.total_nodes} ノード`;
       document.getElementById('stats-edges').textContent = `${meta.total_edges} 接続`;
+
+      // タグモード時: 軸フィルターの状態をインライン表示
+      const axisInfoEl = document.getElementById('stats-axis-info');
+      if (axisInfoEl) {
+        const tagCount = (this.allNodes || []).filter(n => n.node_type === 'tag').length;
+        if (this.currentEdgeModes.has('tag') && tagCount > 0) {
+          const AXIS_LABELS_SHORT = {
+            theme: 'テーマ', business_model: 'BM', risk: 'リスク',
+            capital_policy: '資本', macro: 'マクロ', event: 'イベント',
+          };
+          const activeAxes = [...this.currentAxes].map(a => AXIS_LABELS_SHORT[a] || a).join('・');
+          axisInfoEl.textContent = `タグ ${tagCount}件（${activeAxes || '全軸'}）`;
+          axisInfoEl.style.display = 'inline-block';
+        } else {
+          axisInfoEl.style.display = 'none';
+        }
+      }
+
       this.statsEl.style.display = 'block';
     }
 
