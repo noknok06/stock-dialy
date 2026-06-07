@@ -192,6 +192,8 @@ class HashtagMentionAutocomplete {
       this.dropdown.style.top  = `${coords.top - dropH - 4}px`;
     }
     this.dropdown.style.left = `${coords.left}px`;
+    console.log('[HashtagAC] cursorCoords:', JSON.stringify(coords),
+                '→ dropdown top/left:', this.dropdown.style.top, this.dropdown.style.left);
   }
 
   _show(hashtags) {
@@ -218,9 +220,22 @@ class HashtagMentionAutocomplete {
     });
 
     this.dropdown.style.display = 'block';
+
+    const r  = this.dropdown.getBoundingClientRect();
+    const cs = getComputedStyle(this.dropdown);
+    console.log('[HashtagAC] dropdown SHOWN', JSON.stringify({
+      top: Math.round(r.top), left: Math.round(r.left),
+      w: Math.round(r.width), h: Math.round(r.height),
+      display: cs.display, visibility: cs.visibility,
+      opacity: cs.opacity, zIndex: cs.zIndex,
+      parent: this.dropdown.parentElement && this.dropdown.parentElement.tagName,
+    }));
   }
 
   _hide() {
+    if (this.dropdown.style.display === 'block') {
+      console.log('[HashtagAC] dropdown HIDDEN');
+    }
     this.dropdown.style.display = 'none';
     this.currentIdx = -1;
   }
