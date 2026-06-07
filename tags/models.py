@@ -11,6 +11,7 @@ class Tag(models.Model):
     AXIS_CAPITAL_POLICY = 'capital_policy'
     AXIS_MACRO          = 'macro'
     AXIS_EVENT          = 'event'
+    AXIS_CUSTOM         = 'custom'
 
     AXIS_CHOICES = [
         (AXIS_THEME,          'テーマ'),
@@ -19,6 +20,7 @@ class Tag(models.Model):
         (AXIS_CAPITAL_POLICY, '資本政策'),
         (AXIS_MACRO,          'マクロ感応'),
         (AXIS_EVENT,          'イベント'),
+        (AXIS_CUSTOM,         'ラベル'),
     ]
 
     user   = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)

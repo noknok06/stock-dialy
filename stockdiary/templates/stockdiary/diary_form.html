@@ -576,6 +576,115 @@
     color: var(--dm-text-200) !important;
   }
 
+  /* ========== ハッシュタグチップパネル ========== */
+  #hashtag-chip-panel {
+    background: var(--bg-100, #f8f9fa);
+    border: 1px solid var(--border-light, #dee2e6);
+    border-radius: 0.5rem;
+    padding: 0.6rem 0.75rem;
+  }
+
+  .hashtag-section-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.35rem;
+  }
+
+  .hashtag-section-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted, #6b7280);
+  }
+
+  .hashtag-section-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 0.15rem 0;
+    margin-bottom: 0.35rem;
+    cursor: pointer;
+    color: var(--text-muted, #6b7280);
+  }
+
+  .hashtag-section-toggle:hover .hashtag-section-title {
+    color: var(--text-primary, #374151);
+  }
+
+  .hashtag-toggle-icon {
+    font-size: 0.7rem;
+    transition: transform 0.2s;
+  }
+
+  .hashtag-section-toggle.open .hashtag-toggle-icon {
+    transform: rotate(180deg);
+  }
+
+  #hashtag-my-labels-section {
+    border-bottom: 1px solid var(--border-light, #dee2e6);
+    padding-bottom: 0.4rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .hashtag-chip-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .hashtag-chip-group:last-child {
+    margin-bottom: 0;
+  }
+
+  .hashtag-chip-axis-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    white-space: nowrap;
+    min-width: 4rem;
+  }
+
+  .hashtag-chip {
+    font-size: 0.75rem;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    border: 1px solid currentColor;
+    background: transparent;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    line-height: 1.4;
+    opacity: 0.75;
+  }
+
+  .hashtag-chip:hover {
+    opacity: 1;
+    background: rgba(0,0,0,0.07);
+  }
+
+  .hashtag-chip.label-chip {
+    color: #9333ea;
+    border-color: #9333ea;
+  }
+
+  .dark-mode #hashtag-chip-panel,
+  [data-theme="dark"] #hashtag-chip-panel {
+    background: var(--dm-card, #1e2530);
+    border-color: var(--dm-border, #30363d);
+  }
+
+  .dark-mode #hashtag-my-labels-section,
+  [data-theme="dark"] #hashtag-my-labels-section {
+    border-bottom-color: var(--dm-border, #30363d);
+  }
+
+  .dark-mode .hashtag-chip:hover,
+  [data-theme="dark"] .hashtag-chip:hover {
+    background: rgba(255,255,255,0.1);
+  }
+
   /* ========== EasyMDE Markdown Editor ========== */
   .EasyMDEContainer {
     margin-bottom: 0.25rem;
@@ -1230,13 +1339,6 @@
               <small class="form-text text-muted">業種情報は銘柄検索時に自動設定されます</small>
             </div>
             
-            <div class="col-md-6 mb-3">
-              <label for="{{ form.tags.id_for_label }}" class="form-label">
-                <i class="bi bi-tags me-1"></i>タグ
-              </label>
-              {{ form.tags }}
-              <small class="form-text text-muted">複数選択可能です</small>
-            </div>
           </div>
 
           <div class="row">
@@ -1364,7 +1466,7 @@
           </h4>
 
           <!-- タグ機能のヘルプ (コンパクト版) -->
-          <p class="text-muted small mb-2"><code style="font-size:0.8em;">@成長株</code> で検索可能なタグを挿入できます</p>
+          <p class="text-muted small mb-2"><code style="font-size:0.8em;">@AI</code> などと書くと保存時に自動タグ付けされます。チップをクリックして挿入できます。</p>
 
           <!-- ========== テンプレート呼び出し ========== -->
           <div class="diary-template-picker mb-2">
@@ -1391,6 +1493,30 @@
           {% if form.reason.errors %}
           <div class="text-danger small mt-1">{{ form.reason.errors }}</div>
           {% endif %}
+
+          <!-- ハッシュタグチップパネル -->
+          <div id="hashtag-chip-panel" class="mt-2" style="display:none;">
+            <!-- マイラベルセクション -->
+            <div id="hashtag-my-labels-section" class="mb-1">
+              <div class="hashtag-section-header">
+                <span class="hashtag-section-title"><i class="bi bi-tags me-1"></i>マイラベル</span>
+              </div>
+              <div id="hashtag-my-labels-content">
+                <p id="hashtag-my-labels-empty" class="text-muted mb-0" style="font-size:0.78rem; display:none;">
+                  まだラベルがありません。本文に <code>@監視中</code> などと書いて保存すると自動登録されます。
+                </p>
+              </div>
+            </div>
+            <!-- 投資分析タグセクション（折りたたみ） -->
+            <div id="hashtag-analysis-section">
+              <button type="button" id="hashtag-analysis-toggle" class="hashtag-section-toggle">
+                <span class="hashtag-section-title"><i class="bi bi-graph-up me-1"></i>投資分析タグ</span>
+                <i class="bi bi-chevron-down hashtag-toggle-icon"></i>
+              </button>
+              <div id="hashtag-chip-groups" style="display:none;"></div>
+            </div>
+          </div>
+
           {% if not form.instance.pk %}
           <!-- ウィザード Step 3 ナビゲーション -->
           <div class="wizard-nav">
@@ -2972,6 +3098,131 @@ function escapeHtml(text) {
         window.wizardAutoSetPurchase();
       }, true);
     }
+  });
+})();
+
+// ============================================
+// ハッシュタグチップパネル
+// ============================================
+(function() {
+  const AXIS_META = {
+    theme:          { label: '●テーマ',       color: '#7c3aed' },
+    macro:          { label: '●マクロ',       color: '#d97706' },
+    capital_policy: { label: '●資本政策',     color: '#16a34a' },
+    business_model: { label: '●ビジネス',     color: '#0891b2' },
+    risk:           { label: '●リスク',       color: '#dc2626' },
+    event:          { label: '●イベント',     color: '#6b7280' },
+    custom:         { label: '●ラベル',       color: '#9333ea' },
+  };
+  const ANALYSIS_PRIMARY   = ['theme', 'macro', 'capital_policy'];
+  const ANALYSIS_SECONDARY = ['business_model', 'risk', 'event'];
+
+  function insertHashtag(tag) {
+    if (window.easyMDE) {
+      const cm = window.easyMDE.codemirror;
+      const cursor = cm.getCursor();
+      cm.replaceRange('@' + tag + ' ', cursor, cursor);
+      cm.focus();
+    }
+  }
+
+  function buildChipGroup(axis, tags) {
+    const meta = AXIS_META[axis] || { label: '●' + axis, color: '#6b7280' };
+    const group = document.createElement('div');
+    group.className = 'hashtag-chip-group';
+    group.dataset.axis = axis;
+
+    const axisLabel = document.createElement('span');
+    axisLabel.className = 'hashtag-chip-axis-label';
+    axisLabel.style.color = meta.color;
+    axisLabel.textContent = meta.label;
+    group.appendChild(axisLabel);
+
+    tags.forEach(function(t) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = axis === 'custom' ? 'hashtag-chip label-chip' : 'hashtag-chip';
+      btn.style.color = meta.color;
+      btn.textContent = '@' + t.tag;
+      btn.dataset.tag = t.tag;
+      btn.addEventListener('click', function() { insertHashtag(t.tag); });
+      group.appendChild(btn);
+    });
+
+    return group;
+  }
+
+  function renderChipPanel(hashtags) {
+    const panel = document.getElementById('hashtag-chip-panel');
+    const container = document.getElementById('hashtag-chip-groups');
+    const labelsContent = document.getElementById('hashtag-my-labels-content');
+    const labelsEmpty = document.getElementById('hashtag-my-labels-empty');
+    const analysisToggle = document.getElementById('hashtag-analysis-toggle');
+    if (!panel || !container) return;
+
+    // custom 軸（マイラベル）と分析タグに分離
+    const customTags = hashtags.filter(function(h) { return h.axis === 'custom' && h.count > 0; });
+    const analysisTags = hashtags.filter(function(h) { return h.axis !== 'custom'; });
+
+    // マイラベルセクション
+    if (customTags.length > 0) {
+      const group = buildChipGroup('custom', customTags);
+      if (labelsEmpty) labelsEmpty.style.display = 'none';
+      if (labelsContent) labelsContent.appendChild(group);
+    } else {
+      if (labelsEmpty) labelsEmpty.style.display = '';
+    }
+
+    // 投資分析タグセクション（軸ごとにグループ化）
+    const byAxis = {};
+    analysisTags.forEach(function(h) {
+      const ax = h.axis || 'theme';
+      if (!byAxis[ax]) byAxis[ax] = [];
+      byAxis[ax].push(h);
+    });
+
+    ANALYSIS_PRIMARY.forEach(function(ax) {
+      if (byAxis[ax] && byAxis[ax].length > 0) {
+        container.appendChild(buildChipGroup(ax, byAxis[ax]));
+      }
+    });
+    ANALYSIS_SECONDARY.forEach(function(ax) {
+      if (byAxis[ax] && byAxis[ax].length > 0) {
+        container.appendChild(buildChipGroup(ax, byAxis[ax]));
+      }
+    });
+    Object.keys(byAxis).forEach(function(ax) {
+      if (!ANALYSIS_PRIMARY.includes(ax) && !ANALYSIS_SECONDARY.includes(ax) && byAxis[ax].length > 0) {
+        container.appendChild(buildChipGroup(ax, byAxis[ax]));
+      }
+    });
+
+    // 投資分析タグのトグル
+    if (analysisToggle) {
+      analysisToggle.addEventListener('click', function() {
+        const isOpen = analysisToggle.classList.toggle('open');
+        container.style.display = isOpen ? '' : 'none';
+      });
+    }
+
+    panel.style.display = '';
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    fetch("{% url 'stockdiary:api_hashtags' %}?limit=200", { credentials: 'same-origin' })
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(data) {
+        if (data && data.success && data.hashtags && data.hashtags.length > 0) {
+          renderChipPanel(data.hashtags);
+        } else if (data && data.success) {
+          // ハッシュタグなしでも空状態パネルを表示
+          const panel = document.getElementById('hashtag-chip-panel');
+          const labelsEmpty = document.getElementById('hashtag-my-labels-empty');
+          if (panel) panel.style.display = '';
+          if (labelsEmpty) labelsEmpty.style.display = '';
+        }
+      })
+      .catch(function() { /* silently skip */ });
   });
 })();
 

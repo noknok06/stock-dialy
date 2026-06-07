@@ -13,6 +13,7 @@ AXIS_WEIGHTS: dict[str, float] = {
     'capital_policy': 0.4,
     'macro':          0.3,
     'event':          0.0,  # 一過性イベントは計算から除外
+    'custom':         0.0,  # 個人管理ラベルは分析スコアリングから除外
 }
 
 # 関連成立の最小条件（FR-6）
@@ -38,6 +39,7 @@ AXIS_COLORS: dict[str, str] = {
     'capital_policy': '#16a34a',  # 緑（資本政策）
     'macro':          '#d97706',  # オレンジ（マクロ感応）
     'event':          '#6b7280',  # グレー（イベント）
+    'custom':         '#9333ea',  # 薄紫（ラベル）
 }
 
 # 軸の日本語ラベル
@@ -48,6 +50,7 @@ AXIS_LABELS: dict[str, str] = {
     'capital_policy': '資本政策',
     'macro':          'マクロ感応',
     'event':          'イベント',
+    'custom':         'ラベル',
 }
 
 # @ハッシュタグ名 → 軸 の組み込みマッピング
