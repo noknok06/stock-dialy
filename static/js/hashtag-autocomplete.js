@@ -48,8 +48,22 @@ class HashtagMentionAutocomplete {
 
     this.cm.on('keyup',  (cm, e) => this._onKeyUp(e));
     this.cm.on('keydown', (cm, e) => this._onKeyDown(e));
+    // change イベント: 日本語IMEがEnterで確定した後もここで検知できる
+    // (keyupは key:'Enter' でフィルタされ、keyupは composition 中に getLine が空になるため)
+    this.cm.on('change', () => this._onTextChange());
     // blur 時は mousedown が先に発火するため 150ms 遅延して非表示
     this.cm.on('blur', () => setTimeout(() => this._hide(), 150));
+
+    // 日本語IME確定の保険: CodeMirror の隠しtextareaに直接 compositionend を張る
+    // (環境によっては change より compositionend が確実に発火する)
+    try {
+      const input = this.cm.getInputField && this.cm.getInputField();
+      if (input) {
+        input.addEventListener('compositionend', () => {
+          setTimeout(() => this._onTextChange(), 0);
+        });
+      }
+    } catch (_) { /* getInputField 非対応環境は無視 */ }
   }
 
   // =========================================================
@@ -78,13 +92,24 @@ class HashtagMentionAutocomplete {
   // =========================================================
   _onKeyUp(e) {
     if (['ArrowUp', 'ArrowDown', 'Enter', 'Escape'].includes(e.key)) return;
+    this._trigger();
+  }
 
+  // =========================================================
+  // テキスト変更（日本語IMEのEnter確定後にも発火）
+  // =========================================================
+  _onTextChange() {
+    // keyup と同じ debounce タイマーを共有するので二重フェッチにならない
+    this._trigger();
+  }
+
+  // カーソル位置の @xxx を検出してフェッチをスケジュール
+  _trigger() {
     const mention = this._getMentionAtCursor();
     if (!mention) {
       this._hide();
       return;
     }
-
     this.activeQuery = mention;
     clearTimeout(this.timer);
     this.timer = setTimeout(() => this._fetch(mention.query), 200);
@@ -129,7 +154,10 @@ class HashtagMentionAutocomplete {
     try {
       const url = `${this.apiUrl}?q=${encodeURIComponent(query)}&limit=8`;
       const res  = await fetch(url, { credentials: 'same-origin' });
-      if (!res.ok) return;
+      if (!res.ok) {
+        console.warn('[HashtagAC] fetch failed:', res.status, url);
+        return;
+      }
       const data = await res.json();
       if (data.success && data.hashtags && data.hashtags.length > 0) {
         this._positionDropdown();
@@ -137,7 +165,8 @@ class HashtagMentionAutocomplete {
       } else {
         this._hide();
       }
-    } catch (_) {
+    } catch (err) {
+      console.warn('[HashtagAC] fetch error:', err);
       this._hide();
     }
   }
@@ -166,12 +195,13 @@ class HashtagMentionAutocomplete {
       const meta = HASHTAG_AXIS_META[h.axis] || { color: '#6b7280' };
       const badge = meta.icon
         ? `<span class="hashtag-axis-dot" style="color:${meta.color};font-size:0.75em;flex-shrink:0;">${meta.icon}</span>`
-        : `<span class="hashtag-axis-dot" style="background:${meta.color};" aria-hidden="true"></span>`;
+        : `<span class="hashtag-axis-dot" aria-hidden="true" style="display:inline-block;width:7px;height:7px;border-radius:50%;flex-shrink:0;background:${meta.color};"></span>`;
       const countStr = h.count > 0
-        ? `<span class="hashtag-count">${h.count}</span>`
+        ? `<span class="hashtag-count" style="margin-left:auto;padding-left:8px;font-size:0.72rem;color:#888;flex-shrink:0;">${h.count}</span>`
         : '';
-      return `<div class="hashtag-suggestion-item" data-tag="${this._esc(h.tag)}" role="option">
-        ${badge}<span class="hashtag-at">@</span><span class="hashtag-name">${this._esc(h.tag)}</span>
+      return `<div class="hashtag-suggestion-item" data-tag="${this._esc(h.tag)}" role="option"
+        style="padding:8px 12px;cursor:pointer;display:flex;align-items:center;gap:4px;color:#1f2328;">
+        ${badge}<span class="hashtag-at" style="color:#4a6da7;font-weight:700;">@</span><span class="hashtag-name" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${this._esc(h.tag)}</span>
         ${countStr}
       </div>`;
     }).join('');
@@ -181,6 +211,9 @@ class HashtagMentionAutocomplete {
         e.preventDefault();   // blur を防いで確実に挿入
         this._insert(item.dataset.tag);
       });
+      // 外部CSS非依存のホバー表現
+      item.addEventListener('mouseenter', () => { item.style.background = 'rgba(74,109,167,0.12)'; });
+      item.addEventListener('mouseleave', () => { item.style.background = ''; });
     });
 
     this.dropdown.style.display = 'block';
@@ -219,6 +252,21 @@ class HashtagMentionAutocomplete {
     el.className = 'hashtag-autocomplete-dropdown';
     el.setAttribute('role', 'listbox');
     el.style.display = 'none';
+    // 重要レイアウトはインラインで設定する。
+    // search-suggestions.css が読み込まれていないページ（diary_form / detail）でも
+    // 必ず fixed 配置・適切な幅・前面表示になるようにするため。
+    Object.assign(el.style, {
+      position:     'fixed',
+      zIndex:       '2000',
+      width:        '240px',
+      maxHeight:    '240px',
+      overflowY:    'auto',
+      background:   '#ffffff',
+      border:       '1px solid rgba(0,0,0,0.12)',
+      borderRadius: '8px',
+      boxShadow:    '0 4px 14px rgba(0,0,0,0.18)',
+      fontSize:     '0.88rem',
+    });
     return el;
   }
 

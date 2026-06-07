@@ -1650,7 +1650,7 @@
 <!-- EasyMDE Markdown Editor -->
 <script src="https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.js"></script>
 <!-- @ハッシュタグ オートコンプリート -->
-<script src="{% static 'js/hashtag-autocomplete.js' %}"></script>
+<script src="{% static 'js/hashtag-autocomplete.js' %}?v={{ STATIC_VERSION }}"></script>
 <script>
 
 // ============================================
@@ -2012,11 +2012,13 @@ window.showNotification = function showNotification(type, message) {
 // ============================================
 // EasyMDE Markdown Editor 初期化
 // ============================================
-const reasonTextareaEl = document.getElementById('id_reason');
-const reasonCharCount = document.getElementById('reasonCharCount');
-const MAX_REASON_LENGTH = 5000;
+window.initReasonEasyMDE = function initReasonEasyMDE() {
+  if (window.easyMDE) return;
+  const reasonTextareaEl = document.getElementById('id_reason');
+  if (!reasonTextareaEl) return;
+  const reasonCharCount = document.getElementById('reasonCharCount');
+  const MAX_REASON_LENGTH = 5000;
 
-if (reasonTextareaEl) {
   // カスタムマークダウンレンダラーを作成（ハッシュタグ対応）
   const customRenderer = {
     preprocess: function(markdown) {
@@ -2086,16 +2088,23 @@ if (reasonTextareaEl) {
     }
   }
 
-  window.window.easyMDE.codemirror.on('change', updateEasyMDECharCount);
+  window.easyMDE.codemirror.on('change', updateEasyMDECharCount);
   updateEasyMDECharCount();
 
   // @ハッシュタグ オートコンプリート（投資仮説フィールド）
-  new HashtagMentionAutocomplete(
-    window.easyMDE.codemirror,
-    "{% url 'stockdiary:api_hashtags' %}"
-  );
+  try {
+    new HashtagMentionAutocomplete(
+      window.easyMDE.codemirror,
+      "{% url 'stockdiary:api_hashtags' %}"
+    );
+  } catch (e) {
+    console.error('[HashtagAC] 初期化に失敗:', e);
+  }
 
   // ハッシュタグのハイライト表示（CodeMirrorカスタムモード）
+  // EasyMDE は CodeMirror をグローバルに公開しないためインスタンスから取得
+  // ※ ハイライトは装飾のみ。失敗してもオートコンプリートには影響させない
+  const CodeMirror = window.easyMDE.codemirror.constructor;
   CodeMirror.defineMode("markdown-with-hashtags", function(config) {
     const mdMode = CodeMirror.getMode(config, "markdown");
 
@@ -2208,7 +2217,11 @@ if (reasonTextareaEl) {
       }
     });
   }
-}
+};
+{% if form.instance.pk %}
+// 編集モード: 要素が表示済みのため即時初期化
+window.initReasonEasyMDE();
+{% endif %}
 
 // ============================================
 // メモ文字数カウンター
@@ -2685,7 +2698,8 @@ function validateInitialPurchase() {
 // ============================================
 // 初期化処理
 // ============================================
-if (addInitialPurchaseCheckbox && addInitialPurchaseCheckbox.checked) {
+const initialPurchaseCheckboxEl = document.getElementById('id_add_initial_purchase');
+if (initialPurchaseCheckboxEl && initialPurchaseCheckboxEl.checked) {
   updateInitialPurchasePreview();
 }
 
@@ -2886,11 +2900,16 @@ function escapeHtml(text) {
     updateWizardProgress(step);
     currentWizardStep = step;
 
-    // Step 3 (投資理由) が表示されたときに EasyMDE をリフレッシュ
-    if (step === 3 && window.easyMDE) {
-      setTimeout(function() {
+    // Step 3 (投資理由) が表示されたとき、EasyMDE を初期化またはリフレッシュ
+    if (step === 3) {
+      if (!window.easyMDE) {
+        // 要素が visible になってから初期化（寸法計算が正確になるよう rAF で遅延）
+        requestAnimationFrame(function() {
+          if (window.initReasonEasyMDE) window.initReasonEasyMDE();
+        });
+      } else {
         window.easyMDE.codemirror.refresh();
-      }, 100);
+      }
     }
 
     // フォームの先頭にスクロール
