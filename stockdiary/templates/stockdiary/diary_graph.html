@@ -250,6 +250,36 @@
         <i class="bi bi-hand-index"></i>ドラッグで移動・ホイールでズーム
       </div>
 
+      <!-- 凡例（キャンバス左上にフローティング表示・グラフ表示時のみ） -->
+      <div class="graph-legend-float" id="graph-legend" style="display:none;">
+        <span class="glf-title">凡例</span>
+        <div id="legend-status" class="glf-group">
+          <span class="glf-item"><span class="graph-legend-dot" style="background:#10b981;"></span>保有中</span>
+          <span class="glf-item"><span class="graph-legend-dot" style="background:#ef4444;"></span>売却済み</span>
+          <span class="glf-item"><span class="graph-legend-dot" style="background:#9ca3af;"></span>メモ</span>
+        </div>
+        <div id="legend-hubs" class="glf-group legend-hidden">
+          <span class="glf-item legend-hidden" id="legend-tag-node">
+            <svg width="14" height="14" viewBox="-7 -7 14 14"><polygon points="5.20,-3 5.20,3 0,6 -5.20,3 -5.20,-3 0,-6" fill="#7c3aed" stroke="white" stroke-width="1.5"/></svg>タグ
+          </span>
+          <span class="glf-item legend-hidden" id="legend-sector-node">
+            <svg width="14" height="14" viewBox="-7 -7 14 14"><rect x="-5.5" y="-5.5" width="11" height="11" rx="2.5" fill="#d97706" stroke="white" stroke-width="1.5"/></svg>業種
+          </span>
+        </div>
+        <div id="legend-axis" class="glf-axis legend-hidden">
+          <span class="glf-sub">軸</span>
+          <span class="glf-item"><span class="graph-legend-dot" style="background:#7c3aed;"></span>テーマ</span>
+          <span class="glf-item"><span class="graph-legend-dot" style="background:#0891b2;"></span>BM</span>
+          <span class="glf-item"><span class="graph-legend-dot" style="background:#dc2626;"></span>リスク</span>
+          <span class="glf-item"><span class="graph-legend-dot" style="background:#16a34a;"></span>資本</span>
+          <span class="glf-item"><span class="graph-legend-dot" style="background:#d97706;"></span>マクロ</span>
+          <span class="glf-item"><span class="graph-legend-dot" style="background:#6b7280;"></span>イベント</span>
+        </div>
+        <span class="glf-item legend-hidden" id="legend-mention-edge">
+          <svg width="22" height="8" style="overflow:visible;"><line x1="0" y1="4" x2="22" y2="4" stroke="#f59e0b" stroke-width="2.5" stroke-dasharray="4,3"/></svg>コード参照
+        </span>
+      </div>
+
       <!-- 空状態 -->
       <div id="graph-empty" class="graph-canvas">
         <div class="text-center text-muted py-4">
@@ -290,48 +320,6 @@
     </div>
 
   </div><!-- /.graph-outer-wrapper -->
-
-  <!-- 凡例（#graph-stage 内に配置: 全画面モードでも表示される） -->
-  <div class="d-flex gap-3 mt-2 flex-wrap align-items-center graph-legend-bar" id="graph-legend">
-    <!-- ステータス凡例（デフォルト表示） -->
-    <div id="legend-status" class="d-flex gap-3 flex-wrap align-items-center">
-      <span class="small text-muted d-flex align-items-center gap-1">
-        <span class="graph-legend-dot" style="background:#10b981;"></span>保有中
-      </span>
-      <span class="small text-muted d-flex align-items-center gap-1">
-        <span class="graph-legend-dot" style="background:#ef4444;"></span>売却済み
-      </span>
-      <span class="small text-muted d-flex align-items-center gap-1">
-        <span class="graph-legend-dot" style="background:#9ca3af;"></span>メモ
-      </span>
-    </div>
-    <!-- ハブノード凡例（tag/sector モード時に追加表示） -->
-    <div id="legend-hubs" class="gap-3 flex-wrap align-items-center legend-hidden">
-      <span class="small text-muted align-items-center gap-1 legend-hidden" id="legend-tag-node">
-        <svg width="14" height="14" viewBox="-7 -7 14 14"><polygon points="5.20,-3 5.20,3 0,6 -5.20,3 -5.20,-3 0,-6" fill="#7c3aed" stroke="white" stroke-width="1.5"/></svg>タグ
-      </span>
-      <span class="small text-muted align-items-center gap-1 legend-hidden" id="legend-sector-node">
-        <svg width="14" height="14" viewBox="-7 -7 14 14"><rect x="-5.5" y="-5.5" width="11" height="11" rx="2.5" fill="#d97706" stroke="white" stroke-width="1.5"/></svg>業種
-      </span>
-    </div>
-    <!-- 軸凡例（axis カラーモード時に表示） -->
-    <div id="legend-axis" class="gap-2 flex-wrap align-items-center legend-hidden">
-      <span class="small text-muted">軸:</span>
-      <span class="small text-muted d-flex align-items-center gap-1"><span class="graph-legend-dot" style="background:#7c3aed;"></span>テーマ</span>
-      <span class="small text-muted d-flex align-items-center gap-1"><span class="graph-legend-dot" style="background:#0891b2;"></span>BM</span>
-      <span class="small text-muted d-flex align-items-center gap-1"><span class="graph-legend-dot" style="background:#dc2626;"></span>リスク</span>
-      <span class="small text-muted d-flex align-items-center gap-1"><span class="graph-legend-dot" style="background:#16a34a;"></span>資本政策</span>
-      <span class="small text-muted d-flex align-items-center gap-1"><span class="graph-legend-dot" style="background:#d97706;"></span>マクロ</span>
-      <span class="small text-muted d-flex align-items-center gap-1"><span class="graph-legend-dot" style="background:#6b7280;"></span>イベント</span>
-    </div>
-    <!-- コード参照凡例 -->
-    <span class="small text-muted d-flex align-items-center gap-1 legend-hidden" id="legend-mention-edge">
-      <svg width="22" height="8" style="overflow:visible;"><line x1="0" y1="4" x2="22" y2="4" stroke="#f59e0b" stroke-width="2.5" stroke-dasharray="4,3"/></svg>コード参照
-    </span>
-    <span class="small text-muted ms-2">
-      <i class="bi bi-info-circle me-1"></i>ノードサイズは接続数に比例 / クリックで詳細パネル表示
-    </span>
-  </div>
 
   </div><!-- /#graph-stage -->
 

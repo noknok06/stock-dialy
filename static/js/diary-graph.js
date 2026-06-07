@@ -79,6 +79,7 @@
       this.emptyEl   = document.getElementById('graph-empty');
       this.tooltipEl = document.getElementById('graph-tooltip');
       this.hintEl    = document.getElementById('graph-hint');
+      this.legendEl  = document.getElementById('graph-legend');
       this.statsEl   = document.getElementById('graph-stats');
       this.sidePanel = document.getElementById('graph-side-panel');
       this.sidePanelBody  = document.getElementById('side-panel-body');
@@ -1445,21 +1446,24 @@
       this.loadingEl.style.display = 'flex';
       this.svgEl.style.display     = 'none';
       this.emptyEl.style.display   = 'none';
-      if (this.statsEl) this.statsEl.style.display = 'none';
-      if (this.hintEl)  this.hintEl.style.display  = 'none';
+      if (this.statsEl)  this.statsEl.style.display  = 'none';
+      if (this.hintEl)   this.hintEl.style.display   = 'none';
+      if (this.legendEl) this.legendEl.style.display = 'none';
     }
     _showGraph() {
       this.loadingEl.style.display = 'none';
       this.svgEl.style.display     = 'block';
       this.emptyEl.style.display   = 'none';
-      if (this.hintEl)  this.hintEl.style.display  = '';
+      if (this.hintEl)   this.hintEl.style.display   = '';
+      if (this.legendEl) this.legendEl.style.display = '';
     }
     _showEmpty() {
       this.loadingEl.style.display = 'none';
       this.svgEl.style.display     = 'none';
       this.emptyEl.style.display   = 'flex';
-      if (this.statsEl) this.statsEl.style.display = 'none';
-      if (this.hintEl)  this.hintEl.style.display  = 'none';
+      if (this.statsEl)  this.statsEl.style.display  = 'none';
+      if (this.hintEl)   this.hintEl.style.display   = 'none';
+      if (this.legendEl) this.legendEl.style.display = 'none';
     }
     _showError(msg) {
       this.loadingEl.innerHTML = `
