@@ -125,6 +125,77 @@
     border-top: 1px solid var(--border-color);
   }
 
+  /* 分析グループ（軸）ピッカー */
+  .axis-picker {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  @media (max-width: 576px) {
+    .axis-picker {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .axis-option {
+    border: 2px solid var(--border-color, #e2e8f0);
+    border-radius: 10px;
+    padding: 10px 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    background: var(--bg-100, #fff);
+    text-align: center;
+    user-select: none;
+  }
+
+  .axis-option:hover {
+    border-color: var(--axis-color);
+    background: color-mix(in srgb, var(--axis-color) 8%, transparent);
+  }
+
+  .axis-option.selected {
+    border-color: var(--axis-color);
+    background: color-mix(in srgb, var(--axis-color) 12%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--axis-color) 25%, transparent);
+  }
+
+  .axis-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--axis-color);
+    flex-shrink: 0;
+  }
+
+  .axis-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-100, #1e293b);
+    line-height: 1.2;
+  }
+
+  .axis-desc {
+    font-size: 10px;
+    color: var(--text-300, #94a3b8);
+    line-height: 1.3;
+  }
+
+  .axis-note {
+    font-size: 12px;
+    color: var(--text-200, #64748b);
+    padding: 8px 12px;
+    background: color-mix(in srgb, #3b82f6 6%, transparent);
+    border-left: 3px solid #3b82f6;
+    border-radius: 4px;
+    margin-top: 6px;
+  }
+
   /* Dark mode */
   .dark-mode .tag-preview,
   [data-theme="dark"] .tag-preview {
@@ -136,6 +207,28 @@
   .dark-mode .tag-preview-empty,
   [data-theme="dark"] .tag-preview-empty {
     color: var(--dm-muted-foreground);
+  }
+
+  .dark-mode .axis-option,
+  [data-theme="dark"] .axis-option {
+    background: var(--dm-card, #1e293b);
+    border-color: var(--dm-border, #334155);
+  }
+
+  .dark-mode .axis-label,
+  [data-theme="dark"] .axis-label {
+    color: var(--dm-text, #f1f5f9);
+  }
+
+  .dark-mode .axis-desc,
+  [data-theme="dark"] .axis-desc {
+    color: var(--dm-text-secondary, #94a3b8);
+  }
+
+  .dark-mode .axis-note,
+  [data-theme="dark"] .axis-note {
+    color: var(--dm-text-secondary, #94a3b8);
+    background: rgba(59, 130, 246, 0.1);
   }
 
   .dark-mode .help-section,
@@ -267,14 +360,69 @@
               </small>
             </div>
             
+            {# 分析グループ（軸）ピッカー — hidden select を JS で連動 #}
+            <div class="mb-4">
+              <label class="form-label mb-2">
+                <i class="bi bi-diagram-3-fill"></i>
+                <span>分析グループ</span>
+                <span class="text-danger">*</span>
+              </label>
+              <p class="axis-note mb-2">
+                日記に <strong>@{{ form.instance.name|default:"タグ名" }}</strong> と書いたとき、グラフで何色のハブとして表示されるかを決めます。同じグループの@タグを多く共有する銘柄同士がグラフで繋がります。
+              </p>
+
+              {# 実際に送信される select は非表示 #}
+              <div style="display:none;">{{ form.axis }}</div>
+
+              <div class="axis-picker" id="axisPicker">
+                <div class="axis-option" data-value="theme" style="--axis-color:#7c3aed;">
+                  <div class="axis-dot"></div>
+                  <div class="axis-label">注目テーマ</div>
+                  <div class="axis-desc">AI・半導体・脱炭素など</div>
+                </div>
+                <div class="axis-option" data-value="macro" style="--axis-color:#d97706;">
+                  <div class="axis-dot"></div>
+                  <div class="axis-label">マクロ感応</div>
+                  <div class="axis-desc">金利・為替・景気サイクル</div>
+                </div>
+                <div class="axis-option" data-value="business_model" style="--axis-color:#0891b2;">
+                  <div class="axis-dot"></div>
+                  <div class="axis-label">ビジネスモデル</div>
+                  <div class="axis-desc">稼ぎ方・成長ロジック</div>
+                </div>
+                <div class="axis-option" data-value="capital_policy" style="--axis-color:#16a34a;">
+                  <div class="axis-dot"></div>
+                  <div class="axis-label">資本政策</div>
+                  <div class="axis-desc">配当・株主還元・ROE</div>
+                </div>
+                <div class="axis-option" data-value="risk" style="--axis-color:#dc2626;">
+                  <div class="axis-dot"></div>
+                  <div class="axis-label">リスク</div>
+                  <div class="axis-desc">地政学・規制・需給変化</div>
+                </div>
+                <div class="axis-option" data-value="event" style="--axis-color:#6b7280;">
+                  <div class="axis-dot"></div>
+                  <div class="axis-label">イベント</div>
+                  <div class="axis-desc">決算・一過性イベント（接続対象外）</div>
+                </div>
+              </div>
+              {% if form.axis.errors %}
+                <div class="error-message mt-1">
+                  <i class="bi bi-exclamation-circle"></i>
+                  <span>{{ form.axis.errors.0 }}</span>
+                </div>
+              {% endif %}
+            </div>
+
             <div class="tag-preview-section">
               <div class="tag-preview-label">
                 <i class="bi bi-eye"></i>
                 <span>プレビュー</span>
               </div>
-              <div class="tag-preview" id="tagPreview">
-                <i class="bi bi-tag-fill"></i>
-                <span id="tagPreviewText">
+              <div class="tag-preview" id="tagPreview" style="border-color: var(--preview-axis-color, #7c3aed);">
+                <span class="axis-dot" id="previewDot" style="background: var(--preview-axis-color, #7c3aed); margin-right: 6px;"></span>
+                <i class="bi bi-tag-fill" style="color: var(--preview-axis-color, #7c3aed);"></i>
+                <span id="tagPreviewText" style="margin-left:4px;">
                   {% if form.instance.name %}
                     {{ form.instance.name }}
                   {% else %}
@@ -283,7 +431,7 @@
                 </span>
               </div>
             </div>
-            
+
             <div class="form-actions">
               <a href="{% url 'tags:list' %}" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left"></i>
@@ -295,21 +443,6 @@
               </button>
             </div>
           </form>
-          
-          <div class="help-section">
-            <h5 class="help-title">
-              <i class="bi bi-lightbulb"></i>
-              <span>効果的なタグの作り方</span>
-            </h5>
-            <p class="help-text">タグは投資記録を整理・分類するための重要なツールです。以下のような観点でタグを作成すると効果的です：</p>
-            <ul class="help-list">
-              <li><strong>業種・セクター:</strong> テクノロジー、金融、ヘルスケアなど</li>
-              <li><strong>投資戦略:</strong> 成長株、配当株、バリュー株など</li>
-              <li><strong>市場・地域:</strong> 国内、米国、新興国など</li>
-              <li><strong>投資期間:</strong> 短期、中期、長期など</li>
-              <li><strong>独自分類:</strong> 要監視、優先度高、ポートフォリオコアなど</li>
-            </ul>
-          </div>
         </div>
       </div>
     </div>
@@ -325,35 +458,78 @@
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     initializeSpeedDial();
-    
+
+    // ===== 分析グループ（軸）ピッカー =====
+    const AXIS_COLORS = {
+      theme:          '#7c3aed',
+      macro:          '#d97706',
+      business_model: '#0891b2',
+      capital_policy: '#16a34a',
+      risk:           '#dc2626',
+      event:          '#6b7280',
+    };
+
+    const axisSelect = document.getElementById('{{ form.axis.id_for_label }}');
+    const axisPicker = document.getElementById('axisPicker');
+    const previewContainer = document.getElementById('tagPreview');
+
+    function selectAxis(value) {
+      if (axisSelect) axisSelect.value = value;
+      axisPicker.querySelectorAll('.axis-option').forEach(opt => {
+        opt.classList.toggle('selected', opt.dataset.value === value);
+      });
+      const color = AXIS_COLORS[value] || '#7c3aed';
+      if (previewContainer) {
+        previewContainer.style.setProperty('--preview-axis-color', color);
+        const dot = previewContainer.querySelector('#previewDot');
+        const icon = previewContainer.querySelector('i.bi-tag-fill');
+        if (dot) dot.style.background = color;
+        if (icon) icon.style.color = color;
+      }
+    }
+
+    // クリックハンドラ
+    axisPicker.querySelectorAll('.axis-option').forEach(opt => {
+      opt.addEventListener('click', () => selectAxis(opt.dataset.value));
+    });
+
+    // 初期値を反映
+    const initialAxis = axisSelect ? axisSelect.value : 'theme';
+    selectAxis(initialAxis || 'theme');
+
+    // ===== タグ名プレビュー =====
     const nameInput = document.getElementById('{{ form.name.id_for_label }}');
     const previewText = document.getElementById('tagPreviewText');
-    const previewContainer = document.getElementById('tagPreview');
-    
+
     if (nameInput && previewText) {
       const updatePreview = () => {
         const value = nameInput.value.trim();
         if (value) {
-          previewText.innerHTML = value;
+          previewText.textContent = value;
           previewText.classList.remove('tag-preview-empty');
         } else {
           previewText.innerHTML = '<span class="tag-preview-empty">タグ名を入力してください</span>';
         }
+        // axis note の中のタグ名も更新
+        const noteStrong = document.querySelector('.axis-note strong');
+        if (noteStrong) noteStrong.textContent = '@' + (value || 'タグ名');
       };
-      
+
       nameInput.addEventListener('input', updatePreview);
-      nameInput.addEventListener('focus', () => previewContainer.classList.add('active'));
-      nameInput.addEventListener('blur', () => previewContainer.classList.remove('active'));
+      if (previewContainer) {
+        nameInput.addEventListener('focus', () => previewContainer.classList.add('active'));
+        nameInput.addEventListener('blur', () => previewContainer.classList.remove('active'));
+      }
       updatePreview();
     }
-    
+
+    // ===== 送信ボタン =====
     const form = document.getElementById('tagForm');
     if (form) {
       form.addEventListener('submit', function(e) {
         const submitBtn = this.querySelector('button[type="submit"]');
         const btnIcon = submitBtn.querySelector('i');
         const btnText = submitBtn.querySelector('span');
-        
         submitBtn.disabled = true;
         btnIcon.className = 'bi bi-hourglass-split';
         if (btnText) btnText.textContent = '保存中...';

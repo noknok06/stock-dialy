@@ -1057,9 +1057,32 @@
       </div>
 
       <div class="tag-card-body">
-        <h2 class="tag-card-name">
-          {{ tag.name }}
-        </h2>
+        <div class="d-flex align-items-start gap-2 mb-1">
+          <h2 class="tag-card-name mb-0" style="flex:1; min-width:0;">
+            {{ tag.name }}
+          </h2>
+          {% with axis=tag.axis %}
+          <span style="
+            flex-shrink:0;
+            {% if axis == 'theme' %}background:#7c3aed22;color:#7c3aed;border-color:#7c3aed55;
+            {% elif axis == 'macro' %}background:#d9770622;color:#d97706;border-color:#d9770655;
+            {% elif axis == 'business_model' %}background:#0891b222;color:#0891b2;border-color:#0891b255;
+            {% elif axis == 'capital_policy' %}background:#16a34a22;color:#16a34a;border-color:#16a34a55;
+            {% elif axis == 'risk' %}background:#dc262622;color:#dc2626;border-color:#dc262655;
+            {% else %}background:#6b728022;color:#6b7280;border-color:#6b728055;
+            {% endif %}
+            font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;border:1px solid;white-space:nowrap;line-height:1.6;">
+            {% if axis == 'theme' %}テーマ
+            {% elif axis == 'macro' %}マクロ
+            {% elif axis == 'business_model' %}BM
+            {% elif axis == 'capital_policy' %}資本政策
+            {% elif axis == 'risk' %}リスク
+            {% elif axis == 'event' %}イベント
+            {% else %}{{ axis }}
+            {% endif %}
+          </span>
+          {% endwith %}
+        </div>
         <div class="tag-card-count">
           {% with diary_count=tag.stockdiary_set.count %}
           {% if diary_count > 0 %}
