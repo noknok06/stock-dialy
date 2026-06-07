@@ -94,8 +94,8 @@
       this.currentTag       = '';
       this.currentEdgeModes = new Set(config.defaultEdgeModes || ['tag']);
       this.currentColorMode = 'sector';
-      // 軸フィルター（デフォルト: イベント以外を全選択）
-      this.currentAxes = new Set(['theme', 'business_model', 'risk', 'capital_policy', 'macro']);
+      // 軸フィルター（デフォルト: テーマのみ。ユーザーが追加可）
+      this.currentAxes = new Set(['theme']);
       this.searchQuery      = '';
       this.sectorColorMap   = {};
       this.focusNodeId      = null;
