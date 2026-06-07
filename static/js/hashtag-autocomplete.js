@@ -48,6 +48,9 @@ class HashtagMentionAutocomplete {
 
     this.cm.on('keyup',  (cm, e) => this._onKeyUp(e));
     this.cm.on('keydown', (cm, e) => this._onKeyDown(e));
+    // change イベント: 日本語IMEがEnterで確定した後もここで検知できる
+    // (keyupは key:'Enter' でフィルタされ、keyupは composition 中に getLine が空になるため)
+    this.cm.on('change', () => this._onTextChange());
     // blur 時は mousedown が先に発火するため 150ms 遅延して非表示
     this.cm.on('blur', () => setTimeout(() => this._hide(), 150));
   }
@@ -85,6 +88,21 @@ class HashtagMentionAutocomplete {
       return;
     }
 
+    this.activeQuery = mention;
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => this._fetch(mention.query), 200);
+  }
+
+  // =========================================================
+  // テキスト変更（日本語IMEのEnter確定後にも発火）
+  // =========================================================
+  _onTextChange() {
+    // keyup と同じ debounce タイマーを共有するので二重フェッチにならない
+    const mention = this._getMentionAtCursor();
+    if (!mention) {
+      this._hide();
+      return;
+    }
     this.activeQuery = mention;
     clearTimeout(this.timer);
     this.timer = setTimeout(() => this._fetch(mention.query), 200);

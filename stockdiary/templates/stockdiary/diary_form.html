@@ -2098,6 +2098,8 @@ window.initReasonEasyMDE = function initReasonEasyMDE() {
   );
 
   // ハッシュタグのハイライト表示（CodeMirrorカスタムモード）
+  // EasyMDE は CodeMirror をグローバルに公開しないためインスタンスから取得
+  const CodeMirror = window.easyMDE.codemirror.constructor;
   CodeMirror.defineMode("markdown-with-hashtags", function(config) {
     const mdMode = CodeMirror.getMode(config, "markdown");
 
