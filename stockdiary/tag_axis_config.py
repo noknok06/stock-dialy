@@ -53,51 +53,68 @@ AXIS_LABELS: dict[str, str] = {
     'custom':         'ラベル',
 }
 
-# @ハッシュタグ名 → 軸 の組み込みマッピング
-# tags/migrations/0004_auto_assign_tag_axis.py の TAG_AXIS_MAP と同内容。
-# ユーザーが Tag M2M で同名タグを作成した場合はそちらが優先される。
-HASHTAG_AXIS_MAP: dict[str, str] = {
-    # マクロ経済
-    'インフレ': 'macro', '金利上昇': 'macro', '金利低下': 'macro',
-    '円安メリット': 'macro', '円高メリット': 'macro', '景気敏感': 'macro',
-    'ディフェンシブ': 'macro', '資源価格上昇': 'macro',
-    '金利感応': 'macro', '都心オフィス': 'macro', '不動産市況': 'macro',
-    # AI・デジタル
-    'AI': 'theme', 'フィジカルAI': 'theme', 'ドローン': 'theme',
-    'DX': 'theme', 'サイバーセキュリティ': 'theme', 'AIセキュリティ': 'theme',
-    'データセンター': 'theme', '半導体': 'theme', 'オルタナティブデータ': 'theme',
-    '通信インフラ': 'theme',
-    # エネルギー
-    'エネルギー': 'theme', 'LNG': 'theme',
-    # 脱炭素
-    '脱炭素': 'theme', '再生可能エネルギー': 'theme', '水素': 'theme',
-    '蓄電池': 'theme', 'CCS': 'theme', 'SAF': 'theme',
-    # 社会・政策テーマ
-    '防衛': 'theme', '国土強靭化': 'theme', 'インフラ老朽化': 'theme',
-    '建設補修': 'theme', '少子高齢化': 'theme', 'インバウンド': 'theme',
-    'アジア消費': 'theme',
-    # ヘルスケア
-    'ヘルスケア': 'theme', 'ヘルスケア施設開発': 'theme', '医療DX': 'theme',
-    '創薬': 'theme', '医療機器': 'theme',
-    # 物流
-    '物流': 'theme', 'EC物流': 'theme', 'サプライチェーン': 'theme',
-    # 人材
-    'HRテック': 'theme', '採用プラットフォーム': 'theme', 'ハイクラス人材': 'theme',
-    '人材ビジネス': 'theme', '人材集約型': 'theme',
-    # 配当・株主還元
+# 標準タグ（管理者キュレーション分）の軸マッピング。
+#
+# 【重要】これは「種データ兼フォールバック」であり、実行時の正は DB（tags.MasterTag）。
+#   - 初回マイグレーション（0006）でこの厳選コアが MasterTag に投入される。
+#   - 以降は管理画面（Django admin）から追加・編集・無効化できる（デプロイ不要）。
+#   - 実行時の軸決定は get_master_axis_map() を使うこと。直接この辞書を参照しない。
+#   - この辞書は DB が空・未マイグレーション・例外時のフォールバックとしてのみ使われる。
+#
+# 方針: 標準タグは「汎用性が高く分析価値のある語」に厳選し、
+#       細かい語はユーザーが @タグで自由に追加（既定 custom 軸）する運用とする。
+CORE_MASTER_TAGS: dict[str, str] = {
+    # テーマ
+    'AI': 'theme', '半導体': 'theme', 'データセンター': 'theme',
+    'DX': 'theme', 'サイバーセキュリティ': 'theme', '防衛': 'theme',
+    'インバウンド': 'theme', 'ヘルスケア': 'theme',
+    '脱炭素': 'theme', '再生可能エネルギー': 'theme',
+    # マクロ感応
+    'インフレ': 'macro', '金利上昇': 'macro', '円安メリット': 'macro',
+    '景気敏感': 'macro', 'ディフェンシブ': 'macro',
+    # 資本政策
     '高配当': 'capital_policy', '累進配当': 'capital_policy',
-    '連続増配': 'capital_policy', '連続増益': 'capital_policy',
-    '高ROE': 'capital_policy', '株主還元強化': 'capital_policy',
-    # 成長戦略・ビジネスモデル
-    'M&A成長': 'business_model', '海外展開': 'business_model',
-    'IPビジネス': 'business_model', 'プラットフォーム': 'business_model',
-    'ストック収益': 'business_model', '高シェア': 'business_model',
-    'ニッチトップ': 'business_model', '総合商社': 'business_model',
-    '資源権益': 'business_model', 'バリューチェーン': 'business_model',
+    '連続増配': 'capital_policy', '株主還元強化': 'capital_policy',
+    '高ROE': 'capital_policy',
+    # ビジネスモデル
+    'ストック収益': 'business_model', 'プラットフォーム': 'business_model',
+    '高シェア': 'business_model', '総合商社': 'business_model',
     # リスク
-    '地政学リスク': 'risk', '規制リスク': 'risk', '需給変化': 'risk',
-    # イベント
-    '構造改革': 'event', '利益率改善': 'event', '設備投資拡大': 'event',
-    '決算注目': 'event', '業績上方修正': 'event', '増配': 'event',
-    '減配': 'event', 'MBO・買収': 'event', '決算ミス': 'event',
+    '地政学リスク': 'risk', '規制リスク': 'risk',
 }
+
+# 後方互換エイリアス（フォールバック用途のみ。新規コードは get_master_axis_map() を使う）
+HASHTAG_AXIS_MAP: dict[str, str] = CORE_MASTER_TAGS
+
+# get_master_axis_map() のキャッシュキー（tags.MasterTag.CACHE_KEY と一致させること）
+_MASTER_AXIS_CACHE_KEY = 'master_tag_axis_map'
+
+
+def get_master_axis_map() -> dict[str, str]:
+    """標準タグの {タグ名: 軸} を返す。
+
+    実行時の正は DB（tags.MasterTag, is_active=True）。
+    DB が空・未マイグレーション・例外時は CORE_MASTER_TAGS にフォールバックする。
+    頻繁なクエリを避けるため短時間（5分）キャッシュする。
+    MasterTag の保存/削除でキャッシュは即時クリアされる。
+    """
+    from django.core.cache import cache
+
+    cached = cache.get(_MASTER_AXIS_CACHE_KEY)
+    if cached is not None:
+        return cached
+
+    mapping = dict(CORE_MASTER_TAGS)
+    try:
+        from tags.models import MasterTag
+        db_map = dict(
+            MasterTag.objects.filter(is_active=True).values_list('name', 'axis')
+        )
+        if db_map:
+            mapping = db_map
+    except Exception:
+        # マイグレーション未適用・DB未接続時などはフォールバックを使う
+        pass
+
+    cache.set(_MASTER_AXIS_CACHE_KEY, mapping, 300)
+    return mapping

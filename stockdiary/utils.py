@@ -377,7 +377,7 @@ def get_hashtag_graph_data(
 
     軸決定の優先順位:
         1. user_tag_axis_map（Tag M2M でユーザーが明示設定）
-        2. HASHTAG_AXIS_MAP（組み込み97語マッピング）
+        2. 標準タグ（MasterTag, get_master_axis_map()）
         3. デフォルト 'theme'
 
     Returns:
@@ -388,12 +388,13 @@ def get_hashtag_graph_data(
                                'edge_type': 'hashtag', 'axis': str}]
         }
     """
-    from .tag_axis_config import HASHTAG_AXIS_MAP
+    from .tag_axis_config import get_master_axis_map
+    master_axis_map = get_master_axis_map()
 
     def _axis(name: str) -> str:
         if user_tag_axis_map and name in user_tag_axis_map:
             return user_tag_axis_map[name]
-        return HASHTAG_AXIS_MAP.get(name, 'theme')
+        return master_axis_map.get(name, 'theme')
 
     ht_diary_count: Dict[str, int] = defaultdict(int)
     edges: List[dict] = []
@@ -634,7 +635,8 @@ def compute_related_strength(focal, user, limit: int = 12) -> List[dict]:
                 _add(did, w, {'type': 'sector', 'label': f'同業種「{sector}」'})
 
     # 5. 共通 @ハッシュタグ（軸重み × IDF でスコアリング）
-    from .tag_axis_config import HASHTAG_AXIS_MAP, AXIS_LABELS as _AXIS_LABELS
+    from .tag_axis_config import get_master_axis_map, AXIS_LABELS as _AXIS_LABELS
+    _master_ht_axis = get_master_axis_map()
     try:
         from tags.models import Tag as _TagModel
         _user_ht_axis = dict(_TagModel.objects.filter(user=user).values_list('name', 'axis'))
@@ -644,7 +646,7 @@ def compute_related_strength(focal, user, limit: int = 12) -> List[dict]:
     def _ht_axis(name: str) -> str:
         if name in _user_ht_axis:
             return _user_ht_axis[name]
-        return HASHTAG_AXIS_MAP.get(name, 'custom')
+        return _master_ht_axis.get(name, 'custom')
 
     # focal のテキストから @タグ抽出（event軸・ラベル軸除外）
     focal_hashtags = {h for h in extract_hashtags(focal.reason or '') if _ht_axis(h) not in ('event', 'custom')}

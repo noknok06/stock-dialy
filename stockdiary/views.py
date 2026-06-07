@@ -562,7 +562,7 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
 
 def _sync_hashtag_tags(diary, user):
     from stockdiary.utils import extract_hashtags
-    from stockdiary.tag_axis_config import HASHTAG_AXIS_MAP
+    from stockdiary.tag_axis_config import get_master_axis_map
     from tags.models import Tag
 
     texts = [diary.reason or '']
@@ -571,10 +571,12 @@ def _sync_hashtag_tags(diary, user):
     if not found:
         return
 
+    # 標準タグ（MasterTag）に該当すればその軸、なければ個人ラベル（custom 軸）
+    master_axis_map = get_master_axis_map()
     for name in found:
         tag, _ = Tag.objects.get_or_create(
             user=user, name=name,
-            defaults={'axis': HASHTAG_AXIS_MAP.get(name, 'custom')},
+            defaults={'axis': master_axis_map.get(name, 'custom')},
         )
         diary.tags.add(tag)
 

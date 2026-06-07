@@ -437,8 +437,10 @@ def get_hashtags(request):
         query = request.GET.get('q', '').strip().lstrip('#')
         limit = int(request.GET.get('limit', 50))
 
-        from stockdiary.tag_axis_config import HASHTAG_AXIS_MAP
+        from stockdiary.tag_axis_config import get_master_axis_map
         from tags.models import Tag
+
+        master_axis_map = get_master_axis_map()
 
         # 1. ダイアリーテキストから使用済みタグ（count付き）
         diaries = StockDiary.objects.filter(user=request.user)
@@ -452,8 +454,8 @@ def get_hashtags(request):
             else:
                 merged[tag.name] = {'tag': tag.name, 'count': 0, 'axis': tag.axis}
 
-        # 3. HASHTAG_AXIS_MAP の標準タグを補完（まだmergedにないもの）
-        for name, axis in HASHTAG_AXIS_MAP.items():
+        # 3. 標準タグ（MasterTag）を補完（まだmergedにないもの）
+        for name, axis in master_axis_map.items():
             if name not in merged:
                 merged[name] = {'tag': name, 'count': 0, 'axis': axis}
             elif 'axis' not in merged[name]:
@@ -467,7 +469,7 @@ def get_hashtags(request):
         # 5. ソート: count降順、同countなら標準タグ優先
         hashtags = sorted(
             merged.values(),
-            key=lambda h: (-h.get('count', 0), 0 if h['tag'] in HASHTAG_AXIS_MAP else 1),
+            key=lambda h: (-h.get('count', 0), 0 if h['tag'] in master_axis_map else 1),
         )
 
         # 6. クエリでフィルタリング
