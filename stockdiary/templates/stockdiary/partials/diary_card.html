@@ -214,19 +214,6 @@
   </div>
   {% endif %}
 
-  <!-- ========== @ハッシュタグ行（本文中の @タグ をボタン化） ========== -->
-  {% with hashtags=diary.reason|extract_hashtags %}
-  {% if hashtags %}
-  <div class="diary-tags-row diary-tags-row--footer diary-hashtags-row">
-    {% for tag in hashtags %}
-      <span class="tag-pill hashtag-pill diary-hashtag" data-hashtag="{{ tag }}">
-        <span class="hashtag-at">@</span>{{ tag }}
-      </span>
-    {% endfor %}
-  </div>
-  {% endif %}
-  {% endwith %}
-
   <!-- ========== フッター ========== -->
   <footer class="diary-footer">
     <a href="{% url 'stockdiary:detail' diary.id %}" class="view-detail">
