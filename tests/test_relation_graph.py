@@ -70,6 +70,8 @@ class TestComputeRelatedStrength:
         tag2 = Tag.objects.create(user=user, name='製造装置')
         focal = _diary(user, '8035', '東京エレクトロン')
         other = _diary(user, '6857', 'アドバンテスト')
+        # 3件目の無関係な日記を追加して N=3 にし、IDF = log(3/2) > 0 を確保
+        _diary(user, '9999', '無関係銘柄')
         focal.tags.add(tag1, tag2)
         other.tags.add(tag1, tag2)
 
