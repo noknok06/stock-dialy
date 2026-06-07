@@ -7,8 +7,30 @@ from .models import Tag
 from django import forms
 from datetime import datetime
 
+from stockdiary.tag_axis_config import AXIS_COLORS, AXIS_LABELS
 
 from subscriptions.mixins import SubscriptionLimitCheckMixin
+
+# 軸（グループ）の表示順・短縮ラベル・アイコン。色とフルラベルは tag_axis_config を流用。
+AXIS_ORDER = ['theme', 'macro', 'business_model', 'capital_policy', 'risk', 'event', 'custom']
+AXIS_ICONS = {
+    'theme':          'bi-lightning-charge-fill',
+    'macro':          'bi-globe2',
+    'business_model': 'bi-gear-fill',
+    'capital_policy': 'bi-cash-stack',
+    'risk':           'bi-exclamation-triangle-fill',
+    'event':          'bi-calendar-event-fill',
+    'custom':         'bi-tag-fill',
+}
+AXIS_SHORT = {
+    'theme':          'テーマ',
+    'macro':          'マクロ',
+    'business_model': 'BM',
+    'capital_policy': '資本政策',
+    'risk':           'リスク',
+    'event':          'イベント',
+    'custom':         'ラベル',
+}
 
 class TagForm(forms.ModelForm):
     class Meta:
@@ -37,21 +59,52 @@ class TagListView(LoginRequiredMixin, ListView):
     context_object_name = 'tags'
     
     def get_queryset(self):
-        return Tag.objects.filter(user=self.request.user)
+        # 各タグの記録数（紐づく日記件数）を注釈。Meta.ordering により axis, name 順。
+        return Tag.objects.filter(user=self.request.user).annotate(
+            record_count=Count('stockdiary', distinct=True)
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
 
-        # 本モードに表示される銘柄数（投資理由ありのユニーク銘柄）をタグごとに計算
+        tags = list(context['tags'])
+
+        # 各タグに「投資理由ありのユニーク銘柄数（理由台帳の件数）」を付与
         tag_book_counts = {}
-        for tag in context['tags']:
+        for tag in tags:
             diaries = tag.stockdiary_set.filter(
                 reason__isnull=False
             ).exclude(reason='').values('stock_symbol', 'stock_name')
-            unique_stocks = {(d['stock_symbol'], d['stock_name']) for d in diaries}
-            tag_book_counts[tag.id] = len(unique_stocks)
+            book_count = len({(d['stock_symbol'], d['stock_name']) for d in diaries})
+            tag.book_count = book_count
+            tag_book_counts[tag.id] = book_count
         context['tag_book_counts'] = tag_book_counts
+
+        # 統計（4カード分）
+        context['tag_stats'] = {
+            'total':         len(tags),
+            'used':          sum(1 for t in tags if (t.record_count or 0) > 0),
+            'total_records': sum((t.record_count or 0) for t in tags),
+            'axes_in_use':   len({t.axis for t in tags}),
+        }
+
+        # 軸（グループ）ごとにまとめる。表示順は AXIS_ORDER に従う。
+        axis_groups = []
+        for key in AXIS_ORDER:
+            group_tags = [t for t in tags if t.axis == key]
+            if not group_tags:
+                continue
+            axis_groups.append({
+                'key':   key,
+                'label': AXIS_LABELS.get(key, key),
+                'short': AXIS_SHORT.get(key, key),
+                'color': AXIS_COLORS.get(key, '#6b7280'),
+                'icon':  AXIS_ICONS.get(key, 'bi-tag-fill'),
+                'count': len(group_tags),
+                'tags':  group_tags,
+            })
+        context['axis_groups'] = axis_groups
 
         # スピードダイアルのアクションを定義
         analytics_actions = [
