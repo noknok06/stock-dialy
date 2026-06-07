@@ -74,6 +74,7 @@ jobs:
             set -e
             cd /var/www/django/stock-dialy
             source venv/bin/activate
+            git clean -f -- stockdiary/migrations/ tags/migrations/
             git pull
             pip install -r requirements.txt
             python manage.py collectstatic --noinput --settings=config.settings
