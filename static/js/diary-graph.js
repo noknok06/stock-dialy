@@ -113,7 +113,9 @@
     // ==============================
     _init() {
       this._bindControls();
+      this._bindModalControls();
       this._syncEdgeModeCheckboxes();
+      this._syncModalState();
       this._fetchAndRender();
     }
 
@@ -149,16 +151,7 @@
         });
       }
 
-      // 軸フィルターチェックボックス
-      document.querySelectorAll('.axis-filter-check').forEach(cb => {
-        cb.addEventListener('change', () => {
-          this.currentAxes = new Set(
-            [...document.querySelectorAll('.axis-filter-check')]
-              .filter(c => c.checked).map(c => c.value)
-          );
-          this._fetchAndRender();
-        });
-      });
+      // 軸フィルターはモーダル (_bindModalControls) で制御
 
       // タグ統合ボタン（tag + hashtag を同時制御）
       const unifiedTagCb = document.getElementById('mode-tag-unified');
@@ -220,14 +213,7 @@
         });
       }
 
-      const colorSel = document.getElementById('colorModeSelect');
-      if (colorSel) {
-        colorSel.addEventListener('change', e => {
-          this.currentColorMode = e.target.value;
-          this._applyColorMode();
-          this._updateLegend();
-        });
-      }
+      // 色モードはモーダル (_bindModalControls) で制御
 
       const resetBtn = document.getElementById('resetZoom');
       if (resetBtn) {
@@ -290,6 +276,138 @@
         if (this._resizeTimer) clearTimeout(this._resizeTimer);
         this._resizeTimer = setTimeout(() => this._handleResize(false), 150);
       });
+    }
+
+    // ==============================
+    // モーダル設定コントロール
+    // ==============================
+    _bindModalControls() {
+      const AXIS_COLOR = {
+        theme: '#7c3aed', macro: '#d97706', business_model: '#0891b2',
+        capital_policy: '#16a34a', risk: '#dc2626', event: '#6b7280',
+      };
+
+      // 軸カード: クリックでトグル
+      document.querySelectorAll('.gs-axis-card').forEach(card => {
+        card.addEventListener('click', () => {
+          const axis = card.dataset.axis;
+          if (this.currentAxes.has(axis)) {
+            if (this.currentAxes.size <= 1) return; // 最低1つは残す
+            this.currentAxes.delete(axis);
+          } else {
+            this.currentAxes.add(axis);
+          }
+          this._syncModalState();
+          this._fetchAndRender();
+        });
+      });
+
+      // 軸: すべて表示
+      const allBtn = document.getElementById('gs-axis-all');
+      if (allBtn) {
+        allBtn.addEventListener('click', () => {
+          this.currentAxes = new Set(['theme','macro','business_model','capital_policy','risk','event']);
+          this._syncModalState();
+          this._fetchAndRender();
+        });
+      }
+
+      // 軸: テーマのみ
+      const noneBtn = document.getElementById('gs-axis-none');
+      if (noneBtn) {
+        noneBtn.addEventListener('click', () => {
+          this.currentAxes = new Set(['theme']);
+          this._syncModalState();
+          this._fetchAndRender();
+        });
+      }
+
+      // 色モードカード: クリックで選択
+      document.querySelectorAll('.gs-color-card').forEach(card => {
+        card.addEventListener('click', () => {
+          this.currentColorMode = card.dataset.mode;
+          this._syncModalState();
+          this._applyColorMode();
+          this._updateLegend();
+        });
+      });
+    }
+
+    // モーダル内UIをcurrentAxes/currentColorModeに合わせる
+    _syncModalState() {
+      const AXIS_COLOR = {
+        theme: '#7c3aed', macro: '#d97706', business_model: '#0891b2',
+        capital_policy: '#16a34a', risk: '#dc2626', event: '#6b7280',
+      };
+
+      document.querySelectorAll('.gs-axis-card').forEach(card => {
+        const axis   = card.dataset.axis;
+        const active = this.currentAxes.has(axis);
+        const color  = AXIS_COLOR[axis] || '#7c3aed';
+        card.classList.toggle('gs-active', active);
+        // border色を設定
+        card.style.borderColor = active ? color : '';
+
+        const pill = card.querySelector('.gs-axis-pill');
+        if (pill) {
+          if (active) {
+            pill.textContent = '表示中';
+            pill.style.background = color + '22';
+            pill.style.color = color;
+            pill.style.borderColor = color + '55';
+            pill.classList.remove('gs-axis-pill-off');
+          } else {
+            pill.textContent = '非表示';
+            pill.style.background = '';
+            pill.style.color = '';
+            pill.style.borderColor = '';
+            pill.classList.add('gs-axis-pill-off');
+          }
+        }
+
+        const icon = card.querySelector('.gs-check-icon');
+        if (icon) {
+          icon.className = active
+            ? 'bi bi-check-circle-fill gs-check-icon'
+            : 'bi bi-circle gs-check-icon';
+          icon.style.color   = color;
+          icon.style.opacity = active ? '1' : '0.3';
+        }
+      });
+
+      // 色モードカード
+      document.querySelectorAll('.gs-color-card').forEach(card => {
+        card.classList.toggle('gs-active', card.dataset.mode === this.currentColorMode);
+      });
+
+      this._updateSettingsBadge();
+    }
+
+    _updateSettingsBadge() {
+      const badge = document.getElementById('settings-summary-badge');
+      if (!badge) return;
+      const AXIS_LABEL = {
+        theme: 'テーマ', macro: 'マクロ', business_model: 'BM',
+        capital_policy: '資本政策', risk: 'リスク', event: 'イベント',
+      };
+      const n = this.currentAxes.size;
+      const total = 6;
+      let text, bg;
+      if (n === total) {
+        text = '全グループ';
+        bg   = '#6b7280';
+      } else if (n === 1) {
+        const axis = [...this.currentAxes][0];
+        text = AXIS_LABEL[axis] || axis;
+        const colors = {theme:'#7c3aed',macro:'#d97706',business_model:'#0891b2',capital_policy:'#16a34a',risk:'#dc2626',event:'#6b7280'};
+        bg = colors[axis] || '#7c3aed';
+      } else {
+        text = `${n}グループ`;
+        bg   = '#3b82f6';
+      }
+      badge.textContent = text;
+      badge.style.background = bg;
+      badge.style.display = 'inline';
     }
 
     // ==============================

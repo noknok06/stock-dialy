@@ -6,6 +6,87 @@
 {% block head %}
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 <link rel="stylesheet" href="{% static 'css/graph-view.css' %}?v={{ STATIC_VERSION }}">
+<style>
+/* ===== グラフ設定モーダル ===== */
+.graph-settings-modal .modal-header { border-bottom: 1px solid rgba(0,0,0,.1); }
+.gs-section-title {
+  font-size: .95rem; font-weight: 700;
+  margin-bottom: .4rem; display: flex; align-items: center;
+}
+.gs-section-desc {
+  font-size: .83rem; color: #64748b; margin-bottom: 1rem; line-height: 1.5;
+}
+
+/* 軸カードリスト */
+.gs-axis-list { display: flex; flex-direction: column; gap: 8px; }
+.gs-axis-card {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 14px; border-radius: 10px;
+  border: 2px solid #e2e8f0; cursor: pointer;
+  transition: border-color .15s, background .15s;
+  user-select: none;
+}
+.gs-axis-card.gs-active { background: #f8fafc; border-color: currentColor; }
+.gs-axis-card:hover { background: #f8fafc; }
+.gs-axis-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  flex-shrink: 0; margin-top: 3px;
+}
+.gs-axis-body { flex: 1; min-width: 0; }
+.gs-axis-row1 { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
+.gs-axis-name { font-weight: 700; font-size: .88rem; }
+.gs-axis-pill {
+  font-size: 10px; padding: 1px 7px; border-radius: 999px;
+  border: 1px solid; white-space: nowrap;
+}
+.gs-axis-pill-off { background: #f1f5f9; color: #94a3b8; border-color: #e2e8f0; }
+.gs-axis-desc { font-size: .8rem; color: #475569; margin: 0 0 3px; }
+.gs-axis-examples { font-size: .75rem; color: #94a3b8; margin: 0; }
+.gs-axis-toggle { flex-shrink: 0; display: flex; align-items: center; padding-top: 2px; }
+.gs-check-icon { font-size: 1.2rem; transition: opacity .15s; }
+
+/* 色モードカード */
+.gs-color-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;
+}
+@media (max-width: 480px) { .gs-color-grid { grid-template-columns: 1fr; } }
+.gs-color-card {
+  padding: 12px 14px; border-radius: 10px;
+  border: 2px solid #e2e8f0; cursor: pointer;
+  transition: border-color .15s, background .15s;
+  user-select: none;
+}
+.gs-color-card.gs-active { background: #eff6ff; border-color: #3b82f6; }
+.gs-color-card:hover { background: #f8fafc; }
+.gs-color-swatches { display: flex; gap: 4px; margin-bottom: 6px; }
+.gs-color-swatches span {
+  display: inline-block; width: 16px; height: 16px; border-radius: 50%;
+}
+.gs-color-name { font-weight: 700; font-size: .85rem; margin-bottom: 2px; }
+.gs-color-desc { font-size: .75rem; color: #64748b; }
+
+/* ダークモード */
+[data-theme="dark"] .gs-section-desc { color: #94a3b8; }
+[data-theme="dark"] .gs-axis-card { border-color: #334155; background: transparent; }
+[data-theme="dark"] .gs-axis-card.gs-active { background: #1e293b; }
+[data-theme="dark"] .gs-axis-card:hover { background: #1e293b; }
+[data-theme="dark"] .gs-axis-desc { color: #94a3b8; }
+[data-theme="dark"] .gs-axis-examples { color: #64748b; }
+[data-theme="dark"] .gs-axis-name { color: #f1f5f9; }
+[data-theme="dark"] .gs-axis-pill-off { background: #1e293b; color: #64748b; border-color: #334155; }
+[data-theme="dark"] .gs-color-card { border-color: #334155; background: transparent; }
+[data-theme="dark"] .gs-color-card.gs-active { background: #1e3a5f; border-color: #3b82f6; }
+[data-theme="dark"] .gs-color-card:hover { background: #1e293b; }
+[data-theme="dark"] .gs-color-name { color: #f1f5f9; }
+[data-theme="dark"] .gs-color-desc { color: #94a3b8; }
+[data-theme="dark"] .graph-settings-modal .modal-content {
+  background: #0f172a; border-color: #334155;
+}
+[data-theme="dark"] .graph-settings-modal .modal-header {
+  border-color: #334155;
+}
+[data-theme="dark"] .graph-settings-modal hr { border-color: #334155; }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -42,12 +123,10 @@
           <label class="btn btn-outline-secondary" for="filter-holding">
             <span class="graph-legend-dot d-inline-block me-1" style="background:#10b981;"></span>保有中
           </label>
-
           <input type="checkbox" class="btn-check status-filter-check" id="filter-sold" value="sold" autocomplete="off">
           <label class="btn btn-outline-secondary" for="filter-sold">
             <span class="graph-legend-dot d-inline-block me-1" style="background:#ef4444;"></span>売却済み
           </label>
-
           <input type="checkbox" class="btn-check status-filter-check" id="filter-memo" value="memo" autocomplete="off">
           <label class="btn btn-outline-secondary" for="filter-memo">
             <span class="graph-legend-dot d-inline-block me-1" style="background:#9ca3af;"></span>メモ
@@ -87,36 +166,22 @@
 
         <div class="ctrl-vsep"></div>
 
-        <span class="ctrl-label">軸</span>
-        <div class="btn-group btn-group-sm" role="group" aria-label="タグ軸フィルター" id="axis-filter-group">
-          <input type="checkbox" class="btn-check axis-filter-check" id="axis-theme"          value="theme"          autocomplete="off" checked>
-          <label class="btn btn-outline-secondary axis-label-theme" for="axis-theme" title="テーマ（AI・防衛・ヘルスケア等）">
-            <span class="axis-dot" style="background:#7c3aed;"></span><span class="d-none d-md-inline">テーマ</span>
-          </label>
-          <input type="checkbox" class="btn-check axis-filter-check" id="axis-business_model" value="business_model" autocomplete="off">
-          <label class="btn btn-outline-secondary" for="axis-business_model" title="ビジネスモデル（成長戦略・商社等）">
-            <span class="axis-dot" style="background:#0891b2;"></span><span class="d-none d-md-inline">BM</span>
-          </label>
-          <input type="checkbox" class="btn-check axis-filter-check" id="axis-risk"           value="risk"           autocomplete="off">
-          <label class="btn btn-outline-secondary" for="axis-risk" title="リスク（地政学・規制等）">
-            <span class="axis-dot" style="background:#dc2626;"></span><span class="d-none d-md-inline">リスク</span>
-          </label>
-          <input type="checkbox" class="btn-check axis-filter-check" id="axis-capital_policy" value="capital_policy" autocomplete="off">
-          <label class="btn btn-outline-secondary" for="axis-capital_policy" title="資本政策（高配当・株主還元等）">
-            <span class="axis-dot" style="background:#16a34a;"></span><span class="d-none d-md-inline">資本</span>
-          </label>
-          <input type="checkbox" class="btn-check axis-filter-check" id="axis-macro"          value="macro"          autocomplete="off">
-          <label class="btn btn-outline-secondary" for="axis-macro" title="マクロ感応（金利・為替等）">
-            <span class="axis-dot" style="background:#d97706;"></span><span class="d-none d-md-inline">マクロ</span>
-          </label>
-          <input type="checkbox" class="btn-check axis-filter-check" id="axis-event"          value="event"          autocomplete="off">
-          <label class="btn btn-outline-secondary" for="axis-event" title="イベント（決算・M&amp;A等）※関連度計算対象外">
-            <span class="axis-dot" style="background:#6b7280;"></span><span class="d-none d-md-inline">イベント</span>
-          </label>
-        </div>
+        <!-- 設定ボタン（軸・色分けはモーダルで設定） -->
+        <button class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1"
+                id="graphSettingsBtn"
+                type="button"
+                data-bs-toggle="modal"
+                data-bs-target="#graphSettingsModal"
+                title="分析グループ・色分けを設定">
+          <i class="bi bi-sliders2"></i>
+          <span class="d-none d-sm-inline">設定</span>
+          <span id="settings-summary-badge"
+                class="badge ms-1"
+                style="font-size:10px;background:#7c3aed;display:none;"></span>
+        </button>
       </div>
 
-      <!-- ツール行（検索・色・ラベル・ズーム） -->
+      <!-- ツール行（検索・ズーム） -->
       <div class="ctrl-tools-row">
         <div class="ctrl-search">
           <i class="bi bi-search ctrl-search-icon"></i>
@@ -126,12 +191,6 @@
             <i class="bi bi-x"></i>
           </button>
         </div>
-        <select class="form-select form-select-sm ctrl-color" id="colorModeSelect">
-          <option value="status">色: ステータス</option>
-          <option value="sector">色: 業種</option>
-          <option value="profit">色: 損益</option>
-          <option value="axis" selected>色: 軸（タグ種別）</option>
-        </select>
         <div class="ctrl-tools">
           <button class="btn btn-outline-secondary btn-sm" id="resetZoom" title="ズームリセット">
             <i class="bi bi-aspect-ratio"></i>
@@ -275,6 +334,185 @@
 
 <!-- ツールチップ（ホバー時のみ） -->
 <div id="graph-tooltip" class="graph-tooltip" style="display:none;" role="tooltip"></div>
+
+<!-- ========== グラフ設定モーダル ========== -->
+<div class="modal fade" id="graphSettingsModal" tabindex="-1"
+     aria-labelledby="graphSettingsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg">
+    <div class="modal-content graph-settings-modal">
+      <div class="modal-header">
+        <h5 class="modal-title" id="graphSettingsModalLabel">
+          <i class="bi bi-sliders2 me-2 text-primary"></i>グラフの設定
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
+      </div>
+
+      <div class="modal-body">
+
+        <!-- ============ 分析グループ（軸）============ -->
+        <div class="gs-section mb-4">
+          <h6 class="gs-section-title">
+            <i class="bi bi-tags-fill me-2" style="color:#7c3aed;"></i>分析グループ（軸）フィルター
+          </h6>
+          <p class="gs-section-desc">
+            日記に <strong>@AI</strong> や <strong>@高配当</strong> などのハッシュタグを書くと、
+            そのタグがどの「分析グループ」に属するかに応じてグラフのハブノードが色分けされます。
+            チェックを外したグループのタグはグラフに表示されません。
+          </p>
+
+          <div class="gs-axis-list">
+
+            <div class="gs-axis-card" data-axis="theme">
+              <div class="gs-axis-dot" style="background:#7c3aed;"></div>
+              <div class="gs-axis-body">
+                <div class="gs-axis-row1">
+                  <span class="gs-axis-name">テーマ</span>
+                  <span class="gs-axis-pill" style="background:#7c3aed22;color:#7c3aed;border-color:#7c3aed55;">表示中</span>
+                </div>
+                <p class="gs-axis-desc">なぜ今この銘柄が注目されるかの投資テーマ（最もよく使う）</p>
+                <p class="gs-axis-examples">例: @AI / @半導体 / @防衛 / @脱炭素 / @ヘルスケア / @DX / @インバウンド</p>
+              </div>
+              <div class="gs-axis-toggle"><i class="bi bi-check-circle-fill gs-check-icon" style="color:#7c3aed;"></i></div>
+            </div>
+
+            <div class="gs-axis-card" data-axis="macro">
+              <div class="gs-axis-dot" style="background:#d97706;"></div>
+              <div class="gs-axis-body">
+                <div class="gs-axis-row1">
+                  <span class="gs-axis-name">マクロ感応</span>
+                  <span class="gs-axis-pill gs-axis-pill-off">非表示</span>
+                </div>
+                <p class="gs-axis-desc">金利・為替・景気サイクルへの感応度を表すタグ</p>
+                <p class="gs-axis-examples">例: @金利感応 / @円安メリット / @景気敏感 / @インフレ / @ディフェンシブ</p>
+              </div>
+              <div class="gs-axis-toggle"><i class="bi bi-circle gs-check-icon" style="color:#d97706;opacity:0.4;"></i></div>
+            </div>
+
+            <div class="gs-axis-card" data-axis="business_model">
+              <div class="gs-axis-dot" style="background:#0891b2;"></div>
+              <div class="gs-axis-body">
+                <div class="gs-axis-row1">
+                  <span class="gs-axis-name">ビジネスモデル</span>
+                  <span class="gs-axis-pill gs-axis-pill-off">非表示</span>
+                </div>
+                <p class="gs-axis-desc">稼ぎ方や成長ロジックの特徴を表すタグ</p>
+                <p class="gs-axis-examples">例: @M&amp;A成長 / @プラットフォーム / @ストック収益 / @海外展開 / @ニッチトップ</p>
+              </div>
+              <div class="gs-axis-toggle"><i class="bi bi-circle gs-check-icon" style="color:#0891b2;opacity:0.4;"></i></div>
+            </div>
+
+            <div class="gs-axis-card" data-axis="capital_policy">
+              <div class="gs-axis-dot" style="background:#16a34a;"></div>
+              <div class="gs-axis-body">
+                <div class="gs-axis-row1">
+                  <span class="gs-axis-name">資本政策</span>
+                  <span class="gs-axis-pill gs-axis-pill-off">非表示</span>
+                </div>
+                <p class="gs-axis-desc">配当・株主還元・ROEへの視点を表すタグ</p>
+                <p class="gs-axis-examples">例: @高配当 / @累進配当 / @連続増配 / @高ROE / @株主還元強化</p>
+              </div>
+              <div class="gs-axis-toggle"><i class="bi bi-circle gs-check-icon" style="color:#16a34a;opacity:0.4;"></i></div>
+            </div>
+
+            <div class="gs-axis-card" data-axis="risk">
+              <div class="gs-axis-dot" style="background:#dc2626;"></div>
+              <div class="gs-axis-body">
+                <div class="gs-axis-row1">
+                  <span class="gs-axis-name">リスク</span>
+                  <span class="gs-axis-pill gs-axis-pill-off">非表示</span>
+                </div>
+                <p class="gs-axis-desc">保有するリスクの種類を記録するタグ</p>
+                <p class="gs-axis-examples">例: @地政学リスク / @規制リスク / @需給変化</p>
+              </div>
+              <div class="gs-axis-toggle"><i class="bi bi-circle gs-check-icon" style="color:#dc2626;opacity:0.4;"></i></div>
+            </div>
+
+            <div class="gs-axis-card" data-axis="event">
+              <div class="gs-axis-dot" style="background:#6b7280;"></div>
+              <div class="gs-axis-body">
+                <div class="gs-axis-row1">
+                  <span class="gs-axis-name">イベント</span>
+                  <span class="gs-axis-pill gs-axis-pill-off">非表示</span>
+                </div>
+                <p class="gs-axis-desc">決算や一過性のイベントを記録するタグ（銘柄間の接続には使わない）</p>
+                <p class="gs-axis-examples">例: @決算注目 / @業績上方修正 / @増配 / @構造改革</p>
+              </div>
+              <div class="gs-axis-toggle"><i class="bi bi-circle gs-check-icon" style="color:#6b7280;opacity:0.4;"></i></div>
+            </div>
+
+          </div><!-- /.gs-axis-list -->
+
+          <div class="d-flex gap-2 mt-3">
+            <button class="btn btn-sm btn-outline-primary" id="gs-axis-all">すべて表示</button>
+            <button class="btn btn-sm btn-outline-secondary" id="gs-axis-none">テーマのみ</button>
+          </div>
+        </div><!-- /.gs-section -->
+
+        <hr class="my-3">
+
+        <!-- ============ 色分けモード ============ -->
+        <div class="gs-section">
+          <h6 class="gs-section-title">
+            <i class="bi bi-palette-fill me-2 text-primary"></i>色分けモード
+          </h6>
+          <p class="gs-section-desc">銘柄のノードを何で色分けするか選びます。</p>
+
+          <div class="gs-color-grid">
+
+            <div class="gs-color-card" data-mode="axis">
+              <div class="gs-color-swatches">
+                <span style="background:#7c3aed;"></span>
+                <span style="background:#d97706;"></span>
+                <span style="background:#0891b2;"></span>
+                <span style="background:#16a34a;"></span>
+              </div>
+              <div class="gs-color-name">分析グループ <span class="badge bg-primary ms-1" style="font-size:9px;">推奨</span></div>
+              <div class="gs-color-desc">@タグのグループで色分け。テーマ=紫、マクロ=黄 など</div>
+            </div>
+
+            <div class="gs-color-card" data-mode="status">
+              <div class="gs-color-swatches">
+                <span style="background:#10b981;"></span>
+                <span style="background:#ef4444;"></span>
+                <span style="background:#9ca3af;"></span>
+              </div>
+              <div class="gs-color-name">保有ステータス</div>
+              <div class="gs-color-desc">保有中=緑 / 売却済み=赤 / メモ=グレー</div>
+            </div>
+
+            <div class="gs-color-card" data-mode="sector">
+              <div class="gs-color-swatches">
+                <span style="background:#6366f1;"></span>
+                <span style="background:#f97316;"></span>
+                <span style="background:#22c55e;"></span>
+                <span style="background:#ec4899;"></span>
+              </div>
+              <div class="gs-color-name">業種</div>
+              <div class="gs-color-desc">同じ業種の銘柄を同じ色で表示</div>
+            </div>
+
+            <div class="gs-color-card" data-mode="profit">
+              <div class="gs-color-swatches">
+                <span style="background:#10b981;"></span>
+                <span style="background:#ef4444;"></span>
+              </div>
+              <div class="gs-color-name">損益</div>
+              <div class="gs-color-desc">含み益=緑 / 含み損=赤</div>
+            </div>
+
+          </div><!-- /.gs-color-grid -->
+        </div><!-- /.gs-section -->
+
+      </div><!-- /.modal-body -->
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+          <i class="bi bi-check-lg me-1"></i>完了
+        </button>
+      </div>
+    </div>
+  </div>
+</div><!-- /#graphSettingsModal -->
 
 {% endblock %}
 
