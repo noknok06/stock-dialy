@@ -743,15 +743,39 @@ def diary_graph_data(request):
             all_edges.extend(hub_data['edges'])
 
         # ====================================================
-        # hashtag モード: @ハッシュタグハブノード
+        # hashtag モード: @ハッシュタグハブノード（軸・A/B/Cフィルター適用）
         # ====================================================
         if 'hashtag' in edge_modes:
+            from stockdiary.tag_axis_config import RELATED_NOISE_MAX as _HT_NOISE_MAX
+            from tags.models import Tag as _TagModel
+            # Tag M2M から {名前: 軸} マップを構築（軸オーバーライド用）
+            user_tag_axis_map = dict(
+                _TagModel.objects.filter(user=user).values_list('name', 'axis')
+            )
             note_limit = getattr(request.user, 'diary_note_tag_limit', 3)
-            hub_data = get_hashtag_graph_data(primary_diaries, note_limit=note_limit)
+            hub_data = get_hashtag_graph_data(
+                primary_diaries,
+                note_limit=note_limit,
+                user_tag_axis_map=user_tag_axis_map,
+            )
+            filtered_ht_ids = set()
             for hub in hub_data['hashtag_nodes']:
+                # A: 孤立タグ（1銘柄のみ）を非表示
+                if hub.get('diary_count', 0) < 2:
+                    continue
+                # B: 多すぎてノイズになるタグを非表示
+                if hub.get('diary_count', 0) > _HT_NOISE_MAX:
+                    continue
+                # C: 軸フィルター
+                if axis_filter and hub.get('axis') not in axis_filter:
+                    continue
                 hub['link_count'] = hub.get('diary_count', 0)
                 hub_nodes_map[hub['id']] = hub
-            all_edges.extend(hub_data['edges'])
+                filtered_ht_ids.add(hub['id'])
+            for e in hub_data['edges']:
+                if e.get('target') not in filtered_ht_ids:
+                    continue
+                all_edges.append(e)
 
         # ====================================================
         # mention モード: テキスト内銘柄コード → diary-diary エッジ
