@@ -584,6 +584,50 @@
     padding: 0.6rem 0.75rem;
   }
 
+  .hashtag-section-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.35rem;
+  }
+
+  .hashtag-section-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted, #6b7280);
+  }
+
+  .hashtag-section-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 0.15rem 0;
+    margin-bottom: 0.35rem;
+    cursor: pointer;
+    color: var(--text-muted, #6b7280);
+  }
+
+  .hashtag-section-toggle:hover .hashtag-section-title {
+    color: var(--text-primary, #374151);
+  }
+
+  .hashtag-toggle-icon {
+    font-size: 0.7rem;
+    transition: transform 0.2s;
+  }
+
+  .hashtag-section-toggle.open .hashtag-toggle-icon {
+    transform: rotate(180deg);
+  }
+
+  #hashtag-my-labels-section {
+    border-bottom: 1px solid var(--border-light, #dee2e6);
+    padding-bottom: 0.4rem;
+    margin-bottom: 0.4rem;
+  }
+
   .hashtag-chip-group {
     display: flex;
     flex-wrap: wrap;
@@ -620,10 +664,20 @@
     background: rgba(0,0,0,0.07);
   }
 
+  .hashtag-chip.label-chip {
+    color: #9333ea;
+    border-color: #9333ea;
+  }
+
   .dark-mode #hashtag-chip-panel,
   [data-theme="dark"] #hashtag-chip-panel {
     background: var(--dm-card, #1e2530);
     border-color: var(--dm-border, #30363d);
+  }
+
+  .dark-mode #hashtag-my-labels-section,
+  [data-theme="dark"] #hashtag-my-labels-section {
+    border-bottom-color: var(--dm-border, #30363d);
   }
 
   .dark-mode .hashtag-chip:hover,
@@ -1442,10 +1496,25 @@
 
           <!-- ハッシュタグチップパネル -->
           <div id="hashtag-chip-panel" class="mt-2" style="display:none;">
-            <div id="hashtag-chip-groups"></div>
-            <button type="button" id="hashtag-chip-toggle" class="btn btn-link btn-sm p-0 mt-1 text-muted" style="font-size:0.8rem; display:none;">
-              <i class="bi bi-chevron-down me-1"></i>他の軸を表示
-            </button>
+            <!-- マイラベルセクション -->
+            <div id="hashtag-my-labels-section" class="mb-1">
+              <div class="hashtag-section-header">
+                <span class="hashtag-section-title"><i class="bi bi-tags me-1"></i>マイラベル</span>
+              </div>
+              <div id="hashtag-my-labels-content">
+                <p id="hashtag-my-labels-empty" class="text-muted mb-0" style="font-size:0.78rem; display:none;">
+                  まだラベルがありません。本文に <code>@監視中</code> などと書いて保存すると自動登録されます。
+                </p>
+              </div>
+            </div>
+            <!-- 投資分析タグセクション（折りたたみ） -->
+            <div id="hashtag-analysis-section">
+              <button type="button" id="hashtag-analysis-toggle" class="hashtag-section-toggle">
+                <span class="hashtag-section-title"><i class="bi bi-graph-up me-1"></i>投資分析タグ</span>
+                <i class="bi bi-chevron-down hashtag-toggle-icon"></i>
+              </button>
+              <div id="hashtag-chip-groups" style="display:none;"></div>
+            </div>
           </div>
 
           {% if not form.instance.pk %}
@@ -3043,11 +3112,10 @@ function escapeHtml(text) {
     business_model: { label: '●ビジネス',     color: '#0891b2' },
     risk:           { label: '●リスク',       color: '#dc2626' },
     event:          { label: '●イベント',     color: '#6b7280' },
+    custom:         { label: '●ラベル',       color: '#9333ea' },
   };
-  // theme/macro を優先表示、残りは折りたたみ
-  const PRIMARY_AXES   = ['theme', 'macro', 'capital_policy'];
-  const SECONDARY_AXES = ['business_model', 'risk', 'event'];
-  let secondaryVisible = false;
+  const ANALYSIS_PRIMARY   = ['theme', 'macro', 'capital_policy'];
+  const ANALYSIS_SECONDARY = ['business_model', 'risk', 'event'];
 
   function insertHashtag(tag) {
     if (window.easyMDE) {
@@ -3073,7 +3141,7 @@ function escapeHtml(text) {
     tags.forEach(function(t) {
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = 'hashtag-chip';
+      btn.className = axis === 'custom' ? 'hashtag-chip label-chip' : 'hashtag-chip';
       btn.style.color = meta.color;
       btn.textContent = '@' + t.tag;
       btn.dataset.tag = t.tag;
@@ -3087,62 +3155,53 @@ function escapeHtml(text) {
   function renderChipPanel(hashtags) {
     const panel = document.getElementById('hashtag-chip-panel');
     const container = document.getElementById('hashtag-chip-groups');
-    const toggleBtn = document.getElementById('hashtag-chip-toggle');
+    const labelsContent = document.getElementById('hashtag-my-labels-content');
+    const labelsEmpty = document.getElementById('hashtag-my-labels-empty');
+    const analysisToggle = document.getElementById('hashtag-analysis-toggle');
     if (!panel || !container) return;
 
-    // 軸ごとにグループ化
+    // custom 軸（マイラベル）と分析タグに分離
+    const customTags = hashtags.filter(function(h) { return h.axis === 'custom' && h.count > 0; });
+    const analysisTags = hashtags.filter(function(h) { return h.axis !== 'custom'; });
+
+    // マイラベルセクション
+    if (customTags.length > 0) {
+      const group = buildChipGroup('custom', customTags);
+      if (labelsEmpty) labelsEmpty.style.display = 'none';
+      if (labelsContent) labelsContent.appendChild(group);
+    } else {
+      if (labelsEmpty) labelsEmpty.style.display = '';
+    }
+
+    // 投資分析タグセクション（軸ごとにグループ化）
     const byAxis = {};
-    hashtags.forEach(function(h) {
+    analysisTags.forEach(function(h) {
       const ax = h.axis || 'theme';
       if (!byAxis[ax]) byAxis[ax] = [];
       byAxis[ax].push(h);
     });
 
-    // Primary axes を追加
-    PRIMARY_AXES.forEach(function(ax) {
+    ANALYSIS_PRIMARY.forEach(function(ax) {
       if (byAxis[ax] && byAxis[ax].length > 0) {
         container.appendChild(buildChipGroup(ax, byAxis[ax]));
       }
     });
-
-    // Secondary axes を追加（初期非表示）
-    let hasSecondary = false;
-    SECONDARY_AXES.forEach(function(ax) {
+    ANALYSIS_SECONDARY.forEach(function(ax) {
       if (byAxis[ax] && byAxis[ax].length > 0) {
-        const g = buildChipGroup(ax, byAxis[ax]);
-        g.style.display = 'none';
-        g.dataset.secondary = 'true';
-        container.appendChild(g);
-        hasSecondary = true;
+        container.appendChild(buildChipGroup(ax, byAxis[ax]));
       }
     });
-
-    // 未知の軸も追加
     Object.keys(byAxis).forEach(function(ax) {
-      if (!PRIMARY_AXES.includes(ax) && !SECONDARY_AXES.includes(ax) && byAxis[ax].length > 0) {
-        const g = buildChipGroup(ax, byAxis[ax]);
-        g.style.display = 'none';
-        g.dataset.secondary = 'true';
-        container.appendChild(g);
-        hasSecondary = true;
+      if (!ANALYSIS_PRIMARY.includes(ax) && !ANALYSIS_SECONDARY.includes(ax) && byAxis[ax].length > 0) {
+        container.appendChild(buildChipGroup(ax, byAxis[ax]));
       }
     });
 
-    if (hasSecondary && toggleBtn) {
-      toggleBtn.style.display = 'inline-block';
-      toggleBtn.addEventListener('click', function() {
-        secondaryVisible = !secondaryVisible;
-        container.querySelectorAll('[data-secondary="true"]').forEach(function(g) {
-          g.style.display = secondaryVisible ? 'flex' : 'none';
-        });
-        const icon = toggleBtn.querySelector('i');
-        if (secondaryVisible) {
-          icon.className = 'bi bi-chevron-up me-1';
-          toggleBtn.innerHTML = '<i class="bi bi-chevron-up me-1"></i>他の軸を折りたたむ';
-        } else {
-          icon.className = 'bi bi-chevron-down me-1';
-          toggleBtn.innerHTML = '<i class="bi bi-chevron-down me-1"></i>他の軸を表示';
-        }
+    // 投資分析タグのトグル
+    if (analysisToggle) {
+      analysisToggle.addEventListener('click', function() {
+        const isOpen = analysisToggle.classList.toggle('open');
+        container.style.display = isOpen ? '' : 'none';
       });
     }
 
@@ -3155,6 +3214,12 @@ function escapeHtml(text) {
       .then(function(data) {
         if (data && data.success && data.hashtags && data.hashtags.length > 0) {
           renderChipPanel(data.hashtags);
+        } else if (data && data.success) {
+          // ハッシュタグなしでも空状態パネルを表示
+          const panel = document.getElementById('hashtag-chip-panel');
+          const labelsEmpty = document.getElementById('hashtag-my-labels-empty');
+          if (panel) panel.style.display = '';
+          if (labelsEmpty) labelsEmpty.style.display = '';
         }
       })
       .catch(function() { /* silently skip */ });

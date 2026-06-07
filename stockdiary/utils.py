@@ -578,8 +578,8 @@ def compute_related_strength(focal, user, limit: int = 12) -> List[dict]:
 
     # 3. 共通タグ（軸重み × IDF + 最小条件 + ノイズ除外）
     focal_tags = list(focal.tags.select_related('parent').all())
-    # イベント軸は関連度計算から除外
-    effective_focal_tags = [t for t in focal_tags if getattr(t, 'axis', 'theme') != 'event']
+    # イベント軸・ラベル軸は関連度計算から除外
+    effective_focal_tags = [t for t in focal_tags if getattr(t, 'axis', 'theme') not in ('event', 'custom')]
 
     if effective_focal_tags:
         # tag_id → 共有している他日記のset（ノイズ上限でフィルタ済み）
@@ -644,12 +644,12 @@ def compute_related_strength(focal, user, limit: int = 12) -> List[dict]:
     def _ht_axis(name: str) -> str:
         if name in _user_ht_axis:
             return _user_ht_axis[name]
-        return HASHTAG_AXIS_MAP.get(name, 'theme')
+        return HASHTAG_AXIS_MAP.get(name, 'custom')
 
-    # focal のテキストから @タグ抽出（event軸除外）
-    focal_hashtags = {h for h in extract_hashtags(focal.reason or '') if _ht_axis(h) != 'event'}
+    # focal のテキストから @タグ抽出（event軸・ラベル軸除外）
+    focal_hashtags = {h for h in extract_hashtags(focal.reason or '') if _ht_axis(h) not in ('event', 'custom')}
     for note in DiaryNote.objects.filter(diary=focal).only('content'):
-        focal_hashtags |= {h for h in extract_hashtags(note.content or '') if _ht_axis(h) != 'event'}
+        focal_hashtags |= {h for h in extract_hashtags(note.content or '') if _ht_axis(h) not in ('event', 'custom')}
 
     # Phase 3（Tag M2M）で既にスコア済みのタグはダブルカウントを避ける
     m2m_tag_names = {t.name for t in focal.tags.all()}
@@ -660,7 +660,7 @@ def compute_related_strength(focal, user, limit: int = 12) -> List[dict]:
         ht_df: Dict[str, int] = defaultdict(int)
         other_ht_map: Dict[int, Set[str]] = {}
         for row in others.only('id', 'reason'):
-            tags_in = {h for h in extract_hashtags(row.reason or '') if _ht_axis(h) != 'event'}
+            tags_in = {h for h in extract_hashtags(row.reason or '') if _ht_axis(h) not in ('event', 'custom')}
             other_ht_map[row.id] = tags_in
             for h in tags_in:
                 ht_df[h] += 1

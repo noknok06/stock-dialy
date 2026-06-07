@@ -720,6 +720,9 @@ def diary_graph_data(request):
                 # B: 多すぎて意味のないタグ（ノイズ上限超え）を非表示
                 if hub.get('diary_count', 0) > _TAG_NOISE_MAX:
                     continue
+                # C: 個人管理ラベルはグラフに表示しない
+                if hub.get('axis') == 'custom':
+                    continue
                 if axis_filter and hub.get('axis') not in axis_filter:
                     continue
                 hub['link_count'] = hub.get('diary_count', 0)
@@ -779,7 +782,10 @@ def diary_graph_data(request):
                 # B: 多すぎてノイズになるタグを非表示
                 if hub.get('diary_count', 0) > _HT_NOISE_MAX:
                     continue
-                # C: 軸フィルター
+                # C: 個人管理ラベルはグラフに表示しない
+                if hub.get('axis') == 'custom':
+                    continue
+                # D: 軸フィルター
                 if axis_filter and hub.get('axis') not in axis_filter:
                     continue
                 hub['link_count'] = hub.get('diary_count', 0)

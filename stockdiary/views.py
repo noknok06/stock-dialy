@@ -574,7 +574,7 @@ def _sync_hashtag_tags(diary, user):
     for name in found:
         tag, _ = Tag.objects.get_or_create(
             user=user, name=name,
-            defaults={'axis': HASHTAG_AXIS_MAP.get(name, 'theme')},
+            defaults={'axis': HASHTAG_AXIS_MAP.get(name, 'custom')},
         )
         diary.tags.add(tag)
 
