@@ -1650,7 +1650,7 @@
 <!-- EasyMDE Markdown Editor -->
 <script src="https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.js"></script>
 <!-- @ハッシュタグ オートコンプリート -->
-<script src="{% static 'js/hashtag-autocomplete.js' %}"></script>
+<script src="{% static 'js/hashtag-autocomplete.js' %}?v={{ STATIC_VERSION }}"></script>
 <script>
 
 // ============================================
@@ -2012,7 +2012,7 @@ window.showNotification = function showNotification(type, message) {
 // ============================================
 // EasyMDE Markdown Editor 初期化
 // ============================================
-function initReasonEasyMDE() {
+window.initReasonEasyMDE = function initReasonEasyMDE() {
   if (window.easyMDE) return;
   const reasonTextareaEl = document.getElementById('id_reason');
   if (!reasonTextareaEl) return;
@@ -2210,10 +2210,10 @@ function initReasonEasyMDE() {
       }
     });
   }
-}
+};
 {% if form.instance.pk %}
 // 編集モード: 要素が表示済みのため即時初期化
-initReasonEasyMDE();
+window.initReasonEasyMDE();
 {% endif %}
 
 // ============================================
@@ -2691,7 +2691,8 @@ function validateInitialPurchase() {
 // ============================================
 // 初期化処理
 // ============================================
-if (addInitialPurchaseCheckbox && addInitialPurchaseCheckbox.checked) {
+const initialPurchaseCheckboxEl = document.getElementById('id_add_initial_purchase');
+if (initialPurchaseCheckboxEl && initialPurchaseCheckboxEl.checked) {
   updateInitialPurchasePreview();
 }
 
@@ -2897,7 +2898,7 @@ function escapeHtml(text) {
       if (!window.easyMDE) {
         // 要素が visible になってから初期化（寸法計算が正確になるよう rAF で遅延）
         requestAnimationFrame(function() {
-          initReasonEasyMDE();
+          if (window.initReasonEasyMDE) window.initReasonEasyMDE();
         });
       } else {
         window.easyMDE.codemirror.refresh();
