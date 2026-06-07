@@ -443,6 +443,19 @@ def get_hashtags(request):
         # 全てのハッシュタグを抽出
         hashtags = get_all_hashtags_from_queryset(diaries)
 
+        # 既存ユーザータグに軸情報を付与 + HASHTAG_AXIS_MAP の標準タグを補完候補に追加
+        from stockdiary.tag_axis_config import HASHTAG_AXIS_MAP
+        for h in hashtags:
+            if 'axis' not in h:
+                h['axis'] = HASHTAG_AXIS_MAP.get(h['tag'], 'theme')
+        existing_tags = {h['tag'] for h in hashtags}
+        standard_tags = [
+            {'tag': name, 'count': 0, 'axis': axis}
+            for name, axis in HASHTAG_AXIS_MAP.items()
+            if name not in existing_tags
+        ]
+        hashtags = sorted(hashtags + standard_tags, key=lambda h: -h.get('count', 0))
+
         # クエリでフィルタリング
         if query:
             hashtags = [

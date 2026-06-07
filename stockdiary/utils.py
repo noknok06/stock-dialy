@@ -651,6 +651,10 @@ def compute_related_strength(focal, user, limit: int = 12) -> List[dict]:
     for note in DiaryNote.objects.filter(diary=focal).only('content'):
         focal_hashtags |= {h for h in extract_hashtags(note.content or '') if _ht_axis(h) != 'event'}
 
+    # Phase 3（Tag M2M）で既にスコア済みのタグはダブルカウントを避ける
+    m2m_tag_names = {t.name for t in focal.tags.all()}
+    focal_hashtags = focal_hashtags - m2m_tag_names
+
     if focal_hashtags:
         # 全他日記の reason から @タグを一括取得して ht_df とマップを構築
         ht_df: Dict[str, int] = defaultdict(int)

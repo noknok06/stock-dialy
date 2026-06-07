@@ -4,7 +4,6 @@ from django.core.exceptions import ValidationError
 from django.core.validators import ProhibitNullCharactersValidator, MaxLengthValidator
 from .models import StockDiary, Transaction, StockSplit, DiaryNote, sanitize_text_content
 from .utils import detect_currency
-from tags.models import Tag
 from decimal import Decimal
 
 
@@ -69,7 +68,7 @@ class StockDiaryForm(forms.ModelForm):
         model = StockDiary
         fields = [
             'stock_symbol', 'stock_name', 'currency', 'reason',
-            'memo', 'tags', 'sector'
+            'memo', 'sector'
         ]
         widgets = {
             'stock_symbol': forms.TextInput(attrs={
@@ -96,7 +95,6 @@ class StockDiaryForm(forms.ModelForm):
                 'maxlength': '1000',
                 'placeholder': 'その他のメモ'
             }),
-            'tags': forms.SelectMultiple(attrs={'class': 'form-control', 'size': '5'}),
             'sector': forms.TextInput(attrs={
                 'class': 'form-control',
                 'maxlength': '50',
@@ -107,9 +105,6 @@ class StockDiaryForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
         super(StockDiaryForm, self).__init__(*args, **kwargs)
-        
-        if user:
-            self.fields['tags'].queryset = Tag.objects.filter(user=user)
         
         # ラベル設定
         self.fields['stock_symbol'].label = "銘柄コード（任意）"

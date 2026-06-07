@@ -576,6 +576,61 @@
     color: var(--dm-text-200) !important;
   }
 
+  /* ========== ハッシュタグチップパネル ========== */
+  #hashtag-chip-panel {
+    background: var(--bg-100, #f8f9fa);
+    border: 1px solid var(--border-light, #dee2e6);
+    border-radius: 0.5rem;
+    padding: 0.6rem 0.75rem;
+  }
+
+  .hashtag-chip-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .hashtag-chip-group:last-child {
+    margin-bottom: 0;
+  }
+
+  .hashtag-chip-axis-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    white-space: nowrap;
+    min-width: 4rem;
+  }
+
+  .hashtag-chip {
+    font-size: 0.75rem;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    border: 1px solid currentColor;
+    background: transparent;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    line-height: 1.4;
+    opacity: 0.75;
+  }
+
+  .hashtag-chip:hover {
+    opacity: 1;
+    background: rgba(0,0,0,0.07);
+  }
+
+  .dark-mode #hashtag-chip-panel,
+  [data-theme="dark"] #hashtag-chip-panel {
+    background: var(--dm-card, #1e2530);
+    border-color: var(--dm-border, #30363d);
+  }
+
+  .dark-mode .hashtag-chip:hover,
+  [data-theme="dark"] .hashtag-chip:hover {
+    background: rgba(255,255,255,0.1);
+  }
+
   /* ========== EasyMDE Markdown Editor ========== */
   .EasyMDEContainer {
     margin-bottom: 0.25rem;
@@ -1230,13 +1285,6 @@
               <small class="form-text text-muted">業種情報は銘柄検索時に自動設定されます</small>
             </div>
             
-            <div class="col-md-6 mb-3">
-              <label for="{{ form.tags.id_for_label }}" class="form-label">
-                <i class="bi bi-tags me-1"></i>タグ
-              </label>
-              {{ form.tags }}
-              <small class="form-text text-muted">複数選択可能です</small>
-            </div>
           </div>
 
           <div class="row">
@@ -1364,7 +1412,7 @@
           </h4>
 
           <!-- タグ機能のヘルプ (コンパクト版) -->
-          <p class="text-muted small mb-2"><code style="font-size:0.8em;">@成長株</code> で検索可能なタグを挿入できます</p>
+          <p class="text-muted small mb-2"><code style="font-size:0.8em;">@AI</code> などと書くと保存時に自動タグ付けされます。チップをクリックして挿入できます。</p>
 
           <!-- ========== テンプレート呼び出し ========== -->
           <div class="diary-template-picker mb-2">
@@ -1391,6 +1439,15 @@
           {% if form.reason.errors %}
           <div class="text-danger small mt-1">{{ form.reason.errors }}</div>
           {% endif %}
+
+          <!-- ハッシュタグチップパネル -->
+          <div id="hashtag-chip-panel" class="mt-2" style="display:none;">
+            <div id="hashtag-chip-groups"></div>
+            <button type="button" id="hashtag-chip-toggle" class="btn btn-link btn-sm p-0 mt-1 text-muted" style="font-size:0.8rem; display:none;">
+              <i class="bi bi-chevron-down me-1"></i>他の軸を表示
+            </button>
+          </div>
+
           {% if not form.instance.pk %}
           <!-- ウィザード Step 3 ナビゲーション -->
           <div class="wizard-nav">
@@ -2972,6 +3029,135 @@ function escapeHtml(text) {
         window.wizardAutoSetPurchase();
       }, true);
     }
+  });
+})();
+
+// ============================================
+// ハッシュタグチップパネル
+// ============================================
+(function() {
+  const AXIS_META = {
+    theme:          { label: '●テーマ',       color: '#7c3aed' },
+    macro:          { label: '●マクロ',       color: '#d97706' },
+    capital_policy: { label: '●資本政策',     color: '#16a34a' },
+    business_model: { label: '●ビジネス',     color: '#0891b2' },
+    risk:           { label: '●リスク',       color: '#dc2626' },
+    event:          { label: '●イベント',     color: '#6b7280' },
+  };
+  // theme/macro を優先表示、残りは折りたたみ
+  const PRIMARY_AXES   = ['theme', 'macro', 'capital_policy'];
+  const SECONDARY_AXES = ['business_model', 'risk', 'event'];
+  let secondaryVisible = false;
+
+  function insertHashtag(tag) {
+    if (window.easyMDE) {
+      const cm = window.easyMDE.codemirror;
+      const cursor = cm.getCursor();
+      cm.replaceRange('@' + tag + ' ', cursor, cursor);
+      cm.focus();
+    }
+  }
+
+  function buildChipGroup(axis, tags) {
+    const meta = AXIS_META[axis] || { label: '●' + axis, color: '#6b7280' };
+    const group = document.createElement('div');
+    group.className = 'hashtag-chip-group';
+    group.dataset.axis = axis;
+
+    const axisLabel = document.createElement('span');
+    axisLabel.className = 'hashtag-chip-axis-label';
+    axisLabel.style.color = meta.color;
+    axisLabel.textContent = meta.label;
+    group.appendChild(axisLabel);
+
+    tags.forEach(function(t) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'hashtag-chip';
+      btn.style.color = meta.color;
+      btn.textContent = '@' + t.tag;
+      btn.dataset.tag = t.tag;
+      btn.addEventListener('click', function() { insertHashtag(t.tag); });
+      group.appendChild(btn);
+    });
+
+    return group;
+  }
+
+  function renderChipPanel(hashtags) {
+    const panel = document.getElementById('hashtag-chip-panel');
+    const container = document.getElementById('hashtag-chip-groups');
+    const toggleBtn = document.getElementById('hashtag-chip-toggle');
+    if (!panel || !container) return;
+
+    // 軸ごとにグループ化
+    const byAxis = {};
+    hashtags.forEach(function(h) {
+      const ax = h.axis || 'theme';
+      if (!byAxis[ax]) byAxis[ax] = [];
+      byAxis[ax].push(h);
+    });
+
+    // Primary axes を追加
+    PRIMARY_AXES.forEach(function(ax) {
+      if (byAxis[ax] && byAxis[ax].length > 0) {
+        container.appendChild(buildChipGroup(ax, byAxis[ax]));
+      }
+    });
+
+    // Secondary axes を追加（初期非表示）
+    let hasSecondary = false;
+    SECONDARY_AXES.forEach(function(ax) {
+      if (byAxis[ax] && byAxis[ax].length > 0) {
+        const g = buildChipGroup(ax, byAxis[ax]);
+        g.style.display = 'none';
+        g.dataset.secondary = 'true';
+        container.appendChild(g);
+        hasSecondary = true;
+      }
+    });
+
+    // 未知の軸も追加
+    Object.keys(byAxis).forEach(function(ax) {
+      if (!PRIMARY_AXES.includes(ax) && !SECONDARY_AXES.includes(ax) && byAxis[ax].length > 0) {
+        const g = buildChipGroup(ax, byAxis[ax]);
+        g.style.display = 'none';
+        g.dataset.secondary = 'true';
+        container.appendChild(g);
+        hasSecondary = true;
+      }
+    });
+
+    if (hasSecondary && toggleBtn) {
+      toggleBtn.style.display = 'inline-block';
+      toggleBtn.addEventListener('click', function() {
+        secondaryVisible = !secondaryVisible;
+        container.querySelectorAll('[data-secondary="true"]').forEach(function(g) {
+          g.style.display = secondaryVisible ? 'flex' : 'none';
+        });
+        const icon = toggleBtn.querySelector('i');
+        if (secondaryVisible) {
+          icon.className = 'bi bi-chevron-up me-1';
+          toggleBtn.innerHTML = '<i class="bi bi-chevron-up me-1"></i>他の軸を折りたたむ';
+        } else {
+          icon.className = 'bi bi-chevron-down me-1';
+          toggleBtn.innerHTML = '<i class="bi bi-chevron-down me-1"></i>他の軸を表示';
+        }
+      });
+    }
+
+    panel.style.display = '';
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    fetch("{% url 'stockdiary:api_hashtags' %}?limit=200", { credentials: 'same-origin' })
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(data) {
+        if (data && data.success && data.hashtags && data.hashtags.length > 0) {
+          renderChipPanel(data.hashtags);
+        }
+      })
+      .catch(function() { /* silently skip */ });
   });
 })();
 

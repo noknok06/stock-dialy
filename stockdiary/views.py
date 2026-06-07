@@ -560,6 +560,29 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
 
         return context
 
+def _sync_hashtag_tags(diary, user):
+    from stockdiary.utils import extract_hashtags
+    from stockdiary.tag_axis_config import HASHTAG_AXIS_MAP
+    from tags.models import Tag
+
+    texts = [diary.reason or '']
+    texts += list(diary.notes.values_list('content', flat=True))
+    found = {h for t in texts for h in extract_hashtags(t)}
+    if not found:
+        return
+
+    for name in found:
+        tag, _ = Tag.objects.get_or_create(
+            user=user, name=name,
+            defaults={'axis': HASHTAG_AXIS_MAP.get(name, 'theme')},
+        )
+        diary.tags.add(tag)
+
+    for tag in diary.tags.filter(name__in=found):
+        tag.df = tag.stockdiary_set.values('stock_symbol').distinct().count()
+        tag.save(update_fields=['df'])
+
+
 class StockDiaryCreateView(LoginRequiredMixin, CreateView):
     model = StockDiary
     form_class = StockDiaryForm
@@ -608,6 +631,7 @@ class StockDiaryCreateView(LoginRequiredMixin, CreateView):
         else:
             messages.success(self.request, '日記を作成しました')
 
+        _sync_hashtag_tags(self.object, self.request.user)
         cache.delete(f'mention_map_u{self.request.user.id}')
         return response
 
@@ -698,6 +722,7 @@ class StockDiaryUpdateView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Upda
             if not success:
                 messages.warning(self.request, '日記は更新されましたが、画像の処理に失敗しました。')
 
+        _sync_hashtag_tags(self.object, self.request.user)
         messages.success(self.request, '日記を更新しました')
         cache.delete(f'mention_map_u{self.request.user.id}')
         return response
