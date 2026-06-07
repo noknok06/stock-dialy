@@ -697,16 +697,23 @@ def diary_graph_data(request):
         # tag モード: タグハブノード（軸フィルター適用）
         # ====================================================
         if 'tag' in edge_modes:
+            from stockdiary.tag_axis_config import RELATED_NOISE_MAX as _TAG_NOISE_MAX
             hub_data = get_tag_graph_data(primary_diaries)
             filtered_tag_ids = set()
             for hub in hub_data['tag_nodes']:
+                # A: 孤立タグ（1銘柄のみ）を非表示
+                if hub.get('diary_count', 0) < 2:
+                    continue
+                # B: 多すぎて意味のないタグ（ノイズ上限超え）を非表示
+                if hub.get('diary_count', 0) > _TAG_NOISE_MAX:
+                    continue
                 if axis_filter and hub.get('axis') not in axis_filter:
                     continue
                 hub['link_count'] = hub.get('diary_count', 0)
                 hub_nodes_map[hub['id']] = hub
                 filtered_tag_ids.add(hub['id'])
             for e in hub_data['edges']:
-                if axis_filter and e.get('target') not in filtered_tag_ids:
+                if e.get('target') not in filtered_tag_ids:
                     continue
                 all_edges.append(e)
 
