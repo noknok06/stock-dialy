@@ -437,38 +437,49 @@ def get_hashtags(request):
         query = request.GET.get('q', '').strip().lstrip('#')
         limit = int(request.GET.get('limit', 50))
 
-        # ユーザーの日記を取得
-        diaries = StockDiary.objects.filter(user=request.user)
-
-        # 全てのハッシュタグを抽出
-        hashtags = get_all_hashtags_from_queryset(diaries)
-
-        # 既存ユーザータグに軸情報を付与 + HASHTAG_AXIS_MAP の標準タグを補完候補に追加
         from stockdiary.tag_axis_config import HASHTAG_AXIS_MAP
-        for h in hashtags:
-            if 'axis' not in h:
-                h['axis'] = HASHTAG_AXIS_MAP.get(h['tag'], 'theme')
-        existing_tags = {h['tag'] for h in hashtags}
-        standard_tags = [
-            {'tag': name, 'count': 0, 'axis': axis}
-            for name, axis in HASHTAG_AXIS_MAP.items()
-            if name not in existing_tags
-        ]
-        hashtags = sorted(hashtags + standard_tags, key=lambda h: -h.get('count', 0))
+        from tags.models import Tag
 
-        # クエリでフィルタリング
+        # 1. ダイアリーテキストから使用済みタグ（count付き）
+        diaries = StockDiary.objects.filter(user=request.user)
+        hashtags_from_text = get_all_hashtags_from_queryset(diaries)
+        merged = {h['tag']: h for h in hashtags_from_text}
+
+        # 2. Tag M2M（DB保存済みタグ）を補完 — axis情報はM2Mが優先
+        for tag in Tag.objects.filter(user=request.user):
+            if tag.name in merged:
+                merged[tag.name]['axis'] = tag.axis
+            else:
+                merged[tag.name] = {'tag': tag.name, 'count': 0, 'axis': tag.axis}
+
+        # 3. HASHTAG_AXIS_MAP の標準タグを補完（まだmergedにないもの）
+        for name, axis in HASHTAG_AXIS_MAP.items():
+            if name not in merged:
+                merged[name] = {'tag': name, 'count': 0, 'axis': axis}
+            elif 'axis' not in merged[name]:
+                merged[name]['axis'] = axis
+
+        # 4. 軸情報がまだないものはデフォルト
+        for h in merged.values():
+            if 'axis' not in h:
+                h['axis'] = 'custom'
+
+        # 5. ソート: count降順、同countなら標準タグ優先
+        hashtags = sorted(
+            merged.values(),
+            key=lambda h: (-h.get('count', 0), 0 if h['tag'] in HASHTAG_AXIS_MAP else 1),
+        )
+
+        # 6. クエリでフィルタリング
         if query:
             hashtags = [
-                tag_data for tag_data in hashtags
-                if query.lower() in tag_data['tag'].lower()
+                h for h in hashtags
+                if query.lower() in h['tag'].lower()
             ]
-
-        # 上限を適用
-        hashtags = hashtags[:limit]
 
         return JsonResponse({
             'success': True,
-            'hashtags': hashtags,
+            'hashtags': hashtags[:limit],
             'count': len(hashtags)
         })
 

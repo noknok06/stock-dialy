@@ -11,6 +11,17 @@
  *   new HashtagMentionAutocomplete(easyMDEInstance.codemirror, apiUrl);
  */
 
+// 軸ごとの色（tag_axis_config.py と同期）
+const HASHTAG_AXIS_META = {
+  theme:          { color: '#7c3aed' },
+  macro:          { color: '#d97706' },
+  capital_policy: { color: '#16a34a' },
+  business_model: { color: '#0891b2' },
+  risk:           { color: '#dc2626' },
+  event:          { color: '#6b7280' },
+  custom:         { color: '#9333ea', icon: '🏷' },
+};
+
 class HashtagMentionAutocomplete {
   /**
    * @param {CodeMirror.Editor} codemirror - EasyMDE の .codemirror プロパティ
@@ -151,12 +162,19 @@ class HashtagMentionAutocomplete {
 
   _show(hashtags) {
     this.currentIdx = -1;
-    this.dropdown.innerHTML = hashtags.map((h) =>
-      `<div class="hashtag-suggestion-item" data-tag="${this._esc(h.tag)}" role="option">
-        <span class="hashtag-at">@</span><span class="hashtag-name">${this._esc(h.tag)}</span>
-        <span class="hashtag-count">${h.count}</span>
-      </div>`
-    ).join('');
+    this.dropdown.innerHTML = hashtags.map((h) => {
+      const meta = HASHTAG_AXIS_META[h.axis] || { color: '#6b7280' };
+      const badge = meta.icon
+        ? `<span class="hashtag-axis-dot" style="color:${meta.color};font-size:0.75em;flex-shrink:0;">${meta.icon}</span>`
+        : `<span class="hashtag-axis-dot" style="background:${meta.color};" aria-hidden="true"></span>`;
+      const countStr = h.count > 0
+        ? `<span class="hashtag-count">${h.count}</span>`
+        : '';
+      return `<div class="hashtag-suggestion-item" data-tag="${this._esc(h.tag)}" role="option">
+        ${badge}<span class="hashtag-at">@</span><span class="hashtag-name">${this._esc(h.tag)}</span>
+        ${countStr}
+      </div>`;
+    }).join('');
 
     this._getItems().forEach((item) => {
       item.addEventListener('mousedown', (e) => {
