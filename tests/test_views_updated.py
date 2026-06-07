@@ -422,7 +422,7 @@ class TestTagManagement:
         """タグの作成"""
         client.login(username='testuser', password='testpass123')
         
-        data = {'name': '長期投資'}
+        data = {'name': '長期投資', 'axis': 'theme'}
         response = client.post(reverse('tags:create'), data)
         
         # リダイレクト
