@@ -53,6 +53,19 @@ class HashtagMentionAutocomplete {
     this.cm.on('change', () => this._onTextChange());
     // blur 時は mousedown が先に発火するため 150ms 遅延して非表示
     this.cm.on('blur', () => setTimeout(() => this._hide(), 150));
+
+    // 日本語IME確定の保険: CodeMirror の隠しtextareaに直接 compositionend を張る
+    // (環境によっては change より compositionend が確実に発火する)
+    try {
+      const input = this.cm.getInputField && this.cm.getInputField();
+      if (input) {
+        input.addEventListener('compositionend', () => {
+          setTimeout(() => this._onTextChange(), 0);
+        });
+      }
+    } catch (_) { /* getInputField 非対応環境は無視 */ }
+
+    console.log('[HashtagAC] attached to editor:', this.apiUrl);
   }
 
   // =========================================================
@@ -81,16 +94,7 @@ class HashtagMentionAutocomplete {
   // =========================================================
   _onKeyUp(e) {
     if (['ArrowUp', 'ArrowDown', 'Enter', 'Escape'].includes(e.key)) return;
-
-    const mention = this._getMentionAtCursor();
-    if (!mention) {
-      this._hide();
-      return;
-    }
-
-    this.activeQuery = mention;
-    clearTimeout(this.timer);
-    this.timer = setTimeout(() => this._fetch(mention.query), 200);
+    this._trigger('keyup');
   }
 
   // =========================================================
@@ -98,11 +102,17 @@ class HashtagMentionAutocomplete {
   // =========================================================
   _onTextChange() {
     // keyup と同じ debounce タイマーを共有するので二重フェッチにならない
+    this._trigger('change');
+  }
+
+  // カーソル位置の @xxx を検出してフェッチをスケジュール
+  _trigger(source) {
     const mention = this._getMentionAtCursor();
     if (!mention) {
       this._hide();
       return;
     }
+    console.log('[HashtagAC] mention detected via', source, '→ query:', JSON.stringify(mention.query));
     this.activeQuery = mention;
     clearTimeout(this.timer);
     this.timer = setTimeout(() => this._fetch(mention.query), 200);
@@ -147,15 +157,21 @@ class HashtagMentionAutocomplete {
     try {
       const url = `${this.apiUrl}?q=${encodeURIComponent(query)}&limit=8`;
       const res  = await fetch(url, { credentials: 'same-origin' });
-      if (!res.ok) return;
+      if (!res.ok) {
+        console.warn('[HashtagAC] fetch failed:', res.status, url);
+        return;
+      }
       const data = await res.json();
+      const n = (data.hashtags || []).length;
+      console.log('[HashtagAC] fetched', n, 'results for', JSON.stringify(query));
       if (data.success && data.hashtags && data.hashtags.length > 0) {
         this._positionDropdown();
         this._show(data.hashtags);
       } else {
         this._hide();
       }
-    } catch (_) {
+    } catch (err) {
+      console.warn('[HashtagAC] fetch error:', err);
       this._hide();
     }
   }
