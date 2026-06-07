@@ -360,7 +360,11 @@ def get_sector_graph_data(diaries_qs, company_sector_map: Dict[str, str] = None)
     return {'sector_nodes': sector_nodes, 'edges': edges}
 
 
-def get_hashtag_graph_data(diaries_qs, note_limit: int | None = None) -> Dict[str, Any]:
+def get_hashtag_graph_data(
+    diaries_qs,
+    note_limit: int | None = None,
+    user_tag_axis_map: Dict[str, str] | None = None,
+) -> Dict[str, Any]:
     """
     @ハッシュタグが共通する日記同士をエッジで繋ぐ。
     ハッシュタグをハブノードとして追加する。
@@ -369,13 +373,28 @@ def get_hashtag_graph_data(diaries_qs, note_limit: int | None = None) -> Dict[st
     Args:
         diaries_qs: prefetch_related('notes') 済みの StockDiary QuerySet
         note_limit: 各日記の継続記録を直近N件に制限する。None で全件。
+        user_tag_axis_map: Tag M2M から取得した {タグ名: 軸} マップ（軸オーバーライド用）
+
+    軸決定の優先順位:
+        1. user_tag_axis_map（Tag M2M でユーザーが明示設定）
+        2. HASHTAG_AXIS_MAP（組み込み97語マッピング）
+        3. デフォルト 'theme'
 
     Returns:
         {
-            'hashtag_nodes': [{'id': 'ht_<tag>', 'node_type': 'hashtag', 'tag_name': str, 'diary_count': int}],
-            'edges':         [{'source': <diary_id>, 'target': 'ht_<tag>', 'edge_type': 'hashtag'}]
+            'hashtag_nodes': [{'id': 'ht_<tag>', 'node_type': 'hashtag', 'tag_name': str,
+                               'diary_count': int, 'axis': str, 'is_isolated': bool}],
+            'edges':         [{'source': <diary_id>, 'target': 'ht_<tag>',
+                               'edge_type': 'hashtag', 'axis': str}]
         }
     """
+    from .tag_axis_config import HASHTAG_AXIS_MAP
+
+    def _axis(name: str) -> str:
+        if user_tag_axis_map and name in user_tag_axis_map:
+            return user_tag_axis_map[name]
+        return HASHTAG_AXIS_MAP.get(name, 'theme')
+
     ht_diary_count: Dict[str, int] = defaultdict(int)
     edges: List[dict] = []
 
@@ -404,6 +423,7 @@ def get_hashtag_graph_data(diaries_qs, note_limit: int | None = None) -> Dict[st
                     'source': diary.pk,
                     'target': ht_id,
                     'edge_type': 'hashtag',
+                    'axis': _axis(tag),
                 })
 
     # 全カウント確定後に逆頻度の重みを付与
@@ -417,6 +437,7 @@ def get_hashtag_graph_data(diaries_qs, note_limit: int | None = None) -> Dict[st
             'node_type': 'hashtag',
             'tag_name': tag,
             'diary_count': count,
+            'axis': _axis(tag),
             'weight': hub_weight(count),
             'is_isolated': count <= 1,
         }
@@ -612,21 +633,57 @@ def compute_related_strength(focal, user, limit: int = 12) -> List[dict]:
             for did in ids:
                 _add(did, w, {'type': 'sector', 'label': f'同業種「{sector}」'})
 
-    # 5. 共通 @ハッシュタグ（投資理由 + 継続記録から抽出・付けすぎは除外）
-    focal_hashtags: Set[str] = set(extract_hashtags(focal.reason or ''))
+    # 5. 共通 @ハッシュタグ（軸重み × IDF でスコアリング）
+    from .tag_axis_config import HASHTAG_AXIS_MAP, AXIS_LABELS as _AXIS_LABELS
+    try:
+        from tags.models import Tag as _TagModel
+        _user_ht_axis = dict(_TagModel.objects.filter(user=user).values_list('name', 'axis'))
+    except Exception:
+        _user_ht_axis = {}
+
+    def _ht_axis(name: str) -> str:
+        if name in _user_ht_axis:
+            return _user_ht_axis[name]
+        return HASHTAG_AXIS_MAP.get(name, 'theme')
+
+    # focal のテキストから @タグ抽出（event軸除外）
+    focal_hashtags = {h for h in extract_hashtags(focal.reason or '') if _ht_axis(h) != 'event'}
     for note in DiaryNote.objects.filter(diary=focal).only('content'):
-        focal_hashtags |= set(extract_hashtags(note.content or ''))
-    for ht in focal_hashtags:
-        ids = list(
-            others.filter(
-                Q(reason__icontains=f'@{ht}') | Q(notes__content__icontains=f'@{ht}')
-            ).distinct().values_list('id', flat=True)
-        )
-        if not ids or len(ids) > RELATED_NOISE_MAX:
-            continue
-        w = hub_weight(len(ids) + 1)
-        for did in ids:
-            _add(did, w, {'type': 'hashtag', 'label': f'共通@{ht}'})
+        focal_hashtags |= {h for h in extract_hashtags(note.content or '') if _ht_axis(h) != 'event'}
+
+    if focal_hashtags:
+        # 全他日記の reason から @タグを一括取得して ht_df とマップを構築
+        ht_df: Dict[str, int] = defaultdict(int)
+        other_ht_map: Dict[int, Set[str]] = {}
+        for row in others.only('id', 'reason'):
+            tags_in = {h for h in extract_hashtags(row.reason or '') if _ht_axis(h) != 'event'}
+            other_ht_map[row.id] = tags_in
+            for h in tags_in:
+                ht_df[h] += 1
+
+        for did, other_tags in other_ht_map.items():
+            shared = focal_hashtags & other_tags
+            if not shared:
+                continue
+            # ノイズ除外
+            shared = {h for h in shared if ht_df.get(h, 0) <= RELATED_NOISE_MAX}
+            if not shared:
+                continue
+            # 最小条件（2+ 共有 or 高希少テーマ）
+            theme_shared = {h for h in shared if _ht_axis(h) == 'theme'}
+            high_rarity = any(
+                math.log(N / max(ht_df.get(h, 1), 1)) >= HIGH_RARITY_IDF_THRESHOLD
+                for h in theme_shared
+            )
+            if len(shared) < MIN_SHARED_TAGS and not high_rarity:
+                continue
+            # スコア: Σ w_axis × IDF
+            for tag_name in shared:
+                axis = _ht_axis(tag_name)
+                w = AXIS_WEIGHTS.get(axis, 0.5)
+                idf = math.log(N / max(ht_df.get(tag_name, 1), 1))
+                axis_label = _AXIS_LABELS.get(axis, axis)
+                _add(did, w * idf, {'type': 'tag', 'label': f'@{tag_name}（{axis_label}）'})
 
     # 6. 銘柄コード言及（双方向）= 明示的参照で強い
     mentioned = extract_stock_mentions((focal.reason or '') + ' ' + (focal.memo or ''))

@@ -93,7 +93,7 @@
       this.currentStatuses  = new Set(['holding']);
       this.currentTag       = '';
       this.currentEdgeModes = new Set(config.defaultEdgeModes || ['tag']);
-      this.currentColorMode = 'sector';
+      this.currentColorMode = 'axis';
       // 軸フィルター（デフォルト: テーマのみ。ユーザーが追加可）
       this.currentAxes = new Set(['theme']);
       this.searchQuery      = '';
@@ -540,7 +540,7 @@
           const r = hubRadiusScale(d.link_count || 0);
           el.append('polygon')
             .attr('points', _hexPoints(r))
-            .attr('fill', HUB_COLOR.hashtag)
+            .attr('fill', AXIS_COLORS[d.axis] || HUB_COLOR.hashtag)
             .attr('stroke', 'white')
             .attr('stroke-width', 2);
         }
@@ -705,8 +705,8 @@
         if (!node) return;
 
         if (node.node_type !== 'diary') {
-          // タグハブノードは常に軸色で表示（axis カラーモードでより鮮明に）
-          if (node.node_type === 'tag') {
+          // タグ・ハッシュタグ ハブノードは軸色で表示
+          if (node.node_type === 'tag' || node.node_type === 'hashtag') {
             const poly = el.querySelector('polygon');
             if (poly) {
               const axisColor = AXIS_COLORS[node.axis] || HUB_COLOR.tag;
@@ -864,9 +864,11 @@
           <div class="tt-meta">業種 &nbsp;|&nbsp; 接続銘柄: ${d.diary_count || 0}件</div>
           <div class="tt-hint">クリックで詳細パネル</div>`;
       } else if (d.node_type === 'hashtag') {
+        const axisColor = AXIS_COLORS[d.axis] || '#7c3aed';
+        const axisLabel = AXIS_LABELS[d.axis] || d.axis || 'テーマ';
         html = `
-          <div class="tt-name"><i class="bi bi-hash me-1" style="color:#0ea5e9;"></i>${_esc(d.tag_name)}</div>
-          <div class="tt-meta">@ハッシュタグ &nbsp;|&nbsp; 接続銘柄: ${d.diary_count || 0}件</div>
+          <div class="tt-name"><i class="bi bi-hash me-1" style="color:${axisColor};"></i>${_esc(d.tag_name)}</div>
+          <div class="tt-meta"><span style="color:${axisColor};">■</span> ${axisLabel} &nbsp;|&nbsp; 接続銘柄: ${d.diary_count || 0}件</div>
           <div class="tt-hint">クリックで詳細パネル</div>`;
       } else {
         const profit = d.realized_profit || 0;
@@ -939,8 +941,14 @@
             <div class="side-panel-label">接続銘柄数</div><div>${d.diary_count || 0} 件</div>
           </div>`;
       } else if (d.node_type === 'hashtag') {
-        title = `<i class="bi bi-hash me-1" style="color:#0ea5e9;"></i>@${_esc(d.tag_name)}`;
+        const htAxisColor = AXIS_COLORS[d.axis] || '#7c3aed';
+        const htAxisLabel = AXIS_LABELS[d.axis] || d.axis || 'テーマ';
+        title = `<i class="bi bi-hash me-1" style="color:${htAxisColor};"></i>@${_esc(d.tag_name)}`;
         html  = `
+          <div class="side-panel-section">
+            <div class="side-panel-label">軸</div>
+            <div><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${htAxisColor};margin-right:4px;"></span>${htAxisLabel}</div>
+          </div>
           <div class="side-panel-section">
             <div class="side-panel-label">種別</div><div>@ハッシュタグ（ハブノード）</div>
           </div>
@@ -1018,6 +1026,24 @@
       if (!meta || !this.statsEl) return;
       document.getElementById('stats-nodes').textContent = `${meta.total_nodes} ノード`;
       document.getElementById('stats-edges').textContent = `${meta.total_edges} 接続`;
+
+      // タグモード時: 軸フィルターの状態をインライン表示
+      const axisInfoEl = document.getElementById('stats-axis-info');
+      if (axisInfoEl) {
+        const tagCount = (this.allNodes || []).filter(n => n.node_type === 'tag').length;
+        if (this.currentEdgeModes.has('tag') && tagCount > 0) {
+          const AXIS_LABELS_SHORT = {
+            theme: 'テーマ', business_model: 'BM', risk: 'リスク',
+            capital_policy: '資本', macro: 'マクロ', event: 'イベント',
+          };
+          const activeAxes = [...this.currentAxes].map(a => AXIS_LABELS_SHORT[a] || a).join('・');
+          axisInfoEl.textContent = `タグ ${tagCount}件（${activeAxes || '全軸'}）`;
+          axisInfoEl.style.display = 'inline-block';
+        } else {
+          axisInfoEl.style.display = 'none';
+        }
+      }
+
       this.statsEl.style.display = 'block';
     }
 
