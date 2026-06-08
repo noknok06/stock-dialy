@@ -2,722 +2,160 @@
 {% load static %}
 {% load stockdiary_filters %}
 
-{% block title %}{{ tag.name }} - 投資理由台帳 | カブログ{% endblock %}
+{% block title %}{{ tag.name }} - 投資理由まとめ | カブログ{% endblock %}
 
 {% block head %}
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'css/3-components/components.css' %}?v={{ STATIC_VERSION }}">
 <link rel="stylesheet" href="{% static 'css/3-components/dark-mode-components.css' %}?v={{ STATIC_VERSION }}">
-
 <style>
-  /* ========== レイアウト ========== */
-
-  .ledger-container {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 1.5rem 1rem 3rem;
-  }
-
-  .ledger-header {
-    text-align: center;
-    margin-bottom: 1.75rem;
-  }
-
-  .ledger-title {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--text-100);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    margin-bottom: 0.35rem;
-  }
-
-  .ledger-title i {
-    color: var(--primary-200);
-    font-size: 1.3rem;
-  }
-
-  .ledger-subtitle {
-    font-size: 0.88rem;
-    color: var(--text-200);
-  }
-
-  /* ========== サマリー統計グリッド ========== */
-
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
-  }
-
-  @media (min-width: 768px) {
-    .stats-grid {
-      grid-template-columns: repeat(auto-fill, minmax(150px, 200px));
-      justify-content: center;
-      gap: 1rem;
-    }
-  }
-
-  .stat-card {
-    background: var(--bg-100);
-    border: 2px solid var(--border-light);
-    border-radius: var(--radius-lg);
-    padding: 1.25rem;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .stat-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 3px;
-    background: var(--gradient-primary);
-  }
-
-  .stat-card-icon {
-    font-size: 1.25rem;
-    color: var(--primary-200);
-    margin-bottom: 0.4rem;
-  }
-
-  .stat-card-value {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--text-100);
-    line-height: 1.2;
-  }
-
-  .stat-card-label {
-    font-size: 0.78rem;
-    color: var(--text-200);
-    margin-top: 4px;
-  }
-
-  /* ========== ツールバー ========== */
-
-  .ledger-toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 0.75rem;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-  }
-
-  .ledger-count {
-    font-size: 0.88rem;
-    color: var(--text-200);
-  }
-
-  .ledger-sort-group {
-    display: flex;
-    gap: 0.4rem;
-  }
-
-  .ledger-sort-btn {
-    padding: 0.3rem 0.75rem;
-    border: 1px solid var(--border-light);
-    border-radius: var(--radius-md);
-    background: transparent;
-    color: var(--text-200);
-    font-size: 0.78rem;
-    cursor: pointer;
-    transition: all 0.15s;
-    white-space: nowrap;
-  }
-
-  .ledger-sort-btn:hover {
-    background: var(--bg-200);
-    color: var(--text-100);
-  }
-
-  .ledger-sort-btn.active {
-    background: var(--primary-100);
-    color: var(--primary-200);
-    border-color: var(--primary-200);
-    font-weight: 600;
-  }
-
-  /* ========== テーブル（デスクトップ） ========== */
-
-  .ledger-table-wrap {
-    border: 1px solid var(--border-light);
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-  }
-
-  .ledger-table {
-    width: 100%;
-    border-collapse: collapse;
-    background: var(--bg-100);
-  }
-
-  .ledger-table thead th {
-    background: var(--bg-200);
-    padding: 0.7rem 1rem;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--text-200);
-    border-bottom: 2px solid var(--border-light);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    white-space: nowrap;
-  }
-
-  .ledger-table td {
-    padding: 0.85rem 1rem;
-    vertical-align: top;
-    border-bottom: 1px solid var(--border-light);
-    color: var(--text-100);
-  }
-
-  .ledger-row:last-child td {
-    border-bottom: none;
-  }
-
-  .ledger-row {
-    transition: background 0.12s;
-    border-left: 3px solid transparent;
-  }
-
-  .ledger-row:hover td {
-    background: var(--bg-200);
-  }
-
-  .ledger-row[data-status="holding"] {
-    border-left-color: #3b82f6;
-  }
-
-  .ledger-row[data-status="memo"] {
-    border-left-color: #9ca3af;
-  }
-
-  .col-stock  { width: 20%; min-width: 130px; }
-  .col-thesis { width: 55%; }
-  .col-status { width: 10%; text-align: center; white-space: nowrap; }
-  .col-profit { width: 15%; text-align: right; white-space: nowrap; }
-
-  /* ========== 銘柄セル ========== */
-
-  .stock-link {
-    text-decoration: none;
-    display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
-  }
-
-  .stock-link:hover .stock-name {
-    text-decoration: underline;
-  }
-
-  .stock-name {
-    font-weight: 600;
-    color: var(--text-100);
-    font-size: 0.95rem;
-  }
-
-  .stock-code {
-    font-size: 0.75rem;
-    color: var(--text-200);
-  }
-
-  .stock-sector {
-    display: inline-block;
-    margin-top: 0.3rem;
-    font-size: 0.7rem;
-    color: var(--primary-200);
-    background: var(--primary-100);
-    padding: 0.15rem 0.55rem;
-    border-radius: 10px;
-  }
-
-  /* ========== テーゼセル（展開） ========== */
-
-  .thesis-preview {
-    font-size: 0.88rem;
-    line-height: 1.6;
-    color: var(--text-200);
-  }
-
-  .thesis-preview p, .thesis-preview h1, .thesis-preview h2, .thesis-preview h3 {
-    margin: 0;
-  }
-
-  .thesis-full {
-    font-size: 0.88rem;
-    line-height: 1.7;
-    color: var(--text-100);
-    margin-top: 0.4rem;
-  }
-
-  .thesis-full p { margin-bottom: 0.6rem; }
-  .thesis-full p:last-child { margin-bottom: 0; }
-  .thesis-full h1, .thesis-full h2, .thesis-full h3 {
-    margin: 0.8rem 0 0.4rem; font-size: 1rem;
-  }
-  .thesis-full ul, .thesis-full ol { margin-left: 1.2rem; margin-bottom: 0.5rem; }
-  .thesis-full code {
-    background: rgba(0,0,0,0.05); padding: 0.1rem 0.35rem;
-    border-radius: 4px; font-size: 0.85em;
-  }
-
-  .thesis-expand-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    background: none;
-    border: none;
-    padding: 0.2rem 0;
-    margin-top: 0.35rem;
-    font-size: 0.78rem;
-    color: var(--accent-200, #00668c);
-    cursor: pointer;
-  }
-
-  .thesis-expand-btn:hover {
-    text-decoration: underline;
-  }
-
-  .expand-icon {
-    transition: transform 0.22s ease;
-  }
-
-  .thesis-expand-btn[aria-expanded="true"] .expand-icon {
-    transform: rotate(180deg);
-  }
-
-  /* ========== ステータスバッジ（diary-detail.css から流用） ========== */
-
-  .status-badge-improved {
-    padding: 0.2rem 0.6rem;
-    border-radius: 6px;
-    font-size: 0.7rem;
-    font-weight: 600;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    border: 1px solid;
-  }
-
-  .status-badge-memo {
-    background: linear-gradient(135deg, rgba(113,196,239,0.15) 0%, rgba(113,196,239,0.08) 100%);
-    color: var(--accent-100);
-    border-color: rgba(113,196,239,0.3);
-  }
-
-  .status-badge-sold {
-    background: linear-gradient(135deg, rgba(239,68,68,0.15) 0%, rgba(239,68,68,0.08) 100%);
-    color: var(--danger-color);
-    border-color: rgba(239,68,68,0.3);
-  }
-
-  .status-badge-active {
-    background: linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(16,185,129,0.08) 100%);
-    color: var(--success-color);
-    border-color: rgba(16,185,129,0.3);
-  }
-
-  .date-hint {
-    font-size: 0.7rem;
-    color: var(--text-200);
-    margin-top: 4px;
-  }
-
-  /* ========== モバイルカード ========== */
-
-  .ledger-cards {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .ledger-card {
-    background: var(--bg-100);
-    border: 1px solid var(--border-light);
-    border-radius: var(--radius-lg);
-    padding: 1rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.65rem;
-  }
-
-  .lcard-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 0.5rem;
-  }
-
-  .lcard-badges {
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 0.3rem;
-  }
-
-  .lcard-thesis {
-    font-size: 0.88rem;
-    line-height: 1.65;
-    color: var(--text-200);
-  }
-
-  /* ========== 空状態 ========== */
-
-  .empty-state {
-    text-align: center;
-    padding: 4rem 2rem;
-    background: var(--bg-100);
-    border-radius: var(--radius-lg);
-    border: 1px dashed var(--border-light);
-  }
-
-  .empty-state-icon {
-    font-size: 3rem;
-    color: var(--text-200);
-    margin-bottom: 1rem;
-    display: block;
-  }
-
-  .empty-state-title {
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: var(--text-100);
-    margin-bottom: 0.5rem;
-  }
-
-  .empty-state-text {
-    color: var(--text-200);
-    font-size: 0.9rem;
-    margin-bottom: 1.5rem;
-  }
-
-  /* ========== ダークモード ========== */
-
-  .dark-mode .stat-card,
-  [data-theme="dark"] .stat-card {
-    background: var(--dm-card);
-    border-color: var(--dm-border);
-  }
-
-  .dark-mode .ledger-table-wrap,
-  [data-theme="dark"] .ledger-table-wrap {
-    border-color: var(--dm-border);
-  }
-
-  .dark-mode .ledger-table,
-  [data-theme="dark"] .ledger-table {
-    background: var(--dm-card);
-  }
-
-  .dark-mode .ledger-table thead th,
-  [data-theme="dark"] .ledger-table thead th {
-    background: rgba(255, 255, 255, 0.04);
-    color: var(--dm-muted-foreground, #94a3b8);
-    border-color: var(--dm-border);
-  }
-
-  .dark-mode .ledger-table td,
-  [data-theme="dark"] .ledger-table td {
-    border-color: var(--dm-border);
-  }
-
-  .dark-mode .ledger-row:hover td,
-  [data-theme="dark"] .ledger-row:hover td {
-    background: rgba(255, 255, 255, 0.03);
-  }
-
-  .dark-mode .stock-name,
-  [data-theme="dark"] .stock-name {
-    color: var(--dm-foreground, #f1f5f9);
-  }
-
-  .dark-mode .thesis-full,
-  [data-theme="dark"] .thesis-full {
-    color: var(--dm-foreground, #f1f5f9);
-  }
-
-  .dark-mode .thesis-full code,
-  [data-theme="dark"] .thesis-full code {
-    background: rgba(255, 255, 255, 0.08);
-  }
-
-  .dark-mode .ledger-card,
-  [data-theme="dark"] .ledger-card {
-    background: var(--dm-card);
-    border-color: var(--dm-border);
-  }
-
-  .dark-mode .ledger-sort-btn.active,
-  [data-theme="dark"] .ledger-sort-btn.active {
-    background: rgba(59, 130, 246, 0.15);
-    color: #60a5fa;
-    border-color: rgba(59, 130, 246, 0.4);
-  }
-
-  .dark-mode .empty-state,
-  [data-theme="dark"] .empty-state {
-    background: var(--dm-card);
-    border-color: var(--dm-border);
-  }
+/* ===== 投資理由まとめ（読み物）。.readbook 配下にスコープ・rb- 接頭辞 ===== */
+.readbook{
+  --ax:#7c3aed;
+  --accent-200:#00668c;--accent-700:#004d6b;
+  --bg-100:#fffefb;--bg-200:#f5f4f1;--bg-300:#e7e5e0;--line:#e9e6df;
+  --t1:#1a2026;--t2:#566069;--t3:#9aa1aa;
+  --hold:#10b981;--sold:#ef4444;--memo:#9ca3af;--pos:#16a34a;--neg:#dc2626;
+  --shadow-sm:0 2px 8px rgba(20,40,60,.05);--shadow-md:0 8px 24px rgba(20,40,60,.08);
+  --r-md:14px;--r-lg:18px;
+  max-width:780px;margin:0 auto;padding:22px 18px 96px;color:var(--t1);
+}
+[data-theme="dark"] .readbook,.dark-mode .readbook{
+  --bg-100:#1e293b;--bg-200:#0f172a;--bg-300:#334155;--line:#334155;
+  --t1:#f1f5f9;--t2:#94a3b8;--t3:#64748b;
+  --shadow-sm:0 2px 8px rgba(0,0,0,.3);--shadow-md:0 8px 24px rgba(0,0,0,.4);
+}
+.readbook *{box-sizing:border-box}
+.rb-back{display:inline-flex;align-items:center;gap:7px;font-size:14px;font-weight:600;color:var(--t2);padding:.4rem .7rem;border-radius:10px;margin-bottom:14px;transition:all .16s}
+.rb-back:hover{background:var(--bg-100);color:var(--accent-200)}
+
+/* header */
+.rb-head{margin-bottom:22px}
+.rb-title{font-size:1.55rem;font-weight:800;line-height:1.2;display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 6px}
+.rb-title i{color:var(--ax)}
+.rb-title .rb-sub{font-size:.8rem;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--ax),color-mix(in srgb,var(--ax) 70%,#000));padding:.25rem .7rem;border-radius:999px}
+.rb-lead{font-size:14.5px;color:var(--t2);line-height:1.6;margin:0 0 14px}
+.rb-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.rb-count{font-size:13.5px;color:var(--t2);font-weight:600}
+.rb-count b{color:var(--t1);font-size:1.05rem}
+.rb-order{display:inline-flex;background:var(--bg-200);border:1px solid var(--line);border-radius:999px;padding:3px;gap:3px}
+.rb-order-btn{font-size:12.5px;font-weight:700;color:var(--t2);padding:.35rem .85rem;border-radius:999px;transition:all .16s}
+.rb-order-btn:hover{color:var(--t1)}
+.rb-order-btn.active{background:var(--accent-200);color:#fff}
+
+/* entries */
+.rb-list{display:flex;flex-direction:column;gap:18px;margin-top:20px}
+.rb-entry{background:var(--bg-100);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);padding:22px 24px;transition:box-shadow .2s}
+.rb-entry:hover{box-shadow:var(--shadow-md)}
+.rb-entry-head{margin-bottom:14px;padding-bottom:13px;border-bottom:1px dashed var(--line)}
+.rb-entry-title{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:9px}
+.rb-stock{font-size:1.2rem;font-weight:800;color:var(--t1)}
+.rb-stock:hover{color:var(--accent-200)}
+.rb-code{font-size:13px;font-weight:700;color:var(--accent-200)}
+.rb-entry-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.rb-sector,.rb-date{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--t2)}
+.rb-sector i,.rb-date i{font-size:12px;color:var(--t3)}
+.rb-chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:.22rem .6rem;border-radius:999px}
+.rb-chip.hold{background:rgba(16,185,129,.13);color:#0d9668}
+.rb-chip.sold{background:rgba(239,68,68,.12);color:#dc2626}
+.rb-chip.memo{background:rgba(120,128,138,.14);color:#5b6470}
+
+/* reason body (主役) */
+.rb-reason{font-size:15.5px;line-height:1.9;color:var(--t1);word-break:break-word}
+.rb-reason :where(h1,h2,h3){line-height:1.4;margin:1.1em 0 .5em}
+.rb-reason :where(p,ul,ol,blockquote){margin:0 0 .85em}
+.rb-reason :where(p):last-child{margin-bottom:0}
+
+/* continuation notes (考えの変化) */
+.rb-notes{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
+.rb-notes-title{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:800;color:var(--t2);margin-bottom:12px}
+.rb-notes-title i{color:var(--ax)}
+.rb-note{position:relative;padding:0 0 14px 20px;margin-left:4px;border-left:2px solid var(--line)}
+.rb-note:last-child{padding-bottom:0}
+.rb-note::before{content:"";position:absolute;left:-6px;top:3px;width:10px;height:10px;border-radius:50%;background:var(--ax);border:2px solid var(--bg-100)}
+.rb-note-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:5px}
+.rb-note-date{font-size:12px;font-weight:700;color:var(--t1)}
+.rb-note-type{font-size:10.5px;font-weight:700;padding:.12rem .5rem;border-radius:999px;background:color-mix(in srgb,var(--accent-200) 12%,transparent);color:var(--accent-200)}
+.rb-note-topic{font-size:11px;font-weight:600;color:var(--t2);background:var(--bg-200);padding:.12rem .5rem;border-radius:6px}
+.rb-note-body{font-size:13.5px;line-height:1.75;color:var(--t1)}
+.rb-note-body :where(p):last-child{margin-bottom:0}
+
+/* empty */
+.rb-empty{text-align:center;padding:56px 24px;background:var(--bg-100);border:2px dashed var(--line);border-radius:var(--r-lg)}
+.rb-empty .ei{width:74px;height:74px;margin:0 auto 16px;border-radius:50%;background:rgba(0,102,140,.08);display:flex;align-items:center;justify-content:center;font-size:34px;color:var(--accent-200)}
+.rb-empty h2{font-size:1.25rem;font-weight:700;margin-bottom:8px}
+.rb-empty p{font-size:14.5px;color:var(--t2);max-width:460px;margin:0 auto 18px;line-height:1.6}
+.rb-cta{display:inline-flex;align-items:center;gap:7px;height:44px;padding:0 1.3rem;border-radius:var(--r-md);font-weight:700;background:var(--accent-200);color:#fff}
+
+@media(max-width:520px){.rb-entry{padding:18px 16px}.rb-reason{font-size:15px}}
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="ledger-container">
+<div class="readbook">
+  <a class="rb-back" href="{% url 'tags:detail' tag.pk %}"><i class="bi bi-arrow-left"></i>タグ詳細に戻る</a>
 
-  <!-- ヘッダー -->
-  <div class="ledger-header">
-    <h1 class="ledger-title">
-      <i class="bi bi-table"></i>
-      <span>{{ tag.name }}</span>
-    </h1>
-    <p class="ledger-subtitle">このタグで使われている投資理由の記録</p>
-  </div>
-
-  {% if diaries %}
-
-    <!-- サマリー統計 -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-card-icon"><i class="bi bi-list-check"></i></div>
-        <div class="stat-card-value">{{ ledger_stats.total_entries }}</div>
-        <div class="stat-card-label">記録銘柄数</div>
+  <header class="rb-head">
+    <h1 class="rb-title"><i class="bi bi-journal-richtext"></i><span>{{ tag.name }}</span><span class="rb-sub">投資理由まとめ</span></h1>
+    <p class="rb-lead">このタグで残した投資理由を、その後の考え（継続記録）まで通して読み返す。</p>
+    {% if entries %}
+    <div class="rb-meta">
+      <span class="rb-count"><b>{{ reason_count }}</b> 銘柄の投資理由</span>
+      <div class="rb-order">
+        <a class="rb-order-btn {% if order != 'asc' %}active{% endif %}" href="?order=desc">新しい順</a>
+        <a class="rb-order-btn {% if order == 'asc' %}active{% endif %}" href="?order=asc">古い順</a>
       </div>
-      <div class="stat-card">
-        <div class="stat-card-icon"><i class="bi bi-check2-circle"></i></div>
-        <div class="stat-card-value">{{ ledger_stats.sold_count }}</div>
-        <div class="stat-card-label">検証済み（売却）</div>
-      </div>
-      {% if ledger_stats.win_rate is not None %}
-      <div class="stat-card">
-        <div class="stat-card-icon"><i class="bi bi-trophy"></i></div>
-        <div class="stat-card-value"
-             style="color:{% if ledger_stats.win_rate >= 50 %}var(--bs-success,#198754){% else %}var(--bs-danger,#dc3545){% endif %}">
-          {{ ledger_stats.win_rate|floatformat:1 }}%
+    </div>
+    {% endif %}
+  </header>
+
+  {% if entries %}
+  <div class="rb-list">
+    {% for e in entries %}
+    <article class="rb-entry">
+      <div class="rb-entry-head">
+        <div class="rb-entry-title">
+          <a class="rb-stock" href="{% url 'stockdiary:detail' e.diary.pk %}">{{ e.diary.stock_name|default:"銘柄名未設定" }}</a>
+          {% if e.diary.stock_symbol %}<span class="rb-code">#{{ e.diary.stock_symbol }}</span>{% endif %}
         </div>
-        <div class="stat-card-label">的中率（{{ ledger_stats.winning_count }}/{{ ledger_stats.sold_count }}）</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-card-icon"><i class="bi bi-graph-up-arrow"></i></div>
-        <div class="stat-card-value"
-             style="font-size:1.1rem; color:{% if ledger_stats.total_profit >= 0 %}var(--bs-success,#198754){% else %}var(--bs-danger,#dc3545){% endif %}">
-          {% if ledger_stats.total_profit >= 0 %}+{% endif %}{{ ledger_stats.total_profit|intcomma_float }}円
+        <div class="rb-entry-meta">
+          {% if e.status == 'holding' %}<span class="rb-chip hold"><i class="bi bi-briefcase-fill"></i>保有中</span>
+          {% elif e.status == 'sold' %}<span class="rb-chip sold"><i class="bi bi-cash-coin"></i>売却{% if e.profit is not None %} {% if e.profit >= 0 %}+{% endif %}{{ e.profit|floatformat:0 }}円{% endif %}</span>
+          {% else %}<span class="rb-chip memo"><i class="bi bi-sticky-fill"></i>メモ</span>{% endif %}
+          {% if e.diary.sector %}<span class="rb-sector"><i class="bi bi-diagram-3-fill"></i>{{ e.diary.sector }}</span>{% endif %}
+          <span class="rb-date"><i class="bi bi-calendar-event"></i>{% if e.diary.first_purchase_date %}{{ e.diary.first_purchase_date|date:"Y/m/d" }}{% else %}{{ e.diary.created_at|date:"Y/m/d" }}{% endif %}</span>
         </div>
-        <div class="stat-card-label">実現損益合計</div>
+      </div>
+
+      <div class="rb-reason markdown-content">{{ e.diary.reason|render_markdown_with_mentions:mention_map }}</div>
+
+      {% if e.notes %}
+      <div class="rb-notes">
+        <div class="rb-notes-title"><i class="bi bi-arrow-down-up"></i>その後の考え（継続記録 {{ e.notes|length }}件）</div>
+        {% for note in e.notes %}
+        <div class="rb-note">
+          <div class="rb-note-head">
+            <span class="rb-note-date">{{ note.date|date:"Y/m/d" }}</span>
+            <span class="rb-note-type">{{ note.get_note_type_display }}</span>
+            {% if note.topic %}<span class="rb-note-topic">{{ note.topic }}</span>{% endif %}
+          </div>
+          {% if note.content %}<div class="rb-note-body markdown-content">{{ note.content|render_markdown_with_mentions:mention_map }}</div>{% endif %}
+        </div>
+        {% endfor %}
       </div>
       {% endif %}
-    </div>
-
-    <!-- ツールバー -->
-    <div class="ledger-toolbar">
-      <span class="ledger-count">
-        <i class="bi bi-table me-1"></i>{{ ledger_stats.total_entries }}件の投資記録
-      </span>
-      <div class="ledger-sort-group">
-        <button class="ledger-sort-btn active" data-sort="profit-desc" aria-pressed="true">
-          <i class="bi bi-sort-numeric-down-alt me-1"></i>損益 高い順
-        </button>
-        <button class="ledger-sort-btn" data-sort="profit-asc" aria-pressed="false">
-          <i class="bi bi-sort-numeric-up me-1"></i>低い順
-        </button>
-      </div>
-    </div>
-
-    <!-- テーブル（デスクトップ md以上） -->
-    <div class="ledger-table-wrap d-none d-md-block">
-      <table class="ledger-table" id="ledgerTable">
-        <thead>
-          <tr>
-            <th class="col-stock">銘柄</th>
-            <th class="col-thesis">投資理由</th>
-            <th class="col-status">ステータス</th>
-            <th class="col-profit">実現損益</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for diary in diaries %}
-          <tr class="ledger-row"
-              data-profit="{{ diary.cash_only_realized_profit|default:0 }}"
-              data-status="{% if diary.is_memo %}memo{% elif diary.is_holding %}holding{% else %}sold{% endif %}">
-
-            <!-- 銘柄 -->
-            <td class="col-stock">
-              <a href="{% url 'stockdiary:detail' diary.id %}" class="stock-link">
-                <span class="stock-name">{{ diary.stock_name }}</span>
-                {% if diary.stock_symbol %}
-                <span class="stock-code">{{ diary.stock_symbol }}</span>
-                {% endif %}
-              </a>
-              {% if diary.sector %}
-              <span class="stock-sector">{{ diary.sector }}</span>
-              {% endif %}
-            </td>
-
-            <!-- 投資仮説（展開可能） -->
-            <td class="col-thesis">
-              <div class="thesis-preview" id="tp-{{ forloop.counter }}">{{ diary.reason|render_markdown|truncatechars_html:140 }}</div>
-              {% if diary.reason|length > 140 %}
-              <div class="thesis-full" id="tf-{{ forloop.counter }}" hidden>{{ diary.reason|render_markdown }}</div>
-              <button class="thesis-expand-btn"
-                      aria-expanded="false"
-                      data-p="tp-{{ forloop.counter }}"
-                      data-f="tf-{{ forloop.counter }}">
-                <span class="expand-label">続きを読む</span>
-                <i class="bi bi-chevron-down expand-icon"></i>
-              </button>
-              {% endif %}
-            </td>
-
-            <!-- ステータス -->
-            <td class="col-status">
-              {% include "stockdiary/components/_status_badge.html" with diary=diary %}
-              {% if diary.first_purchase_date %}
-              <div class="date-hint">{{ diary.first_purchase_date|date:"Y/m/d" }}</div>
-              {% endif %}
-            </td>
-
-            <!-- 実現損益 -->
-            <td class="col-profit">
-              {% if diary.is_sold_out %}
-                {% include "stockdiary/components/_profit_display.html" with profit=diary.cash_only_realized_profit style="badge" show_icon=True decimals=0 %}
-              {% else %}
-              <span class="text-muted" style="font-size:0.82rem;">—</span>
-              {% endif %}
-            </td>
-
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-
-    <!-- カード（モバイル sm以下） -->
-    <div class="ledger-cards d-md-none">
-      {% for diary in diaries %}
-      <div class="ledger-card"
-           data-profit="{{ diary.cash_only_realized_profit|default:0 }}">
-
-        <div class="lcard-header">
-          <div>
-            <a href="{% url 'stockdiary:detail' diary.id %}" class="stock-link">
-              <span class="stock-name">{{ diary.stock_name }}</span>
-              {% if diary.stock_symbol %}<span class="stock-code">{{ diary.stock_symbol }}</span>{% endif %}
-            </a>
-            {% if diary.sector %}<span class="stock-sector d-inline-block mt-1">{{ diary.sector }}</span>{% endif %}
-          </div>
-          <div class="lcard-badges">
-            {% include "stockdiary/components/_status_badge.html" with diary=diary %}
-            {% if diary.is_sold_out %}
-            <div>{% include "stockdiary/components/_profit_display.html" with profit=diary.cash_only_realized_profit style="badge" decimals=0 %}</div>
-            {% endif %}
-          </div>
-        </div>
-
-        <div class="lcard-thesis">
-          <div class="thesis-preview" id="mtp-{{ forloop.counter }}">{{ diary.reason|render_markdown|truncatechars_html:160 }}</div>
-          {% if diary.reason|length > 160 %}
-          <div class="thesis-full" id="mtf-{{ forloop.counter }}" hidden>{{ diary.reason|render_markdown }}</div>
-          <button class="thesis-expand-btn"
-                  aria-expanded="false"
-                  data-p="mtp-{{ forloop.counter }}"
-                  data-f="mtf-{{ forloop.counter }}">
-            <span class="expand-label">続きを読む</span>
-            <i class="bi bi-chevron-down expand-icon"></i>
-          </button>
-          {% endif %}
-        </div>
-
-      </div>
-      {% endfor %}
-    </div>
-
+    </article>
+    {% endfor %}
+  </div>
   {% else %}
-    <!-- 空状態 -->
-    <div class="empty-state">
-      <span class="empty-state-icon"><i class="bi bi-journal-x"></i></span>
-      <div class="empty-state-title">投資理由の記録がありません</div>
-      <p class="empty-state-text">
-        このタグに「投資理由」が記入された銘柄日記がまだありません。<br>
-        日記に投資理由を記入してから再度お試しください。
-      </p>
-      <a href="{% url 'tags:detail' tag.pk %}" class="btn btn-outline-primary">
-        <i class="bi bi-arrow-left me-1"></i>タグ詳細に戻る
-      </a>
-    </div>
+  <div class="rb-empty">
+    <div class="ei"><i class="bi bi-journal-x"></i></div>
+    <h2>まだ投資理由の記録がありません</h2>
+    <p>このタグを付けた日記に「投資理由（なぜ投資したか）」を書くと、ここでまとめて読み返せます。</p>
+    <a class="rb-cta" href="{% url 'tags:detail' tag.pk %}"><i class="bi bi-arrow-left"></i>タグ詳細へ</a>
+  </div>
   {% endif %}
-
 </div>
-{% endblock %}
 
-{% block extra_js %}
-{{ block.super }}
-<script>
-(function () {
-  'use strict';
-
-  // ── テーゼ展開/折りたたみ ────────────────────────────────────
-  document.querySelectorAll('.thesis-expand-btn').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      var previewId = btn.dataset.p;
-      var fullId    = btn.dataset.f;
-      var preview   = document.getElementById(previewId);
-      var full      = document.getElementById(fullId);
-      var isOpen    = btn.getAttribute('aria-expanded') === 'true';
-
-      if (isOpen) {
-        full.hidden    = true;
-        preview.hidden = false;
-        btn.setAttribute('aria-expanded', 'false');
-        btn.querySelector('.expand-label').textContent = '続きを読む';
-      } else {
-        preview.hidden = true;
-        full.hidden    = false;
-        btn.setAttribute('aria-expanded', 'true');
-        btn.querySelector('.expand-label').textContent = '折りたたむ';
-      }
-    });
-  });
-
-  // ── ソート ──────────────────────────────────────────────────
-  var tbody      = document.querySelector('#ledgerTable tbody');
-  var cardsWrap  = document.querySelector('.ledger-cards');
-
-  function sortItems(direction) {
-    var cmp = function (a, b) {
-      var pa = parseFloat(a.dataset.profit) || 0;
-      var pb = parseFloat(b.dataset.profit) || 0;
-      return direction === 'desc' ? pb - pa : pa - pb;
-    };
-    if (tbody) {
-      var rows = Array.from(tbody.querySelectorAll('.ledger-row'));
-      rows.sort(cmp).forEach(function (r) { tbody.appendChild(r); });
-    }
-    if (cardsWrap) {
-      var cards = Array.from(cardsWrap.querySelectorAll('.ledger-card'));
-      cards.sort(cmp).forEach(function (c) { cardsWrap.appendChild(c); });
-    }
-  }
-
-  document.querySelectorAll('.ledger-sort-btn').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      document.querySelectorAll('.ledger-sort-btn').forEach(function (b) {
-        b.classList.remove('active');
-        b.setAttribute('aria-pressed', 'false');
-      });
-      btn.classList.add('active');
-      btn.setAttribute('aria-pressed', 'true');
-      var dir = btn.dataset.sort === 'profit-asc' ? 'asc' : 'desc';
-      sortItems(dir);
-    });
-  });
-
-  // 初期ソート（損益降順）
-  sortItems('desc');
-})();
-</script>
+{% include 'speed_dial.html' with actions=page_actions %}
 {% endblock %}

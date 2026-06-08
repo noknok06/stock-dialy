@@ -396,7 +396,7 @@ class TagDeleteView(LoginRequiredMixin, DeleteView):
 
 class TagBookView(LoginRequiredMixin, DetailView):
     """
-    タグ付き銘柄の投資仮説と結果を対照表示する仮説検証台帳ビュー
+    このタグで残した投資理由を、考えの変化（継続記録）まで通読する読み物ビュー。
     """
     model = Tag
     template_name = 'tags/tag_book.html'
@@ -407,42 +407,65 @@ class TagBookView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        from stockdiary.views import get_mention_map
         tag = self.object
 
-        # このタグが設定されている日記を取得（投資理由がある銘柄のみ）
+        # 並び順（既定: 新しい順 / ?order=asc で古い順）
+        order = 'asc' if self.request.GET.get('order') == 'asc' else 'desc'
+        if order == 'asc':
+            date_order, sec_order = 'last_transaction_date', 'created_at'
+        else:
+            date_order, sec_order = '-last_transaction_date', '-created_at'
+
+        # 投資理由がある日記のみ。継続記録（notes）も prefetch して通読できるようにする
         diaries = tag.stockdiary_set.filter(
             reason__isnull=False
         ).exclude(
             reason=''
-        ).select_related('user').order_by('-last_transaction_date', '-created_at')
+        ).select_related('user').prefetch_related('notes').order_by(date_order, sec_order)
 
-        # 銘柄ごとの最新の日記を取得（重複排除）
+        # 銘柄ごとに代表1件（重複排除）
         seen_stocks = set()
-        unique_diaries = []
+        entries = []
         sold_profits = []
-
         for diary in diaries:
             stock_key = f"{diary.stock_symbol}_{diary.stock_name}"
-            if stock_key not in seen_stocks:
-                seen_stocks.add(stock_key)
-                unique_diaries.append(diary)
-                if diary.is_sold_out:
-                    sold_profits.append(float(diary.cash_only_realized_profit or 0))
+            if stock_key in seen_stocks:
+                continue
+            seen_stocks.add(stock_key)
 
-        sold_count = len(sold_profits)
-        winning_count = sum(1 for p in sold_profits if p > 0)
-        total_profit = sum(sold_profits)
-        win_rate = round(winning_count / sold_count * 100, 1) if sold_count > 0 else None
+            if diary.is_holding:
+                status = 'holding'
+            elif diary.is_sold_out:
+                status = 'sold'
+            else:
+                status = 'memo'
+
+            profit = float(diary.cash_only_realized_profit or 0) if status == 'sold' else None
+            if status == 'sold':
+                sold_profits.append(float(diary.cash_only_realized_profit or 0))
+
+            # 継続記録は時系列（古い→新しい）で「考えの変化」を追えるように
+            notes = sorted(diary.notes.all(), key=lambda n: (n.date, n.created_at))
+
+            entries.append({
+                'diary': diary,
+                'status': status,
+                'profit': profit,
+                'notes': notes,
+            })
 
         context.update({
-            'diaries': unique_diaries,
-            'total_pages': len(unique_diaries),  # 後方互換
+            'entries': entries,
+            'order': order,
+            'reason_count': len(entries),
+            'mention_map': get_mention_map(self.request.user),
+            # 軽量サマリー（読み物の補助。後方互換のため ledger_stats も維持）
             'ledger_stats': {
-                'total_entries': len(unique_diaries),
-                'sold_count': sold_count,
-                'winning_count': winning_count,
-                'total_profit': total_profit,
-                'win_rate': win_rate,
+                'total_entries': len(entries),
+                'sold_count': len(sold_profits),
+                'winning_count': sum(1 for p in sold_profits if p > 0),
+                'total_profit': sum(sold_profits),
             },
         })
 
