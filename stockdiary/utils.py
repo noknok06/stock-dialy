@@ -376,6 +376,7 @@ def get_hashtag_graph_data(
     diaries_qs,
     note_limit: int | None = None,
     user_tag_axis_map: Dict[str, str] | None = None,
+    user_tag_dir_map: Dict[tuple, str] | None = None,
 ) -> Dict[str, Any]:
     """
     @ハッシュタグが共通する日記同士をエッジで繋ぐ。
@@ -386,6 +387,10 @@ def get_hashtag_graph_data(
         diaries_qs: prefetch_related('notes') 済みの StockDiary QuerySet
         note_limit: 各日記の継続記録を直近N件に制限する。None で全件。
         user_tag_axis_map: Tag M2M から取得した {タグ名: 軸} マップ（軸オーバーライド用）
+        user_tag_dir_map: {(diary_id, タグ名): 方向} マップ。@ハッシュタグは
+            _sync_hashtag_tags で同名の Tag(M2M) に同期されるため、その Tag に
+            設定された方向（DiaryTagDirection）をエッジに付与し、タグモードと
+            同様に追い風(up)/向かい風(down)で着色できるようにする。
 
     軸決定の優先順位:
         1. user_tag_axis_map（Tag M2M でユーザーが明示設定）
@@ -439,10 +444,14 @@ def get_hashtag_graph_data(
                     'axis': _axis(tag),
                 })
 
-    # 全カウント確定後に逆頻度の重みを付与
+    # 全カウント確定後に逆頻度の重みと方向（追い風/向かい風）を付与
     for e in edges:
         tag = e['target'].split('_', 1)[1]
         e['weight'] = hub_weight(ht_diary_count[tag])
+        e['direction'] = (
+            user_tag_dir_map.get((e['source'], tag), 'neutral')
+            if user_tag_dir_map else 'neutral'
+        )
 
     hashtag_nodes = [
         {

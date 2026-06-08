@@ -233,6 +233,19 @@
         closeBtn.addEventListener('click', () => this._closeSidePanel());
       }
 
+      // 凡例の開閉トグル。スマホでは既定で折りたたみ（ノードを覆わないように）
+      const legendToggle = document.getElementById('legend-toggle');
+      if (legendToggle && this.legendEl) {
+        if (window.matchMedia('(max-width: 640px)').matches) {
+          this.legendEl.classList.add('glf-collapsed');
+          legendToggle.setAttribute('aria-expanded', 'false');
+        }
+        legendToggle.addEventListener('click', () => {
+          const collapsed = this.legendEl.classList.toggle('glf-collapsed');
+          legendToggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+        });
+      }
+
       const fsBtn = document.getElementById('toggleFullscreen');
       if (fsBtn) {
         fsBtn.addEventListener('click', () => this._toggleFullscreen());
@@ -601,13 +614,23 @@
         .selectAll('line')
         .data(edges)
         .join('line')
-          .attr('class', d => `graph-link edge-${d.edge_type || 'manual'}`)
+          .attr('class', d => {
+            // タグ/ハッシュタグエッジは方向（追い風up/向かい風down）を
+            // クラスで付与し、CSS で確実に色・破線を上書きする（エッジ種別の
+            // デフォルト dasharray に負けないよう CSS 側を !important に）。
+            let cls = `graph-link edge-${d.edge_type || 'manual'}`;
+            const dirable = d.edge_type === 'tag' || d.edge_type === 'hashtag';
+            if (dirable && (d.direction === 'up' || d.direction === 'down')) {
+              cls += ` dir-${d.direction}`;
+            }
+            return cls;
+          })
           .attr('stroke', d => {
-            // タグエッジは方向（追い風/向かい風）で着色。中立・他モードは従来色
-            if (d.edge_type === 'tag' && DIR_COLOR[d.direction]) return DIR_COLOR[d.direction];
+            // タグ/ハッシュタグエッジは方向（追い風/向かい風）で着色。中立・他モードは従来色
+            const dirable = d.edge_type === 'tag' || d.edge_type === 'hashtag';
+            if (dirable && DIR_COLOR[d.direction]) return DIR_COLOR[d.direction];
             return EDGE_COLOR[d.edge_type] || EDGE_COLOR.manual;
           })
-          .attr('stroke-dasharray', d => (d.edge_type === 'tag' && d.direction === 'down') ? '5,4' : null)
           .attr('stroke-width',   d => this._edgeWidth(d))
           .attr('stroke-opacity', d => this._edgeOpacity(d));
       // トグル変更時に再描画せず強調度だけ更新するため保持
@@ -897,8 +920,8 @@
       toggle(hubWrap, hasHub);
       toggle(mentionLeg, modes.has('mention'));
       toggle(axisLeg, this.currentColorMode === 'axis');
-      // タグエッジの方向（追い風/向かい風）凡例は tag モード時のみ表示
-      toggle(document.getElementById('legend-direction'), modes.has('tag'));
+      // 方向（追い風/向かい風）凡例は tag / hashtag いずれかのモード時に表示
+      toggle(document.getElementById('legend-direction'), modes.has('tag') || modes.has('hashtag'));
     }
 
     // ==============================
