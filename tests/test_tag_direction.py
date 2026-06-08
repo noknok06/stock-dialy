@@ -7,6 +7,7 @@
 - TagDetailView: プラス/マイナス件数とヘッジ検出フラグ
 """
 import pytest
+from django.test import Client
 from django.urls import reverse
 
 from stockdiary.models import StockDiary, DiaryTagDirection
@@ -123,6 +124,26 @@ class TestSetTagDirectionView:
         url = reverse('tags:set_direction', kwargs={'pk': tag.pk})
         resp = authenticated_client.post(url, {'diary_id': diary.id, 'direction': 'sideways'})
         assert resp.status_code == 400
+
+    def test_csrf_enforced_and_passes_with_header_token(self, user):
+        # 本番同様 CSRF を強制し、X-CSRFToken ヘッダ（htmx が付与する）で通ることを確認
+        tag = Tag.objects.create(user=user, name='金利上昇', axis='macro')
+        diary = _diary(user, '8306', '三菱UFJ')
+        diary.tags.add(tag)
+        c = Client(enforce_csrf_checks=True)
+        c.force_login(user)
+        url = reverse('tags:set_direction', kwargs={'pk': tag.pk})
+
+        # トークンなし → 403（再現していた不具合）
+        resp = c.post(url, {'diary_id': diary.id, 'direction': 'up'})
+        assert resp.status_code == 403
+
+        # タグ詳細を開いて csrftoken クッキーを取得 → ヘッダ付きPOSTは成功
+        c.get(reverse('tags:detail', kwargs={'pk': tag.pk}))
+        token = c.cookies['csrftoken'].value
+        resp2 = c.post(url, {'diary_id': diary.id, 'direction': 'up'}, HTTP_X_CSRFTOKEN=token)
+        assert resp2.status_code == 200
+        assert DiaryTagDirection.objects.get(diary=diary, tag=tag).direction == 'up'
 
     def test_other_users_tag_rejected(self, authenticated_client, user, another_user):
         foreign_tag = Tag.objects.create(user=another_user, name='金利上昇', axis='macro')
