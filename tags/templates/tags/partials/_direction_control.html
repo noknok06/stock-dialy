@@ -3,7 +3,8 @@
 HTMX で set_tag_direction にPOSTし、outerHTML でこの要素自身を置き換える。
 コンテキスト: tag_pk, diary_id, direction(up/down/neutral), dir_choices
 {% endcomment %}
-<div class="tag-dir-control" id="tag-dir-{{ diary_id }}">
+<div class="tag-dir-control" id="tag-dir-{{ diary_id }}"
+     hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
   {% if direction == 'up' %}
     <span class="tag-dir-badge" style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:.75rem;font-weight:700;background:#16a34a;color:#fff;">▲ 追い風</span>
   {% elif direction == 'down' %}
