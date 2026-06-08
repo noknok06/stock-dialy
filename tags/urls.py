@@ -13,6 +13,7 @@ urlpatterns = [
     path('<int:pk>/update/', views.TagUpdateView.as_view(), name='update'),
     path('<int:pk>/delete/', views.TagDeleteView.as_view(), name='delete'),
     path('<int:pk>/book/', views.TagBookView.as_view(), name='book'),  # 本モード
+    path('<int:pk>/direction/', views.set_tag_direction, name='set_direction'),  # 方向トグル(HTMX)
 
     path('api/list/', api.list_tags, name='api_list'),
 ]

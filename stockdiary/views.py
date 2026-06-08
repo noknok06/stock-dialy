@@ -519,6 +519,12 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
             if len(excerpt) > 60:
                 excerpt = excerpt[:60] + '…'
             reason_labels = [v.get('label', '') for v in item['via']]
+            # 共有タグの方向から順相関/逆相関を集約（逆相関優先で提示）
+            correlation = None
+            if any(v.get('correlation') == 'inverse' for v in item['via']):
+                correlation = 'inverse'
+            elif any(v.get('correlation') == 'positive' for v in item['via']):
+                correlation = 'positive'
             related_unified.append({
                 'diary': d,
                 'via': item['via'],
@@ -526,6 +532,7 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
                 'score': item['score'],
                 'is_manual': d.id in manual_linked_ids,
                 'excerpt': excerpt,
+                'correlation': correlation,
             })
         context['related_unified'] = related_unified
 

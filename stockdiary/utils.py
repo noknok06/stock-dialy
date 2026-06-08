@@ -286,10 +286,22 @@ def get_tag_graph_data(diaries_qs) -> Dict[str, Any]:
                 'axis': getattr(tag, 'axis', 'theme'),
             })
 
+    # 方向属性（DiaryTagDirection）を一括取得してエッジに付与
+    # ── マクロ/テーマのハブから「追い風(up)/向かい風(down)」が放射状に分かれて見えるようにする
+    from .models import DiaryTagDirection
+    dir_map: Dict[tuple, str] = {}
+    diary_ids = {e['source'] for e in edges}
+    if diary_ids and tag_meta:
+        for diary_id, tag_id, direction in DiaryTagDirection.objects.filter(
+            diary_id__in=diary_ids, tag_id__in=tag_meta.keys()
+        ).values_list('diary_id', 'tag_id', 'direction'):
+            dir_map[(diary_id, tag_id)] = direction
+
     # 全カウント確定後に逆頻度の重みを付与
     for e in edges:
         pk = int(e['target'].split('_', 1)[1])
         e['weight'] = hub_weight(tag_diary_count[pk])
+        e['direction'] = dir_map.get((e['source'], pk), 'neutral')
 
     tag_nodes = [
         {
@@ -597,6 +609,22 @@ def compute_related_strength(focal, user, limit: int = 12) -> List[dict]:
             for did in diary_ids:
                 shared_tag_map[did].append(tag_by_id[tag_id])
 
+        # 方向属性（DiaryTagDirection）を取得し、共有タグごとに順相関/逆相関を判定する材料にする
+        from .models import DiaryTagDirection as _DTD
+        focal_dir = dict(
+            _DTD.objects.filter(diary=focal, tag_id__in=tag_diary_map.keys())
+            .values_list('tag_id', 'direction')
+        )
+        _other_ids = set()
+        for _ids in tag_diary_map.values():
+            _other_ids |= _ids
+        other_dir: Dict[tuple, str] = {}
+        if _other_ids:
+            for d_id, t_id, _dir in _DTD.objects.filter(
+                diary_id__in=_other_ids, tag_id__in=tag_diary_map.keys()
+            ).values_list('diary_id', 'tag_id', 'direction'):
+                other_dir[(d_id, t_id)] = _dir
+
         for did, shared_tags in shared_tag_map.items():
             # 最小条件チェック（FR-6）
             theme_tags = [t for t in shared_tags if getattr(t, 'axis', 'theme') == 'theme']
@@ -622,8 +650,18 @@ def compute_related_strength(focal, user, limit: int = 12) -> List[dict]:
                     'risk': 'リスク', 'capital_policy': '資本政策',
                     'macro': 'マクロ', 'event': 'イベント',
                 }
-                label = f'@{tag.name}（{axis_labels.get(axis, axis)}）'
-                _add(did, w * idf, {'type': 'tag', 'label': label})
+                # 方向が双方とも非中立なら順相関（同方向）/逆相関（逆方向）を判定
+                fdir = focal_dir.get(tag.id, 'neutral')
+                odir = other_dir.get((did, tag.id), 'neutral')
+                correlation = None
+                if fdir in ('up', 'down') and odir in ('up', 'down'):
+                    correlation = 'positive' if fdir == odir else 'inverse'
+                dir_suffix = {'positive': '・順', 'inverse': '・逆'}.get(correlation, '')
+                label = f'@{tag.name}（{axis_labels.get(axis, axis)}{dir_suffix}）'
+                via = {'type': 'tag', 'label': label}
+                if correlation:
+                    via['correlation'] = correlation
+                _add(did, w * idf, via)
 
     # 4. 同業種（希少なほど強い・付けすぎは除外）
     sector = (focal.sector or '').strip()

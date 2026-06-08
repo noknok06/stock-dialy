@@ -34,6 +34,12 @@
     mention: '#f59e0b',
   };
 
+  // タグエッジの方向色（DiaryTagDirection）。追い風(up)=緑 / 向かい風(down)=赤
+  const DIR_COLOR = {
+    up:   '#16a34a',
+    down: '#dc2626',
+  };
+
   // ハブノード色（タグはデフォルト。軸色分けモードでは AXIS_COLORS を使う）
   const HUB_COLOR = {
     tag:     '#7c3aed',
@@ -596,7 +602,12 @@
         .data(edges)
         .join('line')
           .attr('class', d => `graph-link edge-${d.edge_type || 'manual'}`)
-          .attr('stroke', d => EDGE_COLOR[d.edge_type] || EDGE_COLOR.manual)
+          .attr('stroke', d => {
+            // タグエッジは方向（追い風/向かい風）で着色。中立・他モードは従来色
+            if (d.edge_type === 'tag' && DIR_COLOR[d.direction]) return DIR_COLOR[d.direction];
+            return EDGE_COLOR[d.edge_type] || EDGE_COLOR.manual;
+          })
+          .attr('stroke-dasharray', d => (d.edge_type === 'tag' && d.direction === 'down') ? '5,4' : null)
           .attr('stroke-width',   d => this._edgeWidth(d))
           .attr('stroke-opacity', d => this._edgeOpacity(d));
       // トグル変更時に再描画せず強調度だけ更新するため保持
@@ -886,6 +897,8 @@
       toggle(hubWrap, hasHub);
       toggle(mentionLeg, modes.has('mention'));
       toggle(axisLeg, this.currentColorMode === 'axis');
+      // タグエッジの方向（追い風/向かい風）凡例は tag モード時のみ表示
+      toggle(document.getElementById('legend-direction'), modes.has('tag'));
     }
 
     // ==============================
