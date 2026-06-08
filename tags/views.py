@@ -206,6 +206,20 @@ class TagDetailView(LoginRequiredMixin, DetailView):
             else:
                 neutral_count += 1
 
+            # 銘柄カード用の代表ステータスと実現損益（売却済みの集計）
+            if stock['active_holdings'] > 0:
+                stock['status'] = 'holding'
+            elif stock['completed_sales'] > 0:
+                stock['status'] = 'sold'
+            else:
+                stock['status'] = 'memo'
+            group_profit = sum(
+                float(d.cash_only_realized_profit or 0)
+                for d in stock['diaries'] if d.is_sold_out
+            )
+            stock['profit'] = group_profit if stock['completed_sales'] > 0 else None
+            stock['records'] = stock['total_entries']
+
         # パフォーマンス統計（売却済み銘柄ベース）
         sold_profits = [
             float(d.cash_only_realized_profit or 0)
@@ -268,6 +282,9 @@ class TagDetailView(LoginRequiredMixin, DetailView):
             'has_hedge': has_hedge,
             'search_query': search_query,
             'dir_choices': DIRECTION_TOGGLE_CHOICES,
+            'axis_color': AXIS_COLORS.get(tag.axis, '#7c3aed'),
+            'axis_label': AXIS_LABELS.get(tag.axis, AXIS_SHORT.get(tag.axis, 'タグ')),
+            'axis_icon': AXIS_ICONS.get(tag.axis, 'bi-tag-fill'),
         })
         
         # スピードダイアル用のアクション

@@ -175,3 +175,28 @@ class TestTagDetailDirectionContext:
         assert stats['minus_count'] == 1
         assert stats['neutral_count'] == 1
         assert resp.context['has_hedge'] is True
+
+    def test_axis_and_per_stock_card_fields(self, authenticated_client, user):
+        tag = Tag.objects.create(user=user, name='金利上昇', axis='macro')
+        bank = _diary(user, '8306', '三菱UFJ', sector='銀行業')
+        bank.tags.add(tag)
+        url = reverse('tags:detail', kwargs={'pk': tag.pk})
+        resp = authenticated_client.get(url)
+        assert resp.status_code == 200
+        # マクロ軸の色がコンテキストに渡る（カードのアクセント・グラフ着色に使用）
+        assert resp.context['axis_color']
+        # 銘柄カード用の status / records が付与される
+        stock = next(s for s in resp.context['stock_list'] if s['symbol'] == '8306')
+        assert stock['status'] in ('holding', 'sold', 'memo')
+        assert stock['records'] == stock['total_entries']
+
+    def test_redesigned_page_renders_key_blocks(self, authenticated_client, user):
+        tag = Tag.objects.create(user=user, name='半導体', axis='theme')
+        for sym, name in [('8035', '東京エレクトロン'), ('6857', 'アドバンテスト')]:
+            d = _diary(user, sym, name, sector='電機')
+            d.tags.add(tag)
+        url = reverse('tags:detail', kwargs={'pk': tag.pk})
+        html = authenticated_client.get(url).content.decode()
+        for marker in ['class="tagdetail"', 'td-tagbadge', 'td-stats', 'td-mgcard',
+                       'mini-diary-graph-svg', 'td-grid', 'td-status', 'tag-dir-']:
+            assert marker in html, f'missing {marker}'
