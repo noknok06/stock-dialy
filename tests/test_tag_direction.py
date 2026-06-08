@@ -99,6 +99,9 @@ class TestSetTagDirectionView:
         resp = authenticated_client.post(url, {'diary_id': diary.id, 'direction': 'up'})
         assert resp.status_code == 200
         assert DiaryTagDirection.objects.get(diary=diary, tag=tag).direction == 'up'
+        # 返却パーシャルで「追い風」セグメントがアクティブになっている
+        body = resp.content.decode()
+        assert 'tag-dir-opt up is-active' in body
 
         # 更新（up -> down）も update_or_create で反映
         authenticated_client.post(url, {'diary_id': diary.id, 'direction': 'down'})
