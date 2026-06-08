@@ -43,6 +43,23 @@
 .rb-order-btn:hover{color:var(--t1)}
 .rb-order-btn.active{background:var(--accent-200);color:#fff}
 
+/* sticky 銘柄目次（ジャンプナビ） */
+.rb-nav{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:6px;margin:14px 0 4px;padding:8px;border:1px solid var(--line);border-radius:999px;background:color-mix(in srgb,var(--bg-100) 88%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:var(--shadow-sm)}
+.rb-nav-arrow{flex:0 0 auto;width:34px;height:34px;border:none;border-radius:50%;background:var(--bg-200);color:var(--t2);display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;transition:all .16s}
+.rb-nav-arrow:hover{background:var(--accent-200);color:#fff}
+.rb-nav-arrow:disabled{opacity:.35;cursor:default;background:var(--bg-200);color:var(--t3)}
+.rb-nav-strip{flex:1;display:flex;gap:6px;overflow-x:auto;scroll-behavior:smooth;scrollbar-width:none;-ms-overflow-style:none;padding:1px}
+.rb-nav-strip::-webkit-scrollbar{display:none}
+.rb-chip{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;max-width:160px;height:34px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:var(--bg-100);color:var(--t2);font-size:12.5px;font-weight:700;cursor:pointer;transition:all .16s}
+.rb-chip:hover{border-color:var(--accent-200);color:var(--t1)}
+.rb-chip.is-active{background:var(--accent-200);border-color:var(--accent-200);color:#fff}
+.rb-chip-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rb-chip-dot{flex:0 0 auto;width:8px;height:8px;border-radius:50%;background:var(--memo)}
+.rb-chip-dot.holding{background:var(--hold)}
+.rb-chip-dot.sold{background:var(--sold)}
+.rb-chip.is-active .rb-chip-dot{box-shadow:0 0 0 2px rgba(255,255,255,.6)}
+.rb-entry{scroll-margin-top:64px}
+
 /* entries */
 .rb-list{display:flex;flex-direction:column;gap:18px;margin-top:20px}
 .rb-entry{background:var(--bg-100);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);padding:22px 24px;transition:box-shadow .2s}
@@ -109,10 +126,26 @@
     {% endif %}
   </header>
 
+  {% if entries|length > 1 %}
+  <!-- スティッキー銘柄目次（ジャンプナビ） -->
+  <nav class="rb-nav" id="rbNav" aria-label="銘柄ジャンプ目次">
+    <button type="button" class="rb-nav-arrow" id="rbPrev" aria-label="前の銘柄"><i class="bi bi-chevron-left"></i></button>
+    <div class="rb-nav-strip" id="rbStrip">
+      {% for e in entries %}
+      <button type="button" class="rb-chip" data-idx="{{ forloop.counter0 }}" title="{{ e.diary.stock_name }}">
+        <span class="rb-chip-dot {{ e.status }}"></span>
+        <span class="rb-chip-name">{{ e.diary.stock_name|default:"未設定" }}</span>
+      </button>
+      {% endfor %}
+    </div>
+    <button type="button" class="rb-nav-arrow" id="rbNext" aria-label="次の銘柄"><i class="bi bi-chevron-right"></i></button>
+  </nav>
+  {% endif %}
+
   {% if entries %}
   <div class="rb-list">
     {% for e in entries %}
-    <article class="rb-entry">
+    <article class="rb-entry" id="rb-e{{ forloop.counter0 }}" data-name="{{ e.diary.stock_name }}">
       <div class="rb-entry-head">
         <div class="rb-entry-title">
           <a class="rb-stock" href="{% url 'stockdiary:detail' e.diary.pk %}">{{ e.diary.stock_name|default:"銘柄名未設定" }}</a>
@@ -158,4 +191,60 @@
 </div>
 
 {% include 'speed_dial.html' with actions=page_actions %}
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+<script>
+/* 投資理由まとめ：銘柄目次（ジャンプナビ）。中身は変えず、長い記録を飛ばして移動できるようにする。 */
+(function() {
+  var nav = document.getElementById('rbNav');
+  if (!nav) return;  // 銘柄1件以下では非表示
+  var entries = Array.prototype.slice.call(document.querySelectorAll('.rb-entry'));
+  var chips   = Array.prototype.slice.call(nav.querySelectorAll('.rb-chip'));
+  var strip   = document.getElementById('rbStrip');
+  var prevBtn = document.getElementById('rbPrev');
+  var nextBtn = document.getElementById('rbNext');
+  if (!entries.length) return;
+
+  var active = 0;
+
+  function setActive(i) {
+    active = Math.max(0, Math.min(entries.length - 1, i));
+    chips.forEach(function(c, idx) { c.classList.toggle('is-active', idx === active); });
+    if (chips[active]) chips[active].scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    if (prevBtn) prevBtn.disabled = (active === 0);
+    if (nextBtn) nextBtn.disabled = (active === entries.length - 1);
+  }
+
+  function goTo(i) {
+    i = Math.max(0, Math.min(entries.length - 1, i));
+    setActive(i);
+    entries[i].scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  chips.forEach(function(chip) {
+    chip.addEventListener('click', function() { goTo(parseInt(chip.dataset.idx, 10) || 0); });
+  });
+  if (prevBtn) prevBtn.addEventListener('click', function() { goTo(active - 1); });
+  if (nextBtn) nextBtn.addEventListener('click', function() { goTo(active + 1); });
+
+  // スクロール追従：ビュー内で最も上にある（目次バー直下を基準）エントリを active に
+  if ('IntersectionObserver' in window) {
+    var ratios = new Array(entries.length).fill(0);
+    var io = new IntersectionObserver(function(items) {
+      items.forEach(function(it) {
+        var idx = entries.indexOf(it.target);
+        if (idx >= 0) ratios[idx] = it.isIntersecting ? it.intersectionRatio : 0;
+      });
+      var best = 0, bestR = -1;
+      for (var k = 0; k < ratios.length; k++) { if (ratios[k] > bestR) { bestR = ratios[k]; best = k; } }
+      if (bestR > 0 && best !== active) setActive(best);
+    }, { rootMargin: '-72px 0px -55% 0px', threshold: [0.01, 0.25, 0.5, 0.75, 1] });
+    entries.forEach(function(el) { io.observe(el); });
+  }
+
+  setActive(0);
+})();
+</script>
 {% endblock %}

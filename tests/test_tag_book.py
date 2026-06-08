@@ -60,6 +60,24 @@ class TestTagBookReading:
         assert 'その後の考え' in html          # 継続記録セクション
         assert '長期保有目的' in html           # reason 本文が全文描画される
 
+    def test_jump_nav_shown_only_for_multiple_entries(self, authenticated_client, user):
+        tag = Tag.objects.create(user=user, name='テーマ', axis='theme')
+        a = StockDiary.objects.create(user=user, stock_symbol='1111', stock_name='A社', reason='理由A')
+        a.tags.add(tag)
+        url = reverse('tags:book', kwargs={'pk': tag.pk})
+
+        # 1銘柄ではジャンプナビ（マークアップ）を出さない（CSSにrb-nav文字列があるためid属性で判定）
+        html1 = authenticated_client.get(url).content.decode()
+        assert 'id="rbNav"' not in html1
+
+        # 2銘柄以上で目次（チップ）とアンカーが出る
+        b = StockDiary.objects.create(user=user, stock_symbol='2222', stock_name='B社', reason='理由B')
+        b.tags.add(tag)
+        html2 = authenticated_client.get(url).content.decode()
+        assert 'id="rbNav"' in html2
+        assert html2.count('class="rb-chip"') == 2
+        assert 'id="rb-e0"' in html2 and 'id="rb-e1"' in html2
+
     def test_empty_state(self, authenticated_client, user):
         tag = Tag.objects.create(user=user, name='空タグ', axis='theme')
         html = authenticated_client.get(reverse('tags:book', kwargs={'pk': tag.pk})).content.decode()
