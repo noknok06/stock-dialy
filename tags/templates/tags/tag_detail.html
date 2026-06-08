@@ -1015,6 +1015,27 @@
     </form>
   </div>
 
+  <!-- 方向サマリー（プラス/マイナス/中立） -->
+  <div class="direction-summary" style="display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin:0 0 1rem;">
+    <span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:.8rem;font-weight:700;background:#16a34a;color:#fff;">▲ 追い風 {{ stats.plus_count }}</span>
+    <span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:.8rem;font-weight:700;background:#dc2626;color:#fff;">▼ 向かい風 {{ stats.minus_count }}</span>
+    <span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:.8rem;font-weight:700;background:#9ca3af;color:#fff;">→ 中立 {{ stats.neutral_count }}</span>
+  </div>
+
+  {% if has_hedge %}
+  <!-- 逆相関（ヘッジ）の検出 -->
+  <div class="hedge-banner" style="display:flex;align-items:flex-start;gap:.6rem;padding:.8rem 1rem;margin:0 0 1rem;border-radius:12px;background:#fff7ed;border:1px solid #fdba74;">
+    <i class="bi bi-shuffle" style="color:#d97706;font-size:1.2rem;"></i>
+    <div style="font-size:.85rem;line-height:1.5;">
+      <strong>ヘッジ関係を検出：</strong>「@{{ tag.name }}」に対して
+      <span style="color:#16a34a;font-weight:700;">追い風（▲）</span>と
+      <span style="color:#dc2626;font-weight:700;">向かい風（▼）</span>の銘柄が混在しています。
+      この2陣営は同じ要因に逆方向へ反応する＝部分的にヘッジが効いています。
+      <a href="{% url 'stockdiary:diary_graph' %}?edge_modes=tag" style="font-weight:600;">関連グラフで確認 →</a>
+    </div>
+  </div>
+  {% endif %}
+
   <!-- 銘柄一覧 -->
   {% if stock_list %}
   <div class="stocks-grid">
@@ -1051,6 +1072,9 @@
           <span>最新: {{ stock.latest_date }}</span>
         </div>
         {% endif %}
+        <div class="stock-card-meta" style="margin-top:.5rem;">
+          {% include 'tags/partials/_direction_control.html' with tag_pk=tag.pk diary_id=stock.rep_diary_id direction=stock.direction dir_choices=dir_choices %}
+        </div>
       </div>
     </div>
     {% endfor %}

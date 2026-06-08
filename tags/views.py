@@ -2,6 +2,10 @@
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
 from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
+from django.shortcuts import get_object_or_404, render
+from django.http import HttpResponseBadRequest
 from django.db.models import Count, Q
 from .models import Tag
 from django import forms
@@ -31,6 +35,9 @@ AXIS_SHORT = {
     'event':          'イベント',
     'custom':         'ラベル',
 }
+
+# タグ方向トグルの選択肢（バッジ表示用ラベル）
+DIRECTION_TOGGLE_CHOICES = [('up', '▲+'), ('down', '▼−'), ('neutral', '→中立')]
 
 class TagForm(forms.ModelForm):
     class Meta:
@@ -176,10 +183,29 @@ class TagDetailView(LoginRequiredMixin, DetailView):
                 
         # 銘柄リストをソート（最新日付順）
         stock_list = list(stock_groups.values())
-        
+
         # latest_date と earliest_date が None の場合に適切な値を設定
         stock_list.sort(key=lambda x: x['latest_date'] or datetime.min, reverse=True)
-        
+
+        # 各銘柄グループに方向（DiaryTagDirection）を付与し、プラス/マイナス件数を集計
+        from stockdiary.models import DiaryTagDirection
+        dir_by_diary = dict(
+            DiaryTagDirection.objects.filter(tag=tag, diary__in=diaries)
+            .values_list('diary_id', 'direction')
+        )
+        plus_count = minus_count = neutral_count = 0
+        for stock in stock_list:
+            rep = next((d for d in stock['diaries'] if d.is_holding), stock['diaries'][0])
+            direction = dir_by_diary.get(rep.id, 'neutral')
+            stock['direction'] = direction
+            stock['rep_diary_id'] = rep.id
+            if direction == 'up':
+                plus_count += 1
+            elif direction == 'down':
+                minus_count += 1
+            else:
+                neutral_count += 1
+
         # パフォーマンス統計（売却済み銘柄ベース）
         sold_profits = [
             float(d.cash_only_realized_profit or 0)
@@ -202,8 +228,14 @@ class TagDetailView(LoginRequiredMixin, DetailView):
             'win_rate': win_rate,
             'winning_count': winning_count,
             'sold_count': sold_count,
+            'plus_count': plus_count,
+            'minus_count': minus_count,
+            'neutral_count': neutral_count,
         }
-        
+
+        # プラス影響とマイナス影響が混在＝逆相関（ヘッジ）の候補
+        has_hedge = plus_count > 0 and minus_count > 0
+
         # 保有状況フィルター
         status_filter = self.request.GET.get('status', 'all')
         if status_filter == 'active':
@@ -212,7 +244,12 @@ class TagDetailView(LoginRequiredMixin, DetailView):
             stock_list = [stock for stock in stock_list if stock['completed_sales'] > 0]
         elif status_filter == 'memo':
             stock_list = [stock for stock in stock_list if stock['memo_entries'] > 0]
-        
+
+        # 方向フィルター（追い風/向かい風/中立）
+        direction_filter = self.request.GET.get('direction', 'all')
+        if direction_filter in ('up', 'down', 'neutral'):
+            stock_list = [stock for stock in stock_list if stock.get('direction') == direction_filter]
+
         # 検索フィルター
         search_query = self.request.GET.get('q', '').strip()
         if search_query:
@@ -222,12 +259,15 @@ class TagDetailView(LoginRequiredMixin, DetailView):
                 (stock['symbol'] and search_query.lower() in stock['symbol'].lower()) or
                 (stock['sector'] and search_query.lower() in stock['sector'].lower())
             ]
-        
+
         context.update({
             'stock_list': stock_list,
             'stats': stats,
             'status_filter': status_filter,
+            'direction_filter': direction_filter,
+            'has_hedge': has_hedge,
             'search_query': search_query,
+            'dir_choices': DIRECTION_TOGGLE_CHOICES,
         })
         
         # スピードダイアル用のアクション
@@ -399,3 +439,46 @@ class TagBookView(LoginRequiredMixin, DetailView):
         ]
 
         return context
+
+
+@login_required
+@require_POST
+def set_tag_direction(request, pk):
+    """日記×タグの方向（プラス/マイナス/中立）を設定する HTMX エンドポイント。
+
+    同一銘柄・同一タグの全日記に同じ方向を反映し、関連グラフのエッジ着色を
+    銘柄単位で一貫させる。更新後の方向コントロール部分テンプレートを返す。
+    """
+    from stockdiary.models import StockDiary, DiaryTagDirection
+
+    tag = get_object_or_404(Tag, pk=pk, user=request.user)
+    direction = request.POST.get('direction', '')
+    diary_id = request.POST.get('diary_id')
+
+    valid_directions = {
+        DiaryTagDirection.DIRECTION_UP,
+        DiaryTagDirection.DIRECTION_DOWN,
+        DiaryTagDirection.DIRECTION_NEUTRAL,
+    }
+    if direction not in valid_directions or not diary_id:
+        return HttpResponseBadRequest('invalid direction or diary_id')
+
+    diary = get_object_or_404(StockDiary, pk=diary_id, user=request.user)
+
+    targets = StockDiary.objects.filter(user=request.user, tags=tag)
+    if diary.stock_symbol:
+        targets = targets.filter(stock_symbol=diary.stock_symbol)
+    else:
+        targets = targets.filter(pk=diary.pk)
+
+    for d in targets:
+        DiaryTagDirection.objects.update_or_create(
+            diary=d, tag=tag, defaults={'direction': direction},
+        )
+
+    return render(request, 'tags/partials/_direction_control.html', {
+        'tag_pk': tag.pk,
+        'diary_id': diary.pk,
+        'direction': direction,
+        'dir_choices': DIRECTION_TOGGLE_CHOICES,
+    })

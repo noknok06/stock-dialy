@@ -1956,11 +1956,13 @@
 
             <div id="related-diaries-list" class="related-unified-list">
               {% for item in related_unified %}
-              <div class="related-unified-item" id="related-item-{{ item.diary.id }}">
+              <div class="related-unified-item corr-{{ item.correlation|default:'none' }}" id="related-item-{{ item.diary.id }}"
+                   {% if item.correlation == 'positive' %}style="border-left:3px solid #16a34a;"{% elif item.correlation == 'inverse' %}style="border-left:3px solid #dc2626;"{% endif %}>
                 <a href="{% url 'stockdiary:detail' item.diary.pk %}" class="related-unified-main">
                   <div class="related-unified-head">
                     {% if item.diary.stock_symbol %}<span class="badge bg-secondary related-unified-code">{{ item.diary.stock_symbol }}</span>{% endif %}
                     <span class="related-unified-name">{{ item.diary.stock_name }}</span>
+                    {% if item.correlation == 'positive' %}<span class="badge" style="background:#16a34a;color:#fff;">順相関</span>{% elif item.correlation == 'inverse' %}<span class="badge" style="background:#dc2626;color:#fff;">逆相関</span>{% endif %}
                   </div>
                   {% if item.via %}
                   <div class="related-unified-vias">
