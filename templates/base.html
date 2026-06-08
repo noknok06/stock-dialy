@@ -79,6 +79,22 @@
     <script src="{% static 'js/diary-tabs.js' %}"></script>
     <!-- HTMXを追加 -->
     <script src="https://unpkg.com/htmx.org@1.9.10" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
+    <!-- HTMX の全リクエストに CSRF トークンを自動付与（非GET時） -->
+    <script>
+      (function () {
+        function getCookie(name) {
+          var m = document.cookie.match(new RegExp('(^|;\\s*)' + name + '=([^;]+)'));
+          return m ? decodeURIComponent(m[2]) : null;
+        }
+        document.addEventListener('htmx:configRequest', function (evt) {
+          if (!/^get$/i.test(evt.detail.verb || '')) {
+            var token = getCookie('csrftoken') ||
+              (document.querySelector('meta[name="csrf-token"]') || {}).content;
+            if (token) { evt.detail.headers['X-CSRFToken'] = token; }
+          }
+        });
+      })();
+    </script>
 
     <!-- 右上ナビボタンとモーダルメニュー用のスタイル -->
     <style>    
