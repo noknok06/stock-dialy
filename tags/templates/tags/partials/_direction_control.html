@@ -1,26 +1,37 @@
 {% comment %}
-1銘柄分のタグ方向コントロール（バッジ＋トグル）。
+1銘柄分のタグ方向コントロール（セグメンテッドトグル）。
+選択中セグメント自体が現在状態を表すため、別バッジは不要。
 HTMX で set_tag_direction にPOSTし、outerHTML でこの要素自身を置き換える。
-コンテキスト: tag_pk, diary_id, direction(up/down/neutral), dir_choices
+hx-headers で CSRF トークンを付与（フォーム外のため）。
+コンテキスト: tag_pk, diary_id, direction(up/down/neutral)
 {% endcomment %}
-<div class="tag-dir-control" id="tag-dir-{{ diary_id }}"
+<div class="tag-dir" id="tag-dir-{{ diary_id }}"
      hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
-  {% if direction == 'up' %}
-    <span class="tag-dir-badge" style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:.75rem;font-weight:700;background:#16a34a;color:#fff;">▲ 追い風</span>
-  {% elif direction == 'down' %}
-    <span class="tag-dir-badge" style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:.75rem;font-weight:700;background:#dc2626;color:#fff;">▼ 向かい風</span>
-  {% else %}
-    <span class="tag-dir-badge" style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:.75rem;font-weight:700;background:#9ca3af;color:#fff;">→ 中立</span>
-  {% endif %}
-  <span class="tag-dir-toggle btn-group btn-group-sm ms-1" role="group" aria-label="影響方向">
-    {% for val, label in dir_choices %}
+  <span class="tag-dir-cap"><i class="bi bi-wind"></i>この銘柄への影響</span>
+  <div class="tag-dir-seg" role="group" aria-label="影響方向">
     <button type="button"
-            class="btn btn-outline-secondary btn-sm{% if direction == val %} active{% endif %}"
-            style="padding:1px 6px;font-size:.72rem;"
+            class="tag-dir-opt up{% if direction == 'up' %} is-active{% endif %}"
+            aria-pressed="{% if direction == 'up' %}true{% else %}false{% endif %}"
             hx-post="{% url 'tags:set_direction' tag_pk %}"
-            hx-vals='{"diary_id": "{{ diary_id }}", "direction": "{{ val }}"}'
-            hx-target="#tag-dir-{{ diary_id }}"
-            hx-swap="outerHTML">{{ label }}</button>
-    {% endfor %}
-  </span>
+            hx-vals='{"diary_id": "{{ diary_id }}", "direction": "up"}'
+            hx-target="#tag-dir-{{ diary_id }}" hx-swap="outerHTML">
+      <i class="bi bi-arrow-up-right-circle-fill"></i><span>追い風</span>
+    </button>
+    <button type="button"
+            class="tag-dir-opt flat{% if direction == 'neutral' %} is-active{% endif %}"
+            aria-pressed="{% if direction == 'neutral' %}true{% else %}false{% endif %}"
+            hx-post="{% url 'tags:set_direction' tag_pk %}"
+            hx-vals='{"diary_id": "{{ diary_id }}", "direction": "neutral"}'
+            hx-target="#tag-dir-{{ diary_id }}" hx-swap="outerHTML">
+      <i class="bi bi-dash-circle-fill"></i><span>中立</span>
+    </button>
+    <button type="button"
+            class="tag-dir-opt down{% if direction == 'down' %} is-active{% endif %}"
+            aria-pressed="{% if direction == 'down' %}true{% else %}false{% endif %}"
+            hx-post="{% url 'tags:set_direction' tag_pk %}"
+            hx-vals='{"diary_id": "{{ diary_id }}", "direction": "down"}'
+            hx-target="#tag-dir-{{ diary_id }}" hx-swap="outerHTML">
+      <i class="bi bi-arrow-down-right-circle-fill"></i><span>向かい風</span>
+    </button>
+  </div>
 </div>
