@@ -781,11 +781,25 @@ def diary_graph_data(request):
             user_tag_axis_map = dict(
                 _TagModel.objects.filter(user=user).values_list('name', 'axis')
             )
+            # @ハッシュタグは同名 Tag(M2M) に同期されるため、その Tag に設定された
+            # 方向（DiaryTagDirection）を {(diary_id, タグ名): 方向} で引けるようにする。
+            from .models import DiaryTagDirection as _DTD
+            _tag_name_by_pk = dict(
+                _TagModel.objects.filter(user=user).values_list('id', 'name')
+            )
+            user_tag_dir_map = {}
+            for _d_id, _t_id, _dir in _DTD.objects.filter(
+                diary_id__in=primary_ids
+            ).values_list('diary_id', 'tag_id', 'direction'):
+                _name = _tag_name_by_pk.get(_t_id)
+                if _name and _dir in ('up', 'down'):
+                    user_tag_dir_map[(_d_id, _name)] = _dir
             note_limit = getattr(request.user, 'diary_note_tag_limit', 3)
             hub_data = get_hashtag_graph_data(
                 primary_diaries,
                 note_limit=note_limit,
                 user_tag_axis_map=user_tag_axis_map,
+                user_tag_dir_map=user_tag_dir_map,
             )
             filtered_ht_ids = set()
             for hub in hub_data['hashtag_nodes']:

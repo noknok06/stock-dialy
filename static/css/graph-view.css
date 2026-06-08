@@ -76,9 +76,21 @@
 
 /* エッジ種別の幅 */
 .graph-link.edge-manual   { stroke-width: 1.8px; }
-.graph-link.edge-tag      { stroke-width: 1.4px; stroke-dasharray: none; }
+.graph-link.edge-tag      { stroke-width: 1.4px; }
 .graph-link.edge-sector   { stroke-width: 1.4px; }
 .graph-link.edge-hashtag  { stroke-width: 1.4px; stroke-dasharray: 4 2; }
+
+/* タグ/ハッシュタグの方向: 追い風(up)=緑の実線 / 向かい風(down)=赤の破線。
+   エッジ種別の既定 stroke-dasharray（edge-hashtag の "4 2" 等）や presentation
+   属性に確実に勝たせるため !important を付与する。 */
+.graph-link.dir-up {
+  stroke: #16a34a !important;
+  stroke-dasharray: none !important;
+}
+.graph-link.dir-down {
+  stroke: #dc2626 !important;
+  stroke-dasharray: 5 4 !important;
+}
 
 /* ================================================================
    ノード共通
@@ -946,6 +958,35 @@ body.dark-mode .focus-mode-banner,
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
+
+/* 凡例の開閉トグル（凡例本体は pointer-events:none だが、トグルだけは操作可能に） */
+.glf-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.glf-chevron {
+  font-size: 11px;
+  color: var(--text-300, #9aa1aa);
+  transition: transform 0.2s ease;
+  /* 既定（展開時）は本体が下に開いているのでシェブロンは上向き */
+  transform: rotate(180deg);
+}
+.glf-body {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+/* 折りたたみ時: 本体を隠してシェブロンを下向きに */
+.graph-legend-float.glf-collapsed .glf-body { display: none; }
+.graph-legend-float.glf-collapsed .glf-chevron { transform: rotate(0deg); }
 .glf-group {
   display: flex;
   flex-direction: column;
