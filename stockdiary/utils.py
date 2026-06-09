@@ -941,6 +941,8 @@ def build_theme_recall(related_unified: List[dict], focal, user) -> dict:
 
     themes: Dict[str, dict] = {}
     has_theme_bucket = False
+    # focal に対する最強の関連スコア（相対的な「関連度%」算出の基準）
+    max_score = max((it.get('score', 0) for it in related_unified), default=0) or 1.0
 
     for it in related_unified:
         d = it['diary']
@@ -981,6 +983,10 @@ def build_theme_recall(related_unified: List[dict], focal, user) -> dict:
             if d.id in bucket['member_ids']:
                 continue
             bucket['member_ids'].add(d.id)
+            rel_pct = max(6, round(it['score'] / max_score * 100))  # 最低6%でバーを可視化
+            rel_level = 'high' if rel_pct >= 60 else ('mid' if rel_pct >= 30 else 'low')
+            if estimated and rel_level == 'high':
+                rel_level = 'mid'  # 推定は「強」にしない
             bucket['members'].append({
                 'diary': d,
                 'lead': lead,
@@ -989,6 +995,8 @@ def build_theme_recall(related_unified: List[dict], focal, user) -> dict:
                 'direction': v.get('correlation'),
                 'estimated': estimated,
                 'score': it['score'],
+                'rel_pct': rel_pct,
+                'rel_level': rel_level,
             })
 
     # バケットを整列し、規模が増えても膨らまないよう「主要テーマ」と「その他」に分割する。
@@ -998,8 +1006,11 @@ def build_theme_recall(related_unified: List[dict], focal, user) -> dict:
     for b in buckets:
         b['members'].sort(key=lambda m: -m['score'])
         b['tier'] = 2 if b['type'] == 'sector' else (1 if b['estimated'] else 0)
+        # テーマの強さ＝そのテーマ内で最も関連が強い銘柄の関連度（合算でなくピーク基準）
+        b['top_score'] = b['members'][0]['score'] if b['members'] else 0.0
+        b['rel_pct'] = b['members'][0]['rel_pct'] if b['members'] else 0
         b.pop('member_ids', None)
-    buckets.sort(key=lambda b: (b['tier'], -b['score']))
+    buckets.sort(key=lambda b: (b['tier'], -b['top_score']))
 
     primary = [b for b in buckets if b['tier'] == 0][:MAX_PRIMARY_THEMES]
     if not primary:  # 規律ゼロ（明示タグ皆無）でも何か出す

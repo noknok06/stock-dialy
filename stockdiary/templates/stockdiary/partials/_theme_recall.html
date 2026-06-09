@@ -26,6 +26,15 @@
 .rs-dir { font-size:0.6rem; padding:0.12rem 0.35rem; border-radius:999px; white-space:nowrap; }
 .rs-dir-pos { background:rgba(16,185,129,0.16); color:#0f9d6b; }
 .rs-dir-inv { background:rgba(220,38,38,0.14); color:#dc2626; }
+/* 関連度の度合い（focalの最強関連=100%の相対バー） */
+.rel-strength { margin-left:auto; flex-shrink:0; width:48px; height:6px; border-radius:999px;
+  background:rgba(148,163,184,0.2); overflow:hidden; }
+.rel-bar { display:block; height:100%; border-radius:999px; background:var(--text-tertiary,#9ca3af); }
+.rel-high .rel-bar { background:#16a34a; }
+.rel-mid  .rel-bar { background:#d97706; }
+.rel-low  .rel-bar { background:#9ca3af; }
+.rel-pct { font-size:0.6rem; color:var(--text-tertiary,#9ca3af); flex-shrink:0;
+  width:2.1em; text-align:right; font-variant-numeric:tabular-nums; }
 .theme-recall-empty, .theme-recall-hint { line-height:1.5; }
 .theme-recall-more, .theme-recall-overflow { margin-top:0.3rem; }
 .theme-recall-more > summary, .theme-recall-overflow > summary {

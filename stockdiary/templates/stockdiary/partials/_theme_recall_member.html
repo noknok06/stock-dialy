@@ -6,6 +6,10 @@
       <span class="related-unified-name">{{ m.diary.stock_name }}</span>
       {% if m.direction == 'positive' %}<span class="rs-dir rs-dir-pos">同方向の見立て</span>
       {% elif m.direction == 'inverse' %}<span class="rs-dir rs-dir-inv">逆方向の見立て</span>{% endif %}
+      <span class="rel-strength rel-{{ m.rel_level }}" title="関連度 {{ m.rel_pct }}%" aria-label="関連度 {{ m.rel_pct }}パーセント">
+        <span class="rel-bar" style="width:{{ m.rel_pct }}%;"></span>
+      </span>
+      <span class="rel-pct">{{ m.rel_pct }}</span>
     </div>
     {% if m.lead %}<div class="related-unified-excerpt">{{ m.lead }}</div>{% endif %}
     {% if m.latest %}<div class="theme-recall-latest"><i class="bi bi-chat-left-text"></i> {{ m.latest.text }}<span class="theme-recall-date">{{ m.latest.date|date:"y/m/d" }}</span></div>{% endif %}
