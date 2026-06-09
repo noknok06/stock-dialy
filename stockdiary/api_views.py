@@ -886,6 +886,33 @@ def diary_graph_data(request):
         for diary_id, node in diary_nodes_map.items():
             node['link_count'] = link_count_map.get(diary_id, 0)
 
+        # ====================================================
+        # タグ/ハッシュタグ重複排除: 同名の tag と hashtag が
+        # 共存する場合、hashtag を tag に統合する
+        # （DiaryNote 内の未同期ハッシュタグは tag が存在しないため保持される）
+        # ====================================================
+        tag_name_to_tag_id = {
+            node['tag_name']: node['id']
+            for node in hub_nodes_map.values()
+            if node.get('node_type') == 'tag' and node.get('tag_name')
+        }
+        ht_ids_to_remove = {
+            node['id']
+            for node in hub_nodes_map.values()
+            if node.get('node_type') == 'hashtag'
+            and node.get('tag_name') in tag_name_to_tag_id
+        }
+        for ht_id in ht_ids_to_remove:
+            del hub_nodes_map[ht_id]
+        if ht_ids_to_remove:
+            for e in all_edges:
+                tgt = e.get('target')
+                if isinstance(tgt, str) and tgt.startswith('ht_'):
+                    tag_name = tgt[3:]
+                    if tag_name in tag_name_to_tag_id:
+                        e['target'] = tag_name_to_tag_id[tag_name]
+                        e['edge_type'] = 'tag'
+
         all_nodes = list(diary_nodes_map.values()) + list(hub_nodes_map.values())
 
         return JsonResponse({
