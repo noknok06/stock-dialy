@@ -559,6 +559,15 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
                 'label': '取引を追加',
                 'aria_label': '取引を追加',
                 'condition': True
+            },
+            {
+                'id': 'back-to-home',
+                'type': 'back',
+                'url': reverse_lazy('stockdiary:home'),
+                'icon': 'bi-arrow-left',
+                'label': '戻る',
+                'aria_label': '一覧に戻る',
+                'condition': True
             }
         ]
 
@@ -3326,6 +3335,15 @@ class DiaryGraphView(LoginRequiredMixin, TemplateView):
             .distinct()
             .order_by('name')
         )
+        context['page_actions'] = [
+            {
+                'type': 'back',
+                'url': reverse_lazy('stockdiary:home'),
+                'icon': 'bi-arrow-left',
+                'label': '戻る',
+                'aria_label': '一覧に戻る'
+            }
+        ]
         return context
 
 

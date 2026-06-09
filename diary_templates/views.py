@@ -23,6 +23,22 @@ class DiaryTemplateListView(LoginRequiredMixin, ListView):
         context['has_sample_template'] = DiaryTemplate.objects.filter(
             user=self.request.user, title=SAMPLE_TEMPLATE_TITLE
         ).exists()
+        context['page_actions'] = [
+            {
+                'type': 'back',
+                'url': reverse_lazy('stockdiary:home'),
+                'icon': 'bi-arrow-left',
+                'label': '戻る',
+                'aria_label': '一覧に戻る'
+            },
+            {
+                'type': 'add',
+                'url': reverse_lazy('diary_templates:create'),
+                'icon': 'bi-plus-lg',
+                'label': '新規作成',
+                'aria_label': '新しいテンプレートを作成'
+            }
+        ]
         return context
 
 
@@ -44,6 +60,19 @@ class DiaryTemplateCreateView(LoginRequiredMixin, CreateView):
         form.instance.user = self.request.user
         return super().form_valid(form)
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['form_actions'] = [
+            {
+                'type': 'back',
+                'url': reverse_lazy('diary_templates:list'),
+                'icon': 'bi-arrow-left',
+                'label': '戻る',
+                'aria_label': 'テンプレート一覧に戻る'
+            }
+        ]
+        return context
+
 
 class DiaryTemplateUpdateView(LoginRequiredMixin, UpdateView):
     model = DiaryTemplate
@@ -54,6 +83,19 @@ class DiaryTemplateUpdateView(LoginRequiredMixin, UpdateView):
     def get_queryset(self):
         return DiaryTemplate.objects.filter(user=self.request.user)
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['form_actions'] = [
+            {
+                'type': 'back',
+                'url': reverse_lazy('diary_templates:list'),
+                'icon': 'bi-arrow-left',
+                'label': '戻る',
+                'aria_label': 'テンプレート一覧に戻る'
+            }
+        ]
+        return context
+
 
 class DiaryTemplateDeleteView(LoginRequiredMixin, DeleteView):
     model = DiaryTemplate
@@ -62,3 +104,16 @@ class DiaryTemplateDeleteView(LoginRequiredMixin, DeleteView):
 
     def get_queryset(self):
         return DiaryTemplate.objects.filter(user=self.request.user)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['form_actions'] = [
+            {
+                'type': 'back',
+                'url': reverse_lazy('diary_templates:list'),
+                'icon': 'bi-arrow-left',
+                'label': '戻る',
+                'aria_label': 'テンプレート一覧に戻る'
+            }
+        ]
+        return context
