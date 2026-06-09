@@ -1494,16 +1494,16 @@
           <div class="text-danger small mt-1">{{ form.reason.errors }}</div>
           {% endif %}
 
-          <!-- おすすめテーマ（書く時点の導線。タップで本文に @テーマ を挿入） -->
+          <!-- 投資テーマの候補例（書く時点の導線。タップで本文に @テーマ を挿入） -->
           <div id="suggested-themes-panel" class="mt-2" style="display:none;">
             <div class="hashtag-chip-group">
               <span class="hashtag-chip-axis-label" style="color:#7c3aed;">
-                <i class="bi bi-lightbulb me-1"></i>おすすめテーマ
+                <i class="bi bi-lightbulb me-1"></i>投資テーマの候補例
               </span>
               <span id="suggested-themes-chips"></span>
             </div>
             <div class="text-muted" style="font-size:0.7rem; margin-top:0.2rem;">
-              タップで本文に挿入。同じテーマの銘柄が後でつながります。
+              よく使われる投資テーマの候補です。タップで本文に挿入でき、同じテーマの銘柄が後でつながります。
             </div>
           </div>
 
@@ -3192,7 +3192,7 @@ function escapeHtml(text) {
     if (!panel || !chips) return;
     var themeTags = hashtags.filter(function(h) { return h.axis === 'theme'; });
     if (themeTags.length === 0) return;
-    themeTags.slice(0, 12).forEach(function(t) {
+    themeTags.slice(0, 6).forEach(function(t) {
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'hashtag-chip';

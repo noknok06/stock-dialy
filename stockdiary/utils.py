@@ -1045,7 +1045,7 @@ def build_theme_recall(related_unified: List[dict], focal, user) -> dict:
         from tags.models import MasterTag
         suggested_themes = list(
             MasterTag.objects.filter(is_active=True, axis='theme')
-            .values_list('name', flat=True)[:6]
+            .values_list('name', flat=True)[:4]
         )
         result['focal_theme_tags'] = focal_theme_tags
         result['focal_label_tags'] = focal_label_tags
