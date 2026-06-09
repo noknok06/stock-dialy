@@ -59,25 +59,54 @@ def process_notifications():
 
 def setup_notification_schedule():
     """
-    通知スケジュールを設定（初回起動時に実行）
+    通知スケジュールを設定（初回起動時に実行）。
+
+    既存スケジュールが壊れた状態（next_run が大きく過去にずれて凍結、または repeats が異常値）
+    の場合は正常値に自己修復する。これを怠ると、一度凍結したスケジュールが復旧せず
+    定期通知が止まり続ける（過去に next_run が約3ヶ月前で停止した実績あり）。
     """
-    # 既存のスケジュールを確認
+    from django.utils import timezone
+    from datetime import timedelta
+
     existing = Schedule.objects.filter(
         func='stockdiary.tasks.process_notifications'
     ).first()
-    
+
     if existing:
-        logger.info(f"✅ 通知スケジュール既存: {existing.name}")
+        # next_run が現在より大幅に過去 = スケジューラが追従できず凍結した壊れた状態。
+        # repeats は無限実行を表す -1 を正常とみなし、それ以外（過去に大きく減算された値など）も異常扱い。
+        is_stale = (
+            existing.next_run is None
+            or existing.next_run < timezone.now() - timedelta(minutes=10)
+            or existing.repeats != -1
+        )
+        if not is_stale:
+            logger.info(
+                f"✅ 通知スケジュール既存: {existing.name} (next_run={existing.next_run})"
+            )
+            return existing
+
+        logger.warning(
+            "⚠️ 通知スケジュールが異常状態のため修復します "
+            f"(next_run={existing.next_run}, repeats={existing.repeats})"
+        )
+        existing.schedule_type = Schedule.MINUTES
+        existing.minutes = 1
+        existing.repeats = -1
+        existing.next_run = timezone.now()
+        existing.save()
+        logger.info("✅ 通知スケジュール修復完了")
         return existing
-    
+
     # 新規スケジュールを作成（1分ごとに実行）
     schedule(
         'stockdiary.tasks.process_notifications',
         name='通知処理タスク',
         schedule_type=Schedule.MINUTES,
         minutes=1,  # 1分ごとに実行
-        repeats=-1  # 無限に繰り返し
+        repeats=-1,  # 無限に繰り返し
+        next_run=timezone.now(),
     )
-    
+
     logger.info("✅ 通知スケジュール作成完了")
     return Schedule.objects.get(func='stockdiary.tasks.process_notifications')
