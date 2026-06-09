@@ -11,7 +11,11 @@ logger = logging.getLogger(__name__)
 
 class NotificationService:
     """通知送信サービス（リマインダーのみ）"""
-    
+
+    # 取りこぼしたリマインダーを復帰後に発火させる猶予日数。
+    # これより古い期限切れリマインダーは誤発火を避けてスキップする。
+    REMINDER_GRACE_DAYS = 3
+
     @classmethod
     def process_all_notifications(cls):
         """リマインダー通知を処理"""
@@ -41,12 +45,15 @@ class NotificationService:
         error_details = []
         
         logger.info(f"リマインダー通知処理開始: {now}")
-        
-        # 現在時刻を過ぎたリマインダーを取得
+
+        # 期限が過ぎた未送信の有効リマインダーを取得。
+        # qcluster が一時停止しても復帰後に確実に拾えるよう下限 window は設けない。
+        # ただし極端に古い取りこぼし（GRACE_DAYS 超）は誤発火防止のためスキップする。
         reminders = DiaryNotification.objects.filter(
             is_active=True,
+            last_sent__isnull=True,
             remind_at__lte=now,
-            remind_at__gt=now - timedelta(minutes=5)
+            remind_at__gt=now - timedelta(days=cls.REMINDER_GRACE_DAYS)
         ).select_related('diary', 'diary__user')
         
         logger.info(f"対象リマインダー数: {reminders.count()}")
@@ -137,31 +144,35 @@ class NotificationService:
             
             if not subscriptions.exists():
                 logger.warning(
-                    f"    ⚠️ プッシュサブスクリプションなし "
-                    f"（アプリ内通知ログのみ記録済み）"
+                    f"    ⚠️ プッシュサブスクリプションなし: user={user.username} "
+                    f"（アプリ内通知ログのみ記録済み・端末プッシュは未配信）"
                 )
+                # アプリ内通知は記録済みなので成功扱い（リマインダーは消化する）
                 return True
-            
+
             # プッシュ通知送信
             from stockdiary.api_views import send_push_notification
-            
+
             success_count = send_push_notification(
                 user=user,
                 title=title,
                 message=message,
                 url=url,
-                tag=f'notification-{notification.id}'
+                tag=f'notification-{notification.id}',
+                notification_id=notification_log.id
             )
-            
+
             logger.info(f"    プッシュ通知送信結果: {success_count}デバイス")
-            
+
             if success_count > 0:
                 logger.info(f"  ✅ プッシュ通知送信成功")
                 return True
             else:
+                # 購読はあるのに 0 件成功 = 配信失敗。原因特定のため WARNING で明示。
+                # （詳細な失敗理由は send_push_notification 側でログ済み）
                 logger.warning(
-                    f"  ⚠️ プッシュ通知は送信できなかったが、"
-                    f"アプリ内通知ログは記録済み"
+                    f"  ⚠️ プッシュ通知が1件も配信できなかった: user={user.username} "
+                    f"（購読 {subscriptions.count()} 件・アプリ内ログは記録済み）"
                 )
                 return True
             

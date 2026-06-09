@@ -337,25 +337,36 @@ def mark_all_read(request):
 
 
 # プッシュ通知送信ヘルパー
-def send_push_notification(user, title, message, url='/', tag='notification'):
+def send_push_notification(user, title, message, url='/', tag='notification', notification_id=None):
     """ユーザーにプッシュ通知を送信"""
     subscriptions = PushSubscription.objects.filter(
         user=user,
         is_active=True
     )
-    
+
+    # VAPID 鍵が未設定なら、ここで止めて明示的にログを残す（無言の未配信を防ぐ）
+    vapid_private_key = settings.WEBPUSH_SETTINGS.get('VAPID_PRIVATE_KEY')
+    if not vapid_private_key:
+        logger.error(
+            "send_push_notification: VAPID_PRIVATE_KEY が未設定のため送信できません "
+            "(user=%s)", user.username
+        )
+        return 0
+
     payload = json.dumps({
         'title': title,
         'message': message,
         'url': url,
         'tag': tag,
+        'notification_id': notification_id,
         'icon': '/static/images/icon-192.svg',
         'badge': '/static/images/badge-72.png',
     })
-    
+
     success_count = 0
+    failed_count = 0
     failed_subscriptions = []
-    
+
     for subscription in subscriptions:
         try:
             webpush(
@@ -367,7 +378,7 @@ def send_push_notification(user, title, message, url='/', tag='notification'):
                     }
                 },
                 data=payload,
-                vapid_private_key=settings.WEBPUSH_SETTINGS.get('VAPID_PRIVATE_KEY'),
+                vapid_private_key=vapid_private_key,
                 vapid_claims={
                     'sub': f'mailto:{settings.WEBPUSH_SETTINGS.get("VAPID_ADMIN_EMAIL")}'
                 }
@@ -375,16 +386,45 @@ def send_push_notification(user, title, message, url='/', tag='notification'):
             success_count += 1
             subscription.last_used = timezone.now()
             subscription.save()
-            
+
         except WebPushException as e:
-            if e.response and e.response.status_code in [404, 410]:
+            failed_count += 1
+            status_code = e.response.status_code if e.response is not None else None
+            body = e.response.text if e.response is not None else ''
+            if status_code in [404, 410]:
+                # 端末側で購読が失効済み → 無効化
+                logger.info(
+                    "send_push_notification: 失効した購読を無効化 "
+                    "(user=%s, status=%s, sub_id=%s)",
+                    user.username, status_code, subscription.id
+                )
                 failed_subscriptions.append(subscription)
-    
-    # 無効なサブスクリプションを削除
+            else:
+                # それ以外（VAPID 鍵不正/401/400 等）は原因特定のため必ずログ
+                logger.error(
+                    "send_push_notification: WebPush 送信失敗 "
+                    "(user=%s, status=%s, sub_id=%s): %s",
+                    user.username, status_code, subscription.id, body or str(e)
+                )
+        except Exception as e:
+            # 鍵フォーマット不正など WebPushException 以外も握りつぶさずログ
+            failed_count += 1
+            logger.error(
+                "send_push_notification: 想定外のエラー (user=%s, sub_id=%s): %s",
+                user.username, subscription.id, e, exc_info=True
+            )
+
+    # 失効したサブスクリプションを無効化
     for sub in failed_subscriptions:
         sub.is_active = False
         sub.save()
-    
+
+    if failed_count:
+        logger.warning(
+            "send_push_notification: 送信結果 user=%s 成功=%d 失敗=%d",
+            user.username, success_count, failed_count
+        )
+
     return success_count
 
 @login_required
