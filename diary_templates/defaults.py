@@ -1,4 +1,20 @@
-"""全ユーザーに自動配布される既定テンプレート定義。"""
+"""既定テンプレート定義。
+
+新規ユーザーには「基本テンプレート」のみ自動配布する（オンボーディングの混乱回避）。
+重厚な「サンプルテンプレート」は自動配布せず、テンプレート一覧から任意で追加できる。
+"""
+
+BASIC_TEMPLATE_TITLE = '基本テンプレート'
+
+BASIC_TEMPLATE_BODY = """## なぜ投資する？
+
+
+## 注目しているテーマ
+（@ を付けてテーマを書くと、同じテーマの銘柄がつながります。例: @半導体 @高配当）
+
+
+## 気になるリスク
+"""
 
 SAMPLE_TEMPLATE_TITLE = 'サンプルテンプレート'
 
@@ -51,10 +67,28 @@ SAMPLE_TEMPLATE_BODY = """## ひとこと要約
 """
 
 
-def ensure_sample_template(user, template_model=None):
-    """指定ユーザーにサンプルテンプレートが無ければ作成する。
+def ensure_basic_template(user, template_model=None):
+    """指定ユーザーに基本テンプレートが無ければ作成する。
 
     既存テンプレートは上書きしない（ユーザーの編集を尊重）。
+    新規ユーザーへ自動配布する既定テンプレートはこれのみ。
+    """
+    if template_model is None:
+        from .models import DiaryTemplate
+        template_model = DiaryTemplate
+
+    template_model.objects.get_or_create(
+        user=user,
+        title=BASIC_TEMPLATE_TITLE,
+        defaults={'body': BASIC_TEMPLATE_BODY},
+    )
+
+
+def ensure_sample_template(user, template_model=None):
+    """指定ユーザーにサンプルテンプレート（重厚版）が無ければ作成する。
+
+    既存テンプレートは上書きしない（ユーザーの編集を尊重）。
+    自動配布はせず、テンプレート一覧からの任意追加に使う。
     """
     if template_model is None:
         from .models import DiaryTemplate

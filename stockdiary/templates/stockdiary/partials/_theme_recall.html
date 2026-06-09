@@ -52,10 +52,28 @@
   </div>
 
   {% if theme_recall.is_empty %}
-    <div class="theme-recall-empty text-muted small">
-      投資理由を書く・<code>@テーマ</code>（例: <code>@半導体</code>）を付けると、
-      同じテーマで過去に下した判断がここに並びます。
-    </div>
+    {% if theme_recall.focal_theme_tags %}
+      <div class="theme-recall-empty text-muted small">
+        {% for name in theme_recall.focal_theme_tags %}<code>@{{ name }}</code>{% if not forloop.last %} {% endif %}{% endfor %}
+        で記録中。同じテーマの記録が増えると、ここに過去の判断が並びます。
+      </div>
+    {% elif theme_recall.focal_label_tags %}
+      <div class="theme-recall-empty text-muted small">
+        <code>@半導体</code> のようなテーマ名を付けると自動でテーマになり、同じテーマの銘柄がつながります。
+        <div class="mt-2" style="font-size:0.72rem;">
+          {% for t in theme_recall.focal_label_tags %}<a href="{% url 'tags:update' t.id %}" class="text-decoration-none">この「@{{ t.name }}」をテーマに変える</a>{% if not forloop.last %} ・ {% endif %}{% endfor %}
+        </div>
+      </div>
+    {% else %}
+      <div class="theme-recall-empty text-muted small">
+        投資理由を書いて、<code>@テーマ</code> を付けてみましょう。同じテーマで過去に下した判断がここに並びます。
+        {% if theme_recall.suggested_themes %}
+        <div class="mt-2">
+          例：{% for name in theme_recall.suggested_themes %}<span class="theme-recall-chip">@{{ name }}</span>{% if not forloop.last %} {% endif %}{% endfor %}
+        </div>
+        {% endif %}
+      </div>
+    {% endif %}
   {% else %}
     {% if theme_recall.sector_only %}
       <div class="theme-recall-hint text-muted small mb-2">

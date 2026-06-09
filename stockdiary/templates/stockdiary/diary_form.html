@@ -1494,6 +1494,19 @@
           <div class="text-danger small mt-1">{{ form.reason.errors }}</div>
           {% endif %}
 
+          <!-- おすすめテーマ（書く時点の導線。タップで本文に @テーマ を挿入） -->
+          <div id="suggested-themes-panel" class="mt-2" style="display:none;">
+            <div class="hashtag-chip-group">
+              <span class="hashtag-chip-axis-label" style="color:#7c3aed;">
+                <i class="bi bi-lightbulb me-1"></i>おすすめテーマ
+              </span>
+              <span id="suggested-themes-chips"></span>
+            </div>
+            <div class="text-muted" style="font-size:0.7rem; margin-top:0.2rem;">
+              タップで本文に挿入。同じテーマの銘柄が後でつながります。
+            </div>
+          </div>
+
           <!-- ハッシュタグチップパネル -->
           <div id="hashtag-chip-panel" class="mt-2" style="display:none;">
             <!-- マイラベルセクション -->
@@ -3171,6 +3184,27 @@ function escapeHtml(text) {
     return group;
   }
 
+  function renderSuggestedThemes(hashtags) {
+    // テーマ軸のキュレーション語を「おすすめテーマ」行に常設表示する。
+    // タップで本文に @テーマ を挿入し、保存時に自動でテーマ軸が付与される（昇華）。
+    var panel = document.getElementById('suggested-themes-panel');
+    var chips = document.getElementById('suggested-themes-chips');
+    if (!panel || !chips) return;
+    var themeTags = hashtags.filter(function(h) { return h.axis === 'theme'; });
+    if (themeTags.length === 0) return;
+    themeTags.slice(0, 12).forEach(function(t) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'hashtag-chip';
+      btn.style.color = '#7c3aed';
+      btn.textContent = '@' + t.tag;
+      btn.dataset.tag = t.tag;
+      btn.addEventListener('click', function() { insertHashtag(t.tag); });
+      chips.appendChild(btn);
+    });
+    panel.style.display = '';
+  }
+
   function renderChipPanel(hashtags) {
     const panel = document.getElementById('hashtag-chip-panel');
     const container = document.getElementById('hashtag-chip-groups');
@@ -3232,6 +3266,7 @@ function escapeHtml(text) {
       .then(function(r) { return r.ok ? r.json() : null; })
       .then(function(data) {
         if (data && data.success && data.hashtags && data.hashtags.length > 0) {
+          renderSuggestedThemes(data.hashtags);
           renderChipPanel(data.hashtags);
         } else if (data && data.success) {
           // ハッシュタグなしでも空状態パネルを表示
