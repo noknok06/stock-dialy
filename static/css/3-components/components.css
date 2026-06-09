@@ -331,12 +331,15 @@
   transition: all 0.2s ease;
 }
 
-/* iOS Safari: input[type="date"] が width:100% を無視して
-   内部最小幅で描画される問題を修正 */
-input[type="date"].form-input-improved {
+/* iOS Safari: input[type="date"] / datetime-local / time が width:100% を無視して
+   内部最小幅で描画され、横にはみ出す問題を修正 */
+input[type="date"].form-input-improved,
+input[type="datetime-local"].form-input-improved,
+input[type="time"].form-input-improved {
   -webkit-appearance: none;
   appearance: none;
   display: block;
+  min-height: 44px;
 }
 
 .form-input-improved:focus {
