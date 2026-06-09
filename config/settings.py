@@ -740,6 +740,11 @@ Q_CLUSTER = {
     'queue_limit': 300,
     'label': 'Django Q',
     'orm': 'default',      # Redis不要: Django ORM (PostgreSQL) をブローカーとして使用
+    # catch_up=False: スケジュールが過去に取り残されても、過去分を1分刻みで再生（リプレイ）せず
+    # 次回実行を「現在時刻＋間隔」にジャンプさせる。
+    # True（既定）のままだと、qcluster 停止中に溜まった過去分を延々と消化しようとして
+    # スケジュールが過去で凍結し、定期通知が止まる原因になる（実際に発生済み: next_run が 3ヶ月前で停止）。
+    'catch_up': False,
 }
 
 STATIC_VERSION = '1.2.485'
