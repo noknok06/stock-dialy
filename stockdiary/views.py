@@ -31,7 +31,7 @@ from .models import StockDiary, DiaryNote, DiaryNotification
 from .models import Transaction, StockSplit
 from .forms import TransactionForm, StockSplitForm, TradeUploadForm
 from .forms import StockDiaryForm, DiaryNoteForm
-from .utils import compute_related_strength
+from .utils import compute_related_strength, extract_lead, build_theme_recall
 from company_master.models import CompanyMaster
 from tags.models import Tag
 from django.views.generic import FormView
@@ -514,10 +514,8 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         related_unified = []
         for item in related_strength:
             d = item['diary']
-            excerpt_src = (d.reason or d.memo or '')
-            excerpt = re.sub(r'<[^>]+>', '', excerpt_src).strip()
-            if len(excerpt) > 60:
-                excerpt = excerpt[:60] + '…'
+            # 結論を機械的な先頭60字でなく「意味のある先頭文」で抽出（Markdownノイズ除去）
+            excerpt = extract_lead(d.reason or d.memo or '', max_len=60)
             reason_labels = [v.get('label', '') for v in item['via']]
             # 共有タグの方向から順相関/逆相関を集約（逆相関優先で提示）
             correlation = None
@@ -535,6 +533,11 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
                 'correlation': correlation,
             })
         context['related_unified'] = related_unified
+
+        # 想起パネル: 同テーマの過去判断（概要タブ先頭に常設）
+        context['theme_recall'] = build_theme_recall(
+            related_unified, self.object, self.request.user
+        )
 
         # スピードダイアルアクション
         context['diary_actions'] = [

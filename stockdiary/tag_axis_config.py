@@ -31,6 +31,19 @@ RELATED_NOISE_MAX: int = 25
 # FR-10: df がこの値未満のタグは「粒度が細かすぎる可能性あり」としてフラグ
 DF_MIN_GOVERNANCE: int = 3
 
+# --- 想起（recall）/ 関連スコアのデータサイエンス是正用パラメータ ---
+# P1: 小標本での per-user IDF 不安定性への主対策は「加算平滑化」と「高希少の絶対df基準」
+#     （下記 HIGH_RARITY_MAX_OTHERS）で行う。テーマ段階自体は N>=2（=他に1銘柄でもあれば）有効。
+#     N=1 では others が空のため自然に無効。希少タグは小標本でも意図的に関連させる方針。
+MIN_N_FOR_THEMES: int = 2
+
+# P1: 「高希少テーマ」を IDF閾値でなく絶対df基準で判定（ポートフォリオ規模に依存させない）。
+#     「focal以外でこの数以下の銘柄にしか付かないテーマ」を高希少とみなす。
+HIGH_RARITY_MAX_OTHERS: int = 2
+
+# P2: 推定テーマ（@無しの本文一致）の寄与を割り引く係数（明示タグより常に弱く）。
+IMPLICIT_THEME_DISCOUNT: float = 0.4
+
 # ハブノードの軸ごとの表示色（diary-graph.js と対応）
 AXIS_COLORS: dict[str, str] = {
     'theme':          '#7c3aed',  # 紫（テーマ）

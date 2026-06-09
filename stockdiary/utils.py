@@ -567,7 +567,8 @@ def compute_related_strength(focal, user, limit: int = 12) -> List[dict]:
     from django.db.models import Q
     from .models import StockDiary, DiaryNote
     from .tag_axis_config import (
-        AXIS_WEIGHTS, MIN_SHARED_TAGS, HIGH_RARITY_IDF_THRESHOLD, RELATED_NOISE_MAX,
+        AXIS_WEIGHTS, MIN_SHARED_TAGS, RELATED_NOISE_MAX,
+        MIN_N_FOR_THEMES, HIGH_RARITY_MAX_OTHERS, IMPLICIT_THEME_DISCOUNT,
     )
 
     scores: Dict[int, float] = defaultdict(float)
@@ -577,6 +578,8 @@ def compute_related_strength(focal, user, limit: int = 12) -> List[dict]:
     others = StockDiary.objects.filter(user=user).exclude(id=focal.id)
     # IDF 計算用の総銘柄数（ポートフォリオ全体）
     N = StockDiary.objects.filter(user=user, is_excluded=False).count() or 1
+    # P1: 小標本では per-user IDF が不安定なため、テーマ段階を無効化する
+    themes_enabled = N >= MIN_N_FOR_THEMES
 
     def _add(did: int, score: float, via: dict) -> None:
         scores[did] += score
@@ -603,7 +606,7 @@ def compute_related_strength(focal, user, limit: int = 12) -> List[dict]:
     # イベント軸・ラベル軸は関連度計算から除外
     effective_focal_tags = [t for t in focal_tags if getattr(t, 'axis', 'theme') not in ('event', 'custom')]
 
-    if effective_focal_tags:
+    if effective_focal_tags and themes_enabled:
         # tag_id → 共有している他日記のset（ノイズ上限でフィルタ済み）
         tag_diary_map: Dict[int, set] = {}
         for tag in effective_focal_tags:
@@ -636,24 +639,22 @@ def compute_related_strength(focal, user, limit: int = 12) -> List[dict]:
 
         for did, shared_tags in shared_tag_map.items():
             # 最小条件チェック（FR-6）
+            # P1: 高希少は IDF閾値でなく絶対df基準（focal以外で HIGH_RARITY_MAX_OTHERS 銘柄以下）
             theme_tags = [t for t in shared_tags if getattr(t, 'axis', 'theme') == 'theme']
-            has_high_rarity_theme = False
-            for t in theme_tags:
-                df = max(t.df, 1) if getattr(t, 'df', 0) > 0 else len(tag_diary_map.get(t.id, set())) + 1
-                idf = math.log(N / df)
-                if idf >= HIGH_RARITY_IDF_THRESHOLD:
-                    has_high_rarity_theme = True
-                    break
+            has_high_rarity_theme = any(
+                len(tag_diary_map.get(t.id, set())) <= HIGH_RARITY_MAX_OTHERS
+                for t in theme_tags
+            )
 
             if len(shared_tags) < MIN_SHARED_TAGS and not has_high_rarity_theme:
                 continue
 
-            # スコア: Σ w_axis(t) × idf(t)
+            # スコア: Σ w_axis(t) × idf(t)   ※ P1: 加算平滑化 ln((N+1)/(df+1))
             for tag in shared_tags:
                 axis = getattr(tag, 'axis', 'theme')
                 w = AXIS_WEIGHTS.get(axis, 0.5)
                 df = max(tag.df, 1) if getattr(tag, 'df', 0) > 0 else len(tag_diary_map.get(tag.id, set())) + 1
-                idf = math.log(N / df)
+                idf = math.log((N + 1) / (df + 1))
                 axis_labels = {
                     'theme': 'テーマ', 'business_model': 'BM',
                     'risk': 'リスク', 'capital_policy': '資本政策',
@@ -667,7 +668,7 @@ def compute_related_strength(focal, user, limit: int = 12) -> List[dict]:
                     correlation = 'positive' if fdir == odir else 'inverse'
                 dir_suffix = {'positive': '・順', 'inverse': '・逆'}.get(correlation, '')
                 label = f'@{tag.name}（{axis_labels.get(axis, axis)}{dir_suffix}）'
-                via = {'type': 'tag', 'label': label}
+                via = {'type': 'tag', 'label': label, 'key': tag.name, 'axis': axis}
                 if correlation:
                     via['correlation'] = correlation
                 _add(did, w * idf, via)
@@ -679,7 +680,7 @@ def compute_related_strength(focal, user, limit: int = 12) -> List[dict]:
         if ids and len(ids) <= RELATED_NOISE_MAX:
             w = hub_weight(len(ids) + 1)
             for did in ids:
-                _add(did, w, {'type': 'sector', 'label': f'同業種「{sector}」'})
+                _add(did, w, {'type': 'sector', 'label': f'同業種「{sector}」', 'key': f'sector:{sector}'})
 
     # 5. 共通 @ハッシュタグ（軸重み × IDF でスコアリング）
     from .tag_axis_config import get_master_axis_map, AXIS_LABELS as _AXIS_LABELS
@@ -704,7 +705,7 @@ def compute_related_strength(focal, user, limit: int = 12) -> List[dict]:
     m2m_tag_names = {t.name for t in focal.tags.all()}
     focal_hashtags = focal_hashtags - m2m_tag_names
 
-    if focal_hashtags:
+    if focal_hashtags and themes_enabled:
         # 全他日記の reason から @タグを一括取得して ht_df とマップを構築
         ht_df: Dict[str, int] = defaultdict(int)
         other_ht_map: Dict[int, Set[str]] = {}
@@ -722,21 +723,70 @@ def compute_related_strength(focal, user, limit: int = 12) -> List[dict]:
             shared = {h for h in shared if ht_df.get(h, 0) <= RELATED_NOISE_MAX}
             if not shared:
                 continue
-            # 最小条件（2+ 共有 or 高希少テーマ）
+            # 最小条件（2+ 共有 or 高希少テーマ）※ P1: 高希少は絶対df基準
             theme_shared = {h for h in shared if _ht_axis(h) == 'theme'}
             high_rarity = any(
-                math.log(N / max(ht_df.get(h, 1), 1)) >= HIGH_RARITY_IDF_THRESHOLD
+                ht_df.get(h, 0) <= HIGH_RARITY_MAX_OTHERS
                 for h in theme_shared
             )
             if len(shared) < MIN_SHARED_TAGS and not high_rarity:
                 continue
-            # スコア: Σ w_axis × IDF
+            # スコア: Σ w_axis × IDF   ※ P1: 加算平滑化 ln((N+1)/(df+1))
             for tag_name in shared:
                 axis = _ht_axis(tag_name)
                 w = AXIS_WEIGHTS.get(axis, 0.5)
-                idf = math.log(N / max(ht_df.get(tag_name, 1), 1))
+                idf = math.log((N + 1) / (ht_df.get(tag_name, 0) + 1))
                 axis_label = _AXIS_LABELS.get(axis, axis)
-                _add(did, w * idf, {'type': 'tag', 'label': f'@{tag_name}（{axis_label}）'})
+                _add(did, w * idf, {'type': 'tag', 'label': f'@{tag_name}（{axis_label}）',
+                                    'key': tag_name, 'axis': axis})
+
+    # 5b. 推定テーマ: 本文の素のテーマ語（@無し）で関連付ける = 低重み・要裏付け（P2）
+    #     - focal側はテーマを明示(@/タグ)していてもよい。相手側が「素の本文で言及」している場合に拾う。
+    #       （相手が @テーマ で書いていれば 5. が担当するので二重計上しない＝ n not in other_ht）
+    #     - 誤検出抑制: 具体語(3文字以上)のみ／裏付け要件＝2語以上 or 業種一致 or focalが明示済みのテーマ
+    if themes_enabled:
+        implicit_vocab = {
+            name: axis
+            for name, axis in {**_master_ht_axis, **_user_ht_axis}.items()
+            if axis not in ('event', 'custom') and len(name) >= 3
+        }
+        focal_text = focal.reason or ''
+        for note in DiaryNote.objects.filter(diary=focal).only('content'):
+            focal_text += ' ' + (note.content or '')
+        # focal が（@/タグ/素の本文 のいずれかで）言及しているテーマ語
+        focal_themes = {n for n in implicit_vocab if n in focal_text}
+        focal_explicit = m2m_tag_names | focal_hashtags  # focal が意図的に付けたテーマ
+        if focal_themes:
+            focal_sector = (focal.sector or '').strip()
+            impl_df: Dict[str, int] = defaultdict(int)
+            other_impl_map: Dict[int, tuple] = {}
+            for row in others.only('id', 'reason', 'sector'):
+                otext = row.reason or ''
+                other_ht = set(extract_hashtags(otext))
+                # 相手が素の本文で言及（@で書いていれば 5. が担当）
+                shared = {n for n in focal_themes if n in otext and n not in other_ht}
+                if shared:
+                    other_impl_map[row.id] = (shared, (row.sector or '').strip())
+                    for n in shared:
+                        impl_df[n] += 1
+            for did, (shared, osector) in other_impl_map.items():
+                # 裏付け要件: 2語以上 / 業種一致 / focalが明示済みのテーマ（意図的なので単独でも可）
+                corroborated = (
+                    len(shared) >= 2
+                    or (focal_sector and osector == focal_sector)
+                    or bool(shared & focal_explicit)
+                )
+                if not corroborated:
+                    continue
+                for name in shared:
+                    if impl_df.get(name, 0) > RELATED_NOISE_MAX:
+                        continue
+                    axis = implicit_vocab[name]
+                    w = AXIS_WEIGHTS.get(axis, 0.5)
+                    idf = math.log((N + 1) / (impl_df.get(name, 0) + 1))
+                    _add(did, w * idf * IMPLICIT_THEME_DISCOUNT,
+                         {'type': 'tag', 'label': f'{name}（推定）', 'key': name,
+                          'axis': axis, 'estimated': True})
 
     # 6. 銘柄コード言及（双方向）= 明示的参照で強い
     mentioned = extract_stock_mentions((focal.reason or '') + ' ' + (focal.memo or ''))
@@ -760,11 +810,193 @@ def compute_related_strength(focal, user, limit: int = 12) -> List[dict]:
         for d in StockDiary.objects.filter(id__in=missing):
             diary_cache[d.id] = d
 
+    # P3: 異種スコアの単純和で順位が逆転しないようティア優先にする。
+    #     Tier A(同一銘柄/手動/言及) > Tier B(テーマ) > Tier C(業種)。ティア内のみスコア比較。
+    TIER_A_TYPES = {'symbol', 'manual', 'mention'}
     result: List[dict] = []
     for did, score in scores.items():
         d = diary_cache.get(did)
         if not d:
             continue
-        result.append({'diary': d, 'score': round(score, 4), 'via': reasons[did]})
-    result.sort(key=lambda x: x['score'], reverse=True)
+        vias = reasons[did]
+        via_types = {v.get('type') for v in vias}
+        if via_types & TIER_A_TYPES:
+            tier = 0
+        elif 'tag' in via_types:
+            tier = 1
+        else:
+            tier = 2
+        result.append({'diary': d, 'score': round(score, 4), 'via': vias, 'tier': tier})
+    result.sort(key=lambda x: (x['tier'], -x['score']))
     return result[:limit]
+
+
+def _extract_section(text: str, headings: List[str]) -> str:
+    """Markdown見出し（## など）で区切られた本文から、指定見出しのセクション本文を返す。"""
+    out: List[str] = []
+    capturing = False
+    for raw in text.splitlines():
+        s = raw.strip()
+        h = re.match(r'^#{1,6}\s*(.+?)\s*$', s)
+        if h:
+            title = h.group(1)
+            if any(k in title for k in headings):
+                capturing = True
+                continue
+            if capturing:
+                break  # 次の見出しに到達したら終了
+        elif capturing:
+            out.append(raw)
+    return '\n'.join(out).strip()
+
+
+def extract_lead(text: str, max_len: int = 120) -> str:
+    """投資理由/継続記録から「意味のある先頭1〜2文」を返す。
+
+    Markdownのノイズ（見出し・引用注記・テーブル・空のラベル箇条書き・全角括弧のガイダンス）を
+    除去する。テンプレ運用者の場合は `## ひとこと要約` 等の結論セクションを優先する。
+    どんな書き方でも何かしらの本文が返るようにし、結論を構造で強制しない（規律ゼロ運用に対応）。
+    """
+    if not text:
+        return ''
+    summary = _extract_section(text, ['ひとこと要約', '結論ひとこと', '総合評価'])
+    body = summary if summary else text
+    lines: List[str] = []
+    for raw in body.splitlines():
+        line = raw.strip()
+        if not line:
+            continue
+        if line.startswith('#') or line.startswith('>') or line.startswith('|'):
+            continue
+        # 箇条書きの先頭記号を外す
+        m = re.match(r'^[-*]\s+(.*)$', line)
+        if m:
+            line = m.group(1).strip()
+        # 太字ラベルのみ/値が空の箇条書き（**項目**: ）を除外、値があれば値を採用
+        lab = re.match(r'^\*\*[^*]+\*\*\s*[:：]?\s*(.*)$', line)
+        if lab is not None:
+            val = lab.group(1).strip()
+            if not val:
+                continue
+            line = val
+        # 全角/半角の括弧だけで構成されたガイダンス行を除外
+        if re.fullmatch(r'[（(].*[)）]', line):
+            continue
+        line = re.sub(r'^[#>*\-\s]+', '', line).strip()
+        line = re.sub(r'\*\*|`', '', line)  # 残った強調記号を除去
+        if len(line) < 2:
+            continue
+        lines.append(line)
+        if len(' '.join(lines)) >= max_len:
+            break
+    result = ' '.join(lines).strip()
+    if len(result) > max_len:
+        result = result[:max_len].rstrip() + '…'
+    return result
+
+
+def _diary_outcome(d) -> dict:
+    """銘柄の損益/状態を「参考」表示用に返す。
+
+    P4(アウトカム・バイアス回避): 主役にせず淡色で添える前提。
+    現在株価を保持していないため、保有中の含み損益は出さない（誤った確定感を与えない）。
+    """
+    if d.is_memo:
+        return {'label': 'メモ', 'tone': 'muted'}
+    if d.is_short:
+        return {'label': '信用売り', 'tone': 'muted'}
+    if d.is_sold_out:
+        rp = float(d.realized_profit or 0)
+        base = float(d.total_buy_amount or 0)
+        sign = '+' if rp >= 0 else ''
+        tone = 'up' if rp >= 0 else 'down'
+        if base > 0:
+            return {'label': f'売却済 {sign}{rp / base * 100:.1f}%', 'tone': tone}
+        return {'label': f'売却済 {sign}{rp:,.0f}{d.currency_unit}', 'tone': tone}
+    return {'label': '保有中', 'tone': 'muted'}
+
+
+def build_theme_recall(related_unified: List[dict], focal, user) -> dict:
+    """関連銘柄リストを「テーマ別の過去判断」に組み替える（想起パネル用）。
+
+    既に算出済みの related_unified を再利用し、再計算しない。
+    各メンバーに 冒頭文(主役)・直近ノート・損益(参考)・方向の見立て を添える。
+    戻り値: {'themes': OrderedDict(key -> bucket), 'is_empty': bool, 'sector_only': bool}
+    """
+    from collections import OrderedDict
+    from .models import DiaryNote
+    from .tag_axis_config import AXIS_COLORS
+
+    THEME_TYPES = {'tag', 'sector'}
+    SECTOR_COLOR = '#b45309'
+
+    member_ids = [it['diary'].id for it in related_unified]
+    notes_by_diary: Dict[int, list] = defaultdict(list)
+    if member_ids:
+        for n in (DiaryNote.objects
+                  .filter(diary_id__in=member_ids)
+                  .order_by('-date', '-id')
+                  .only('diary_id', 'content', 'date')):
+            notes_by_diary[n.diary_id].append(n)
+
+    themes: "OrderedDict[str, dict]" = OrderedDict()
+    has_theme_bucket = False
+
+    for it in related_unified:
+        d = it['diary']
+        lead = extract_lead(d.reason or '')
+        latest = None
+        for n in notes_by_diary.get(d.id, []):
+            txt = extract_lead(n.content or '')
+            if txt:
+                latest = {'text': txt, 'date': n.date}
+                break
+        outcome = _diary_outcome(d)
+
+        for v in it['via']:
+            vtype = v.get('type')
+            if vtype not in THEME_TYPES:
+                continue
+            key = v.get('key') or v.get('label')
+            if not key:
+                continue
+            estimated = bool(v.get('estimated'))
+            if vtype == 'tag':
+                has_theme_bucket = True
+                display = key
+                color = AXIS_COLORS.get(v.get('axis'), '#7c3aed')
+            else:  # sector
+                display = key.split(':', 1)[-1]
+                color = SECTOR_COLOR
+
+            bucket = themes.get(key)
+            if bucket is None:
+                bucket = {'display': display, 'type': vtype, 'color': color,
+                          'estimated': estimated, 'members': [], 'member_ids': set(),
+                          'score': 0.0}
+                themes[key] = bucket
+            # 1件でも非推定経由があればバケットは確定扱い
+            bucket['estimated'] = bucket['estimated'] and estimated
+            bucket['score'] += it['score']
+            if d.id in bucket['member_ids']:
+                continue
+            bucket['member_ids'].add(d.id)
+            bucket['members'].append({
+                'diary': d,
+                'lead': lead,
+                'latest': latest,
+                'outcome': outcome,
+                'direction': v.get('correlation'),
+                'estimated': estimated,
+                'score': it['score'],
+            })
+
+    for b in themes.values():
+        b['members'].sort(key=lambda m: -m['score'])
+    ordered = OrderedDict(sorted(themes.items(), key=lambda kv: -kv[1]['score']))
+
+    return {
+        'themes': ordered,
+        'is_empty': len(ordered) == 0,
+        'sector_only': (not has_theme_bucket) and len(ordered) > 0,
+    }
