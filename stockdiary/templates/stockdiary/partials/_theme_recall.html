@@ -1,7 +1,7 @@
 {% comment %}
 同テーマの過去判断（想起パネル）。context['theme_recall'] を表示する。
 - 冒頭文(主役) + 直近ノート + 損益(参考・淡色) + 方向の見立て
-- テーマ群はアコーディオン（モバイルで理由文を埋めない。先頭1テーマのみ展開）
+- 規模が増えても膨らまないよう、主要テーマ(primary)のみ常時表示し、推定/同業種(more)とメンバー超過分は折り畳む
 - 既存の .related-unified-* / .rs-via-* を流用（レスポンシブ・ダークモード対応済み）
 {% endcomment %}
 {% if theme_recall %}
@@ -14,8 +14,8 @@
   color:var(--chip,#7c3aed); background:rgba(148,163,184,0.12); border:1px solid var(--chip,#7c3aed); }
 .theme-recall-est { font-size:0.58rem; margin-left:0.3rem; opacity:0.85; border:1px solid currentColor; border-radius:4px; padding:0 0.2rem; }
 .theme-recall-count { font-size:0.7rem; color:var(--text-tertiary,#9ca3af); margin-left:auto; }
-.theme-recall-group summary .theme-recall-count::after { content:" ▾"; }
-.theme-recall-group[open] summary .theme-recall-count::after { content:" ▴"; }
+.theme-recall-group > summary .theme-recall-count::after { content:" ▾"; }
+.theme-recall-group[open] > summary .theme-recall-count::after { content:" ▴"; }
 .theme-recall-latest { font-size:0.68rem; color:var(--text-secondary,#475569); margin-top:0.25rem; line-height:1.35;
   display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
 .theme-recall-date { color:var(--text-tertiary,#9ca3af); margin-left:0.3rem; }
@@ -27,15 +27,19 @@
 .rs-dir-pos { background:rgba(16,185,129,0.16); color:#0f9d6b; }
 .rs-dir-inv { background:rgba(220,38,38,0.14); color:#dc2626; }
 .theme-recall-empty, .theme-recall-hint { line-height:1.5; }
+.theme-recall-more, .theme-recall-overflow { margin-top:0.3rem; }
+.theme-recall-more > summary, .theme-recall-overflow > summary {
+  list-style:none; cursor:pointer; font-size:0.7rem; color:var(--text-tertiary,#9ca3af);
+  padding:0.3rem 0; min-height:32px; }
+.theme-recall-more > summary::-webkit-details-marker, .theme-recall-overflow > summary::-webkit-details-marker { display:none; }
+.theme-recall-overflow { border-top:1px dashed var(--border-light,#eef0f3); margin-top:0.4rem; }
 </style>
 
 <div class="info-card mobile-optimized fade-in" id="theme-recall" style="margin-bottom:1rem;">
   <div class="info-card-title">
     <i class="bi bi-lightbulb"></i>
     同テーマの過去判断
-    {% if not theme_recall.is_empty %}
-      <span class="related-unified-note">{{ theme_recall.themes|length }}テーマ</span>
-    {% endif %}
+    {% if not theme_recall.is_empty %}<span class="related-unified-note">{{ theme_recall.total }}テーマ</span>{% endif %}
   </div>
 
   {% if theme_recall.is_empty %}
@@ -49,37 +53,17 @@
         <i class="bi bi-info-circle"></i> タグが無いため、同業種の過去判断を表示しています。
       </div>
     {% endif %}
-    {% for key, bucket in theme_recall.themes.items %}
-    <details class="theme-recall-group" {% if forloop.first %}open{% endif %}>
-      <summary class="theme-recall-head">
-        <span class="theme-recall-chip" style="--chip:{{ bucket.color }};">
-          {{ bucket.display }}{% if bucket.estimated %}<span class="theme-recall-est">推定</span>{% endif %}
-        </span>
-        <span class="theme-recall-count">{{ bucket.members|length }}</span>
-      </summary>
-      <div class="related-unified-list" style="margin-top:0.4rem;">
-        {% for m in bucket.members %}
-        <div class="related-unified-item">
-          <a href="{% url 'stockdiary:detail' m.diary.pk %}" class="related-unified-main">
-            <div class="related-unified-head">
-              {% if m.diary.stock_symbol %}<span class="badge bg-secondary related-unified-code">{{ m.diary.stock_symbol }}</span>{% endif %}
-              <span class="related-unified-name">{{ m.diary.stock_name }}</span>
-              {% if m.direction == 'positive' %}<span class="rs-dir rs-dir-pos">同方向の見立て</span>
-              {% elif m.direction == 'inverse' %}<span class="rs-dir rs-dir-inv">逆方向の見立て</span>{% endif %}
-            </div>
-            {% if m.lead %}<div class="related-unified-excerpt">{{ m.lead }}</div>{% endif %}
-            {% if m.latest %}
-            <div class="theme-recall-latest">
-              <i class="bi bi-chat-left-text"></i> {{ m.latest.text }}<span class="theme-recall-date">{{ m.latest.date|date:"y/m/d" }}</span>
-            </div>
-            {% endif %}
-            <span class="theme-recall-outcome tone-{{ m.outcome.tone }}">{{ m.outcome.label }}</span>
-          </a>
-        </div>
-        {% endfor %}
-      </div>
-    </details>
+    {% for bucket in theme_recall.primary %}
+      {% include "stockdiary/partials/_theme_recall_group.html" with bucket=bucket open=forloop.first %}
     {% endfor %}
+    {% if theme_recall.more %}
+    <details class="theme-recall-overflow">
+      <summary>他 {{ theme_recall.more|length }} テーマ（推定・同業種を含む）を表示 ▾</summary>
+      {% for bucket in theme_recall.more %}
+        {% include "stockdiary/partials/_theme_recall_group.html" with bucket=bucket open=False %}
+      {% endfor %}
+    </details>
+    {% endif %}
   {% endif %}
 </div>
 {% endif %}

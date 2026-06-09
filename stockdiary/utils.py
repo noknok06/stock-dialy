@@ -921,9 +921,9 @@ def build_theme_recall(related_unified: List[dict], focal, user) -> dict:
 
     既に算出済みの related_unified を再利用し、再計算しない。
     各メンバーに 冒頭文(主役)・直近ノート・損益(参考)・方向の見立て を添える。
-    戻り値: {'themes': OrderedDict(key -> bucket), 'is_empty': bool, 'sector_only': bool}
+    戻り値: {'primary': [bucket], 'more': [bucket], 'total': int, 'is_empty': bool, 'sector_only': bool}
+    （primary=常時表示の主要テーマ、more=折り畳む推定/同業種テーマ）
     """
-    from collections import OrderedDict
     from .models import DiaryNote
     from .tag_axis_config import AXIS_COLORS
 
@@ -939,7 +939,7 @@ def build_theme_recall(related_unified: List[dict], focal, user) -> dict:
                   .only('diary_id', 'content', 'date')):
             notes_by_diary[n.diary_id].append(n)
 
-    themes: "OrderedDict[str, dict]" = OrderedDict()
+    themes: Dict[str, dict] = {}
     has_theme_bucket = False
 
     for it in related_unified:
@@ -991,12 +991,26 @@ def build_theme_recall(related_unified: List[dict], focal, user) -> dict:
                 'score': it['score'],
             })
 
-    for b in themes.values():
+    # バケットを整列し、規模が増えても膨らまないよう「主要テーマ」と「その他」に分割する。
+    # ティア: 0=明示タグ / 1=推定タグ / 2=同業種。明示を常に上、推定・業種は折り畳む。
+    MAX_PRIMARY_THEMES = 5
+    buckets = list(themes.values())
+    for b in buckets:
         b['members'].sort(key=lambda m: -m['score'])
-    ordered = OrderedDict(sorted(themes.items(), key=lambda kv: -kv[1]['score']))
+        b['tier'] = 2 if b['type'] == 'sector' else (1 if b['estimated'] else 0)
+        b.pop('member_ids', None)
+    buckets.sort(key=lambda b: (b['tier'], -b['score']))
+
+    primary = [b for b in buckets if b['tier'] == 0][:MAX_PRIMARY_THEMES]
+    if not primary:  # 規律ゼロ（明示タグ皆無）でも何か出す
+        primary = buckets[:MAX_PRIMARY_THEMES]
+    primary_ids = {id(b) for b in primary}
+    more = [b for b in buckets if id(b) not in primary_ids]
 
     return {
-        'themes': ordered,
-        'is_empty': len(ordered) == 0,
-        'sector_only': (not has_theme_bucket) and len(ordered) > 0,
+        'primary': primary,
+        'more': more,
+        'total': len(buckets),
+        'is_empty': len(buckets) == 0,
+        'sector_only': (not has_theme_bucket) and len(buckets) > 0,
     }

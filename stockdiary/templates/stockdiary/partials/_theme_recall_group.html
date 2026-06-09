@@ -1,0 +1,18 @@
+{% comment %}想起パネルのテーマ1グループ。bucket と open を使う。メンバーは先頭3件のみ表示し、残りは折り畳む。{% endcomment %}
+<details class="theme-recall-group"{% if open %} open{% endif %}>
+  <summary class="theme-recall-head">
+    <span class="theme-recall-chip" style="--chip:{{ bucket.color }};">{{ bucket.display }}{% if bucket.estimated %}<span class="theme-recall-est">推定</span>{% endif %}</span>
+    <span class="theme-recall-count">{{ bucket.members|length }}</span>
+  </summary>
+  <div class="related-unified-list" style="margin-top:0.4rem;">
+    {% for m in bucket.members|slice:":3" %}{% include "stockdiary/partials/_theme_recall_member.html" %}{% endfor %}
+    {% with extra=bucket.members|slice:"3:" %}
+    {% if extra %}
+    <details class="theme-recall-more">
+      <summary>＋{{ extra|length }}件の過去判断</summary>
+      {% for m in extra %}{% include "stockdiary/partials/_theme_recall_member.html" %}{% endfor %}
+    </details>
+    {% endif %}
+    {% endwith %}
+  </div>
+</details>

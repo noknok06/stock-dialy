@@ -1,0 +1,14 @@
+{% comment %}想起パネルのメンバー1件。コンテキストの m を使う。{% endcomment %}
+<div class="related-unified-item">
+  <a href="{% url 'stockdiary:detail' m.diary.pk %}" class="related-unified-main">
+    <div class="related-unified-head">
+      {% if m.diary.stock_symbol %}<span class="badge bg-secondary related-unified-code">{{ m.diary.stock_symbol }}</span>{% endif %}
+      <span class="related-unified-name">{{ m.diary.stock_name }}</span>
+      {% if m.direction == 'positive' %}<span class="rs-dir rs-dir-pos">同方向の見立て</span>
+      {% elif m.direction == 'inverse' %}<span class="rs-dir rs-dir-inv">逆方向の見立て</span>{% endif %}
+    </div>
+    {% if m.lead %}<div class="related-unified-excerpt">{{ m.lead }}</div>{% endif %}
+    {% if m.latest %}<div class="theme-recall-latest"><i class="bi bi-chat-left-text"></i> {{ m.latest.text }}<span class="theme-recall-date">{{ m.latest.date|date:"y/m/d" }}</span></div>{% endif %}
+    <span class="theme-recall-outcome tone-{{ m.outcome.tone }}">{{ m.outcome.label }}</span>
+  </a>
+</div>
