@@ -18,9 +18,20 @@
               日記登録フォームから選択して本文に流し込めます。
             </p>
           </div>
-          <a href="{% url 'diary_templates:create' %}" class="btn btn-primary btn-sm">
-            <i class="bi bi-plus-lg me-1"></i>新規作成
-          </a>
+          <div class="d-flex gap-2 align-items-center">
+            {% if not has_sample_template %}
+              <form method="post" action="{% url 'diary_templates:add_sample' %}" class="m-0">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-secondary btn-sm"
+                        title="項目が充実した詳細版テンプレートを追加します">
+                  <i class="bi bi-file-earmark-plus me-1"></i>サンプルを追加
+                </button>
+              </form>
+            {% endif %}
+            <a href="{% url 'diary_templates:create' %}" class="btn btn-primary btn-sm">
+              <i class="bi bi-plus-lg me-1"></i>新規作成
+            </a>
+          </div>
         </div>
 
         {% if templates %}

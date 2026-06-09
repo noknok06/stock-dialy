@@ -923,6 +923,8 @@ def build_theme_recall(related_unified: List[dict], focal, user) -> dict:
     各メンバーに 冒頭文(主役)・直近ノート・損益(参考)・方向の見立て を添える。
     戻り値: {'primary': [bucket], 'more': [bucket], 'total': int, 'is_empty': bool, 'sector_only': bool}
     （primary=常時表示の主要テーマ、more=折り畳む推定/同業種テーマ）
+    is_empty のときのみオンボーディング用に
+    focal_theme_tags / focal_label_tags / suggested_themes を追加で返す。
     """
     from .models import DiaryNote
     from .tag_axis_config import AXIS_COLORS
@@ -1018,10 +1020,35 @@ def build_theme_recall(related_unified: List[dict], focal, user) -> dict:
     primary_ids = {id(b) for b in primary}
     more = [b for b in buckets if id(b) not in primary_ids]
 
-    return {
+    is_empty = len(buckets) == 0
+    result = {
         'primary': primary,
         'more': more,
         'total': len(buckets),
-        'is_empty': len(buckets) == 0,
+        'is_empty': is_empty,
         'sector_only': (not has_theme_bucket) and len(buckets) > 0,
     }
+
+    # 空状態のオンボーディング用文脈（空のときだけ算出。非空なら追加クエリ無し）。
+    if is_empty:
+        THEME_LIKE_AXES = {'theme', 'macro', 'business_model', 'capital_policy', 'risk'}
+        LABEL_AXES = {'custom', 'event'}  # 関連付けから除外される軸＝テーマ昇格の案内対象
+        focal_theme_tags: List[str] = []
+        focal_label_tags: List[dict] = []
+        # prefetch 済みの focal.tags を Python で1回走査して仕分け（.filter() は使わない）。
+        for t in focal.tags.all():
+            axis = getattr(t, 'axis', 'theme')
+            if axis in THEME_LIKE_AXES:
+                focal_theme_tags.append(t.name)
+            elif axis in LABEL_AXES:
+                focal_label_tags.append({'id': t.id, 'name': t.name})
+        from tags.models import MasterTag
+        suggested_themes = list(
+            MasterTag.objects.filter(is_active=True, axis='theme')
+            .values_list('name', flat=True)[:6]
+        )
+        result['focal_theme_tags'] = focal_theme_tags
+        result['focal_label_tags'] = focal_label_tags
+        result['suggested_themes'] = suggested_themes
+
+    return result
