@@ -374,6 +374,7 @@ class DiaryNote(models.Model):
         ('earnings', '決算情報'),
         ('insight', '新たな気づき'),
         ('risk', 'リスク要因'),
+        ('retrospective', '振り返り'),
         ('other', 'その他')
     ]
     note_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='analysis')

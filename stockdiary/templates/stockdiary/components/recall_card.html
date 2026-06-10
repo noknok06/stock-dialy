@@ -1,0 +1,90 @@
+{% comment %}
+今日の想起カード（ホーム上部）
+- 1年前の今日の記録 / 振り返り未記入 / 新着開示 をリクエスト時計算で表示
+- コンテキスト: recall（RecallService.build の戻り値）
+- その日1回閉じたら localStorage で当日中は非表示
+{% endcomment %}
+{% if recall and recall.has_content %}
+<div class="card mb-4 recall-card" id="recallCard" style="display:none">
+  <div class="card-body py-3">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h6 class="mb-0 fw-bold">
+        <i class="bi bi-lightbulb me-1 text-warning"></i>今日の想起
+      </h6>
+      <button type="button" class="btn-close" aria-label="今日は閉じる"
+              onclick="dismissRecallCard()"></button>
+    </div>
+
+    {% if recall.anniversary %}
+    <div class="recall-section mb-2">
+      <div class="small text-muted mb-1">
+        <i class="bi bi-clock-history me-1"></i>1年前の今日、こう考えていました
+      </div>
+      {% for item in recall.anniversary %}
+      <a href="{% url 'stockdiary:detail' item.diary.id %}" class="d-block text-decoration-none small mb-1">
+        <span class="badge bg-light text-dark border me-1">{{ item.date|date:"Y/m/d" }}</span>
+        <strong>{{ item.diary.stock_name }}</strong>
+        {% if item.snippet %}<span class="text-muted">— {{ item.snippet }}</span>{% endif %}
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if recall.unreviewed %}
+    <div class="recall-section mb-2">
+      <div class="small text-muted mb-1">
+        <i class="bi bi-arrow-counterclockwise me-1"></i>振り返り未記入の売却済み銘柄
+        {% if recall.unreviewed_count > 3 %}<span class="text-muted">（全{{ recall.unreviewed_count }}件）</span>{% endif %}
+      </div>
+      {% for diary in recall.unreviewed %}
+      <a href="{% url 'stockdiary:detail' diary.id %}" class="badge rounded-pill bg-light text-dark border text-decoration-none me-1 mb-1">
+        {{ diary.stock_name }}
+        {% if diary.realized_profit >= 0 %}
+        <span class="text-success">+{{ diary.realized_profit|floatformat:0 }}</span>
+        {% else %}
+        <span class="text-danger">{{ diary.realized_profit|floatformat:0 }}</span>
+        {% endif %}
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if recall.disclosures %}
+    <div class="recall-section">
+      <div class="small text-muted mb-1">
+        <i class="bi bi-file-earmark-text me-1"></i>新しい開示が出ています — 仮説はまだ有効ですか？
+      </div>
+      {% for diary in recall.disclosures %}
+      <a href="{% url 'stockdiary:detail' diary.id %}" class="d-block text-decoration-none small mb-1">
+        <span class="badge bg-light text-dark border me-1">{{ diary.latest_disclosure_date|date:"m/d" }}</span>
+        <strong>{{ diary.stock_name }}</strong>
+        {% if diary.latest_disclosure_doc_type_name %}
+        <span class="text-muted">{{ diary.latest_disclosure_doc_type_name }}</span>
+        {% endif %}
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+(function() {
+  var KEY = 'recallCardDismissed';
+  var today = new Date().toISOString().slice(0, 10);
+  var card = document.getElementById('recallCard');
+  if (!card) return;
+  try {
+    if (localStorage.getItem(KEY) !== today) {
+      card.style.display = '';
+    }
+  } catch (e) {
+    card.style.display = '';
+  }
+  window.dismissRecallCard = function() {
+    card.style.display = 'none';
+    try { localStorage.setItem(KEY, today); } catch (e) { /* private mode 等は無視 */ }
+  };
+})();
+</script>
+{% endif %}

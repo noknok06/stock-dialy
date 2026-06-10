@@ -64,6 +64,14 @@ class StockDiaryForm(forms.ModelForm):
         label="購入数量（株）"
     )
 
+    # 同一銘柄の日記が既にある場合の重複作成許可フラグ
+    # （通常は既存日記への追記を促し、ユーザーが明示した場合のみ重複を許可する）
+    allow_duplicate = forms.BooleanField(
+        required=False,
+        initial=False,
+        widget=forms.HiddenInput(attrs={'id': 'id_allow_duplicate'})
+    )
+
     class Meta:
         model = StockDiary
         fields = [
@@ -105,7 +113,10 @@ class StockDiaryForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
         super(StockDiaryForm, self).__init__(*args, **kwargs)
-        
+        self.user = user
+        # 重複候補（clean で設定。テンプレートが既存日記への導線表示に使う）
+        self.duplicate_diary = None
+
         # ラベル設定
         self.fields['stock_symbol'].label = "銘柄コード（任意）"
         self.fields['stock_symbol'].help_text = "日本株コードは円建て、それ以外は米ドル建てとして自動判定します。"
@@ -158,8 +169,26 @@ class StockDiaryForm(forms.ModelForm):
         return sector
 
     def clean(self):
-        """初回購入情報の整合性チェック"""
+        """初回購入情報の整合性チェック・重複日記チェック"""
         cleaned_data = super().clean()
+
+        # 新規作成時のみ: 同一銘柄の既存日記があれば追記を促す
+        # （allow_duplicate が明示された場合のみ重複作成を許可）
+        if not self.instance.pk and self.user:
+            from .utils import find_duplicate_diaries
+            duplicates = find_duplicate_diaries(
+                self.user,
+                stock_symbol=cleaned_data.get('stock_symbol') or '',
+                stock_name=cleaned_data.get('stock_name') or '',
+            )
+            self.duplicate_diary = duplicates.first()
+            if self.duplicate_diary and not cleaned_data.get('allow_duplicate'):
+                self.add_error(
+                    'stock_symbol',
+                    'この銘柄の日記が既にあります。考えの変化は既存日記の「継続記録」への追記がおすすめです。'
+                    'それでも別の日記として作成する場合は、下の案内から「新しい日記として作成」を選んでください。'
+                )
+
         add_initial_purchase = cleaned_data.get('add_initial_purchase')
         
         if add_initial_purchase:

@@ -114,7 +114,8 @@ def get_note_badge_class(note_type):
         'news': 'bg-info',
         'earnings': 'bg-success',
         'insight': 'bg-warning',
-        'risk': 'bg-danger'
+        'risk': 'bg-danger',
+        'retrospective': 'bg-dark'
     }
     return badge_classes.get(note_type, 'bg-secondary')
 
@@ -126,7 +127,8 @@ def get_note_type_display(note_type):
         'news': 'ニュース',
         'earnings': '決算情報',
         'insight': '新たな気づき',
-        'risk': 'リスク要因'
+        'risk': 'リスク要因',
+        'retrospective': '振り返り'
     }
     return type_displays.get(note_type, 'その他')
 
@@ -387,6 +389,11 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
 
         # クイック記録用に今日の日付を追加
         context['today'] = timezone.now().date()
+
+        # リクエスト時想起カード（1年前の今日・振り返り未記入・新着開示）
+        from .services.recall_service import RecallService
+        context['recall'] = RecallService.build(self.request.user)
+
         return context
 
     def get(self, request, *args, **kwargs):

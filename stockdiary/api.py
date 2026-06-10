@@ -52,6 +52,41 @@ def load_stock_data():
 
 @login_required
 @require_GET
+def check_diary_duplicate(request):
+    """同一銘柄の既存日記を返すAPIエンドポイント。
+
+    日記作成フォームで銘柄を入力した時点で呼ばれ、既存日記があれば
+    新規作成ではなく継続記録への追記を促すために使う。
+    """
+    from .utils import find_duplicate_diaries
+
+    symbol = request.GET.get('symbol', '').strip()
+    name = request.GET.get('name', '').strip()
+
+    duplicates = find_duplicate_diaries(request.user, stock_symbol=symbol, stock_name=name)
+
+    results = []
+    for diary in duplicates[:5]:
+        if diary.is_holding:
+            status = '保有中'
+        elif diary.is_sold_out:
+            status = '売却済み'
+        else:
+            status = 'メモ'
+        results.append({
+            'id': diary.id,
+            'stock_name': diary.stock_name,
+            'stock_symbol': diary.stock_symbol,
+            'status': status,
+            'updated_at': diary.updated_at.strftime('%Y-%m-%d'),
+            'detail_url': reverse('stockdiary:detail', kwargs={'pk': diary.id}),
+        })
+
+    return JsonResponse({'success': True, 'exists': bool(results), 'diaries': results})
+
+
+@login_required
+@require_GET
 def get_stock_info(request, stock_code):
     """銘柄コードから会社情報と株価情報を取得するAPIエンドポイント"""
     try:

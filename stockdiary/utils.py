@@ -128,6 +128,40 @@ def search_diaries_by_hashtag(queryset, hashtag: str):
     ).distinct()
 
 
+def find_duplicate_diaries(user, stock_symbol: str = '', stock_name: str = '', exclude_pk=None):
+    """同一ユーザーの既存日記から重複候補を返す。
+
+    日記はユーザー×銘柄で一意ではないため、新規作成時に既存日記への
+    追記を促す目的で使う。銘柄コードがあればコード一致を優先し、
+    コードが空の場合のみ銘柄名の完全一致（大文字小文字無視）で探す。
+
+    Args:
+        user: 対象ユーザー
+        stock_symbol: 銘柄コード（空可）
+        stock_name: 銘柄名（空可）
+        exclude_pk: 除外する日記ID（編集時に自分自身を除く用途）
+
+    Returns:
+        StockDiary の QuerySet（更新日時降順）
+    """
+    from .models import StockDiary
+
+    symbol = (stock_symbol or '').strip()
+    name = (stock_name or '').strip()
+
+    qs = StockDiary.objects.filter(user=user)
+    if symbol:
+        qs = qs.filter(stock_symbol__iexact=symbol)
+    elif name:
+        qs = qs.filter(stock_symbol='', stock_name__iexact=name)
+    else:
+        return StockDiary.objects.none()
+
+    if exclude_pk:
+        qs = qs.exclude(pk=exclude_pk)
+    return qs.order_by('-updated_at')
+
+
 def apply_diary_search(queryset, query: str):
     """日記の全文検索を適用する。
 

@@ -1310,6 +1310,38 @@
               {% if form.stock_symbol.errors %}
               <div class="text-danger">{{ form.stock_symbol.errors }}</div>
               {% endif %}
+
+              {% if not form.instance.pk %}
+              {{ form.allow_duplicate }}
+              <!-- 重複日記の警告（既存日記への追記を促す） -->
+              <div class="alert alert-warning mt-2 mb-0{% if not form.duplicate_diary %} d-none{% endif %}"
+                   id="duplicateWarning">
+                <div class="small fw-bold mb-1">
+                  <i class="bi bi-exclamation-triangle me-1"></i>この銘柄の日記が既にあります
+                </div>
+                <div class="small mb-2" id="duplicateWarningBody">
+                  {% if form.duplicate_diary %}
+                  <a href="{% url 'stockdiary:detail' form.duplicate_diary.id %}" class="fw-bold">
+                    {{ form.duplicate_diary.stock_name }}（{{ form.duplicate_diary.stock_symbol|default:"コードなし" }}）
+                  </a>
+                  <span class="text-muted">最終更新 {{ form.duplicate_diary.updated_at|date:"Y/m/d" }}</span>
+                  {% endif %}
+                </div>
+                <div class="small text-muted mb-2">
+                  考えの変化は既存日記の「継続記録」に追記すると、時系列で振り返れます。
+                </div>
+                <div class="d-flex gap-2 flex-wrap">
+                  <a href="{% if form.duplicate_diary %}{% url 'stockdiary:detail' form.duplicate_diary.id %}{% else %}#{% endif %}"
+                     class="btn btn-sm btn-primary" id="duplicateOpenBtn">
+                    <i class="bi bi-journal-text me-1"></i>既存の日記を開く
+                  </a>
+                  <button type="button" class="btn btn-sm btn-outline-secondary"
+                          onclick="allowDuplicateDiary()">
+                    新しい日記として作成
+                  </button>
+                </div>
+              </div>
+              {% endif %}
             </div>
 
             <div class="col-md-6 mb-3" id="wizardStockNameField">
@@ -1932,6 +1964,7 @@ if (fetchStockInfoBtn) {
         }
         
         displayStockInfo(data, stockCode);
+        checkDuplicateDiary();
       } else {
         throw new Error(data.error || '銘柄情報の取得に失敗しました');
       }
@@ -1946,6 +1979,59 @@ if (fetchStockInfoBtn) {
       symbolSpinnerContainer.classList.add('d-none');
     }
   });
+}
+
+// ==========================================
+// 重複日記チェック（新規作成時のみ。既存日記への追記を促す）
+// ==========================================
+async function checkDuplicateDiary() {
+  const warning = document.getElementById('duplicateWarning');
+  if (!warning) return;  // 編集モードでは存在しない
+
+  const allowField = document.getElementById('id_allow_duplicate');
+  if (allowField && allowField.value === 'on') return;  // ユーザーが重複作成を明示済み
+
+  const symbol = (stockSymbolInput ? stockSymbolInput.value : '').trim();
+  const name = (stockNameInput ? stockNameInput.value : '').trim();
+  if (!symbol && !name) {
+    warning.classList.add('d-none');
+    return;
+  }
+
+  try {
+    const params = new URLSearchParams({ symbol: symbol, name: name });
+    const response = await fetch(`/stockdiary/api/diary/check-duplicate/?${params}`);
+    if (!response.ok) return;
+    const data = await response.json();
+
+    if (data.exists && data.diaries.length > 0) {
+      const diary = data.diaries[0];
+      document.getElementById('duplicateWarningBody').innerHTML =
+        `<a href="${diary.detail_url}" class="fw-bold">${diary.stock_name}（${diary.stock_symbol || 'コードなし'}）</a> ` +
+        `<span class="badge bg-secondary">${diary.status}</span> ` +
+        `<span class="text-muted">最終更新 ${diary.updated_at}</span>`;
+      document.getElementById('duplicateOpenBtn').href = diary.detail_url;
+      warning.classList.remove('d-none');
+    } else {
+      warning.classList.add('d-none');
+    }
+  } catch (e) {
+    console.error('Duplicate check error:', e);
+  }
+}
+
+// 「新しい日記として作成」: 重複を許可して警告を閉じる
+function allowDuplicateDiary() {
+  const allowField = document.getElementById('id_allow_duplicate');
+  if (allowField) allowField.value = 'on';
+  const warning = document.getElementById('duplicateWarning');
+  if (warning) warning.classList.add('d-none');
+}
+
+// 銘柄コード・銘柄名の確定時にも重複チェック（検索ボタンを押さない手入力ケース）
+if (document.getElementById('duplicateWarning')) {
+  if (stockSymbolInput) stockSymbolInput.addEventListener('blur', checkDuplicateDiary);
+  if (stockNameInput) stockNameInput.addEventListener('blur', checkDuplicateDiary);
 }
 
 // 株式情報表示
