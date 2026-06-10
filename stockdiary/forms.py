@@ -74,9 +74,11 @@ class StockDiaryForm(forms.ModelForm):
 
     class Meta:
         model = StockDiary
+        # memo は廃止（書く場所を reason=投資仮説 / DiaryNote=時系列の追記 の2層に整理）。
+        # 既存データは detail で読み取り専用表示のみ（移行マイグレーションは行わない）
         fields = [
             'stock_symbol', 'stock_name', 'currency', 'reason',
-            'memo', 'sector'
+            'sector'
         ]
         widgets = {
             'stock_symbol': forms.TextInput(attrs={
@@ -96,12 +98,6 @@ class StockDiaryForm(forms.ModelForm):
                 'maxlength': '5000',
                 'id': 'id_reason',
                 'placeholder': '投資理由や分析内容を記録（Markdown対応）\n\n📝 見出し: # 見出し\n🏷️ タグ: @成長株 @配当 @長期保有\n\n例:\n## 投資判断\n成長性が高く、配当も安定している。\nタグ: @成長株 @配当'
-            }),
-            'memo': forms.Textarea(attrs={
-                'rows': 5, 
-                'class': 'form-control',
-                'maxlength': '1000',
-                'placeholder': 'その他のメモ'
             }),
             'sector': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -126,8 +122,7 @@ class StockDiaryForm(forms.ModelForm):
         self.fields['currency'].required = False
         self.fields['reason'].label = "投資理由 / 分析内容"
         self.fields['reason'].help_text = "Markdown対応。タグは @タグ名 の形式で記述すると検索可能になります（例: @成長株 @配当）"
-        self.fields['memo'].label = "追加メモ"
-        
+
         # 初期値設定（新規作成時）
         if not self.instance.pk:
             from django.utils import timezone
@@ -146,13 +141,6 @@ class StockDiaryForm(forms.ModelForm):
         if reason and len(reason) > 5000:
             raise ValidationError('投資理由は5000文字以内で入力してください。')
         return reason
-
-    def clean_memo(self):
-        """メモのバリデーション"""
-        memo = self.cleaned_data.get('memo')
-        if memo and len(memo) > 1000:
-            raise ValidationError('メモは1000文字以内で入力してください。')
-        return memo
 
     def clean_stock_symbol(self):
         """銘柄コードのバリデーション"""

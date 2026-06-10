@@ -1576,32 +1576,7 @@
           {% endif %}
         </div>
 
-        <!-- メモセクション (ウィザード Step 4) -->
-        <div class="form-section{% if not form.instance.pk %} wizard-step{% endif %}"{% if not form.instance.pk %} data-step="4"{% endif %}>
-          <h4 class="form-section-title">
-            <i class="bi bi-sticky"></i> メモ・気づいたこと
-            {% include "stockdiary/components/_badge.html" with type="warning" text="メモ" icon="bi-sticky" extra_class="ms-2" %}
-          </h4>
-          <textarea class="form-control diary-memo-textarea" 
-                    name="memo" 
-                    id="{{ form.memo.id_for_label }}"
-                    rows="6"
-                    placeholder="その他の気づき、注意点、感想などを自由に記入してください...
-
-例:
-・経営陣の発言が気になった
-・競合他社の動向もチェック必要
-・次の決算発表は○月○日
-・この価格帯で買い増しを検討"
-                    maxlength="1000">{{ form.memo.value|default:'' }}</textarea>
-          <div class="character-count" id="memoCharCount">0 / 1000文字</div>
-          {% if form.memo.errors %}
-          <div class="text-danger small mt-1">{{ form.memo.errors }}</div>
-          {% endif %}
-        </div>
-
-
-        <!-- 画像セクション (ウィザード Step 4 - メモセクションと同じステップ) -->
+        <!-- 画像セクション (ウィザード Step 4) -->
         <div class="form-section{% if not form.instance.pk %} wizard-step{% endif %}"{% if not form.instance.pk %} data-step="4"{% endif %}>
           <h4 class="form-section-title">
             <i class="bi bi-image"></i> 画像添付（任意）
@@ -2321,31 +2296,6 @@ window.initReasonEasyMDE = function initReasonEasyMDE() {
 // 編集モード: 要素が表示済みのため即時初期化
 window.initReasonEasyMDE();
 {% endif %}
-
-// ============================================
-// メモ文字数カウンター
-// ============================================
-const memoTextarea = document.getElementById('{{ form.memo.id_for_label }}');
-const memoCharCount = document.getElementById('memoCharCount');
-
-function updateCharCount(textarea, countElement, maxLength) {
-  const count = textarea.value.length;
-  countElement.textContent = `${count} / ${maxLength}文字`;
-
-  countElement.classList.remove('warning', 'danger');
-  if (count > maxLength * 0.9) {
-    countElement.classList.add('danger');
-  } else if (count > maxLength * 0.7) {
-    countElement.classList.add('warning');
-  }
-}
-
-if (memoTextarea && memoCharCount) {
-  updateCharCount(memoTextarea, memoCharCount, 1000);
-  memoTextarea.addEventListener('input', function() {
-    updateCharCount(this, memoCharCount, 1000);
-  });
-}
 
 // ============================================
 // 初回購入情報のDOMContentLoaded時の初期化

@@ -84,9 +84,6 @@ def quick_create_diary(request):
         if industry:
             diary.sector = industry[:50]
 
-        if market and not diary.memo:
-            diary.memo = f"市場: {market}"
-
         if reason:
             diary.reason = reason
 

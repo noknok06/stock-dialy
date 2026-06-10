@@ -177,6 +177,63 @@ class TestStockDiaryFormDuplicate:
         assert form.is_valid(), form.errors
 
 
+class TestMemoFieldRemoved:
+    """memo はフォームから廃止（書く場所は reason / DiaryNote の2層）"""
+
+    def test_memo_not_in_form_fields(self):
+        form = StockDiaryForm()
+        assert 'memo' not in form.fields
+
+    def test_legacy_memo_untouched_on_edit(self, sample_diary):
+        """既存 memo はフォーム編集で消えない（データ移行なし・読み取り専用）"""
+        sample_diary.memo = '旧メモ'
+        sample_diary.save(update_fields=['memo'])
+        form = StockDiaryForm(
+            data={
+                'stock_symbol': '7203',
+                'stock_name': 'トヨタ自動車',
+                'reason': '更新後の理由',
+                'sector': '',
+                'currency': 'JPY',
+            },
+            instance=sample_diary,
+            user=sample_diary.user,
+        )
+        assert form.is_valid(), form.errors
+        diary = form.save()
+        assert diary.memo == '旧メモ'
+
+
+class TestRetrospectivePrompt:
+    """売却完結済み日記の振り返りプロンプト（detail バナー）"""
+
+    def test_banner_shown_for_unreviewed_sold_diary(self, authenticated_client, sample_sold_diary):
+        from django.urls import reverse
+        response = authenticated_client.get(
+            reverse('stockdiary:detail', kwargs={'pk': sample_sold_diary.pk})
+        )
+        assert response.status_code == 200
+        assert '振り返りを書く' in response.content.decode()
+
+    def test_banner_hidden_after_retrospective(self, authenticated_client, sample_sold_diary):
+        from django.urls import reverse
+        DiaryNote.objects.create(
+            diary=sample_sold_diary, date=date.today(),
+            content='振り返り済み', note_type='retrospective',
+        )
+        response = authenticated_client.get(
+            reverse('stockdiary:detail', kwargs={'pk': sample_sold_diary.pk})
+        )
+        assert '振り返りを書く' not in response.content.decode()
+
+    def test_banner_hidden_for_holding_diary(self, authenticated_client, sample_diary_with_transaction):
+        from django.urls import reverse
+        response = authenticated_client.get(
+            reverse('stockdiary:detail', kwargs={'pk': sample_diary_with_transaction.pk})
+        )
+        assert '振り返りを書く' not in response.content.decode()
+
+
 class TestRetrospectiveNoteType:
     """note_type に retrospective が追加されている"""
 

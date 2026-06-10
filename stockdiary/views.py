@@ -549,6 +549,12 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         # バックリンク: この銘柄に言及している他の記録（関連タブに表示）
         context['backlinks'] = find_backlinks(self.object, self.request.user)
 
+        # 売却完結済みで振り返り（retrospective）未記入なら記入を促す（控えめ実装: バナーのみ）
+        context['needs_retrospective'] = (
+            self.object.is_sold_out
+            and not any(n.note_type == 'retrospective' for n in notes)
+        )
+
         # スピードダイアルアクション
         context['diary_actions'] = [
             {

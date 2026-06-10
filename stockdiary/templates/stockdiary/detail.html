@@ -1747,6 +1747,22 @@
       <div class="tab-content tab-content-improved mobile-optimized" id="diaryDetailTabContent">
         <!-- 概要タブ -->
         <div class="tab-pane fade show active" id="basic-content" role="tabpanel" aria-labelledby="basic-tab">
+          {% if needs_retrospective %}
+          <!-- 振り返りプロンプト（売却完結済み・retrospectiveノート未記入時のみ） -->
+          <div class="alert alert-warning d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+            <div class="small">
+              <i class="bi bi-arrow-counterclockwise me-1"></i>
+              この銘柄は売却済みです。実現損益
+              <strong class="{% if diary.realized_profit >= 0 %}text-success{% else %}text-danger{% endif %}">
+                {{ diary.currency_symbol }}{{ diary.realized_profit|floatformat:0 }}
+              </strong>
+              — 結果どうだったか・なぜか、を残しておきませんか？
+            </div>
+            <button type="button" class="btn btn-sm btn-warning" onclick="startRetrospective()">
+              <i class="bi bi-pencil me-1"></i>振り返りを書く
+            </button>
+          </div>
+          {% endif %}
           {% include "stockdiary/partials/_theme_recall.html" %}
           {% if diary.image_url %}
           <div class="diary-image-section fade-in">
@@ -2542,11 +2558,23 @@ document.addEventListener('DOMContentLoaded', function() {
     if (srcEl) srcEl.value = '';
     if (typeof resetNoteEasyMDE === 'function') resetNoteEasyMDE();
     var ta = document.getElementById('content');
-    if (ta) ta.value = '';
+    if (ta) { ta.value = ''; ta.placeholder = '状況の変化や新たな情報を記録しましょう'; }
     var fileEl = document.getElementById('note_image');
     if (fileEl) fileEl.value = '';
     var preview = document.getElementById('note-image-preview-container');
     if (preview) preview.style.display = 'none';
+  };
+
+  // 振り返り記入: 継続記録シートを retrospective プリセットで開く
+  window.startRetrospective = function() {
+    window.resetNoteFormToAdd();
+    var typeEl = document.getElementById('note_type');
+    if (typeEl) typeEl.value = 'retrospective';
+    var title = document.getElementById('addNoteSheetTitle');
+    if (title) title.innerHTML = '<i class="bi bi-arrow-counterclockwise me-2"></i>この投資の振り返り';
+    var ta = document.getElementById('content');
+    if (ta) ta.placeholder = '結果はどうだったか / なぜそうなったか / 次に活かす教訓は？';
+    openBottomSheet('addNoteSheet');
   };
 
   window.openEditNoteSheet = function(noteId) {
