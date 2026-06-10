@@ -483,11 +483,23 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         # 日付でソート（降順）
         combined.sort(key=lambda x: x['date'], reverse=True)
         context['combined_history'] = combined
-        
+
         # 継続記録
         context['note_form'] = DiaryNoteForm(initial={'date': timezone.now().date()})
         notes = self.object.notes.all().order_by('-date')
         context['notes'] = notes
+
+        # 時系列タブ: 取引・分割・継続記録を1本の時系列に統合
+        # （売買の前後に何を考えていたかを日付の隣接で読み取れるようにする）
+        event_timeline = list(combined)
+        for note in notes:
+            event_timeline.append({
+                'type': 'note',
+                'date': note.date,
+                'data': note,
+            })
+        event_timeline.sort(key=lambda x: x['date'], reverse=True)
+        context['event_timeline'] = event_timeline
 
         # テーマ別（スレッド集約）ビュー用。date降順を保持し、未分類は最後に回す。
         grouped = OrderedDict()
@@ -554,6 +566,24 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
             self.object.is_sold_out
             and not any(n.note_type == 'retrospective' for n in notes)
         )
+
+        # 振り返りシートに差し込む取引サマリー（売却完結済みの日記のみ）
+        if self.object.is_sold_out:
+            buys = [t for t in transactions if t.transaction_type == 'buy']
+            sells = [t for t in transactions if t.transaction_type == 'sell']
+            total_buy_qty = sum((t.quantity for t in buys), Decimal('0'))
+            total_sell_qty = sum((t.quantity for t in sells), Decimal('0'))
+            first_buy = min((t.transaction_date for t in buys), default=None)
+            last_sell = max((t.transaction_date for t in sells), default=None)
+            context['retro_summary'] = {
+                'first_buy': first_buy,
+                'last_sell': last_sell,
+                'holding_days': (last_sell - first_buy).days if first_buy and last_sell else None,
+                'avg_buy': (sum((t.amount for t in buys), Decimal('0')) / total_buy_qty)
+                           if total_buy_qty else None,
+                'avg_sell': (sum((t.amount for t in sells), Decimal('0')) / total_sell_qty)
+                            if total_sell_qty else None,
+            }
 
         # スピードダイアルアクション
         context['diary_actions'] = [
