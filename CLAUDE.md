@@ -68,7 +68,7 @@ python manage.py collectstatic
 | アプリ | 役割 |
 |--------|------|
 | `stockdiary` | コア: 日記・取引・ノート・損益集計 |
-| `earnings_analysis` | 企業財務分析（Gemini AI + EDINET + TDNET）URL prefix: `/copomo/` |
+| `earnings_analysis` | 企業財務分析（Gemini AI + EDINET + TDNET）URL prefix: `/copomo/`。スタンドアロンUI（CopoMo）は**おまけツール**であり本ツールの機能開発対象外。ただし EDINET 連携のデータ層（`DisclosureSync` 等）はカブログの想起機能の基盤として本体扱い（→ `docs/improvement_plan.md` 論点1） |
 | `analysis_template` | 再利用可能な分析フレームワーク |
 | `company_master` | 銘柄・企業マスタ |
 | `tags` | 日記へのタグ付け |

@@ -9,7 +9,7 @@
 
 | # | 論点 | 決定 |
 |---|------|------|
-| 1 | CopoMo（earnings_analysis）廃止の範囲 | **スタンドアロンUIのみ廃止**。EDINET連携は継続 |
+| 1 | CopoMo（earnings_analysis）の扱い | **おまけツールとして存置**（2026-06 改定。当初の「UI廃止」を撤回） |
 | 2 | EDINET開示の想起通知 | **方向性は採用。通知過多・負荷対策の設計を先行** |
 | 3 | 売却完結時の振り返り | **控えめに実装**（バッジ+記入ボタン、強制プロンプトなし） |
 | 4 | インポート後の理由未記入キュー | **見送り** |
@@ -24,11 +24,20 @@
 
 ## 各論点の詳細
 
-### 1. CopoMo 廃止の範囲
+### 1. CopoMo の扱い（2026-06 改定: 廃止せず「おまけツール」として存置）
 
-- 廃止: `/copomo/` 配下のスタンドアロン画面（URL 46本・テンプレート28枚、TDNET 管理/ユーザーUI 含む）とナビの「CopoMo」項目
-- 存続: `earnings_analysis` のモデル（`Company`, `DocumentMetadata`, `CompanyFinancialData`, `SentimentAnalysisSession` 等）とサービス層（`EDINETAPIService`, `DisclosureSync`, `XBRLAnalysisService`, `FinancialAnalyzer` 等）
-- 理由: detail.html の EDINET タブが上記モデル・サービスを直接 import している（`stockdiary/views.py:3373-3665`）。`DisclosureSync` が `StockDiary.latest_disclosure_date` を更新し、`DiaryNote.source_doc_id` が EDINET 書類を参照しているため、データ層は切り離せない
+**当初の「スタンドアロンUI廃止」決定を撤回**し、以下の位置づけとする。
+
+- CopoMo（`/copomo/` 配下の earnings_analysis スタンドアロンUI）は**おまけツール**として残す
+- **本ツール（カブログ＝記録・想起）とは無関係のものとして扱う**:
+  - プロダクトの判断軸・機能開発の対象外（コアバリューの評価にも含めない）
+  - カブログ側の改善・再設計時に CopoMo の UI 都合は考慮しない
+  - ナビ上は「設定・その他」内のリンク1つに留める（主要動線には出さない）
+- ただし **EDINET 連携のデータ層は本ツールの一部**として継続:
+  - `DisclosureSync` / `DocumentMetadata` / `DisclosureEvent` / detail の開示書類タブは
+    カブログの想起機能（開示通知・想起カード）の基盤であり、CopoMo とは切り離して扱う
+- 当初決定時の依存関係メモ（detail.html の EDINET タブが earnings_analysis の
+  モデル・サービスを直接 import している等）は変わらず有効
 
 ### 2. EDINET 開示の想起通知（設計確定）
 
@@ -157,4 +166,4 @@ push に先行して、ホーム上部「今日の想起」カードをリクエ
 1. **低コスト・即効**: バックリンク表示（7）/ CSV エクスポート（8）/ ナビ縮退（10）
 2. **記録の質**: memo 統合 + DiaryNote Markdown 化（9）/ 売却振り返りバッジ（3）
 3. **新画面・集計**: 横断タイムライン（6）/ stock_list・diary_summary 統合（10）/ タグ別成績 + ダッシュボード再検討（5）
-4. **大規模変更**: CopoMo スタンドアロン UI 廃止（1）/ 開示通知の設計→実装（2）
+4. **大規模変更**: ~~CopoMo スタンドアロン UI 廃止（1）~~（2026-06 撤回・おまけツールとして存置）/ 開示通知の設計→実装（2: Stage 1-2 実装済み）
