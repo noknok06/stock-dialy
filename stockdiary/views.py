@@ -1136,134 +1136,8 @@ class DiaryTabContentView(LoginRequiredMixin, View):
         return html
 
 
-class StockListView(LoginRequiredMixin, TemplateView):
-    """登録株式一覧を表示するビュー"""
-    template_name = 'stockdiary/stock_list.html'
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        user = self.request.user
-        
-        search_query = self.request.GET.get('q', '').strip()
-        sort_by = self.request.GET.get('sort', 'symbol')
-        sector_filter = self.request.GET.get('sector', '')
-        
-        # 単一クエリで銘柄ごとに集計（N+1防止）
-        diary_agg = (
-            StockDiary.objects.filter(user=user, stock_symbol__isnull=False)
-            .exclude(stock_symbol='')
-            .values('stock_symbol')
-            .annotate(
-                stock_name=Max('stock_name'),
-                sector=Max('sector'),
-                diary_count=Count('id'),
-                active_count=Count('id', filter=Q(current_quantity__gt=0)),
-                sold_count=Count(
-                    'id',
-                    filter=Q(current_quantity=0, transaction_count__gt=0)
-                ),
-            )
-            .order_by('stock_symbol')
-        )
-
-        # CompanyMasterを一括取得して業種補完用辞書を作成
-        symbols = [row['stock_symbol'] for row in diary_agg]
-        company_sector_map = {
-            c.code: c.industry_name_33 or c.industry_name_17 or '未分類'
-            for c in CompanyMaster.objects.filter(code__in=symbols)
-        }
-
-        stock_list = []
-
-        for row in diary_agg:
-            sector = row['sector'] or '未分類'
-            if sector == '未分類':
-                sector = company_sector_map.get(row['stock_symbol'], '未分類')
-
-            stock_list.append({
-                'symbol': row['stock_symbol'],
-                'name': row['stock_name'],
-                'sector': sector,
-                'current_ratio': 0,
-                'previous_ratio': 0,
-                'ratio_change': 0,
-                'latest_date': None,
-                'diary_count': row['diary_count'],
-                'has_active_holdings': row['active_count'] > 0,
-                'has_completed_sales': row['sold_count'] > 0,
-                'margin_data_available': False,
-            })
-        
-        # 検索フィルター
-        if search_query:
-            stock_list = [
-                stock for stock in stock_list
-                if search_query.lower() in stock['name'].lower() or 
-                   search_query.lower() in stock['symbol'].lower() or
-                   search_query.lower() in stock['sector'].lower()
-            ]
-        
-        # 業種フィルター
-        if sector_filter:
-            stock_list = [stock for stock in stock_list if stock['sector'] == sector_filter]
-        
-        # ソート処理
-        sort_mapping = {
-            'name': lambda x: x['name'],
-            'sector': lambda x: x['sector'],
-            'current_ratio_desc': lambda x: x['current_ratio'],
-            'current_ratio_asc': lambda x: x['current_ratio'],
-            'ratio_change_desc': lambda x: x['ratio_change'],
-            'ratio_change_asc': lambda x: x['ratio_change'],
-            'diary_count_desc': lambda x: x['diary_count'],
-        }
-        
-        if sort_by in sort_mapping:
-            reverse = sort_by.endswith('_desc')
-            stock_list.sort(key=sort_mapping[sort_by], reverse=reverse)
-        else:
-            stock_list.sort(key=lambda x: x['symbol'])
-        
-        # 業種リストの作成
-        sectors = sorted(list(set([stock['sector'] for stock in stock_list])))
-        
-        # 統計情報の作成
-        stats = {
-            'total_stocks': len(stock_list),
-            'active_holdings': len([s for s in stock_list if s['has_active_holdings']]),
-            'margin_data_available': len([s for s in stock_list if s['margin_data_available']]),
-            'sectors_count': len(sectors)
-        }
-        
-        # ページアクション
-        context['page_actions'] = [
-            {
-                'type': 'back',
-                'url': reverse_lazy('stockdiary:home'),
-                'icon': 'bi-arrow-left',
-                'label': '戻る'
-            },
-            {
-                'type': 'add',
-                'url': reverse_lazy('stockdiary:create'),
-                'icon': 'bi-plus-lg',
-                'label': '新規作成'
-            }
-        ]
-        
-        context.update({
-            'stock_list': stock_list,
-            'sectors': sectors,
-            'stats': stats,
-            'search_query': search_query,
-            'sort_by': sort_by,
-            'sector_filter': sector_filter,
-        })
-        
-        return context
-
 class DiarySummaryView(LoginRequiredMixin, TemplateView):
-    """銘柄ごとの日記サマリー一覧"""
+    """銘柄ごとの日記サマリー一覧（旧 StockListView を統合した銘柄一覧の正規ページ）"""
     template_name = 'stockdiary/diary_summary.html'
 
     def get_context_data(self, **kwargs):
@@ -1272,6 +1146,7 @@ class DiarySummaryView(LoginRequiredMixin, TemplateView):
 
         search_query = self.request.GET.get('q', '').strip()
         sort_by = self.request.GET.get('sort', 'updated_desc')
+        sector_filter = self.request.GET.get('sector', '').strip()
 
         diary_agg = (
             StockDiary.objects.filter(user=user, stock_symbol__isnull=False)
@@ -1279,8 +1154,10 @@ class DiarySummaryView(LoginRequiredMixin, TemplateView):
             .values('stock_symbol')
             .annotate(
                 stock_name=Max('stock_name'),
+                sector=Max('sector'),
                 latest_updated=Max('updated_at'),
                 diary_count=Count('id'),
+                active_count=Count('id', filter=Q(current_quantity__gt=0)),
             )
         )
 
@@ -1296,17 +1173,28 @@ class DiarySummaryView(LoginRequiredMixin, TemplateView):
             .values_list('diary__stock_symbol', 'cnt')
         )
 
-        summary_list = [
-            {
+        # CompanyMaster で未設定業種を補完（旧 StockListView から引き継ぎ）
+        symbols = [row['stock_symbol'] for row in diary_agg]
+        company_sector_map = {
+            c.code: c.industry_name_33 or c.industry_name_17 or '未分類'
+            for c in CompanyMaster.objects.filter(code__in=symbols)
+        }
+
+        summary_list = []
+        for row in diary_agg:
+            sector = row['sector'] or ''
+            if not sector or sector == '未分類':
+                sector = company_sector_map.get(row['stock_symbol'], '未分類')
+            summary_list.append({
                 'symbol': row['stock_symbol'],
                 'name': row['stock_name'],
+                'sector': sector,
                 'latest_date': row['latest_updated'],
                 'note_count': note_count_map.get(row['stock_symbol'], 0),
                 'diary_count': row['diary_count'],
+                'is_holding': row['active_count'] > 0,
                 'diary_id': None,
-            }
-            for row in diary_agg
-        ]
+            })
 
         # 日記が1件の銘柄は詳細画面へ直接リンクするためpkを取得
         single_symbols = [s['symbol'] for s in summary_list if s['diary_count'] == 1]
@@ -1323,7 +1211,14 @@ class DiarySummaryView(LoginRequiredMixin, TemplateView):
                 s for s in summary_list
                 if search_query.lower() in s['name'].lower()
                 or search_query.lower() in s['symbol'].lower()
+                or search_query.lower() in s['sector'].lower()
             ]
+
+        # 業種リストは業種フィルター適用前に作成（業種で絞り込み中も選択肢を維持）
+        sectors = sorted({s['sector'] for s in summary_list})
+
+        if sector_filter:
+            summary_list = [s for s in summary_list if s['sector'] == sector_filter]
 
         _epoch = datetime(1970, 1, 1, tzinfo=dt_timezone.utc)
         sort_mapping = {
@@ -1333,6 +1228,7 @@ class DiarySummaryView(LoginRequiredMixin, TemplateView):
             'note_count_asc': (lambda x: x['note_count'], False),
             'symbol': (lambda x: x['symbol'], False),
             'name': (lambda x: x['name'], False),
+            'sector': (lambda x: x['sector'], False),
         }
         key_fn, reverse = sort_mapping.get(sort_by, sort_mapping['updated_desc'])
         summary_list.sort(key=key_fn, reverse=reverse)
@@ -1349,6 +1245,8 @@ class DiarySummaryView(LoginRequiredMixin, TemplateView):
             'summary_list': summary_list,
             'search_query': search_query,
             'sort_by': sort_by,
+            'sectors': sectors,
+            'sector_filter': sector_filter,
         })
         return context
 

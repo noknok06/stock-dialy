@@ -181,7 +181,7 @@ stockdiary/               ← 単一ファイル方式
   admin.py                # Django 管理画面カスタマイズ
   services/               # サービス層（ファイル分割済み）
   templates/stockdiary/
-    *.html                # ページテンプレート（home, detail, diary_form, stock_list, etc.）
+    *.html                # ページテンプレート（home, detail, diary_form, diary_summary, etc.）
     partials/             # HTMX 応答用部分テンプレート
     components/           # 再利用 UI コンポーネント
       _*.html             # アトミックコンポーネント（_ プレフィックス）
@@ -310,7 +310,8 @@ JSON を返す View → `api.py` / `api_views.py` に集約する。
 | `home.html` | ダッシュボード |
 | `detail.html` | 日記詳細（タブ: 取引・ノート・分析・詳細） |
 | `diary_form.html` | 作成・編集 |
-| `stock_list.html` | 銘柄一覧 |
+| `diary_summary.html` | 銘柄サマリー（銘柄一覧） |
+| `timeline.html` | 全銘柄横断タイムライン |
 | `diary_graph.html` | パフォーマンスチャート |
 | `comparison.html` | 銘柄比較 |
 | `investment_hub.html` | InvestmentHub ページ |

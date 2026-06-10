@@ -105,6 +105,15 @@
                        value="{{ search_query }}">
             </div>
             <div>
+                <label class="form-label small mb-1">業種</label>
+                <select name="sector" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">すべて</option>
+                    {% for sector in sectors %}
+                    <option value="{{ sector }}" {% if sector_filter == sector %}selected{% endif %}>{{ sector }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
                 <label class="form-label small mb-1">並び順</label>
                 <select name="sort" class="form-select form-select-sm" onchange="this.form.submit()">
                     <option value="updated_desc" {% if sort_by == 'updated_desc' %}selected{% endif %}>最終更新日↓</option>
@@ -113,6 +122,7 @@
                     <option value="note_count_asc"  {% if sort_by == 'note_count_asc'  %}selected{% endif %}>継続記録数↑</option>
                     <option value="symbol" {% if sort_by == 'symbol' %}selected{% endif %}>証券コード順</option>
                     <option value="name"   {% if sort_by == 'name'   %}selected{% endif %}>銘柄名順</option>
+                    <option value="sector" {% if sort_by == 'sector' %}selected{% endif %}>業種順</option>
                 </select>
             </div>
             <div class="d-flex gap-2">
@@ -153,7 +163,15 @@
                 {% for stock in summary_list %}
                 <tr onclick="location.href='{% if stock.diary_id %}{% url 'stockdiary:detail' pk=stock.diary_id %}{% else %}{% url 'stockdiary:home' %}?query={{ stock.symbol }}{% endif %}'">
                     <td><span class="symbol-code">{{ stock.symbol }}</span></td>
-                    <td><span class="stock-name-cell">{{ stock.name }}</span></td>
+                    <td>
+                        <span class="stock-name-cell">
+                            {{ stock.name }}
+                            {% if stock.is_holding %}<span class="badge bg-success ms-1" style="font-size:0.65rem;">保有中</span>{% endif %}
+                        </span>
+                        {% if stock.sector and stock.sector != '未分類' %}
+                        <span class="text-muted d-block" style="font-size:0.72rem;">{{ stock.sector }}</span>
+                        {% endif %}
+                    </td>
                     <td class="text-center date-cell">
                         {% if stock.latest_date %}
                             <span class="text-muted d-none d-sm-inline">{{ stock.latest_date|date:"Y/m/d" }}</span>

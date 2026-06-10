@@ -7,6 +7,7 @@ from . import views_mobile_ux  # 🆕 モバイルUX用ビュー
 from . import views_comparison  # 銘柄比較機能
 from . import views_timeline  # 全銘柄横断タイムライン
 from django.contrib.auth.decorators import login_required
+from django.views.generic.base import RedirectView
 
 app_name = 'stockdiary'
 
@@ -109,8 +110,8 @@ path('api/create/', api.api_create_diary, name='api_create'),
     path('api/diary/<int:diary_id>/related/<int:related_id>/remove/', api_views.remove_related_diary, name='api_related_remove'),
     path('api/diary/<int:diary_id>/graph/', api_views.diary_detail_graph_data, name='api_diary_detail_graph'),
 
-    # 銘柄一覧
-    path('stocks/', views.StockListView.as_view(), name='stock_list'),
+    # 銘柄一覧（diary_summary に統合。旧 URL はリダイレクトで維持）
+    path('stocks/', RedirectView.as_view(pattern_name='stockdiary:diary_summary'), name='stock_list'),
     path('diary-summary/', views.DiarySummaryView.as_view(), name='diary_summary'),
     path('api/stock-diaries/<str:symbol>/', views.api_stock_diaries, name='api_stock_diaries'),
 
