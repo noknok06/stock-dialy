@@ -458,3 +458,31 @@ class DocumentMetadata(models.Model):
             return self.financial_analysis_url
         else:
             return self.detail_url
+
+class DisclosureEvent(models.Model):
+    """銘柄単位の新規開示イベント
+
+    DisclosureSync が差分検知時に1行ずつ作成し、想起通知の
+    ファンアウト元になる（docs/improvement_plan.md 論点2 Stage 1）。
+    銘柄×書類で一意のため、規模はユーザー数・日記数に依存しない。
+    """
+    securities_code = models.CharField('証券コード', max_length=5, db_index=True)
+    doc_id = models.CharField('書類管理番号', max_length=8)
+    file_date = models.DateField('ファイル日付')
+    doc_type_code = models.CharField('書類種別コード', max_length=10)
+    doc_type_name = models.CharField('書類種別表示名', max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = '開示イベント'
+        verbose_name_plural = '開示イベント一覧'
+        ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['securities_code', 'doc_id'],
+                name='uniq_disclosure_event_code_doc',
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.securities_code}: {self.doc_type_name} ({self.file_date})"

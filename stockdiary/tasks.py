@@ -57,6 +57,12 @@ def process_notifications():
         return {'total_sent': 0, 'total_errors': 1, 'error': str(e)}
 
 
+# リマインダー処理の実行間隔（分）。
+# リマインダーは分単位の精度を要求しないため、低スペックVPSの常駐負荷を抑える目的で
+# 毎分実行から間隔を広げている（docs/improvement_plan.md 論点2 の規約）。
+NOTIFICATION_INTERVAL_MINUTES = 5
+
+
 def setup_notification_schedule():
     """
     通知スケジュールを設定（初回起動時に実行）。
@@ -64,6 +70,7 @@ def setup_notification_schedule():
     既存スケジュールが壊れた状態（next_run が大きく過去にずれて凍結、または repeats が異常値）
     の場合は正常値に自己修復する。これを怠ると、一度凍結したスケジュールが復旧せず
     定期通知が止まり続ける（過去に next_run が約3ヶ月前で停止した実績あり）。
+    実行間隔が NOTIFICATION_INTERVAL_MINUTES と異なる場合も正規化する。
     """
     from django.utils import timezone
     from datetime import timedelta
@@ -75,10 +82,13 @@ def setup_notification_schedule():
     if existing:
         # next_run が現在より大幅に過去 = スケジューラが追従できず凍結した壊れた状態。
         # repeats は無限実行を表す -1 を正常とみなし、それ以外（過去に大きく減算された値など）も異常扱い。
+        # 実行間隔が設定値とずれている場合（旧: 毎分実行）も正規化対象。
         is_stale = (
             existing.next_run is None
-            or existing.next_run < timezone.now() - timedelta(minutes=10)
+            or existing.next_run < timezone.now() - timedelta(
+                minutes=NOTIFICATION_INTERVAL_MINUTES * 2)
             or existing.repeats != -1
+            or existing.minutes != NOTIFICATION_INTERVAL_MINUTES
         )
         if not is_stale:
             logger.info(
@@ -87,23 +97,24 @@ def setup_notification_schedule():
             return existing
 
         logger.warning(
-            "⚠️ 通知スケジュールが異常状態のため修復します "
-            f"(next_run={existing.next_run}, repeats={existing.repeats})"
+            "⚠️ 通知スケジュールを正規化します "
+            f"(next_run={existing.next_run}, repeats={existing.repeats}, "
+            f"minutes={existing.minutes})"
         )
         existing.schedule_type = Schedule.MINUTES
-        existing.minutes = 1
+        existing.minutes = NOTIFICATION_INTERVAL_MINUTES
         existing.repeats = -1
         existing.next_run = timezone.now()
         existing.save()
         logger.info("✅ 通知スケジュール修復完了")
         return existing
 
-    # 新規スケジュールを作成（1分ごとに実行）
+    # 新規スケジュールを作成
     schedule(
         'stockdiary.tasks.process_notifications',
         name='通知処理タスク',
         schedule_type=Schedule.MINUTES,
-        minutes=1,  # 1分ごとに実行
+        minutes=NOTIFICATION_INTERVAL_MINUTES,
         repeats=-1,  # 無限に繰り返し
         next_run=timezone.now(),
     )

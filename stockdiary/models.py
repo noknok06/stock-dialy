@@ -532,6 +532,14 @@ class NotificationLog(models.Model):
         related_name='logs',
         null=True, blank=True
     )
+    # 開示イベント由来のアプリ内通知（リマインダー以外）。
+    # (user, disclosure_event) の一意制約でファンアウト時の重複を防ぐ
+    disclosure_event = models.ForeignKey(
+        'earnings_analysis.DisclosureEvent',
+        on_delete=models.CASCADE,
+        related_name='notification_logs',
+        null=True, blank=True
+    )
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -551,6 +559,13 @@ class NotificationLog(models.Model):
         ordering = ['-sent_at']
         indexes = [
             models.Index(fields=['user', 'is_read', '-sent_at']),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'disclosure_event'],
+                condition=models.Q(disclosure_event__isnull=False),
+                name='uniq_user_disclosure_event',
+            ),
         ]
 
 
