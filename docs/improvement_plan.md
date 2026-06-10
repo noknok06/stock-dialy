@@ -30,14 +30,62 @@
 - 存続: `earnings_analysis` のモデル（`Company`, `DocumentMetadata`, `CompanyFinancialData`, `SentimentAnalysisSession` 等）とサービス層（`EDINETAPIService`, `DisclosureSync`, `XBRLAnalysisService`, `FinancialAnalyzer` 等）
 - 理由: detail.html の EDINET タブが上記モデル・サービスを直接 import している（`stockdiary/views.py:3373-3665`）。`DisclosureSync` が `StockDiary.latest_disclosure_date` を更新し、`DiaryNote.source_doc_id` が EDINET 書類を参照しているため、データ層は切り離せない
 
-### 2. EDINET 開示の想起通知（設計検討フェーズ）
+### 2. EDINET 開示の想起通知（設計確定）
 
-push 通知が理想だが、通知過多とサーバー負荷の懸念があるため設計を先行する。検討する負荷対策:
+前提: ConoHa VPS 1GB・個人運営。複数ユーザー・日記数の増加を見込み、
+**負荷をユーザー数ではなくユニーク銘柄数（上場銘柄数 ≤ 約3,900 で飽和）に縛る** 3段構成とする。
 
-- 1日1回のダイジェスト集約（銘柄ごとの即時 push はしない）
-- 重要書類種別のみ対象（有価証券報告書・四半期報告書など、種別でフィルタ）
-- ユーザー単位のオプトイン + 通知上限
-- django-q の既存スケジューラでバッチ処理し、`DisclosureSync` の差分検知に相乗りする
+```
+Stage 1: 差分検知     O(ユニーク銘柄数)。日記数・ユーザー数に非依存
+Stage 2: ファンアウト  DB内バルクINSERT（Pythonループでユーザーを回さない）
+Stage 3: 配信        O(通知対象ユーザー数)。夜間ダイジェストで時間分散
+```
+
+**Stage 1 — 銘柄単位の差分検知（`update_diary_disclosure_status` の改修）**
+
+- 現行の全日記 `list()` ロード（disclosure_sync.py:29-33）を廃止し、
+  `values_list('stock_symbol', flat=True).distinct()` でユニーク銘柄のみ取得
+- `DocumentMetadata` の DISTINCT ON クエリは現行のまま流用
+- `StockDiary` の更新は銘柄ごとの `filter(stock_symbol=...).update(...)` に変更
+- 開示日が前回より新しくなった銘柄のみ `DisclosureEvent` 行を作成
+  （新テーブル: 銘柄コード・doc_id・開示日・書類種別、unique=銘柄コード+doc_id）
+- 対象は重要書類種別のみ（有価証券報告書・四半期報告書等でフィルタ）
+
+**Stage 2 — ファンアウト（DB内で完結）**
+
+- `DisclosureEvent` ×「該当銘柄を記録中 かつ 通知オプトインのユーザー」を JOIN し、
+  アプリ内通知行を `bulk_create(ignore_conflicts=True)` で一括生成
+- unique 制約 `(user, event)` で重複防止。15万日記でも秒単位で完了
+- この時点でリクエスト時想起カード・新着開示バッジが成立（push 配信ゼロでも価値が出る）
+
+**Stage 3 — 配信（1日1回ダイジェスト）**
+
+- 夜間タスクで未配信通知を `values('user').annotate(Count())` で集計し、1ユーザー1通に集約
+- Web Push は pywebpush 逐次送信（1通 100-200ms）。410/404 の購読は即 `is_active=False`
+- メールは Gmail SMTP の上限（約500通/日）があるため push 購読のないユーザー限定・週1。
+  超過規模になったら SES 等へ移行
+
+**規模見積もり（django-q 1ワーカー前提）**
+
+| 規模 | 日記総数 | ユニーク銘柄 | Stage 1+2 | Stage 3 (push) |
+|---|---|---|---|---|
+| 100人 | ~3,000 | ~800 | 数秒 | 1分未満 |
+| 1,000人 | ~30,000 | ~2,500 | 数秒〜十数秒 | 3〜5分 |
+| 5,000人 | ~150,000 | ~3,900（飽和） | 十数秒（不変） | 15〜30分 → 深夜帯に分散 |
+
+**スキーマ・規約**
+
+- 新テーブル `DisclosureEvent`、通知行に `(user, event)` unique と `(user, is_read)` / `(is_delivered)` インデックス
+- `StockDiary.stock_symbol` のインデックス確認、`DiaryNote.date` にインデックス（リクエスト時想起用）
+- ユーザーの通知オプトイン設定フィールドを追加
+- バッチ実装規約: 全件 `list()` 禁止、`iterator(chunk_size=...)` または `values_list` のみ
+- `process_notifications` のスケジュールを毎分 → 5分間隔に変更（tasks.py:93-106）
+
+**リクエスト時想起（補完手段・最優先実装）**
+
+push に先行して、ホーム上部「今日の想起」カードをリクエスト時計算で実装する:
+「1年前の今日の記録」（日付範囲クエリ）・振り返り未記入バッジ・新着開示バッジ。
+ユーザー単位の軽量クエリのみで全体規模に非依存。常駐負荷ゼロ。
 
 ### 3. 売却完結時の振り返り（控えめ実装）
 
