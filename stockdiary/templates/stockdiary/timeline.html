@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}タイムライン - カブログ{% endblock %}
+
+{% block head %}
+<style>
+.timeline-page { max-width: 760px; margin: 0 auto; }
+.timeline-filters { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 1rem; }
+.timeline-chip {
+  display: inline-flex; align-items: center; padding: 0.3rem 0.8rem;
+  border-radius: var(--radius-full, 999px); border: 1px solid var(--border-light, #dee2e6);
+  background: var(--bg-secondary, #fff); font-size: 0.85rem; text-decoration: none;
+  color: inherit; transition: all 0.15s ease;
+}
+.timeline-chip:hover { border-color: var(--primary-color, #5a7ec5); color: inherit; }
+.timeline-chip.active { background: var(--primary-color, #5a7ec5); border-color: var(--primary-color, #5a7ec5); color: #fff; }
+.timeline-date-header {
+  font-weight: 700; font-size: 0.9rem; color: var(--text-secondary, #6c757d);
+  margin: 1.25rem 0 0.5rem; padding-bottom: 0.25rem; border-bottom: 1px solid var(--border-light, #dee2e6);
+}
+.timeline-item {
+  display: block; padding: 0.6rem 0.75rem; margin-bottom: 0.4rem;
+  border-radius: 0.5rem; border: 1px solid var(--border-light, #e9ecef);
+  background: var(--bg-secondary, #fff); text-decoration: none; color: inherit;
+  transition: border-color 0.15s ease;
+}
+.timeline-item:hover { border-color: var(--primary-color, #5a7ec5); color: inherit; }
+.timeline-item-head { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin-bottom: 0.2rem; }
+.timeline-item-lead { font-size: 0.85rem; color: var(--text-secondary, #6c757d); }
+.dark-mode .timeline-item, [data-theme="dark"] .timeline-item { background: var(--dm-muted, #2b3035); border-color: #444; }
+.dark-mode .timeline-chip, [data-theme="dark"] .timeline-chip { background: var(--dm-muted, #2b3035); border-color: #444; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="timeline-page">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-clock-history me-2"></i>タイムライン</h4>
+    <a href="{% url 'stockdiary:home' %}" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-journal-text me-1"></i>日記一覧
+    </a>
+  </div>
+
+  <!-- 期間フィルター -->
+  <div class="timeline-filters">
+    <span class="small text-muted">期間:</span>
+    {% for value, label in period_choices %}
+    <a class="timeline-chip{% if period == value %} active{% endif %}"
+       href="?period={{ value }}&type={{ etype }}{% if tag_id %}&tag={{ tag_id }}{% endif %}">{{ label }}</a>
+    {% endfor %}
+  </div>
+
+  <!-- 種類フィルター -->
+  <div class="timeline-filters">
+    <span class="small text-muted">種類:</span>
+    {% for value, label in type_choices %}
+    <a class="timeline-chip{% if etype == value %} active{% endif %}"
+       href="?period={{ period }}&type={{ value }}{% if tag_id %}&tag={{ tag_id }}{% endif %}">{{ label }}</a>
+    {% endfor %}
+  </div>
+
+  <!-- タグフィルター -->
+  {% if tags %}
+  <div class="timeline-filters">
+    <span class="small text-muted">タグ:</span>
+    <select class="form-select form-select-sm" style="max-width: 240px;"
+            onchange="location.href='?period={{ period }}&type={{ etype }}' + (this.value ? '&tag=' + this.value : '')">
+      <option value="">すべて</option>
+      {% for tag in tags %}
+      <option value="{{ tag.id }}" {% if tag_id == tag.id %}selected{% endif %}>@{{ tag.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  {% endif %}
+
+  <!-- タイムライン本体 -->
+  {% for event in events %}
+    {% ifchanged event.date %}
+    <div class="timeline-date-header">{{ event.date|date:"Y年n月j日 (D)" }}</div>
+    {% endifchanged %}
+
+    <a href="{% url 'stockdiary:detail' event.diary.pk %}" class="timeline-item">
+      <div class="timeline-item-head">
+        {% if event.diary.stock_symbol %}
+        <span class="badge bg-secondary">{{ event.diary.stock_symbol }}</span>
+        {% endif %}
+        <strong>{{ event.diary.stock_name }}</strong>
+
+        {% if event.kind == 'note' %}
+          <span class="badge bg-primary">{{ event.note.get_note_type_display }}</span>
+          {% if event.note.topic %}<span class="badge bg-light text-dark border"># {{ event.note.topic }}</span>{% endif %}
+        {% elif event.kind == 'retrospective' %}
+          <span class="badge bg-dark">振り返り</span>
+        {% elif event.kind == 'transaction' %}
+          {% if event.transaction.transaction_type == 'buy' %}
+          <span class="badge bg-success">買</span>
+          {% else %}
+          <span class="badge bg-danger">売</span>
+          {% endif %}
+          <span class="small">
+            {{ event.transaction.quantity|floatformat:0 }}株 @ {{ event.diary.currency_symbol }}{{ event.transaction.price|floatformat:2 }}
+          </span>
+        {% elif event.kind == 'diary' %}
+          <span class="badge bg-info">日記作成</span>
+        {% endif %}
+      </div>
+
+      {% if event.lead %}
+      <div class="timeline-item-lead">{{ event.lead }}</div>
+      {% elif event.kind == 'transaction' and event.transaction.memo %}
+      <div class="timeline-item-lead">{{ event.transaction.memo }}</div>
+      {% endif %}
+    </a>
+  {% empty %}
+    <div class="text-center text-muted py-5">
+      <i class="bi bi-clock-history" style="font-size: 2rem;"></i>
+      <p class="mt-2 mb-1">この条件の記録はまだありません</p>
+      <p class="small mb-0">期間を「すべて」にするか、日記に記録を追加すると、ここに時系列で表示されます</p>
+    </div>
+  {% endfor %}
+
+  <!-- ページネーション -->
+  {% if page_obj.has_other_pages %}
+  <nav class="d-flex justify-content-center gap-2 mt-3">
+    {% if page_obj.has_previous %}
+    <a class="btn btn-sm btn-outline-secondary"
+       href="?period={{ period }}&type={{ etype }}{% if tag_id %}&tag={{ tag_id }}{% endif %}&page={{ page_obj.previous_page_number }}">
+      <i class="bi bi-chevron-left"></i> 前へ
+    </a>
+    {% endif %}
+    <span class="btn btn-sm disabled">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+    <a class="btn btn-sm btn-outline-secondary"
+       href="?period={{ period }}&type={{ etype }}{% if tag_id %}&tag={{ tag_id }}{% endif %}&page={{ page_obj.next_page_number }}">
+      次へ <i class="bi bi-chevron-right"></i>
+    </a>
+    {% endif %}
+  </nav>
+  {% endif %}
+</div>
+{% endblock %}

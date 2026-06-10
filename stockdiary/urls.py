@@ -5,6 +5,7 @@ from . import api
 from . import api_views  # 🔧 追加
 from . import views_mobile_ux  # 🆕 モバイルUX用ビュー
 from . import views_comparison  # 銘柄比較機能
+from . import views_timeline  # 全銘柄横断タイムライン
 from django.contrib.auth.decorators import login_required
 
 app_name = 'stockdiary'
@@ -14,6 +15,7 @@ urlpatterns = [
     # 日記の基本CRUD
     # ==========================================
     path('', views.StockDiaryListView.as_view(), name='home'),
+    path('timeline/', views_timeline.TimelineView.as_view(), name='timeline'),
     path('create/', views.StockDiaryCreateView.as_view(), name='create'),
     path('<int:pk>/', views.StockDiaryDetailView.as_view(), name='detail'),
     path('<int:pk>/update/', views.StockDiaryUpdateView.as_view(), name='update'),
