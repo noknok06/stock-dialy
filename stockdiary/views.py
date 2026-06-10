@@ -2867,7 +2867,7 @@ class TradingDashboardView(LoginRequiredMixin, TemplateView):
         diary_ids_in_period = period_transactions.values_list('diary_id', flat=True).distinct()
         diaries_in_period = StockDiary.objects.filter(
             id__in=diary_ids_in_period
-        ).select_related('user')
+        ).select_related('user').prefetch_related('tags')
 
         # 全日記（円建てのみ）
         all_diaries = StockDiary.objects.filter(user=user, currency='JPY')
@@ -3024,12 +3024,7 @@ class TradingDashboardView(LoginRequiredMixin, TemplateView):
                 'created_at': diary.created_at.strftime('%Y年%m月%d日'),
             })
 
-        # ソートして上位10件
-        transaction_ranking = sorted(
-            stock_ranking.values(),
-            key=lambda x: x['transaction_count'],
-            reverse=True
-        )[:10]
+        # ソート（stock_ranking は ROIランキングチャート・銘柄モーダルのデータ源として保持）
 
         # ========== 業種別分析（現物のみ） ==========
         sector_stats = {}
@@ -3199,6 +3194,69 @@ class TradingDashboardView(LoginRequiredMixin, TemplateView):
         
         stock_roi_list.sort(key=lambda x: x['roi'], reverse=True)
 
+        # ========== タグ別成績（思考の分類 × 結果） ==========
+        # 「@地政学リスクで買った銘柄は勝てているか」を可視化する自己分析。
+        # タグ＝自分の投資判断の分類なので、業種別と違いこのアプリでしか集計できない
+        tag_stats = {}
+        for diary in diaries_in_period:
+            cash_stats = diary.calculate_cash_only_stats()
+            total_invested = cash_stats['total_buy_amount']
+            total_sell = cash_stats['total_sell_amount']
+            current_value = Decimal('0')
+            if cash_stats['current_quantity'] > 0 and cash_stats['average_purchase_price']:
+                current_value = cash_stats['current_quantity'] * cash_stats['average_purchase_price']
+            realized = float(cash_stats['realized_profit'] or 0)
+            is_sold = bool(total_sell and total_sell > 0)
+
+            for tag in diary.tags.all():
+                st = tag_stats.setdefault(tag.id, {
+                    'tag_id': tag.id,
+                    'name': tag.name,
+                    'axis': tag.axis,
+                    'axis_label': tag.get_axis_display(),
+                    'diary_count': 0,
+                    'realized_profit': 0.0,
+                    'total_invested': Decimal('0'),
+                    'total_sell_amount': Decimal('0'),
+                    'current_value': Decimal('0'),
+                    'sold_count': 0,
+                    'win_count': 0,
+                })
+                st['diary_count'] += 1
+                st['realized_profit'] += realized
+                st['total_invested'] += total_invested
+                st['total_sell_amount'] += total_sell
+                st['current_value'] += current_value
+                if is_sold:
+                    st['sold_count'] += 1
+                    if realized > 0:
+                        st['win_count'] += 1
+
+        tag_analysis = []
+        for st in tag_stats.values():
+            roi = Decimal('0')
+            if st['total_invested'] > 0:
+                roi = ((st['total_sell_amount'] + st['current_value'] - st['total_invested'])
+                       / st['total_invested'] * 100)
+            tag_win_rate = (round(st['win_count'] / st['sold_count'] * 100, 1)
+                            if st['sold_count'] > 0 else None)
+            tag_analysis.append({
+                'tag_id': st['tag_id'],
+                'name': st['name'],
+                'axis': st['axis'],
+                'axis_label': st['axis_label'],
+                'diary_count': st['diary_count'],
+                'realized_profit': round(st['realized_profit'], 0),
+                'total_invested': float(st['total_invested']),
+                'roi': float(round(roi, 1)),
+                'win_rate': tag_win_rate,
+                'sold_count': st['sold_count'],
+                'win_count': st['win_count'],
+            })
+        # よく使う思考の分類から表示（同数なら実現損益の大きい順）
+        tag_analysis.sort(key=lambda x: (x['diary_count'], x['realized_profit']), reverse=True)
+        tag_analysis = tag_analysis[:15]
+
         # ========== コンテキスト ==========
         context.update({
             'total_transactions': total_transactions,
@@ -3211,14 +3269,14 @@ class TradingDashboardView(LoginRequiredMixin, TemplateView):
             'winning_count': winning_count,
             'sold_count': sold_count,
             'profit_factor': profit_factor,
-            'transaction_ranking': transaction_ranking,
+            'tag_analysis': tag_analysis,
             'sector_analysis': sector_analysis,
             'profitable_sectors': profitable_sectors,
             'loss_sectors': loss_sectors,
             'current_period': period,
             'has_data': total_transactions > 0,
             'sector_details': json.dumps(sector_details, ensure_ascii=False),
-            'stock_ranking': json.dumps({s['stock_code']: s for s in transaction_ranking}, ensure_ascii=False),
+            'stock_ranking': json.dumps({s['stock_code']: s for s in stock_ranking.values()}, ensure_ascii=False),
             'sector_roi_data': json.dumps(sector_roi_list, ensure_ascii=False),
             'stock_roi_data': json.dumps(stock_roi_list, ensure_ascii=False),
         })

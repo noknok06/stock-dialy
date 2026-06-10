@@ -1212,29 +1212,41 @@
             </div>
         </div>
 
-        <!-- Trade Frequency Ranking -->
+        <!-- タグ別成績（思考の分類 × 結果） -->
         <div class="card">
             <div class="section-title">
-                <div class="section-icon" style="background: rgba(59, 130, 246, 0.2); color: var(--primary);">⚡</div>
-                <h2 class="section-heading">取引回数ランキング</h2>
+                <div class="section-icon" style="background: rgba(59, 130, 246, 0.2); color: var(--primary);">🏷️</div>
+                <h2 class="section-heading">タグ別成績</h2>
             </div>
-            <div class="ranking-list">
-                {% for stock in transaction_ranking %}
-                <div class="ranking-item" onclick="showStockDiariesModal('{{ stock.stock_code }}', '{{ stock.stock_name }}')">
-                    <div class="ranking-left">
-                        <div class="ranking-number">{{ forloop.counter }}</div>
-                        <div class="ranking-info">
-                            <div class="ranking-name">{{ stock.stock_name }}</div>
-                            <div class="ranking-code">コード: {{ stock.stock_code }} | {{ stock.diaries|length }}件の日記</div>
-                        </div>
+            <div class="industry-list">
+                {% for tag in tag_analysis %}
+                <div class="industry-item" style="cursor: pointer;"
+                     onclick="location.href='{% url 'tags:detail' tag.tag_id %}'">
+                    <div class="industry-header">
+                        <span class="industry-name">
+                            @{{ tag.name }}
+                            <span style="font-size: 0.7rem; color: var(--muted); font-weight: 400;">{{ tag.axis_label }}</span>
+                        </span>
+                        <span class="industry-count">
+                            {{ tag.diary_count }}銘柄
+                            {% if tag.win_rate is not None %}
+                            | 勝率 {{ tag.win_rate }}% ({{ tag.win_count }}/{{ tag.sold_count }})
+                            {% endif %}
+                        </span>
                     </div>
-                    <div class="ranking-right">
-                        <div class="ranking-count">{{ stock.transaction_count }}</div>
-                        <div class="ranking-time">クリックで詳細表示</div>
+                    <div class="industry-subinfo"
+                        style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--muted); display: flex; justify-content: space-between; align-items: center;">
+                        <span>実現損益: {% if tag.realized_profit >= 0 %}+{% endif %}¥{{ tag.realized_profit|intcomma_float:0 }}</span>
+                        <span class="roi-badge {% if tag.roi >= 0 %}positive{% else %}negative{% endif %}">
+                            {% if tag.roi > 0 %}+{% endif %}{{ tag.roi|floatformat:1 }}%
+                        </span>
                     </div>
                 </div>
                 {% empty %}
-                <p class="text-muted text-center py-3">データがありません</p>
+                <p class="text-muted text-center py-3">
+                    タグ付きの取引データがありません。<br>
+                    日記に @タグ を付けると「思考の分類ごとの成績」がここに表示されます
+                </p>
                 {% endfor %}
             </div>
         </div>
