@@ -261,6 +261,11 @@ class Transaction(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    @property
+    def amount(self):
+        """取引金額（単価 × 数量）"""
+        return (self.price or 0) * (self.quantity or 0)
+
     class Meta:
         ordering = ['-transaction_date', '-created_at']
         indexes = [

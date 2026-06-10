@@ -280,7 +280,8 @@ def apply_diary_search(queryset, query: str):
         Q(memo__icontains=q) |
         Q(sector__icontains=q) |
         Q(notes__content__icontains=q) |
-        Q(notes__topic__icontains=q)
+        Q(notes__topic__icontains=q) |
+        Q(transactions__memo__icontains=q)
     ).distinct()
 
 
