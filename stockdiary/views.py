@@ -31,7 +31,7 @@ from .models import StockDiary, DiaryNote, DiaryNotification
 from .models import Transaction, StockSplit
 from .forms import TransactionForm, StockSplitForm, TradeUploadForm
 from .forms import StockDiaryForm, DiaryNoteForm
-from .utils import compute_related_strength, extract_lead, build_theme_recall
+from .utils import compute_related_strength, extract_lead, build_theme_recall, find_backlinks
 from company_master.models import CompanyMaster
 from tags.models import Tag
 from django.views.generic import FormView
@@ -545,6 +545,9 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         context['theme_recall'] = build_theme_recall(
             related_unified, self.object, self.request.user
         )
+
+        # バックリンク: この銘柄に言及している他の記録（関連タブに表示）
+        context['backlinks'] = find_backlinks(self.object, self.request.user)
 
         # スピードダイアルアクション
         context['diary_actions'] = [

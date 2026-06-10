@@ -162,6 +162,93 @@ def find_duplicate_diaries(user, stock_symbol: str = '', stock_name: str = '', e
     return qs.order_by('-updated_at')
 
 
+def find_backlinks(diary, user, limit=10):
+    """この日記の銘柄に言及している他の記録（バックリンク）を返す。
+
+    対象:
+    - 他日記の投資理由・メモ内の銘柄コード言及（(7203) / （7203） 形式）
+    - 他日記の継続記録（DiaryNote.content）内の言及
+    - 手動リンクの逆方向（linked_from）のうち双方向化されていないもの
+      （関連日記APIは双方向登録するため、通常は古いデータの救済用）
+
+    同一銘柄の日記（重複日記）は自己言及になるため対象外。
+
+    Args:
+        diary: フォーカスする StockDiary
+        user: 対象ユーザー
+        limit: 最大件数
+
+    Returns:
+        list[dict]: {'diary', 'source'('reason'|'note'|'link'), 'date', 'snippet'} の
+                    日付降順リスト
+    """
+    import re as _re
+    from django.db.models import Q
+    from .models import StockDiary, DiaryNote
+
+    symbol = (diary.stock_symbol or '').strip()
+    items = []
+
+    if symbol:
+        mention_re = _re.compile(r'[（(]' + _re.escape(symbol) + r'[）)]')
+
+        # 本文（投資理由・メモ）での言及
+        candidates = (
+            StockDiary.objects
+            .filter(user=user)
+            .exclude(pk=diary.pk)
+            .exclude(stock_symbol__iexact=symbol)
+            .filter(Q(reason__icontains=symbol) | Q(memo__icontains=symbol))
+            .only('id', 'stock_name', 'stock_symbol', 'reason', 'memo', 'updated_at')
+        )
+        for d in candidates:
+            text = f"{d.reason or ''}\n{d.memo or ''}"
+            m = mention_re.search(text)
+            if not m:
+                continue
+            items.append({
+                'diary': d,
+                'source': 'reason',
+                'date': d.updated_at.date(),
+                'snippet': _make_search_snippet(text, m.group(0)),
+            })
+
+        # 継続記録での言及
+        notes = (
+            DiaryNote.objects
+            .filter(diary__user=user, content__icontains=symbol)
+            .exclude(diary=diary)
+            .exclude(diary__stock_symbol__iexact=symbol)
+            .select_related('diary')
+            .order_by('-date')[:50]
+        )
+        for note in notes:
+            m = mention_re.search(note.content or '')
+            if not m:
+                continue
+            items.append({
+                'diary': note.diary,
+                'source': 'note',
+                'date': note.date,
+                'snippet': _make_search_snippet(note.content, m.group(0)),
+            })
+
+    # 手動リンクの逆方向（非対称データの救済）
+    asymmetric = diary.linked_from.exclude(
+        id__in=diary.linked_diaries.values_list('id', flat=True)
+    ).only('id', 'stock_name', 'stock_symbol', 'updated_at')
+    for d in asymmetric:
+        items.append({
+            'diary': d,
+            'source': 'link',
+            'date': d.updated_at.date(),
+            'snippet': '',
+        })
+
+    items.sort(key=lambda x: x['date'], reverse=True)
+    return items[:limit]
+
+
 def apply_diary_search(queryset, query: str):
     """日記の全文検索を適用する。
 
