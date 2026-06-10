@@ -900,6 +900,11 @@
                               <i class="bi bi-diagram-3"></i> 関連グラフ
                           </a>
                       </li>
+                      <li class="nav-item">
+                          <a class="nav-link" href="{% url 'stockdiary:dashboard' %}">
+                              <i class="bi bi-graph-up"></i> ダッシュボード
+                          </a>
+                      </li>
                       {% endif %}
                   </ul>
                   
@@ -1059,33 +1064,12 @@
     
     <div class="menu-content">
         <div class="menu-items">
-            <!-- 主要機能 -->
+            <!-- 主要機能（記録・想起の動線に絞る） -->
             <a href="{% url 'stockdiary:home' %}" class="menu-item primary">
                 <div class="menu-item-icon">
                     <i class="bi bi-journal-text"></i>
                 </div>
                 <div class="menu-item-label">日記一覧</div>
-            </a>
-
-            <a href="{% url 'stockdiary:diary_summary' %}" class="menu-item primary">
-                <div class="menu-item-icon">
-                    <i class="bi bi-journal-bookmark"></i>
-                </div>
-                <div class="menu-item-label">銘柄サマリー</div>
-            </a>
-            
-            <a href="{% url 'stockdiary:dashboard' %}" class="menu-item primary">
-                <div class="menu-item-icon">
-                    <i class="bi bi-building"></i>
-                </div>
-                <div class="menu-item-label">ダッシュボード</div>
-            </a>
-
-            <a href="{% url 'stockdiary:investment_hub' %}" class="menu-item primary">
-                <div class="menu-item-icon">
-                    <i class="bi bi-bullseye"></i>
-                </div>
-                <div class="menu-item-label">投資判断サポート</div>
             </a>
 
             <a href="{% url 'stockdiary:diary_graph' %}" class="menu-item primary">
@@ -1094,86 +1078,91 @@
                 </div>
                 <div class="menu-item-label">関連グラフ</div>
             </a>
-            
+
+            <a href="{% url 'stockdiary:dashboard' %}" class="menu-item primary">
+                <div class="menu-item-icon">
+                    <i class="bi bi-graph-up"></i>
+                </div>
+                <div class="menu-item-label">ダッシュボード</div>
+            </a>
+
             <a href="{% url 'stockdiary:create' %}" class="menu-item primary">
                 <div class="menu-item-icon">
                     <i class="bi bi-plus-circle"></i>
                 </div>
                 <div class="menu-item-label">新規作成</div>
             </a>
-            
-            <a href="{% url 'stockdiary:notification_list' %}" class="menu-item primary">
+        </div>
+
+        <div class="menu-divider">設定・その他</div>
+
+        <div class="menu-items">
+            <a href="{% url 'stockdiary:notification_list' %}" class="menu-item success">
                 <div class="menu-item-icon">
                     <i class="bi bi-bell"></i>
                 </div>
                 <div class="menu-item-label">通知管理</div>
             </a>
-        </div>
-        
-        <div class="menu-divider">管理機能</div>
-        
-        <div class="menu-items">
-          <a href="{% url 'tags:list' %}" class="menu-item success">
-              <div class="menu-item-icon">
-                  <i class="bi bi-tags"></i>
-              </div>
-              <div class="menu-item-label">タグ管理</div>
-          </a>
-          <a href="{% url 'diary_templates:list' %}" class="menu-item success">
-              <div class="menu-item-icon">
-                  <i class="bi bi-file-earmark-text"></i>
-              </div>
-              <div class="menu-item-label">日記テンプレート</div>
-          </a>
-          <a href="{% url 'stockdiary:trade_upload' %}" class="menu-item success">
-            <div class="menu-item-icon">
-                <i class="bi bi-cloud-upload"></i>
-            </div>
-            <div class="menu-item-label">取引履歴アップロード</div>
-          </a>
-        </div>
-
-        <div class="menu-divider">APP</div>
-
-        <div class="menu-items">
+            <a href="{% url 'stockdiary:diary_summary' %}" class="menu-item success">
+                <div class="menu-item-icon">
+                    <i class="bi bi-journal-bookmark"></i>
+                </div>
+                <div class="menu-item-label">銘柄サマリー</div>
+            </a>
+            <a href="{% url 'stockdiary:investment_hub' %}" class="menu-item success">
+                <div class="menu-item-icon">
+                    <i class="bi bi-bullseye"></i>
+                </div>
+                <div class="menu-item-label">投資判断サポート</div>
+            </a>
+            <a href="{% url 'tags:list' %}" class="menu-item success">
+                <div class="menu-item-icon">
+                    <i class="bi bi-tags"></i>
+                </div>
+                <div class="menu-item-label">タグ管理</div>
+            </a>
+            <a href="{% url 'diary_templates:list' %}" class="menu-item success">
+                <div class="menu-item-icon">
+                    <i class="bi bi-file-earmark-text"></i>
+                </div>
+                <div class="menu-item-label">日記テンプレート</div>
+            </a>
+            <a href="{% url 'stockdiary:trade_upload' %}" class="menu-item success">
+                <div class="menu-item-icon">
+                    <i class="bi bi-cloud-upload"></i>
+                </div>
+                <div class="menu-item-label">取引履歴アップロード</div>
+            </a>
             <a href="{% url 'copomo:index' %}" class="menu-item danger">
                 <div class="menu-item-icon">
                     <i class="bi bi-emoji-smile-fill"></i>
                 </div>
                 <div class="menu-item-label">CopoMo</div>
             </a>
-        </div>
-        <div class="menu-divider">ヘルプ・サポート</div>
-        
-        <div class="menu-items">
             <a href="{% url 'ads:guide' %}" class="menu-item warning">
                 <div class="menu-item-icon">
                     <i class="bi bi-book"></i>
                 </div>
                 <div class="menu-item-label">ご利用ガイド</div>
             </a>
-
             <a href="{% url 'ads:faq' %}" class="menu-item warning">
                 <div class="menu-item-icon">
                     <i class="bi bi-question-circle"></i>
                 </div>
                 <div class="menu-item-label">よくある質問</div>
             </a>
-            
             <a href="{% url 'ads:terms' %}" class="menu-item warning">
                 <div class="menu-item-icon">
                     <i class="bi bi-file-text"></i>
                 </div>
                 <div class="menu-item-label">利用規約</div>
             </a>
-            
             <a href="{% url 'ads:privacy_policy' %}" class="menu-item warning">
                 <div class="menu-item-icon">
                     <i class="bi bi-shield-lock"></i>
                 </div>
                 <div class="menu-item-label">プライバシー</div>
             </a>
-            
             <a href="{% url 'contact:contact' %}" class="menu-item warning">
                 <div class="menu-item-icon">
                     <i class="bi bi-envelope"></i>
