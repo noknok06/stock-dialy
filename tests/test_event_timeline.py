@@ -65,13 +65,18 @@ class TestRetroSummary:
         assert summary['holding_days'] == 5
         assert summary['avg_buy'] == Decimal('5000')
         assert summary['avg_sell'] == Decimal('5500')
-        assert 'id="retroSummary"' in response.content.decode()
+        html = response.content.decode()
+        assert 'id="retro-prefill"' in html
+        # json_script は日本語を \uXXXX エスケープするため本文は context 側で検証
+        assert '## この投資の記録' in response.context['retro_prefill']
 
     def test_no_summary_for_holding_diary(self, authenticated_client, sample_diary_with_transaction):
         response = authenticated_client.get(
             reverse('stockdiary:detail', kwargs={'pk': sample_diary_with_transaction.pk})
         )
         assert 'retro_summary' not in response.context
+        assert 'retro_prefill' not in response.context
+        assert 'id="retro-prefill"' not in response.content.decode()
 
 
 class TestTransactionMemoSearch:

@@ -112,6 +112,7 @@ class StockDiaryForm(forms.ModelForm):
         self.user = user
         # 重複候補（clean で設定。テンプレートが既存日記への導線表示に使う）
         self.duplicate_diary = None
+        self.duplicate_retrospective_count = 0
 
         # ラベル設定
         self.fields['stock_symbol'].label = "銘柄コード（任意）"
@@ -170,6 +171,11 @@ class StockDiaryForm(forms.ModelForm):
                 stock_name=cleaned_data.get('stock_name') or '',
             )
             self.duplicate_diary = duplicates.first()
+            # 再エントリー時の教訓想起用（テンプレートが警告パネルに表示）
+            self.duplicate_retrospective_count = (
+                self.duplicate_diary.notes.filter(note_type='retrospective').count()
+                if self.duplicate_diary else 0
+            )
             if self.duplicate_diary and not cleaned_data.get('allow_duplicate'):
                 self.add_error(
                     'stock_symbol',

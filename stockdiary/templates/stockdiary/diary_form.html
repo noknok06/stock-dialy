@@ -1325,6 +1325,9 @@
                     {{ form.duplicate_diary.stock_name }}（{{ form.duplicate_diary.stock_symbol|default:"コードなし" }}）
                   </a>
                   <span class="text-muted">最終更新 {{ form.duplicate_diary.updated_at|date:"Y/m/d" }}</span>
+                  {% if form.duplicate_retrospective_count %}
+                  <span class="badge bg-dark ms-1">過去の振り返り {{ form.duplicate_retrospective_count }}件</span>
+                  {% endif %}
                   {% endif %}
                 </div>
                 <div class="small text-muted mb-2">
@@ -1981,10 +1984,14 @@ async function checkDuplicateDiary() {
 
     if (data.exists && data.diaries.length > 0) {
       const diary = data.diaries[0];
-      document.getElementById('duplicateWarningBody').innerHTML =
+      let body =
         `<a href="${diary.detail_url}" class="fw-bold">${diary.stock_name}（${diary.stock_symbol || 'コードなし'}）</a> ` +
         `<span class="badge bg-secondary">${diary.status}</span> ` +
         `<span class="text-muted">最終更新 ${diary.updated_at}</span>`;
+      if (diary.retrospective_count > 0) {
+        body += ` <span class="badge bg-dark">過去の振り返り ${diary.retrospective_count}件</span>`;
+      }
+      document.getElementById('duplicateWarningBody').innerHTML = body;
       document.getElementById('duplicateOpenBtn').href = diary.detail_url;
       warning.classList.remove('d-none');
     } else {
