@@ -502,11 +502,14 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         context['event_timeline'] = event_timeline
 
         # テーマ別（スレッド集約）ビュー用。date降順を保持し、未分類は最後に回す。
+        # 「振り返り」スレッド（ポジション総括）は粒度が違うため先頭に固定する。
         grouped = OrderedDict()
         for note in notes:
             topic = note.topic or ''
             grouped.setdefault(topic, []).append(note)
             note._topic = topic
+        if DiaryNote.RETROSPECTIVE_TOPIC in grouped:
+            grouped.move_to_end(DiaryNote.RETROSPECTIVE_TOPIC, last=False)
         if '' in grouped:
             grouped.move_to_end('')
         context['notes_by_topic'] = grouped
@@ -561,13 +564,8 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         # バックリンク: この銘柄に言及している他の記録（関連タブに表示）
         context['backlinks'] = find_backlinks(self.object, self.request.user)
 
-        # 売却完結済みで振り返り（retrospective）未記入なら記入を促す（控えめ実装: バナーのみ）
-        context['needs_retrospective'] = (
-            self.object.is_sold_out
-            and not any(n.note_type == 'retrospective' for n in notes)
-        )
-
-        # 振り返りシートに差し込む取引サマリー（売却完結済みの日記のみ）
+        # 振り返り（retrospective）関連: 売却完結済みの日記のみ
+        context['needs_retrospective'] = False
         if self.object.is_sold_out:
             buys = [t for t in transactions if t.transaction_type == 'buy']
             sells = [t for t in transactions if t.transaction_type == 'sell']
@@ -575,15 +573,46 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
             total_sell_qty = sum((t.quantity for t in sells), Decimal('0'))
             first_buy = min((t.transaction_date for t in buys), default=None)
             last_sell = max((t.transaction_date for t in sells), default=None)
+            avg_buy = (sum((t.amount for t in buys), Decimal('0')) / total_buy_qty) \
+                if total_buy_qty else None
+            avg_sell = (sum((t.amount for t in sells), Decimal('0')) / total_sell_qty) \
+                if total_sell_qty else None
             context['retro_summary'] = {
                 'first_buy': first_buy,
                 'last_sell': last_sell,
                 'holding_days': (last_sell - first_buy).days if first_buy and last_sell else None,
-                'avg_buy': (sum((t.amount for t in buys), Decimal('0')) / total_buy_qty)
-                           if total_buy_qty else None,
-                'avg_sell': (sum((t.amount for t in sells), Decimal('0')) / total_sell_qty)
-                            if total_sell_qty else None,
+                'avg_buy': avg_buy,
+                'avg_sell': avg_sell,
             }
+
+            # 振り返り未記入の判定。複数ラウンド対応:
+            # 最後の売り以降に書かれた振り返りがなければ再度促す
+            # （売り日が取れない場合は「1件もない」の旧条件にフォールバック）
+            if last_sell is not None:
+                context['needs_retrospective'] = not any(
+                    n.note_type == 'retrospective' and n.date >= last_sell
+                    for n in notes
+                )
+            else:
+                context['needs_retrospective'] = not any(
+                    n.note_type == 'retrospective' for n in notes
+                )
+
+            # 振り返りシートに本文プリフィルする取引サマリー（Markdown）。
+            # 表示専用ではなく記録自体に残すことで、スレッド・タイムライン・想起でも文脈が自己完結する
+            sym = self.object.currency_symbol
+            lines = ['## この投資の記録（通算）']
+            if first_buy and last_sell:
+                lines.append(
+                    f"- 期間: {first_buy:%Y/%m/%d} 〜 {last_sell:%Y/%m/%d}"
+                    f"（{(last_sell - first_buy).days}日）"
+                )
+            if avg_buy is not None and avg_sell is not None:
+                lines.append(f"- 平均買値 {sym}{avg_buy:,.1f} → 平均売値 {sym}{avg_sell:,.1f}")
+            rp = self.object.realized_profit or Decimal('0')
+            lines.append(f"- 実現損益: {'+' if rp >= 0 else ''}{sym}{rp:,.0f}")
+            lines += ['', '## 結果と要因', '', '', '## 次に活かす教訓', '', '']
+            context['retro_prefill'] = '\n'.join(lines)
 
         # スピードダイアルアクション
         context['diary_actions'] = [

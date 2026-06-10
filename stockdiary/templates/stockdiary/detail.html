@@ -2567,26 +2567,36 @@ document.addEventListener('DOMContentLoaded', function() {
     if (typeof resetNoteEasyMDE === 'function') resetNoteEasyMDE();
     var ta = document.getElementById('content');
     if (ta) { ta.value = ''; ta.placeholder = '状況の変化や新たな情報を記録しましょう'; }
-    var retroSummary = document.getElementById('retroSummary');
-    if (retroSummary) retroSummary.style.display = 'none';
     var fileEl = document.getElementById('note_image');
     if (fileEl) fileEl.value = '';
     var preview = document.getElementById('note-image-preview-container');
     if (preview) preview.style.display = 'none';
   };
 
-  // 振り返り記入: 継続記録シートを retrospective プリセットで開く
+  // 振り返り記入: 継続記録シートを retrospective プリセット+取引サマリーのプリフィルで開く
   window.startRetrospective = function() {
     window.resetNoteFormToAdd();
     var typeEl = document.getElementById('note_type');
     if (typeEl) typeEl.value = 'retrospective';
     var title = document.getElementById('addNoteSheetTitle');
     if (title) title.innerHTML = '<i class="bi bi-arrow-counterclockwise me-2"></i>この投資の振り返り';
-    var ta = document.getElementById('content');
-    if (ta) ta.placeholder = '結果はどうだったか / なぜそうなったか / 次に活かす教訓は？';
-    var summary = document.getElementById('retroSummary');
-    if (summary) summary.style.display = '';
+    // 固定テーマでスレッド集約（サーバー側 DiaryNote.clean がフォールバック）
+    var topicEl = document.getElementById('note_topic');
+    if (topicEl && !topicEl.value) topicEl.value = '振り返り';
+    // 取引サマリーを本文へプリフィル（保有中の日記では json_script 自体が出力されない）
+    var prefill = '';
+    var prefillEl = document.getElementById('retro-prefill');
+    if (prefillEl) {
+      try { prefill = JSON.parse(prefillEl.textContent); } catch (e) { prefill = ''; }
+    }
     openBottomSheet('addNoteSheet');
+    if (typeof initNoteEasyMDE === 'function') initNoteEasyMDE();
+    if (noteEasyMDE) {
+      noteEasyMDE.value(prefill);
+    } else {
+      var ta = document.getElementById('content');
+      if (ta && prefill) ta.value = prefill;
+    }
   };
 
   window.openEditNoteSheet = function(noteId) {
@@ -3639,30 +3649,8 @@ window.showReportModal = function(el) {
           </datalist>
         </div>
 
-        {% if retro_summary %}
-        <!-- 振り返り記入時のみ表示する取引サマリー（startRetrospective が表示制御） -->
-        <div class="alert alert-light border small mb-2" id="retroSummary" style="display:none;">
-          <div class="fw-bold mb-1"><i class="bi bi-receipt me-1"></i>この投資の記録</div>
-          {% if retro_summary.first_buy %}
-          <div>
-            期間: {{ retro_summary.first_buy|date:"Y/m/d" }} 〜 {{ retro_summary.last_sell|date:"Y/m/d" }}
-            {% if retro_summary.holding_days is not None %}（{{ retro_summary.holding_days }}日）{% endif %}
-          </div>
-          {% endif %}
-          {% if retro_summary.avg_buy %}
-          <div>
-            平均買値 {{ diary.currency_symbol }}{{ retro_summary.avg_buy|floatformat:1 }}
-            → 平均売値 {{ diary.currency_symbol }}{{ retro_summary.avg_sell|floatformat:1 }}
-          </div>
-          {% endif %}
-          <div>
-            実現損益:
-            <strong class="{% if diary.realized_profit >= 0 %}text-success{% else %}text-danger{% endif %}">
-              {% if diary.realized_profit >= 0 %}+{% endif %}{{ diary.currency_symbol }}{{ diary.realized_profit|floatformat:0 }}
-            </strong>
-          </div>
-        </div>
-        {% endif %}
+        {# 振り返り記入時に本文へプリフィルする取引サマリー（startRetrospective が読む） #}
+        {% if retro_prefill %}{{ retro_prefill|json_script:"retro-prefill" }}{% endif %}
 
         <div class="form-group">
           <label class="form-label-improved" for="content">

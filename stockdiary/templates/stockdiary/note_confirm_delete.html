@@ -60,19 +60,15 @@
                     <strong>タイプ:</strong>
                   </div>
                   <div class="col-sm-9">
-                    <span class="badge 
+                    <span class="badge
                       {% if object.note_type == 'analysis' %}bg-primary
                       {% elif object.note_type == 'news' %}bg-info
                       {% elif object.note_type == 'earnings' %}bg-success
                       {% elif object.note_type == 'insight' %}bg-warning
                       {% elif object.note_type == 'risk' %}bg-danger
+                      {% elif object.note_type == 'retrospective' %}bg-dark
                       {% else %}bg-secondary{% endif %}">
-                      {% if object.note_type == 'analysis' %}分析更新
-                      {% elif object.note_type == 'news' %}ニュース
-                      {% elif object.note_type == 'earnings' %}決算情報
-                      {% elif object.note_type == 'insight' %}新たな気づき
-                      {% elif object.note_type == 'risk' %}リスク要因
-                      {% else %}その他{% endif %}
+                      {{ object.get_note_type_display }}
                     </span>
                   </div>
                 </div>

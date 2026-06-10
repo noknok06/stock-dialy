@@ -74,11 +74,16 @@ class RecallService:
             .order_by('-date')[:SECTION_LIMIT]
         )
         for note in notes:
+            # 振り返りは topic が固定テーマのため、中身が伝わる本文を優先する
+            if note.note_type == 'retrospective':
+                snippet = (note.content or '')[:60]
+            else:
+                snippet = (note.topic or note.content or '')[:60]
             items.append({
                 'diary': note.diary,
                 'date': note.date,
                 'kind': 'note',
-                'snippet': (note.topic or note.content or '')[:60],
+                'snippet': snippet,
             })
 
         if len(items) < SECTION_LIMIT:
@@ -99,8 +104,26 @@ class RecallService:
 
     @classmethod
     def _build_unreviewed(cls, user):
-        """売却完結済みで振り返り(retrospective)ノートがない日記"""
-        from ..models import StockDiary
+        """売却完結済みで振り返り(retrospective)未記入の日記。
+
+        複数売買ラウンド対応: 「最後の売り取引以降に書かれた振り返り」が
+        ある日記だけを記入済みとみなす（再売却したら再び未記入扱いに戻る）。
+        """
+        from django.db.models import Exists, OuterRef, Subquery
+        from ..models import StockDiary, DiaryNote, Transaction
+
+        # DiaryNote から見た親日記の最終売り日（DiaryNote.diary_id 経由で相関）
+        last_sell = (
+            Transaction.objects
+            .filter(diary=OuterRef('diary_id'), transaction_type='sell')
+            .order_by('-transaction_date')
+            .values('transaction_date')[:1]
+        )
+        reviewed = DiaryNote.objects.filter(
+            diary=OuterRef('pk'),
+            note_type='retrospective',
+            date__gte=Subquery(last_sell),
+        )
 
         qs = (
             StockDiary.objects
@@ -110,7 +133,8 @@ class RecallService:
                 transaction_count__gt=0,
                 current_quantity=0,
             )
-            .exclude(notes__note_type='retrospective')
+            .annotate(_reviewed=Exists(reviewed))
+            .filter(_reviewed=False)
             .order_by('-updated_at')
         )
         count = qs.count()

@@ -365,6 +365,10 @@ class StockSplit(models.Model):
 
 class DiaryNote(models.Model):
     """日記への継続的な追記"""
+    # 振り返り(retrospective)ノートの固定テーマ。
+    # テーマ別ビューで1スレッドに集約し、複数売買ラウンドの総括を時系列で束ねる
+    RETROSPECTIVE_TOPIC = '振り返り'
+
     diary = models.ForeignKey(StockDiary, on_delete=models.CASCADE, related_name='notes')
     date = models.DateField()
     content = models.TextField(verbose_name='記録内容', blank=True, max_length=3000)
@@ -413,6 +417,9 @@ class DiaryNote(models.Model):
         self.content = sanitize_text_content(self.content)
         if self.content and len(self.content) > 3000:
             raise ValidationError({'content': '記録内容は3000文字以内で入力してください'})
+        # 振り返りはテーマ未指定なら固定テーマでスレッド集約（明示指定は上書きしない）
+        if self.note_type == 'retrospective' and not (self.topic or '').strip():
+            self.topic = self.RETROSPECTIVE_TOPIC
     
     def save(self, *args, **kwargs):
         self.full_clean()

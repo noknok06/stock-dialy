@@ -80,6 +80,8 @@ def check_diary_duplicate(request):
             'status': status,
             'updated_at': diary.updated_at.strftime('%Y-%m-%d'),
             'detail_url': reverse('stockdiary:detail', kwargs={'pk': diary.id}),
+            # 再エントリー時に過去の教訓へ誘導するための件数
+            'retrospective_count': diary.notes.filter(note_type='retrospective').count(),
         })
 
     return JsonResponse({'success': True, 'exists': bool(results), 'diaries': results})

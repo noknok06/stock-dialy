@@ -12,7 +12,7 @@
   <div class="note-delete-shelf"
        data-note-id="{{ note.id }}"
        data-note-date="{{ note.date|date:'Y年m月d日' }}"
-       data-note-type-label="{% if note.note_type == 'analysis' %}分析更新{% elif note.note_type == 'news' %}ニュース{% elif note.note_type == 'earnings' %}決算情報{% elif note.note_type == 'insight' %}新たな気づき{% elif note.note_type == 'risk' %}リスク要因{% else %}その他{% endif %}"
+       data-note-type-label="{{ note.get_note_type_display }}"
        data-diary-id="{{ diary.id }}">
     <i class="bi bi-trash3"></i>
     <span>削除</span>
@@ -58,7 +58,7 @@
         <i class="bi bi-pencil"></i>
       </button>
       <button class="btn-delete-note"
-              onclick="confirmDeleteNote({{ note.id }}, '{{ note.date|date:"Y年m月d日" }}', '{% if note.note_type == 'analysis' %}分析更新{% elif note.note_type == 'news' %}ニュース{% elif note.note_type == 'earnings' %}決算情報{% elif note.note_type == 'insight' %}新たな気づき{% elif note.note_type == 'risk' %}リスク要因{% else %}その他{% endif %}', {{ diary.id }})"
+              onclick="confirmDeleteNote({{ note.id }}, '{{ note.date|date:"Y年m月d日" }}', '{{ note.get_note_type_display }}', {{ diary.id }})"
               title="削除">
         <i class="bi bi-trash3"></i>
       </button>
