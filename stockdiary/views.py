@@ -373,7 +373,7 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
             },
             {
                 'type': 'template',
-                'url': reverse_lazy('analysis_template:list'),
+                'url': reverse_lazy('diary_templates:list'),
                 'icon': 'bi-clipboard-data',
                 'label': 'テンプレート',
                 'aria_label': 'テンプレート',
