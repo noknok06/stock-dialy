@@ -273,14 +273,6 @@
               {{ transaction.memo }}
             </div>
             {% endif %}
-            
-            <!-- ✅ 信用取引の場合は注釈を追加 -->
-            {% if transaction.is_margin %}
-            <div class="alert-info-improved mt-2">
-              <i class="bi bi-info-circle me-2"></i>
-              この取引は信用取引のため、現物のみのサマリーには含まれません
-            </div>
-            {% endif %}
           </div>
         </div>
         
@@ -1050,7 +1042,7 @@
   }
 
   .summary-label {
-    font-size: 0.65rem;
+    font-size: 0.75rem;
     margin-bottom: 0.375rem;
     line-height: 1.2;
   }

@@ -919,22 +919,9 @@
 
 /* ========================================
    タグ行 - フッター直上に表示
+   （直後の .diary-footer が border-top を持つため、ここでは区切り線を引かない）
    ======================================== */
 .diary-tags-row--footer {
   margin-top: 0.5rem;
   margin-bottom: 0.5rem;
-  padding-top: 0.75rem;
-  border-top: 1px dashed var(--border-light);
-}
-
-.dark-mode .diary-tags-row--footer,
-[data-theme="dark"] .diary-tags-row--footer {
-  border-top-color: var(--dm-border);
-}
-
-/* 通常タグ行の直後に続く @ハッシュタグ行は、区切り線・余白を二重にしない */
-.diary-tags-row--footer + .diary-hashtags-row.diary-tags-row--footer {
-  margin-top: 0;
-  padding-top: 0;
-  border-top: none;
 }

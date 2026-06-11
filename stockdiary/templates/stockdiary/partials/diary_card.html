@@ -42,21 +42,20 @@
               {{ diary.stock_name }}
             </a>
           </h3>
-        </div>
-
-        <div class="diary-meta-row">
-          {% include "stockdiary/components/_date_display.html" with date=diary.created_at format="short" show_icon=True %}
-          {% include "stockdiary/components/_status_badge.html" with diary=diary style="improved" size="sm" %}
           {% if diary.realized_profit != 0 %}
             <div class="diary-profit-pill">
               {% include "stockdiary/components/_profit_display.html" with profit=diary.realized_profit style="badge" size="sm" show_icon=False decimals=0 currency=diary.currency_unit %}
             </div>
           {% endif %}
+        </div>
+
+        <div class="diary-meta-row">
+          {% include "stockdiary/components/_date_display.html" with date=diary.created_at format="short" show_icon=True %}
+          {% include "stockdiary/components/_status_badge.html" with diary=diary style="improved" size="sm" %}
           {% if diary.recent_disclosure_status %}
             <span class="disclosure-indicator disclosure-indicator--{{ diary.recent_disclosure_status }}"
-                  title="{{ diary.latest_disclosure_date|date:'Y年m月d日' }}に開示：{{ diary.latest_disclosure_doc_type_name }}">
+                  title="{% if diary.recent_disclosure_status == 'new' %}新着開示{% else %}開示{% endif %}：{{ diary.latest_disclosure_date|date:'Y年m月d日' }} {{ diary.latest_disclosure_doc_type_name }}">
               <i class="bi bi-file-earmark-text"></i>
-              <span class="disclosure-label">{% if diary.recent_disclosure_status == 'new' %}新着開示{% else %}開示{% endif %}</span>
               <span class="disclosure-date">{{ diary.latest_disclosure_date|date:"m/d" }}</span>
             </span>
           {% endif %}
