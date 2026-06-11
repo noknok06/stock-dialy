@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}銘柄サマリー - カブログ{% endblock %}
+{% block title %}日記一覧（銘柄別） - カブログ{% endblock %}
 
 {% block head %}
 <style>
@@ -87,12 +87,19 @@
 {% block content %}
 <div class="container">
 
-    <div class="page-header mb-4">
-        <h1 class="page-title">
-            <i class="bi bi-journal-bookmark"></i>
-            <span>銘柄サマリー</span>
-        </h1>
-        <p class="page-subtitle">日記に記録している銘柄の一覧</p>
+    <div class="page-header mb-4 d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div>
+            <h1 class="page-title">
+                <i class="bi bi-journal-bookmark"></i>
+                <span>日記一覧（銘柄別）</span>
+            </h1>
+            <p class="page-subtitle">日記に記録している銘柄を1行ずつまとめた表示</p>
+        </div>
+        <a href="{% url 'stockdiary:home' %}{% if search_query %}?query={{ search_query|urlencode }}{% endif %}"
+           class="btn btn-sm btn-outline-secondary flex-shrink-0"
+           title="日記カードの一覧で表示">
+            <i class="bi bi-card-text me-1"></i>カード表示
+        </a>
     </div>
 
     <!-- 検索・ソート -->
