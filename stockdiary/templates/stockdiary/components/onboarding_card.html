@@ -1,0 +1,62 @@
+{% comment %}
+新規ユーザー向けオンボーディングカード（日記0件 & 絞り込みなしの時のみ home に表示）
+記録 → つながり → 振り返り の3ステップでアプリの育ち方を予告する
+{% endcomment %}
+<div class="card mb-4">
+  <div class="card-body py-4">
+    <h5 class="fw-bold mb-1">
+      <i class="bi bi-journal-richtext me-2 text-primary"></i>カブログへようこそ
+    </h5>
+    <p class="text-muted small mb-4">
+      売買の数字ではなく「なぜそう判断したか」を記録するノートです。記録が増えるほど、自分の投資思考の地図が育ちます。
+    </p>
+
+    <div class="row g-3 mb-4">
+      <div class="col-md-4">
+        <div class="d-flex">
+          <span class="badge bg-primary rounded-circle me-2" style="width:1.8rem;height:1.8rem;line-height:1.4rem;">1</span>
+          <div>
+            <div class="fw-bold small mb-1">気になる銘柄を記録する</div>
+            <div class="text-muted small">
+              銘柄名と、いま考えていることを書くだけ。取引の入力は後からでも、CSV取込でもOK
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="d-flex">
+          <span class="badge bg-primary rounded-circle me-2" style="width:1.8rem;height:1.8rem;line-height:1.4rem;">2</span>
+          <div>
+            <div class="fw-bold small mb-1">記録がつながる</div>
+            <div class="text-muted small">
+              本文に <code>@テーマ</code> や <code>(銘柄コード)</code> を書くと、銘柄同士が自動でつながり関連グラフに育ちます
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="d-flex">
+          <span class="badge bg-primary rounded-circle me-2" style="width:1.8rem;height:1.8rem;line-height:1.4rem;">3</span>
+          <div>
+            <div class="fw-bold small mb-1">売却したら振り返る</div>
+            <div class="text-muted small">
+              結果と理由を残すと「どんな判断で勝てているか」がタグ別成績に見えてきます
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2 flex-wrap align-items-center">
+      <button type="button" class="btn btn-primary" onclick="openQuickRecordSheet()">
+        <i class="bi bi-lightning-charge-fill me-1"></i>最初の日記を作る
+      </button>
+      <a href="{% url 'stockdiary:create' %}" class="btn btn-outline-secondary">
+        じっくり書く
+      </a>
+      <a href="{% url 'ads:guide' %}" class="small text-decoration-none ms-auto">
+        <i class="bi bi-book me-1"></i>ご利用ガイド
+      </a>
+    </div>
+  </div>
+</div>

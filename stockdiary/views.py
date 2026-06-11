@@ -394,6 +394,18 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
         from .services.recall_service import RecallService
         context['recall'] = RecallService.build(self.request.user)
 
+        # 新規ユーザーの空状態（日記0件 & 絞り込みなし）。
+        # この時は検索・フィルター群を隠してオンボーディングカードを表示する
+        has_filters = any(
+            self.request.GET.get(k) for k in
+            ('query', 'hashtag', 'tag', 'sector', 'status',
+             'transaction_date_range', 'date_range', 'disclosure')
+        )
+        context['is_empty_state'] = (
+            not has_filters and context['total_diary_count'] == 0
+            and context['excluded_count'] == 0
+        )
+
         return context
 
     def get(self, request, *args, **kwargs):
