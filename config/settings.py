@@ -747,4 +747,4 @@ Q_CLUSTER = {
     'catch_up': False,
 }
 
-STATIC_VERSION = '1.2.563'
+STATIC_VERSION = '1.2.568'
