@@ -249,11 +249,17 @@ def find_backlinks(diary, user, limit=10):
     return items[:limit]
 
 
+def split_search_terms(query: str) -> List[str]:
+    """検索文字列を空白（半角・全角）で分割して語のリストを返す。"""
+    return [t for t in re.split(r'[\s　]+', (query or '').strip()) if t]
+
+
 def apply_diary_search(queryset, query: str):
     """日記の全文検索を適用する。
 
     銘柄名・銘柄コード・投資理由・メモ・業種に加え、
     継続記録（DiaryNote.content / topic）も横断して検索する。
+    空白区切りの複数語は AND 検索（全ての語をいずれかのフィールドに含む日記）。
     `@タグ` のみが入力された場合は search_diaries_by_hashtag に委譲する。
 
     Args:
@@ -273,16 +279,21 @@ def apply_diary_search(queryset, query: str):
     if q.startswith('@') and ' ' not in q and '　' not in q:
         return search_diaries_by_hashtag(queryset, q)
 
-    return queryset.filter(
-        Q(stock_name__icontains=q) |
-        Q(stock_symbol__icontains=q) |
-        Q(reason__icontains=q) |
-        Q(memo__icontains=q) |
-        Q(sector__icontains=q) |
-        Q(notes__content__icontains=q) |
-        Q(notes__topic__icontains=q) |
-        Q(transactions__memo__icontains=q)
-    ).distinct()
+    # 語ごとに .filter() を重ねることで AND 検索にする。
+    # 1回の .filter() に Q をまとめると notes/transactions の同一行が
+    # 全語を含む場合しかヒットしないため、語ごとに別 JOIN にする必要がある
+    for term in split_search_terms(q):
+        queryset = queryset.filter(
+            Q(stock_name__icontains=term) |
+            Q(stock_symbol__icontains=term) |
+            Q(reason__icontains=term) |
+            Q(memo__icontains=term) |
+            Q(sector__icontains=term) |
+            Q(notes__content__icontains=term) |
+            Q(notes__topic__icontains=term) |
+            Q(transactions__memo__icontains=term)
+        )
+    return queryset.distinct()
 
 
 def _make_search_snippet(text: str, query: str, radius: int = 40) -> str:
@@ -324,8 +335,13 @@ def annotate_search_matches(diaries, query: str):
         diaries（同じオブジェクトを属性付きで返す）
     """
     q = (query or '').strip()
+    # @タグ検索は @ を除いた本体で照合する。複数語はいずれかの語のヒットを表示対象とする
+    terms = [
+        (t.lstrip('@').strip() or t).lower() if t.startswith('@') else t.lower()
+        for t in split_search_terms(q)
+    ]
     for diary in diaries:
-        if not q:
+        if not terms:
             diary.match_name = False
             diary.match_body = False
             diary.match_note = None
@@ -333,27 +349,33 @@ def annotate_search_matches(diaries, query: str):
             diary.match_note_snippet = ''
             continue
 
-        ql = q.lstrip('@').strip().lower() if q.startswith('@') else q.lower()
-
-        diary.match_name = (
-            ql in (diary.stock_name or '').lower()
-            or ql in (diary.stock_symbol or '').lower()
+        diary.match_name = any(
+            t in (diary.stock_name or '').lower()
+            or t in (diary.stock_symbol or '').lower()
+            for t in terms
         )
-        diary.match_body = (
-            ql in (diary.reason or '').lower()
-            or ql in (diary.memo or '').lower()
-            or ql in (diary.sector or '').lower()
+        diary.match_body = any(
+            t in (diary.reason or '').lower()
+            or t in (diary.memo or '').lower()
+            or t in (diary.sector or '').lower()
+            for t in terms
         )
 
         matched_notes = [
             note for note in diary.notes.all()
-            if ql in (note.content or '').lower() or ql in (note.topic or '').lower()
+            if any(
+                t in (note.content or '').lower() or t in (note.topic or '').lower()
+                for t in terms
+            )
         ]
         diary.match_note = matched_notes[0] if matched_notes else None
         diary.match_note_count = len(matched_notes)
-        diary.match_note_snippet = (
-            _make_search_snippet(matched_notes[0].content or '', ql) if matched_notes else ''
-        )
+        if matched_notes:
+            content = matched_notes[0].content or ''
+            hit_term = next((t for t in terms if t in content.lower()), terms[0])
+            diary.match_note_snippet = _make_search_snippet(content, hit_term)
+        else:
+            diary.match_note_snippet = ''
 
     return diaries
 

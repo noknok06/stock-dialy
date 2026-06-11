@@ -1,4 +1,4 @@
-"""日記詳細の時系列タブ・振り返りサマリー・取引メモ検索のテスト"""
+"""日記詳細の時系列タブ・振り返りサマリー・全文検索（取引メモ・複数語AND）のテスト"""
 import pytest
 from datetime import date, timedelta
 from decimal import Decimal
@@ -93,6 +93,30 @@ class TestTransactionMemoSearch:
         result = apply_diary_search(qs, '決算またぎ')
         assert list(result) == [sample_diary]
 
+    def test_multi_word_and_search_across_fields(self, user, sample_diary):
+        """空白区切りの複数語は、別フィールドへのヒットでも AND で絞り込まれる"""
+        DiaryNote.objects.create(
+            diary=sample_diary, date=date.today(), content='増配発表で配当利回り上昇',
+        )
+        qs = StockDiary.objects.filter(user=user)
+        # 銘柄名 + 継続記録の AND
+        assert list(apply_diary_search(qs, 'トヨタ 配当')) == [sample_diary]
+        # 全角スペース区切りも同様
+        assert list(apply_diary_search(qs, 'トヨタ　配当')) == [sample_diary]
+        # 片方の語しか含まない場合はヒットしない
+        assert list(apply_diary_search(qs, 'トヨタ 半導体')) == []
+
+    def test_multi_word_and_search_across_notes(self, user, sample_diary):
+        """語ごとに別の継続記録にヒットしても AND が成立する"""
+        DiaryNote.objects.create(
+            diary=sample_diary, date=date.today() - timedelta(days=1), content='決算は好調',
+        )
+        DiaryNote.objects.create(
+            diary=sample_diary, date=date.today(), content='円安が追い風',
+        )
+        qs = StockDiary.objects.filter(user=user)
+        assert list(apply_diary_search(qs, '決算 円安')) == [sample_diary]
+
     def test_other_users_transaction_memo_not_leaked(self, user, another_user):
         other_diary = StockDiary.objects.create(
             user=another_user, stock_symbol='9984', stock_name='ソフトバンクグループ',
@@ -105,3 +129,29 @@ class TestTransactionMemoSearch:
         )
         qs = StockDiary.objects.filter(user=user)
         assert list(apply_diary_search(qs, '秘密のメモ')) == []
+
+
+class TestMultiWordSearchDisplay:
+    """複数語検索のヒット箇所表示・ハイライト"""
+
+    def test_annotate_search_matches_with_multiple_terms(self, user, sample_diary):
+        from stockdiary.utils import annotate_search_matches
+
+        note = DiaryNote.objects.create(
+            diary=sample_diary, date=date.today(), content='増配発表で配当利回り上昇',
+        )
+        diaries = list(
+            StockDiary.objects.filter(user=user).prefetch_related('notes')
+        )
+        annotate_search_matches(diaries, 'トヨタ 配当')
+        diary = diaries[0]
+        assert diary.match_name is True          # 「トヨタ」が銘柄名にヒット
+        assert diary.match_note == note          # 「配当」が継続記録にヒット
+        assert '配当' in diary.match_note_snippet
+
+    def test_highlight_filter_marks_each_term(self):
+        from stockdiary.templatetags.stockdiary_filters import highlight
+
+        result = highlight('トヨタの配当が増えた', 'トヨタ 配当')
+        assert '<span class="search-highlight">トヨタ</span>' in result
+        assert '<span class="search-highlight">配当</span>' in result

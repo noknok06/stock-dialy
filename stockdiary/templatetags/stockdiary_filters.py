@@ -104,11 +104,23 @@ def highlight(text, search_term):
     """
     if not search_term or not text:
         return mark_safe(text)
-    
+
+    # 空白区切りの複数語はそれぞれハイライトする（AND検索に対応）
+    from stockdiary.utils import split_search_terms
+    terms = split_search_terms(search_term)
+    if not terms:
+        return mark_safe(text)
+
     # HTMLタグをエスケープせずに検索するために正規表現を使用
-    search_pattern = re.compile(r'({0})'.format(re.escape(search_term)), re.IGNORECASE)
+    # 一方の語が他方の語の接頭辞になっている場合に備え、長い語から優先して照合する
+    search_pattern = re.compile(
+        r'({0})'.format(
+            '|'.join(re.escape(t) for t in sorted(terms, key=len, reverse=True))
+        ),
+        re.IGNORECASE,
+    )
     result = search_pattern.sub(r'<span class="search-highlight">\1</span>', text)
-    
+
     return mark_safe(result)
         
 
