@@ -132,22 +132,29 @@ home / timeline / diary_summary / trading_dashboard / diary_graph / investment_h
 - **効果**: タイムラインは「想起→追記」が自然な画面であり、振り返り中にそのままクイック記録できるようになる。
   コアバリュー（記録・振り返り）の動線の穴を最小コストで塞ぐ。
 
-### 3.3 モバイルボトムナビゲーション（中期・条件付き推奨）
+### 3.3 モバイルボトムナビゲーション（検討の結果**見送り**）
 
-- **現状評価**: スピードダイヤルを確認した結果、「記録アクション」はほぼ全ページで1タップ確保済み。
-  残る課題は**画面間ナビゲーション**で、モバイルは「右上ボタン→フルスクリーンメニュー→項目選択」の3操作。
-- **提案**: 画面下固定バー（`d-lg-none`、992px 境界は既存 `pc-only-header` と同一）:
-  「日記一覧 / タイムライン / ダッシュボード / メニュー（既存フルスクリーンメニューを開く）」の4項目。
-  - 新規: `templates/components/bottom_nav.html`（`quick_record_sheet.html` と同じ components 配置パターン）、
-    `static/css/3-components/bottom-nav.css`（z-index 1030 = bottom-sheet/メニュー 1050・speed-dial 1040 より下、
-    `env(safe-area-inset-bottom)` 対応）
-  - アクティブ表示は `request.resolver_match.url_name` で判定
-  - **干渉調整が必須条件**: speed-dial のモバイル `bottom: 16px` にナビ高さ（約56-60px）を加算、
-    `.app-footer` のモバイル padding-bottom 調整、右上フローティングナビボタンはモバイルで非表示化
-  - クイック記録はスピードダイヤルが既に担っているため、ボトムナビ中央 FAB は**設けない**
-    （二重 FAB はかえって混乱する）
-- **効果**: 主要画面の遷移が3操作→常時1タップ。日記アプリの主利用シーン（モバイル・スキマ時間）での
-  回遊コストが大幅に下がる。規模は新規2ファイル＋base.html/CSS 微修正で2-3日。
+- **当初案**: 画面下固定バー（日記一覧/タイムライン/ダッシュボード/メニューの4項目）で
+  主要画面の遷移を3操作→常時1タップにする。
+- **再検討の結論**: **導入しない**。理由は以下の4点。
+  1. **利用パターンが画面切り替え型でない**: コアループは「ホーム→銘柄を開く→読む/記録する」の
+     深掘り動線。一覧⇔タイムライン⇔ダッシュボードを1セッション内で何往復もする使い方は考えにくく、
+     たまの切り替えなら現行メニュー経由で許容範囲。
+  2. **縦スペースの常時喪失（56-60px）**: improvement_plan は「情報密度が高くスクロール疲れする」
+     「モバイルのファーストビューに日記カードを見せる」を課題とし、想起カードの折りたたみまで実施済み。
+     常時表示バーはこの方針と矛盾する。
+  3. **下部領域の混雑**: スピードダイヤル・クイック記録ボトムシート・フッター広告・PWAバナーが
+     既に下部を取り合っており、ボトムナビ導入はスピードダイヤルを上に押し上げて
+     親指リーチをかえって悪化させる。
+  4. **スピードダイヤルが既に簡易ランチャーとして機能**: home の page_actions には
+     新規登録/テンプレート/タグへの**ページ遷移リンク**が既に含まれており、
+     「親指リーチで別画面へ飛ぶ」手段は実質確保されている。
+- **代替案（必要になったときの低コスト施策)**: スピードダイヤルの `page_actions` に遷移先を追加する
+  （例: home に「タイムライン」、timeline に「ダッシュボード」）。views.py の context に
+  辞書を1つ足すだけで、新規コンポーネント・z-index 調整・干渉対応が一切不要。
+  なお timeline ヘッダーには「日記一覧」ボタンが既にあり、逆方向の導線は存在する。
+- **再検討トリガー**: タイムライン/ダッシュボードのモバイルからのアクセスが想定より低い、
+  あるいは画面切り替えの摩擦に関するユーザーの声が観測されたとき。
 
 ### 3.4 期間フィルタのラベル改善（小・即効）
 
@@ -159,9 +166,11 @@ home / timeline / diary_summary / trading_dashboard / diary_graph / investment_h
 
 | Phase | 内容 | 対象ファイル | 規模 |
 |-------|------|-------------|------|
-| **1**（0.5-1日） | 2.1 フィルタ基準日修正 / 2.3 メニュー痩身 / 3.2 timeline スピードダイヤル / 3.4 ラベル改善 | `stockdiary/views.py` / `templates/base.html` / `stockdiary/views_timeline.py` / `stockdiary/templates/stockdiary/{timeline,home}.html` | 小 |
-| **2**（2-3日） | 3.3 ボトムナビ新設＋FAB/フッター干渉調整 /（任意）base.html インラインCSS抽出 | 新規 `templates/components/bottom_nav.html`・`static/css/3-components/bottom-nav.css` / `templates/base.html` / `static/css/speed-dial.css` | 中 |
+| **1**（**実施済み**） | 2.1 フィルタ基準日修正 / 2.3 メニュー痩身 / 3.2 timeline スピードダイヤル / 3.4 ラベル改善 | `stockdiary/views.py` / `templates/base.html` / `stockdiary/views_timeline.py` / `stockdiary/templates/stockdiary/{timeline,home}.html` | 小 |
+| **2**（任意・0.5-1日） | base.html インラインCSS（約740行）の `static/css/3-components/` への抽出（機能変更なし） | `templates/base.html` / `static/css/3-components/` | 小 |
 | **3**（各1-2日） | 2.6 detail 通知タブ縮退 / 2.5 diary_summary の home 統合 / 2.4 期間フィルタ統廃合判断 | `detail.html` / `views.py` / `home.html` / `diary_summary.html`（統合時は削除を明示） | 中 |
+
+※ 当初 Phase 2 に置いていたボトムナビ新設は再検討の結果見送り（→ 3.3）。
 
 ## 5. リスク・注意点
 
@@ -169,8 +178,9 @@ home / timeline / diary_summary / trading_dashboard / diary_graph / investment_h
    Phase 1 ではラベル文言のみ変更。フィルタ項目を削除する際は select・hidden input・リセットJS・views.py を必ず同時修正。
 2. **HTMX 動線**: home の検索フォームは `hx-get` で `diary_list` partial を差し替える。フォーム構造変更時は
    `#diary-container` とページネーションを実機確認。detail の通知タブ削除時は `tab_content` ビューの分岐も確認。
-3. **下部UIの重なり**: ボトムナビ導入時は speed-dial・bottom-sheet・フッター広告・PWA インストールバナーとの
-   z-index / 位置干渉を要確認。safe-area 対応必須。
+3. **下部UIの重なり**: 画面下部はスピードダイヤル・ボトムシート・フッター広告・PWA インストールバナーで
+   混雑している。今後ここに常時表示要素を追加する提案が出た場合は、z-index / 位置干渉と
+   safe-area 対応を必ず評価すること（ボトムナビ見送りの根拠でもある → 3.3）。
 4. **通知導線**: 通知ベルは PC ヘッダーへの JS 注入のみでモバイルには出ない。スマホメニューの「通知管理」は削除しない。
 5. **キャッシュ**: CSS/JS 変更時は `STATIC_VERSION` の更新を忘れない。
 6. **既決定との整合**: investment_hub は露出含め現状維持。CopoMo は「設定・その他」1リンク維持。
