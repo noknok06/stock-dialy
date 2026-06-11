@@ -54,6 +54,8 @@ class RecallService:
             'unreviewed_count': unreviewed_count,
             'disclosures': disclosures,
             'has_content': bool(anniversary or unreviewed or disclosures),
+            # 折りたたみ時の見出しバッジ用の総件数
+            'total_count': len(anniversary) + unreviewed_count + len(disclosures),
         }
 
     @classmethod

@@ -7,13 +7,18 @@
 {% if recall and recall.has_content %}
 <div class="card mb-4 recall-card" id="recallCard" style="display:none">
   <div class="card-body py-3">
-    <div class="d-flex justify-content-between align-items-center mb-2">
-      <h6 class="mb-0 fw-bold">
+    <div class="d-flex justify-content-between align-items-center">
+      <h6 class="mb-0 fw-bold" style="cursor:pointer;" onclick="toggleRecallCard()">
         <i class="bi bi-lightbulb me-1 text-warning"></i>今日の想起
+        <span class="badge bg-warning text-dark ms-1">{{ recall.total_count }}</span>
+        <i class="bi bi-chevron-down small ms-1" id="recallToggleIcon"></i>
       </h6>
       <button type="button" class="btn-close" aria-label="今日は閉じる"
               onclick="dismissRecallCard()"></button>
     </div>
+
+    {# モバイルでは折りたたみ(ファーストビュー確保)、PCは展開。toggleRecallCard が制御 #}
+    <div id="recallCardBody" class="mt-2">
 
     {% if recall.anniversary %}
     <div class="recall-section mb-2">
@@ -65,6 +70,8 @@
       {% endfor %}
     </div>
     {% endif %}
+
+    </div>{# /recallCardBody #}
   </div>
 </div>
 
@@ -84,6 +91,23 @@
   window.dismissRecallCard = function() {
     card.style.display = 'none';
     try { localStorage.setItem(KEY, today); } catch (e) { /* private mode 等は無視 */ }
+  };
+
+  // モバイルはデフォルト折りたたみ(ファーストビューに日記カードを残す)、PCは展開
+  var body = document.getElementById('recallCardBody');
+  var icon = document.getElementById('recallToggleIcon');
+  var collapsed = window.innerWidth < 992;
+  function applyState() {
+    if (!body) return;
+    body.style.display = collapsed ? 'none' : '';
+    if (icon) icon.className = collapsed
+      ? 'bi bi-chevron-down small ms-1'
+      : 'bi bi-chevron-up small ms-1';
+  }
+  applyState();
+  window.toggleRecallCard = function() {
+    collapsed = !collapsed;
+    applyState();
   };
 })();
 </script>
