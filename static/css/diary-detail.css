@@ -652,14 +652,22 @@
   }
 
   .profit-hero-card {
-    padding: 1rem;
-    text-align: center;
+    /* モバイルはラベル左・値右の1行レイアウトで高さを抑える */
+    padding: 0.625rem 0.875rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    text-align: right;
+  }
+
+  .profit-label {
+    margin-bottom: 0;
   }
 
   /* 変更5: 1.75rem（タブレット時に一時的に大きくなる問題を修正） */
   .profit-value {
-    justify-content: center;
-    font-size: 1.5rem;
+    justify-content: flex-end;
+    font-size: 1.25rem;
   }
 
   .price-details-grid {
@@ -699,11 +707,11 @@
   }
 
   .profit-hero-card {
-    padding: 0.875rem;
+    padding: 0.5rem 0.75rem;
   }
 
   .profit-value {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
   }
 
   .price-details-grid {
@@ -1214,17 +1222,24 @@
 }
 
 @media (max-width: 576px) {
+  /* タブ6個が横スクロールなしで1画面に収まるよう均等幅化 */
+  .improved-tab-item {
+    min-width: 0;
+    flex: 1;
+  }
+
   .improved-tab-link {
-    min-height: 65px;
-    padding: 0.6rem 0.4rem;
+    min-height: 52px;
+    padding: 0.5rem 0.25rem;
   }
 
   .tab-icon {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
+    margin-bottom: 0.15rem;
   }
 
   .tab-label {
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
   }
 
   /* 変更6: 左右パディングを 0.5rem → 0.75rem に調整（コンテンツが端に詰まるのを防ぐ） */

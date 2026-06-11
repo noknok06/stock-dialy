@@ -81,7 +81,7 @@
 
 @media (max-width: 768px) {
   .action-bar {
-    padding: 0.75rem 1rem;
+    padding: 0.5rem 0.75rem;
     margin: -1rem -1rem 1.5rem -1rem;
   }
   
@@ -1745,7 +1745,7 @@
               {% include "stockdiary/components/_badge.html" with type="info" text=diary.transaction_count size="sm" %}
               {% endif %}
             </div>
-            <div class="tab-label">取引履歴</div>
+            <div class="tab-label">取引<span class="d-none d-sm-inline">履歴</span></div>
           </button>
         </li>
         <li class="improved-tab-item" role="presentation">
@@ -1757,7 +1757,7 @@
               {% include "stockdiary/components/_badge.html" with type="info" text=notes.count size="sm" %}
               {% endif %}
             </div>
-            <div class="tab-label">継続記録</div>
+            <div class="tab-label"><span class="d-none d-sm-inline">継続</span>記録</div>
           </button>
         </li>
 
@@ -1791,7 +1791,7 @@
             hx-trigger="shown.bs.tab once"
             hx-indicator="#edinet-loading">
             <div class="tab-icon"><i class="bi bi-file-earmark-text"></i></div>
-            <div class="tab-label">開示書類</div>
+            <div class="tab-label">開示<span class="d-none d-sm-inline">書類</span></div>
           </button>
         </li>
         {% endif %}
