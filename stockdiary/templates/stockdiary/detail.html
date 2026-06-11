@@ -1568,11 +1568,11 @@
 
   <!-- 通知設定モーダル -->
   <div class="modal fade" id="notificationModal" tabindex="-1" aria-labelledby="notificationModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">
-            <i class="bi bi-bell me-2"></i>リマインダー設定
+            <i class="bi bi-bell me-2"></i>通知設定
           </h5>
           <button type="button" class="btn" data-bs-dismiss="modal" aria-label="閉じる">
             <i class="bi bi-x"></i>
@@ -1580,15 +1580,71 @@
         </div>
         <div class="modal-body">
           {% csrf_token %}
-          
+
           {% include "stockdiary/components/_form_field.html" with type="datetime-local" name="remindAt" label="通知日時" icon="bi-calendar-event" required=True help_text="指定した日時に通知を送信します" %}
-          
+
           <div class="form-group mt-3">
             <label class="form-label-improved" for="notificationMessage">
               <i class="bi bi-chat-text me-1"></i>
               メッセージ（オプション）
             </label>
             <textarea class="form-input-improved" id="notificationMessage" rows="3" placeholder="通知メッセージを入力"></textarea>
+          </div>
+
+          <hr class="my-3">
+
+          <!-- 旧「通知」タブから移設（IDはJSが参照するため変更しないこと） -->
+          <div id="push-notification-section">
+            <div class="push-notification-header">
+              <div class="push-notification-icon">
+                <i class="bi bi-bell-fill"></i>
+              </div>
+              <div class="push-notification-title">
+                <h6>
+                  プッシュ通知
+                  {% include "stockdiary/components/_badge.html" with type="primary" text="BETA" size="sm" %}
+                </h6>
+                <p class="push-notification-subtitle">大切な情報をリアルタイムで受け取れます</p>
+              </div>
+            </div>
+
+            <div id="push-status">
+              <div class="push-status-icon">
+                <i class="bi bi-hourglass-split"></i>
+              </div>
+              <div class="push-status-text">
+                <div class="push-status-label">ステータス</div>
+                <div class="push-status-value">読み込み中...</div>
+              </div>
+            </div>
+
+            <button id="enable-push-btn" class="btn btn-primary" style="display: none;">
+              <i class="bi bi-bell"></i>
+              プッシュ通知を有効にする
+            </button>
+
+            <button id="disable-push-btn" class="btn btn-outline-danger" style="display: none;">
+              <i class="bi bi-bell-slash"></i>
+              プッシュ通知を無効にする
+            </button>
+
+            <div id="push-error" style="display: none;">
+              {% include "stockdiary/components/_alert.html" with type="warning" message="" %}
+            </div>
+
+            <!-- 通知設定一覧 -->
+            <div class="notification-settings-section">
+              <div class="notification-settings-header">
+                <div class="notification-settings-title">
+                  <i class="bi bi-gear"></i>
+                  <h6>設定済みの通知</h6>
+                </div>
+              </div>
+
+              <div id="notification-list-container">
+                {% include "stockdiary/components/_loading.html" with text="通知設定を読み込んでいます..." %}
+              </div>
+            </div>
           </div>
         </div>
         <div class="modal-footer">
@@ -1723,14 +1779,6 @@
               {% endif %}
             </div>
             <div class="tab-label">関連</div>
-          </button>
-        </li>
-
-        <li class="improved-tab-item" role="presentation">
-          <button class="improved-tab-link" id="notifications-tab" data-bs-toggle="tab" data-bs-target="#notifications-content"
-            type="button" role="tab" aria-controls="notifications-content" aria-selected="false">
-            <div class="tab-icon"><i class="bi bi-bell"></i></div>
-            <div class="tab-label">通知</div>
           </button>
         </li>
 
@@ -2059,68 +2107,6 @@
           {% endif %}
         </div>
         <!-- /関連タブ -->
-
-        <!-- 通知タブ -->
-        <div class="tab-pane fade" id="notifications-content" role="tabpanel" aria-labelledby="notifications-tab">
-          <div id="push-notification-section" class="slide-in-right">
-            <div class="push-notification-header">
-              <div class="push-notification-icon">
-                <i class="bi bi-bell-fill"></i>
-              </div>
-              <div class="push-notification-title">
-                <h6>
-                  プッシュ通知
-                  {% include "stockdiary/components/_badge.html" with type="primary" text="BETA" size="sm" %}
-                </h6>
-                <p class="push-notification-subtitle">大切な情報をリアルタイムで受け取れます</p>
-              </div>
-            </div>
-            
-            <div id="push-status">
-              <div class="push-status-icon">
-                <i class="bi bi-hourglass-split"></i>
-              </div>
-              <div class="push-status-text">
-                <div class="push-status-label">ステータス</div>
-                <div class="push-status-value">読み込み中...</div>
-              </div>
-            </div>
-            
-            <button id="enable-push-btn" class="btn btn-primary" style="display: none;">
-              <i class="bi bi-bell"></i>
-              プッシュ通知を有効にする
-            </button>
-            
-            <button id="disable-push-btn" class="btn btn-outline-danger" style="display: none;">
-              <i class="bi bi-bell-slash"></i>
-              プッシュ通知を無効にする
-            </button>
-            
-            <div id="push-error" style="display: none;">
-              {% include "stockdiary/components/_alert.html" with type="warning" message="" %}
-            </div>
-
-            <!-- 通知設定一覧 -->
-            <div class="notification-settings-section">
-              <div class="notification-settings-header">
-                <div class="notification-settings-title">
-                  <i class="bi bi-gear"></i>
-                  <h6>通知設定</h6>
-                </div>
-                <button type="button" 
-                        class="btn btn-primary btn--sm"
-                        data-bs-toggle="modal"
-                        data-bs-target="#notificationModal">
-                  <i class="bi bi-plus-circle me-1"></i>
-                </button>
-              </div>
-              
-              <div id="notification-list-container">
-                {% include "stockdiary/components/_loading.html" with text="通知設定を読み込んでいます..." %}
-              </div>
-            </div>
-          </div>
-        </div>
 
         <!-- 活動履歴タブ（取引・分割・継続記録統合） -->
         <div class="tab-pane fade" id="events-content" role="tabpanel" aria-labelledby="events-tab">

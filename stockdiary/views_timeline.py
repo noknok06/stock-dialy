@@ -13,6 +13,7 @@ from datetime import timedelta
 
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import Paginator
+from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views.generic import TemplateView
 
@@ -78,6 +79,25 @@ class TimelineView(LoginRequiredMixin, TemplateView):
             'period_choices': PERIOD_CHOICES,
             'type_choices': TYPE_CHOICES,
             'tags': Tag.objects.filter(user=user).order_by('name'),
+            # 振り返り中にそのまま記録できるよう、他の主要ページと同じスピードダイアルを置く
+            'page_actions': [
+                {
+                    'id': 'quick-add',
+                    'type': 'quick-add',
+                    'url': '#',
+                    'icon': 'bi-lightning-charge-fill',
+                    'label': 'クイック記録',
+                    'aria_label': '素早く投資記録を作成',
+                    'condition': True
+                },
+                {
+                    'type': 'add',
+                    'url': reverse_lazy('stockdiary:create'),
+                    'icon': 'bi-plus-lg',
+                    'label': '新規登録',
+                    'aria_label': '新規登録'
+                },
+            ],
         })
         return context
 

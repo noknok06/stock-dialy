@@ -1599,7 +1599,7 @@
           </select>
         </div>
         <div class="mt-2">
-          <label class="filter-group-label" for="sidebarTransactionDateRangeFilter">直近の取引</label>
+          <label class="filter-group-label" for="sidebarTransactionDateRangeFilter">売買があった時期</label>
           <select class="form-select form-select-sm sidebar-filter" id="sidebarTransactionDateRangeFilter" name="transaction_date_range">
             <option value="">指定なし</option>
             <option value="1w" {% if request.GET.transaction_date_range == '1w' %}selected{% endif %}>1週間以内</option>
@@ -1618,7 +1618,7 @@
           </select>
         </div>
         <div class="mt-2">
-          <label class="filter-group-label" for="sidebarDateRangeFilter">購入時期</label>
+          <label class="filter-group-label" for="sidebarDateRangeFilter">初回購入の時期</label>
           <select class="form-select form-select-sm sidebar-filter" id="sidebarDateRangeFilter" name="date_range">
             <option value="">指定なし</option>
             <option value="1w" {% if request.GET.date_range == '1w' %}selected{% endif %}>直近1週間</option>
@@ -1678,11 +1678,6 @@
       </p>
     </div>
     <div class="page-header-actions">
-      <a href="{% url 'stockdiary:diary_summary' %}" class="btn btn-outline-primary me-2">
-        <i class="bi bi-journal-bookmark me-1"></i>
-        <span class="d-none d-sm-inline">銘柄サマリー</span>
-        <span class="d-sm-none">サマリー</span>
-      </a>
       <a href="{% url 'stockdiary:create' %}" class="btn btn-primary d-none d-lg-inline-flex align-items-center">
         <i class="bi bi-plus-lg me-1"></i>
         <span>新規作成</span>
@@ -1756,7 +1751,8 @@
         </div>
       </div>
 
-      <!-- ステータスタブ -->
+      <!-- ステータスタブ + 表示モード切替 -->
+      <div class="d-flex align-items-center gap-2">
       <div class="status-tabs-wrapper">
         <div class="status-tabs" role="tablist">
           <button type="button" class="status-tab{% if not request.GET.status or request.GET.status == 'active' %} active{% endif %}"
@@ -1787,6 +1783,12 @@
         </div>
         <input type="hidden" name="status" id="statusFilter"
                value="{{ request.GET.status|default:'active' }}">
+      </div>
+      <a href="{% url 'stockdiary:diary_summary' %}{% if request.GET.query %}?q={{ request.GET.query|urlencode }}{% endif %}"
+         class="btn btn-sm btn-outline-secondary flex-shrink-0 mb-2"
+         title="銘柄単位のサマリー表で表示">
+        <i class="bi bi-table me-1"></i>銘柄別
+      </a>
       </div>
 
       <!-- 直近で使われているハッシュタグのクイックチップ -->
@@ -1853,7 +1855,7 @@
         </select>
       </div>
       <div>
-        <label class="filter-group-label" for="transactionDateRangeFilter">直近の取引</label>
+        <label class="filter-group-label" for="transactionDateRangeFilter">売買があった時期</label>
         <select class="form-select" id="transactionDateRangeFilter" name="transaction_date_range">
           <option value="">指定なし</option>
           <option value="1w" {% if request.GET.transaction_date_range == '1w' %}selected{% endif %}>1週間以内に取引</option>
@@ -1872,7 +1874,7 @@
         </select>
       </div>
       <div>
-        <label class="filter-group-label" for="dateRangeFilter">購入時期</label>
+        <label class="filter-group-label" for="dateRangeFilter">初回購入の時期</label>
         <select class="form-select" id="dateRangeFilter" name="date_range">
           <option value="">指定なし</option>
           <option value="1w" {% if request.GET.date_range == '1w' %}selected{% endif %}>直近1週間に購入</option>
@@ -2189,14 +2191,14 @@ function updateFilterBadges() {
   var tdrFilter = document.getElementById('transactionDateRangeFilter');
   if (tdrFilter && tdrFilter.value) {
     addFilterChip('transaction_date_range', tdrFilter.value,
-      '直近の取引: ' + (rangeText[tdrFilter.value] || tdrFilter.value));
+      '売買があった時期: ' + (rangeText[tdrFilter.value] || tdrFilter.value));
     count++;
   }
 
   var drFilter = document.getElementById('dateRangeFilter');
   if (drFilter && drFilter.value) {
     addFilterChip('date_range', drFilter.value,
-      '購入時期: ' + (rangeText[drFilter.value] || drFilter.value));
+      '初回購入の時期: ' + (rangeText[drFilter.value] || drFilter.value));
     count++;
   }
 
