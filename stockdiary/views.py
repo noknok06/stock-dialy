@@ -197,12 +197,12 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
         if status != 'excluded':
             queryset = queryset.filter(is_excluded=False)
         
-        # 🆕 トランザクション期間フィルター（created_at基準）
+        # 🆕 トランザクション期間フィルター（取引日基準）
         transaction_date_range = self.request.GET.get('transaction_date_range', '')
         if transaction_date_range:
             from datetime import timedelta
-            today = timezone.now()
-            
+            today = timezone.now().date()
+
             range_mapping = {
                 '1w': 7,
                 '1m': 30,
@@ -210,13 +210,13 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
                 '6m': 180,
                 '1y': 365
             }
-            
+
             if transaction_date_range in range_mapping:
-                start_datetime = today - timedelta(days=range_mapping[transaction_date_range])
-                # トランザクションのcreated_atで絞り込み
+                start_date = today - timedelta(days=range_mapping[transaction_date_range])
+                # トランザクションの取引日で絞り込み
                 diary_ids = Transaction.objects.filter(
                     diary__user=self.request.user,
-                    created_at__gte=start_datetime
+                    transaction_date__gte=start_date
                 ).values_list('diary_id', flat=True).distinct()
                 queryset = queryset.filter(id__in=diary_ids)
         

@@ -1599,7 +1599,7 @@
           </select>
         </div>
         <div class="mt-2">
-          <label class="filter-group-label" for="sidebarTransactionDateRangeFilter">直近の取引</label>
+          <label class="filter-group-label" for="sidebarTransactionDateRangeFilter">売買があった時期</label>
           <select class="form-select form-select-sm sidebar-filter" id="sidebarTransactionDateRangeFilter" name="transaction_date_range">
             <option value="">指定なし</option>
             <option value="1w" {% if request.GET.transaction_date_range == '1w' %}selected{% endif %}>1週間以内</option>
@@ -1618,7 +1618,7 @@
           </select>
         </div>
         <div class="mt-2">
-          <label class="filter-group-label" for="sidebarDateRangeFilter">購入時期</label>
+          <label class="filter-group-label" for="sidebarDateRangeFilter">初回購入の時期</label>
           <select class="form-select form-select-sm sidebar-filter" id="sidebarDateRangeFilter" name="date_range">
             <option value="">指定なし</option>
             <option value="1w" {% if request.GET.date_range == '1w' %}selected{% endif %}>直近1週間</option>
@@ -1853,7 +1853,7 @@
         </select>
       </div>
       <div>
-        <label class="filter-group-label" for="transactionDateRangeFilter">直近の取引</label>
+        <label class="filter-group-label" for="transactionDateRangeFilter">売買があった時期</label>
         <select class="form-select" id="transactionDateRangeFilter" name="transaction_date_range">
           <option value="">指定なし</option>
           <option value="1w" {% if request.GET.transaction_date_range == '1w' %}selected{% endif %}>1週間以内に取引</option>
@@ -1872,7 +1872,7 @@
         </select>
       </div>
       <div>
-        <label class="filter-group-label" for="dateRangeFilter">購入時期</label>
+        <label class="filter-group-label" for="dateRangeFilter">初回購入の時期</label>
         <select class="form-select" id="dateRangeFilter" name="date_range">
           <option value="">指定なし</option>
           <option value="1w" {% if request.GET.date_range == '1w' %}selected{% endif %}>直近1週間に購入</option>
@@ -2189,14 +2189,14 @@ function updateFilterBadges() {
   var tdrFilter = document.getElementById('transactionDateRangeFilter');
   if (tdrFilter && tdrFilter.value) {
     addFilterChip('transaction_date_range', tdrFilter.value,
-      '直近の取引: ' + (rangeText[tdrFilter.value] || tdrFilter.value));
+      '売買があった時期: ' + (rangeText[tdrFilter.value] || tdrFilter.value));
     count++;
   }
 
   var drFilter = document.getElementById('dateRangeFilter');
   if (drFilter && drFilter.value) {
     addFilterChip('date_range', drFilter.value,
-      '購入時期: ' + (rangeText[drFilter.value] || drFilter.value));
+      '初回購入の時期: ' + (rangeText[drFilter.value] || drFilter.value));
     count++;
   }
 
