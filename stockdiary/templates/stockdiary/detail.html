@@ -530,7 +530,7 @@
   font-size: 1.125rem;
 }
 
-/* オプションピル */
+/* オプションピル（重要度の3択。シートの縦空間を取らないよう1行のコンパクト型） */
 .option-pills {
   display: flex;
   flex-wrap: wrap;
@@ -539,16 +539,17 @@
 
 .option-pill {
   flex: 1;
-  min-width: 100px;
-  padding: 0.875rem 1rem;
+  min-width: 0;
+  padding: 0.5rem 0.75rem;
   border: 2px solid var(--border-color);
   border-radius: var(--radius-md);
   background: var(--bg-secondary);
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
+  justify-content: center;
   gap: 0.375rem;
   font-size: 0.875rem;
   font-weight: 500;
@@ -556,7 +557,7 @@
 }
 
 .option-pill i {
-  font-size: 1.25rem;
+  font-size: 1rem;
 }
 
 .option-pill:hover {
@@ -777,15 +778,15 @@
   .option-pills {
     gap: 0.375rem;
   }
-  
+
   .option-pill {
-    min-width: 80px;
-    padding: 0.75rem 0.5rem;
+    min-width: 0;
+    padding: 0.45rem 0.5rem;
     font-size: 0.8125rem;
   }
-  
+
   .option-pill i {
-    font-size: 1.125rem;
+    font-size: 0.9rem;
   }
   
   .note-card-header {
@@ -1579,20 +1580,6 @@
           </button>
         </div>
         <div class="modal-body">
-          {% csrf_token %}
-
-          {% include "stockdiary/components/_form_field.html" with type="datetime-local" name="remindAt" label="通知日時" icon="bi-calendar-event" required=True help_text="指定した日時に通知を送信します" %}
-
-          <div class="form-group mt-3">
-            <label class="form-label-improved" for="notificationMessage">
-              <i class="bi bi-chat-text me-1"></i>
-              メッセージ（オプション）
-            </label>
-            <textarea class="form-input-improved" id="notificationMessage" rows="3" placeholder="通知メッセージを入力"></textarea>
-          </div>
-
-          <hr class="my-3">
-
           <!-- 旧「通知」タブから移設（IDはJSが参照するため変更しないこと） -->
           <div id="push-notification-section">
             <div class="push-notification-header">
@@ -1645,6 +1632,21 @@
                 {% include "stockdiary/components/_loading.html" with text="通知設定を読み込んでいます..." %}
               </div>
             </div>
+          </div>
+
+          <hr class="my-3">
+
+          <!-- 新規リマインダー（フッターの「保存」と隣接させるため最後に配置） -->
+          {% csrf_token %}
+
+          {% include "stockdiary/components/_form_field.html" with type="datetime-local" name="remindAt" label="通知日時" icon="bi-calendar-event" required=True help_text="指定した日時に通知を送信します" %}
+
+          <div class="form-group mt-3">
+            <label class="form-label-improved" for="notificationMessage">
+              <i class="bi bi-chat-text me-1"></i>
+              メッセージ（オプション）
+            </label>
+            <textarea class="form-input-improved" id="notificationMessage" rows="3" placeholder="通知メッセージを入力"></textarea>
           </div>
         </div>
         <div class="modal-footer">
@@ -2351,6 +2353,7 @@
 <script src="{% static 'js/hashtag-autocomplete.js' %}?v={{ STATIC_VERSION }}"></script>
 <!-- EasyMDE Markdown Editor (継続記録フォーム) -->
 <script src="https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.js"></script>
+<script src="{% static 'js/easymde-bi-toolbar.js' %}?v={{ STATIC_VERSION }}"></script>
 <script>
 // ============================================
 // 継続記録フォーム: Markdown エディタ & 文字数カウンター
@@ -2439,13 +2442,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     noteEasyMDE = new EasyMDE({
       element: textarea,
-      toolbar: [
+      toolbar: easymdeBiToolbar([
         'bold', 'italic', '|',
         'unordered-list', 'ordered-list', '|',
         'quote', 'code', '|',
         'preview', 'side-by-side', 'fullscreen', '|',
         'guide'
-      ],
+      ]),
       placeholder: '状況の変化や新たな情報を記録しましょう\n\n**太字**、*斜体*、箇条書きなどMarkdown記法が使えます',
       autosave: { enabled: false },
       spellChecker: false,
