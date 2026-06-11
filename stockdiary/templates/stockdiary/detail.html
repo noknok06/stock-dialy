@@ -1819,7 +1819,6 @@
             </button>
           </div>
           {% endif %}
-          {% include "stockdiary/partials/_theme_recall.html" %}
           {% if diary.image_url %}
           <div class="diary-image-section fade-in">
             <div class="card border-0">
@@ -1870,6 +1869,9 @@
             <div class="memo-content markdown-content">{{ diary.memo|render_markdown }}</div>
           </div>
           {% endif %}
+
+          <!-- 同テーマの過去判断（補助情報のため投資理由の後に配置） -->
+          {% include "stockdiary/partials/_theme_recall.html" %}
 
           <!-- PCサイドバー非表示時用フォールバック: 取引サマリー・タグ -->
           <div class="info-grid mobile-optimized fade-in detail-fallback-on-narrow">
