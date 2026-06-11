@@ -1672,6 +1672,7 @@
 {{ block.super }}
 <!-- EasyMDE Markdown Editor -->
 <script src="https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.js"></script>
+<script src="{% static 'js/easymde-bi-toolbar.js' %}?v={{ STATIC_VERSION }}"></script>
 <!-- @ハッシュタグ オートコンプリート -->
 <script src="{% static 'js/hashtag-autocomplete.js' %}?v={{ STATIC_VERSION }}"></script>
 <script>
@@ -2132,12 +2133,12 @@ window.initReasonEasyMDE = function initReasonEasyMDE() {
     },
     placeholder: 'なぜこの銘柄に注目したのか、どのような分析をしたのか、将来の見通しなどを自由に記録してください...\n\n**太字**、*斜体*、- リスト、## 見出し などのMarkdown記法が使えます',
     maxHeight: '400px',
-    toolbar: [
+    toolbar: easymdeBiToolbar([
       'bold', 'italic', 'heading', '|',
       'unordered-list', 'ordered-list', '|',
       'link', 'quote', '|',
       'preview', 'fullscreen', 'side-by-side'
-    ],
+    ]),
     status: false,
     renderingConfig: {
       singleLineBreaks: true,
