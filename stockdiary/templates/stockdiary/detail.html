@@ -2140,10 +2140,14 @@
                         {% if event.data.is_margin %}<span class="badge bg-warning"><i class="bi bi-percent"></i>信用</span>{% endif %}
                       </div>
                       <div class="mt-2 small">
-                        <div><strong>単価:</strong> {{ diary|currency_symbol }}{{ event.data.price|floatformat:0 }}</div>
-                        <div><strong>数量:</strong> {{ event.data.quantity }} 株</div>
-                        <div><strong>金額:</strong> {{ diary|currency_symbol }}{{ event.data.amount|floatformat:0 }}</div>
+                        <div><strong>単価:</strong> {{ event.data.price|floatformat:2|intcomma }}{{ diary|currency_unit }}</div>
+                        <div><strong>数量:</strong> {{ event.data.quantity|floatformat:0 }} 株</div>
+                        <div><strong>金額:</strong> {{ event.data.amount|intcomma_float:0 }}{{ diary|currency_unit }}</div>
                         {% if event.data.memo %}<div class="mt-2 text-muted">{{ event.data.memo|truncatewords:20 }}</div>{% endif %}
+                        <a href="#" class="text-decoration-none small"
+                           onclick="document.getElementById('transactions-tab').click(); return false;">
+                          <i class="bi bi-pencil me-1"></i>取引履歴タブで編集
+                        </a>
                       </div>
                     </div>
                   {% elif event.type == 'split' %}

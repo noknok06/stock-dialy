@@ -44,7 +44,14 @@ class SignUpView(CreateView):
     model = User
     form_class = CustomUserCreationForm
     template_name = 'users/signup.html'
-    success_url = reverse_lazy('users:login')
+    success_url = reverse_lazy('stockdiary:home')
+
+    def form_valid(self, form):
+        # 登録→ログイン画面に戻す摩擦をなくし、そのままホームへ
+        response = super().form_valid(form)
+        login(self.request, self.object,
+              backend='django.contrib.auth.backends.ModelBackend')
+        return response
 
 class GoogleLoginView(TemplateView):
     template_name = 'users/google_login.html'

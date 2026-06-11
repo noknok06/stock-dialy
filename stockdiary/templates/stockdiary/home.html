@@ -1479,6 +1479,7 @@
 
 <!-- PC用フィルターサイドバー -->
 <!-- PC用フィルターサイドバー（統合版） -->
+{% if not is_empty_state %}
 <aside class="home-sidebar" id="homeSidebar" aria-label="検索・フィルター">
   <div class="sidebar-header">
     <h5 class="sidebar-title">
@@ -1661,6 +1662,7 @@
 <button id="sidebarToggleBtn" class="sidebar-toggle" style="display: none;" title="フィルターを開く">
   <i class="bi bi-chevron-right"></i>
 </button>
+{% endif %}{# /not is_empty_state（サイドバー） #}
 
 <main class="home-main">
   <div class="page-header page-header-with-actions diary-page-header mb-4">
@@ -1691,6 +1693,10 @@
   <!-- 今日の想起カード -->
   {% include "stockdiary/components/recall_card.html" %}
 
+  {% if is_empty_state %}
+  <!-- 新規ユーザー向けオンボーディング（0件時は検索・フィルター群を隠す） -->
+  {% include "stockdiary/components/onboarding_card.html" %}
+  {% else %}
   <!-- 検索フォーム -->
   <div class="mobile-search-container mb-4 d-lg-none">
     <form hx-get="{% url 'stockdiary:diary_list' %}"
@@ -1882,6 +1888,7 @@
       <button type="button" class="btn-filter-apply" id="filterApplyBtn">適用</button>
     </div>
   </div>
+  {% endif %}{# /is_empty_state（検索・フィルター群） #}
 
   <!-- 日記コンテナ -->
   <div id="diary-container" class="home-diary-grid">
