@@ -10,6 +10,15 @@ from typing import Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
 
+# XBRL 財務分析に対応する書類種別（財務諸表を含む報告書のみ）。
+# 臨時報告書・内部統制報告書・訂正類などの XBRL は財務諸表タクソノミを
+# 持たず抽出がエラーになるため対象外とする。
+XBRL_ANALYZABLE_DOC_TYPE_CODES = {
+    '120',  # 有価証券報告書
+    '140',  # 四半期報告書（制度廃止前の過去分）
+    '160',  # 半期報告書
+}
+
 
 class XBRLAnalysisService:
     """
@@ -39,6 +48,16 @@ class XBRLAnalysisService:
                 'data_completeness': float,
             }
         """
+        if document.doc_type_code not in XBRL_ANALYZABLE_DOC_TYPE_CODES:
+            logger.info(
+                f"XBRL財務分析スキップ（非対応種別）: {document.doc_id} "
+                f"doc_type={document.doc_type_code}"
+            )
+            return {
+                'ok': False,
+                'error': 'この書類種別は財務諸表を含まないため、XBRL財務分析に対応していません',
+            }
+
         doc_info = {
             'company_name': document.company_name,
             'doc_description': getattr(document, 'doc_description', ''),

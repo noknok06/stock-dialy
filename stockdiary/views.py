@@ -3617,11 +3617,18 @@ def edinet_panel(request, diary_id):
                 except Exception:
                     pass
 
+            # XBRL財務分析の可否（財務諸表を含む種別のみ。臨報・内部統制等は不可）
+            from earnings_analysis.services.xbrl_analysis_service import XBRL_ANALYZABLE_DOC_TYPE_CODES
+            can_xbrl_analyze = (
+                doc.xbrl_flag and doc.doc_type_code in XBRL_ANALYZABLE_DOC_TYPE_CODES
+            )
+
             documents.append({
                 'doc': doc,
                 'sent': sent,
                 'tone_trend': tone_trend,
                 'fin_data': fin_data,
+                'can_xbrl_analyze': can_xbrl_analyze,
                 'report_json': report_json,
                 'pdf_url': pdf_url,
                 'sent_json': sent_json,
@@ -3794,12 +3801,20 @@ def edinet_xbrl_analyze(request, diary_id):
 
     try:
         from earnings_analysis.models.document import DocumentMetadata
-        from earnings_analysis.services.xbrl_analysis_service import XBRLAnalysisService
+        from earnings_analysis.services.xbrl_analysis_service import (
+            XBRLAnalysisService,
+            XBRL_ANALYZABLE_DOC_TYPE_CODES,
+        )
 
         doc = get_object_or_404(DocumentMetadata, doc_id=doc_id, legal_status='1')
 
         if not doc.xbrl_flag:
             return JsonResponse({'error': 'この書類には XBRL データがありません'}, status=400)
+        if doc.doc_type_code not in XBRL_ANALYZABLE_DOC_TYPE_CODES:
+            return JsonResponse(
+                {'error': 'この書類種別は財務諸表を含まないため、XBRL財務分析に対応していません'},
+                status=400,
+            )
 
         result = XBRLAnalysisService().analyze_document(doc)
 
