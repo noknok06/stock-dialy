@@ -70,18 +70,44 @@ class TestRecallService:
         assert sample_diary_with_transaction not in recall['unreviewed']
 
     def test_recent_disclosure_listed(self, sample_diary):
-        """直近7日以内の開示がある日記が出る"""
+        """直近の確定決算でレビュー未記入の日記が出る"""
         sample_diary.latest_disclosure_date = date.today() - timedelta(days=2)
         sample_diary.save(update_fields=['latest_disclosure_date'])
         recall = RecallService.build(sample_diary.user)
         assert sample_diary in recall['disclosures']
 
     def test_old_disclosure_excluded(self, sample_diary):
-        """8日以上前の開示は出ない"""
-        sample_diary.latest_disclosure_date = date.today() - timedelta(days=20)
+        """表示期間（30日）を過ぎた開示は出ない"""
+        sample_diary.latest_disclosure_date = date.today() - timedelta(days=40)
         sample_diary.save(update_fields=['latest_disclosure_date'])
         recall = RecallService.build(sample_diary.user)
         assert sample_diary not in recall['disclosures']
+
+    def test_disclosure_with_earnings_note_excluded(self, sample_diary):
+        """開示日以降に決算ノート(note_type='earnings')を書いたら想起から消える"""
+        sample_diary.latest_disclosure_date = date.today() - timedelta(days=2)
+        sample_diary.save(update_fields=['latest_disclosure_date'])
+        DiaryNote.objects.create(
+            diary=sample_diary,
+            date=date.today() - timedelta(days=1),
+            note_type='earnings',
+            content='決算レビュー',
+        )
+        recall = RecallService.build(sample_diary.user)
+        assert sample_diary not in recall['disclosures']
+
+    def test_disclosure_with_old_earnings_note_still_listed(self, sample_diary):
+        """開示日より前の決算ノートはレビュー済みとみなさない"""
+        sample_diary.latest_disclosure_date = date.today() - timedelta(days=2)
+        sample_diary.save(update_fields=['latest_disclosure_date'])
+        DiaryNote.objects.create(
+            diary=sample_diary,
+            date=date.today() - timedelta(days=10),
+            note_type='earnings',
+            content='前回の決算レビュー',
+        )
+        recall = RecallService.build(sample_diary.user)
+        assert sample_diary in recall['disclosures']
 
     def test_other_users_data_not_leaked(self, sample_sold_diary, another_user):
         """他ユーザーの日記は想起に出ない"""

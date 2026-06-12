@@ -3401,6 +3401,36 @@ def _get_securities_code(stock_symbol):
     return None
 
 
+def _sentiment_tone_trend(doc, current_score):
+    """同一銘柄の前回の重要開示（有報・半報）と比較した経営トーンの変化を返す。
+
+    Returns:
+        dict | None: {'delta': float, 'label': '改善'|'悪化'|'横ばい', 'prev_score': float}
+    """
+    from earnings_analysis.models.sentiment import SentimentAnalysisHistory
+    from earnings_analysis.services.disclosure_sync import IMPORTANT_DOC_TYPE_CODES
+
+    if current_score is None or not doc.securities_code or not doc.file_date:
+        return None
+
+    prev = (
+        SentimentAnalysisHistory.objects
+        .filter(
+            document__securities_code=doc.securities_code,
+            document__doc_type_code__in=IMPORTANT_DOC_TYPE_CODES,
+            document__file_date__lt=doc.file_date,
+        )
+        .order_by('-document__file_date', '-analysis_date')
+        .first()
+    )
+    if not prev or prev.overall_score is None:
+        return None
+
+    delta = float(current_score) - float(prev.overall_score)
+    label = '改善' if delta > 0.05 else ('悪化' if delta < -0.05 else '横ばい')
+    return {'delta': delta, 'label': label, 'prev_score': float(prev.overall_score)}
+
+
 @login_required
 @require_GET
 def edinet_panel(request, diary_id):
@@ -3461,6 +3491,11 @@ def edinet_panel(request, diary_id):
                 except Exception:
                     pass
             sent = sent_session or sent_history
+
+            # 経営トーンの前回比（同一銘柄の前回有報・半報との比較）
+            tone_trend = None
+            if sent and sent.overall_score is not None:
+                tone_trend = _sentiment_tone_trend(doc, sent.overall_score)
 
             pdf_url = None
             if doc.pdf_flag:
@@ -3585,6 +3620,7 @@ def edinet_panel(request, diary_id):
             documents.append({
                 'doc': doc,
                 'sent': sent,
+                'tone_trend': tone_trend,
                 'fin_data': fin_data,
                 'report_json': report_json,
                 'pdf_url': pdf_url,
@@ -3608,8 +3644,10 @@ def edinet_panel(request, diary_id):
 @require_GET
 def edinet_note_prefill(request, diary_id):
     """
-    EDINET開示書類の分析結果をDiaryNoteのプリセット内容としてJSON返却
-    新規Gemini呼び出しは行わず、保存済みanalysis_resultを使用
+    EDINET開示書類をもとに「決算レビュー」ノートの下書きをJSON返却。
+    確定財務サマリー（XBRL分析済みの場合）・経営トーンの前回比・
+    投資仮説（reason）の引用を差し込み、仮説と確定決算の突き合わせを促す。
+    新規Gemini呼び出しは行わず、保存済みの分析結果のみ使用する。
     """
     doc_id = request.GET.get('doc_id', '')
     if not doc_id:
@@ -3619,18 +3657,73 @@ def edinet_note_prefill(request, diary_id):
 
     try:
         from earnings_analysis.models.document import DocumentMetadata
+        from earnings_analysis.models.financial import CompanyFinancialData
         from earnings_analysis.models.sentiment import SentimentAnalysisSession, SentimentAnalysisHistory
+        from earnings_analysis.services.disclosure_sync import IMPORTANT_DOC_TYPE_CODES
 
         doc = get_object_or_404(DocumentMetadata, doc_id=doc_id, legal_status='1')
 
-        # 感情分析: セッション → 永続履歴にフォールバック
-        sent_session = (
+        content_parts = []
+        content_parts.append(f'## 決算レビュー: {doc.company_name}')
+        content_parts.append(f'書類: {doc.doc_type_display_name}（{doc.file_date} 提出）')
+        content_parts.append('')
+
+        # --- 確定財務サマリー（XBRL分析済みの場合・前回の有報/半報と比較） ---
+        fin = (
+            CompanyFinancialData.objects
+            .filter(document=doc)
+            .order_by('-updated_at')
+            .first()
+        )
+        prev_fin = None
+        if fin and doc.securities_code and doc.file_date:
+            prev_fin = (
+                CompanyFinancialData.objects
+                .filter(
+                    document__securities_code=doc.securities_code,
+                    document__doc_type_code__in=IMPORTANT_DOC_TYPE_CODES,
+                    document__file_date__lt=doc.file_date,
+                )
+                .order_by('-document__file_date', '-updated_at')
+                .first()
+            )
+
+        def _oku(value):
+            return f'{float(value) / 1e8:,.1f}億円' if value is not None else None
+
+        def _pct(value):
+            return f'{float(value):.1f}%' if value is not None else None
+
+        def _metric_line(label, cur, prev):
+            if cur is None:
+                return None
+            return f'- {label}: {cur}（前回 {prev}）' if prev is not None else f'- {label}: {cur}'
+
+        if fin:
+            fin_lines = [line for line in (
+                _metric_line('売上高', _oku(fin.net_sales), _oku(prev_fin.net_sales) if prev_fin else None),
+                _metric_line('営業利益', _oku(fin.operating_income), _oku(prev_fin.operating_income) if prev_fin else None),
+                _metric_line('営業利益率', _pct(fin.operating_margin), _pct(prev_fin.operating_margin) if prev_fin else None),
+                _metric_line('自己資本比率', _pct(fin.equity_ratio), _pct(prev_fin.equity_ratio) if prev_fin else None),
+            ) if line]
+            if all(getattr(fin, f) is not None for f in ('operating_cf', 'investing_cf', 'financing_cf')):
+                def _sign(value):
+                    return '+' if value > 0 else ('−' if value < 0 else '0')
+                fin_lines.append(
+                    f'- CF: 営業{_sign(fin.operating_cf)} / 投資{_sign(fin.investing_cf)} / 財務{_sign(fin.financing_cf)}'
+                )
+            if fin_lines:
+                content_parts.append('### 確定財務サマリー')
+                content_parts.extend(fin_lines)
+                content_parts.append('')
+
+        # --- 経営トーン（感情分析: セッション → 永続履歴。前回開示との差分つき） ---
+        sent = (
             SentimentAnalysisSession.objects
             .filter(document=doc, processing_status='COMPLETED')
             .order_by('-created_at')
             .first()
         )
-        sent = sent_session
         if not sent:
             try:
                 sent = (
@@ -3640,37 +3733,33 @@ def edinet_note_prefill(request, diary_id):
                     .first()
                 )
             except Exception:
-                pass
+                sent = None
 
-        content_parts = []
-        content_parts.append(f'## EDINET開示: {doc.company_name}')
-        content_parts.append(f'書類種別: {doc.doc_type_display_name}')
-        content_parts.append(f'提出日: {doc.file_date}')
-        content_parts.append('')
-
-        if sent:
-            analysis_result = getattr(sent, 'analysis_result', None) or {}
+        if sent and sent.overall_score is not None:
             _label_map = {'positive': 'ポジティブ', 'negative': 'ネガティブ', 'neutral': '中立'}
             label_display = _label_map.get(sent.sentiment_label, sent.sentiment_label or '—')
-            score = float(sent.overall_score) if sent.overall_score is not None else None
+            score = float(sent.overall_score)
+            tone_line = f'- 経営トーン: **{label_display}**（スコア {score:.2f}'
 
-            content_parts.append('### 感情分析')
-            score_str = f'{score:.1f}' if score is not None else '—'
-            content_parts.append(f'- センチメント: **{label_display}** （スコア: {score_str}）')
+            trend = _sentiment_tone_trend(doc, score)
+            if trend:
+                tone_line += f"、前回 {trend['prev_score']:.2f} から{trend['label']}"
+            tone_line += '）'
 
-            # AIインサイトの投資ポイント
-            points = (analysis_result.get('ai_expert_analysis') or {}).get('investment_points', [])
-            if points:
-                content_parts.append('')
-                content_parts.append('### 投資ポイント（AI分析）')
-                for p in points:
-                    title = p.get('title', '')
-                    desc = p.get('description', p.get('content', ''))
-                    if title:
-                        content_parts.append(f'- **{title}**: {desc}')
-                    else:
-                        content_parts.append(f'- {desc}')
+            content_parts.append('### 経営トーン')
+            content_parts.append(tone_line)
             content_parts.append('')
+
+        # --- 投資仮説の点検（決算レビューの本体） ---
+        content_parts.append('### 投資仮説の点検')
+        reason_text = strip_tags(diary.reason or '').strip()
+        if reason_text:
+            excerpt = reason_text[:200] + ('…' if len(reason_text) > 200 else '')
+            content_parts.append('> ' + excerpt.replace('\n', '\n> '))
+            content_parts.append('')
+        content_parts.append('この決算を受けて、仮説は **維持 / 修正 / 撤回** のどれか。理由も書く:')
+        content_parts.append('- ')
+        content_parts.append('')
 
         content_parts.append('---')
         content_parts.append(f'*書類参照: {doc.doc_type_display_name} / {doc.file_date} [#{doc.doc_id}]*')

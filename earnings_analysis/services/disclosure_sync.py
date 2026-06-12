@@ -23,12 +23,14 @@ from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
-# アプリ内通知を出す書類種別（決算・重要イベント系のみ。訂正類は通知しない）
-NOTIFY_DOC_TYPE_CODES = {
+# 想起・バッジ・通知の対象とする「重要開示」書類種別。
+# EDINET は速報フィードではなく「年2回の確定決算による仮説見直しトリガー」として使う方針
+# （docs/improvement_plan.md 論点2改定）のため、有報・半報のみに絞る。
+# 140(四半期報告書)は2024年4月の制度廃止で新規提出なし、180(臨時報告書)は
+# 大半が議決権行使結果等のノイズのため対象外。
+IMPORTANT_DOC_TYPE_CODES = {
     '120',  # 有価証券報告書
-    '140',  # 四半期報告書
     '160',  # 半期報告書
-    '180',  # 臨時報告書
 }
 
 # これより古い開示はイベント化しない（初回実行時の過去分一斉通知を防ぐ）
@@ -92,6 +94,9 @@ def update_diary_disclosure_status() -> int:
     # Stage 2: 該当銘柄を記録中のユーザーへアプリ内通知をファンアウト
     notified_count = fan_out_disclosure_notifications(new_events)
 
+    # 新規開示の XBRL 財務分析を非同期実行（決算レビュー素材の事前準備）
+    _queue_auto_analysis(new_events)
+
     logger.info(
         f'開示インジケーター更新完了: 日記更新={updated_count}件, '
         f'新規イベント={len(new_events)}件, 通知={notified_count}件'
@@ -99,8 +104,30 @@ def update_diary_disclosure_status() -> int:
     return updated_count
 
 
+def _queue_auto_analysis(events):
+    """新規 DisclosureEvent ごとに XBRL 財務分析タスクを django-q にキューする。
+
+    キュー投入の失敗（qcluster 未稼働・テーブル未作成等）はバッチ全体を
+    止めないよう握りつぶしてログのみ残す。
+    """
+    if not events:
+        return
+    try:
+        from django_q.tasks import async_task
+    except ImportError:
+        return
+
+    for event in events:
+        try:
+            async_task(
+                'earnings_analysis.tasks.auto_analyze_disclosure_task', event.id
+            )
+        except Exception as e:
+            logger.warning(f'XBRL自動分析のキュー投入失敗: event_id={event.id}, {e}')
+
+
 def _fetch_latest_disclosures(securities_codes) -> dict:
-    """銘柄ごとの最新開示書類を取得する。
+    """銘柄ごとの最新の重要開示書類（有報・半報）を取得する。
 
     Returns:
         dict: securities_code(5桁) → {'doc_id', 'file_date', 'doc_type_code', 'doc_type_name'}
@@ -113,6 +140,7 @@ def _fetch_latest_disclosures(securities_codes) -> dict:
         DocumentMetadata.objects
         .filter(
             securities_code__in=securities_codes,
+            doc_type_code__in=IMPORTANT_DOC_TYPE_CODES,
             legal_status__in=['1', '2'],     # '1'=縦覧中, '2'=延長期間中
             withdrawal_status='0',            # 取り下げられていない
         )
@@ -151,7 +179,7 @@ def _fetch_latest_disclosures(securities_codes) -> dict:
 def _record_disclosure_events(disclosure_map: dict) -> list:
     """通知対象の新規開示を DisclosureEvent として記録し、新規作成分を返す。
 
-    - 通知書類種別（NOTIFY_DOC_TYPE_CODES）かつ EVENT_MAX_AGE_DAYS 以内のみ対象
+    - 重要書類種別（IMPORTANT_DOC_TYPE_CODES）かつ EVENT_MAX_AGE_DAYS 以内のみ対象
     - (securities_code, doc_id) の一意制約により再実行しても重複しない
     """
     from earnings_analysis.models import DisclosureEvent
@@ -160,7 +188,7 @@ def _record_disclosure_events(disclosure_map: dict) -> list:
 
     candidates = {
         code: info for code, info in disclosure_map.items()
-        if info['doc_type_code'] in NOTIFY_DOC_TYPE_CODES and info['file_date'] >= cutoff
+        if info['doc_type_code'] in IMPORTANT_DOC_TYPE_CODES and info['file_date'] >= cutoff
     }
     if not candidates:
         return []
@@ -230,10 +258,10 @@ def fan_out_disclosure_notifications(events) -> int:
             logs.append(NotificationLog(
                 user_id=row['user_id'],
                 disclosure_event=event,
-                title=f"📄 {row['stock_name']} に新しい開示",
+                title=f"📄 {row['stock_name']} の確定決算が出ました",
                 message=(
                     f"{event.file_date.strftime('%Y/%m/%d')} に「{event.doc_type_name}」"
-                    "が提出されました。投資仮説を見直しませんか？"
+                    "が提出されました。仮説を見直して決算レビューを記録しませんか？"
                 ),
                 url=f"/stockdiary/{row['id']}/",
             ))
