@@ -204,7 +204,7 @@
   </div>
 
   <!-- アクションボタン -->
-  <div class="d-flex gap-2 mb-3">
+  <div class="d-flex gap-2 mb-3 transaction-actions-row">
     <button type="button" class="btn btn-primary" onclick="openBottomSheet('addTransactionSheet')">
       <i class="bi bi-cart-plus me-1"></i>取引を追加
     </button>
@@ -1134,25 +1134,27 @@
   margin-top: 1rem;
 }
 
-/* ========== ボタングループの調整 ========== */
+/* ========== ボタングループの調整 ==========
+   注意: グローバルな .d-flex.gap-2 への上書きは禁止。
+   ページ全体のバッジ行等が縦積みになる事故の原因になった。 */
 
-.d-flex.gap-2 {
+.transaction-actions-row {
   gap: 0.625rem !important;
   flex-wrap: wrap;
 }
 
-.d-flex.gap-2 .btn {
+.transaction-actions-row .btn {
   min-height: 48px;
   padding: 0.75rem 1.5rem;
 }
 
 @media (max-width: 576px) {
-  .d-flex.gap-2 {
+  .transaction-actions-row {
     flex-direction: column;
     gap: 0.5rem !important;
   }
-  
-  .d-flex.gap-2 .btn {
+
+  .transaction-actions-row .btn {
     width: 100%;
   }
 }
