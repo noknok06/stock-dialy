@@ -2171,7 +2171,7 @@
                       </div>
                       <div class="note-content small">
                         {% if event.data.current_price %}
-                          <div class="text-muted mb-1"><strong>価格:</strong> {{ diary|currency_symbol }}{{ event.data.current_price|floatformat:0 }} ({% if event.data.get_price_change %}{{ event.data.get_price_change }}%{% endif %})</div>
+                          <div class="text-muted mb-1"><strong>価格:</strong> {{ diary|currency_symbol }}{{ event.data.current_price|floatformat:0 }}{% if event.data.get_price_change %} ({{ event.data.get_price_change|floatformat:1 }}%){% endif %}</div>
                         {% endif %}
                         <p class="markdown-content">{{ event.data.content|truncatewords:30 }}</p>
                       </div>
