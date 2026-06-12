@@ -1312,31 +1312,26 @@
         const icon      = isHash ? 'bi-hash' : 'bi-tag-fill';
         title = `<i class="bi ${icon} me-1" style="color:${axisColor};"></i>${isHash ? '@' : ''}${_esc(d.tag_name)}`;
         html  = `
-          <div class="side-panel-section">
-            <div class="side-panel-label">軸</div>
-            <div>
-              <span class="sp-cdot d-inline-block" style="background:${axisColor};margin-right:6px;"></span>${_esc(axisLabel)}
-            </div>
-          </div>
-          <div class="side-panel-section">
-            <div class="side-panel-label">種別</div><div>${isHash ? '@ハッシュタグ' : 'タグ'}（ハブノード）</div>
-          </div>
-          <div class="side-panel-section">
-            <div class="side-panel-label">接続銘柄数</div><div>${d.diary_count || 0} 件</div>
+          <div class="sp-meta-line">
+            <span class="sp-chip sp-chip-static" style="--chip-color:${axisColor};">
+              <i class="bi bi-circle-fill"></i>${_esc(axisLabel)}
+            </span>
+            <span>${isHash ? '@ハッシュタグ' : 'タグ'}</span>
+            <span class="sp-meta-sep">・</span>
+            <span>接続銘柄 ${d.diary_count || 0}件</span>
           </div>`;
       } else if (d.node_type === 'sector') {
         title = `<i class="bi bi-building me-1" style="color:#d97706;"></i>${_esc(d.sector_name)}`;
         html  = `
-          <div class="side-panel-section">
-            <div class="side-panel-label">種別</div><div>業種（ハブノード）</div>
-          </div>
-          <div class="side-panel-section">
-            <div class="side-panel-label">接続銘柄数</div><div>${d.diary_count || 0} 件</div>
+          <div class="sp-meta-line">
+            <span class="sp-chip sp-chip-static" style="--chip-color:#d97706;">
+              <i class="bi bi-building"></i>業種
+            </span>
+            <span>接続銘柄 ${d.diary_count || 0}件</span>
           </div>`;
       } else {
         const profit = d.realized_profit || 0;
         const sign   = profit > 0 ? '+' : '';
-        const pStr   = profit === 0 ? '-' : sign + profit.toLocaleString('ja-JP');
         const pClass = profit > 0 ? 'pos' : profit < 0 ? 'neg' : 'zero';
         const statusInfo = {
           holding: { c: '#10b981', t: '保有中' },
@@ -1349,12 +1344,26 @@
             <span class="sp-badge" style="background:${statusInfo.c};">${_esc(statusInfo.t)}</span>
             ${profit === 0 ? '' : `<div class="sp-profit ${pClass}">${sign}${Math.abs(profit).toLocaleString('ja-JP')}<span>円</span></div>`}
           </div>
-          <div class="side-panel-section">
-            <div class="side-panel-label">銘柄コード</div><div>${_esc(d.stock_symbol || '-')}</div>
-          </div>
-          <div class="side-panel-section">
-            <div class="side-panel-label">業種</div><div>${_esc(d.sector || '未分類')}</div>
+          <div class="sp-meta-line">
+            <span class="sp-meta-strong">${_esc(d.stock_symbol || '-')}</span>
+            <span class="sp-meta-sep">・</span>
+            <span>${_esc(d.sector || '未分類')}</span>
+            <span class="sp-meta-sep">・</span>
+            <span>接続 ${d.link_count || 0}本</span>
           </div>`;
+
+        // 隣接ノードを「タグ・グループ（チップ）」と「関連銘柄（行）」に分けて表示
+        const neighbors = this._neighborsOf(d.id);
+        const hubNbrs   = neighbors.filter(n => n.node_type !== 'diary');
+        const diaryNbrs = neighbors.filter(n => n.node_type === 'diary');
+
+        if (hubNbrs.length > 0) {
+          html += `
+          <div class="side-panel-section">
+            <div class="side-panel-label">タグ・グループ (${hubNbrs.length})</div>
+            <div class="sp-chips">${hubNbrs.map(c => this._hubChip(c)).join('')}</div>
+          </div>`;
+        }
 
         // 投資理由の抜粋（コンテンツ情報を持つ primary ノードのみ）
         if (d.reason_excerpt) {
@@ -1403,37 +1412,42 @@
           </div>`;
         }
 
-        html += `
+        if (diaryNbrs.length > 0) {
+          html += `
           <div class="side-panel-section">
-            <div class="side-panel-label">接続数</div><div>${d.link_count || 0} 本</div>
+            <div class="side-panel-label">関連銘柄 (${diaryNbrs.length})</div>
+            <div class="sp-conn-list">${diaryNbrs.map(c => this._connRow(c)).join('')}</div>
           </div>`;
+        }
       }
 
-      // 関連ノードリスト。タグ/@タグハブで方向（追い風/向かい風）が設定されて
-      // いる場合は方向別にグルーピングして表示する
-      const dirGroups = (d.node_type === 'tag' || d.node_type === 'hashtag')
-        ? this._hubNeighborsByDirection(d.id)
-        : null;
-      if (dirGroups && (dirGroups.up.length > 0 || dirGroups.down.length > 0)) {
-        const total = dirGroups.up.length + dirGroups.down.length + dirGroups.neutral.length;
-        const section = (key, icon, label, items) => items.length === 0 ? '' : `
+      // ハブノードの関連銘柄リスト。タグ/@タグで方向（追い風/向かい風）が
+      // 設定されている場合は方向別にグルーピングして表示する
+      if (d.node_type !== 'diary') {
+        const dirGroups = (d.node_type === 'tag' || d.node_type === 'hashtag')
+          ? this._hubNeighborsByDirection(d.id)
+          : null;
+        if (dirGroups && (dirGroups.up.length > 0 || dirGroups.down.length > 0)) {
+          const total = dirGroups.up.length + dirGroups.down.length + dirGroups.neutral.length;
+          const section = (key, icon, label, items) => items.length === 0 ? '' : `
             <div class="sp-dir-head dir-${key}"><i class="bi ${icon}"></i>${label}（${items.length}）</div>
             <div class="sp-conn-list">${items.map(c => this._connRow(c)).join('')}</div>`;
-        html += `
+          html += `
           <div class="side-panel-section">
-            <div class="side-panel-label">関連ノード (${total})</div>
+            <div class="side-panel-label">関連銘柄 (${total})</div>
             ${section('up', 'bi-arrow-up-right', '追い風', dirGroups.up)}
             ${section('down', 'bi-arrow-down-right', '向かい風', dirGroups.down)}
             ${section('neutral', 'bi-dash-lg', '中立・未設定', dirGroups.neutral)}
           </div>`;
-      } else {
-        const conns = this._neighborsOf(d.id);
-        if (conns.length > 0) {
-          html += `
+        } else {
+          const conns = this._neighborsOf(d.id);
+          if (conns.length > 0) {
+            html += `
           <div class="side-panel-section">
             <div class="side-panel-label">関連ノード (${conns.length})</div>
             <div class="sp-conn-list">${conns.map(c => this._connRow(c)).join('')}</div>
           </div>`;
+          }
         }
       }
 
@@ -1763,9 +1777,20 @@
         .filter(Boolean);
     }
 
+    // ハブノード（タグ/@タグ/業種）1件ぶんのチップHTMLを生成
+    _hubChip(c) {
+      const isSector = c.node_type === 'sector';
+      const color  = isSector ? '#d97706' : (AXIS_COLORS[c.axis] || '#7c3aed');
+      const name   = (isSector ? c.sector_name : c.tag_name) || '';
+      const prefix = c.node_type === 'hashtag' ? '@' : '';
+      const icon   = isSector ? 'bi-building' : 'bi-tag-fill';
+      return `<button type="button" class="sp-chip" data-goto="${_esc(String(c.id))}"
+        style="--chip-color:${color};" title="${_esc(name)}の詳細を見る">
+        <i class="bi ${icon}"></i>${prefix}${_esc(name)}</button>`;
+    }
+
     // 関連ノード1行ぶんのHTMLを生成
-    _connRow(c) {
-      let color, sub, name, prefix = '';
+    _connRow(c) {      let color, sub, name, prefix = '';
       if (c.node_type === 'diary') {
         const statusColor = { holding: '#10b981', sold: '#ef4444', memo: '#9ca3af' };
         color = statusColor[c.status] || '#9ca3af';

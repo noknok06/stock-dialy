@@ -349,6 +349,57 @@
   padding: 0.75rem 1rem;
   overflow-y: auto;
   flex: 1;
+  /* パネル内の素のテキストが画面基準の 1rem で巨大に見えないよう統一 */
+  font-size: 0.85rem;
+}
+
+/* コード・業種・接続数などをまとめる1行メタ情報 */
+.sp-meta-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  font-size: 0.78rem;
+  color: var(--text-200, #6b7280);
+  margin-bottom: 0.85rem;
+}
+.sp-meta-strong {
+  font-weight: 700;
+  color: var(--text-100, #1d1c1c);
+  font-variant-numeric: tabular-nums;
+}
+.sp-meta-sep { opacity: 0.45; }
+
+/* タグ・グループのチップ（軸色） */
+.sp-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.sp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--chip-color, #7c3aed);
+  background: color-mix(in srgb, var(--chip-color, #7c3aed) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--chip-color, #7c3aed) 35%, transparent);
+  cursor: pointer;
+  transition: background 0.15s ease;
+  max-width: 100%;
+}
+.sp-chip > i { font-size: 0.66rem; }
+.sp-chip:hover {
+  background: color-mix(in srgb, var(--chip-color, #7c3aed) 20%, transparent);
+}
+.sp-chip.sp-chip-static { cursor: default; }
+[data-theme="dark"] .sp-meta-strong,
+body.dark-mode .sp-meta-strong {
+  color: var(--dm-foreground, #e0e0e0);
 }
 
 .side-panel-section {
@@ -783,7 +834,8 @@ body.dark-mode .side-panel-footer,
   .graph-side-panel.open {
     width: 100%;
     height: auto;
-    max-height: 280px;
+    max-height: 340px;
+    -webkit-overflow-scrolling: touch;
   }
 
   .graph-tooltip {
