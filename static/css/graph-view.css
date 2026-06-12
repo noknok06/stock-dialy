@@ -88,6 +88,18 @@
   pointer-events: stroke;
 }
 
+/* ================================================================
+   クラスタ面（ハル）— ハブごとのメンバー銘柄を囲む薄い色面
+   ================================================================ */
+.graph-hulls path {
+  stroke-linejoin: round;
+  pointer-events: none;   /* 面の下のノード・エッジ操作を妨げない */
+  transition: opacity 0.25s ease;
+}
+.graph-hulls.hull-hidden {
+  opacity: 0;
+}
+
 /* タグ/ハッシュタグの方向: 追い風(up)=緑の実線 / 向かい風(down)=赤の破線。
    エッジ種別の既定 stroke-dasharray（edge-hashtag の "4 2" 等）や presentation
    属性に確実に勝たせるため !important を付与する。 */

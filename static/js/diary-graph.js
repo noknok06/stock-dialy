@@ -110,6 +110,8 @@
       this.currentColorMode = 'axis';
       // 軸フィルター（デフォルト: テーマのみ。ユーザーが追加可）
       this.currentAxes = new Set(['theme']);
+      // クラスタ面（ハル）表示。ハブごとのメンバー銘柄を薄い面で囲む
+      this.showHulls = false;
       // URL 同期で「デフォルトと同じならパラメータを省く」ための既定値
       this._defaults = {
         statuses: new Set(this.currentStatuses),
@@ -171,6 +173,7 @@
       if (VALID.color.includes(color)) this.currentColorMode = color;
       const tag = p.get('tag');
       if (tag && /^\d+$/.test(tag)) this.currentTag = tag;
+      if (p.get('hull') === '1') this.showHulls = true;
     }
 
     _syncUrl() {
@@ -181,6 +184,7 @@
       if (join(this.currentAxes)      !== join(this._defaults.axes))     p.set('axes', join(this.currentAxes));
       if (this.currentColorMode       !== this._defaults.color)          p.set('color', this.currentColorMode);
       if (this.currentTag) p.set('tag', this.currentTag);
+      if (this.showHulls) p.set('hull', '1');
       const qs = p.toString();
       window.history.replaceState(null, '', window.location.pathname + (qs ? '?' + qs : ''));
     }
@@ -389,8 +393,8 @@
         capital_policy: '#16a34a', risk: '#dc2626', event: '#6b7280',
       };
 
-      // 軸カード: クリックでトグル
-      document.querySelectorAll('.gs-axis-card').forEach(card => {
+      // 軸カード: クリックでトグル（data-axis を持つカードのみ。ハルカードは除外）
+      document.querySelectorAll('.gs-axis-card[data-axis]').forEach(card => {
         card.addEventListener('click', () => {
           const axis = card.dataset.axis;
           if (this.currentAxes.has(axis)) {
@@ -434,6 +438,17 @@
           this._syncUrl();
         });
       });
+
+      // クラスタ面（ハル）トグル
+      const hullCard = document.getElementById('gs-hull-card');
+      if (hullCard) {
+        hullCard.addEventListener('click', () => {
+          this.showHulls = !this.showHulls;
+          this._syncModalState();
+          this._syncUrl();
+          this._updateHulls();
+        });
+      }
     }
 
     // モーダル内UIをcurrentAxes/currentColorModeに合わせる
@@ -443,7 +458,7 @@
         capital_policy: '#16a34a', risk: '#dc2626', event: '#6b7280',
       };
 
-      document.querySelectorAll('.gs-axis-card').forEach(card => {
+      document.querySelectorAll('.gs-axis-card[data-axis]').forEach(card => {
         const axis   = card.dataset.axis;
         const active = this.currentAxes.has(axis);
         const color  = AXIS_COLOR[axis] || '#7c3aed';
@@ -482,6 +497,29 @@
       document.querySelectorAll('.gs-color-card').forEach(card => {
         card.classList.toggle('gs-active', card.dataset.mode === this.currentColorMode);
       });
+
+      // クラスタ面（ハル）カード
+      const hullCard = document.getElementById('gs-hull-card');
+      if (hullCard) {
+        const on = this.showHulls;
+        hullCard.classList.toggle('gs-active', on);
+        hullCard.style.borderColor = on ? '#0891b2' : '';
+        const pill = document.getElementById('gs-hull-pill');
+        if (pill) {
+          pill.textContent = on ? '表示中' : '非表示';
+          pill.classList.toggle('gs-axis-pill-off', !on);
+          pill.style.background = on ? '#0891b222' : '';
+          pill.style.color = on ? '#0891b2' : '';
+          pill.style.borderColor = on ? '#0891b255' : '';
+        }
+        const icon = document.getElementById('gs-hull-icon');
+        if (icon) {
+          icon.className = on
+            ? 'bi bi-check-circle-fill gs-check-icon'
+            : 'bi bi-circle gs-check-icon';
+          icon.style.opacity = on ? '1' : '0.3';
+        }
+      }
 
       this._updateSettingsBadge();
     }
@@ -644,6 +682,9 @@
       const g = svg.append('g').attr('class', 'graph-root');
       this.gRoot = g;
 
+      // クラスタ面（ハル）レイヤー。最初に append してエッジ・ノードの背面に置く
+      this.hullGroup = g.append('g').attr('class', 'graph-hulls');
+
       // ユーザーが手動でズーム・パン操作したかを記録するフラグ
       this._userHasInteracted = false;
       // 自動フィットを一度だけ実行するためのフラグ（多重フィットによる「ガクつき」防止）
@@ -707,6 +748,23 @@
             return radiusScale(d.link_count || 0) * FORCE_COLLISION_MULT;
           })
         );
+
+      // クラスタ面（ハル）用: ハブごとのメンバー日記ノード参照を構築。
+      // forceLink 初期化後は edges の source/target がノードオブジェクトになる
+      const clusterByHub = new Map();
+      edges.forEach(e => {
+        const s = e.source, t = e.target;
+        let hub = null, member = null;
+        if (t && t.node_type && t.node_type !== 'diary') { hub = t; member = s; }
+        else if (s && s.node_type && s.node_type !== 'diary') { hub = s; member = t; }
+        if (!hub || !member || member.node_type !== 'diary') return;
+        if (!clusterByHub.has(hub.id)) {
+          clusterByHub.set(hub.id, { id: hub.id, hub, members: [] });
+        }
+        const c = clusterByHub.get(hub.id);
+        if (!c.members.includes(member)) c.members.push(member);
+      });
+      this._clusters = [...clusterByHub.values()].filter(c => c.members.length >= 2);
 
       // エッジ。希少な関連を太く濃く（_edgeWidth/_edgeOpacity 参照）
       const linkSel = g.append('g').attr('class', 'links')
@@ -787,6 +845,7 @@
         const el = d3.select(this);
         if (d.node_type === 'diary') {
           const r = radiusScale(d.link_count || 0);
+          d._r = r;  // ハル描画時の余白計算に使う
           el.append('circle')
             .attr('r', r)
             .classed('secondary-node', !d.is_primary);
@@ -818,6 +877,7 @@
           }
         } else if (d.node_type === 'tag') {
           const r = hubRadiusScale(d.link_count || 0);
+          d._r = r;
           const axisColor = AXIS_COLORS[d.axis] || HUB_COLOR.tag;
           el.append('polygon')
             .attr('points', _hexPoints(r))
@@ -827,6 +887,7 @@
             .attr('data-axis-color', axisColor);
         } else if (d.node_type === 'sector') {
           const r  = hubRadiusScale(d.link_count || 0);
+          d._r = r;
           const s  = r * 1.5;
           el.append('rect')
             .attr('x', -s / 2).attr('y', -s / 2)
@@ -837,6 +898,7 @@
             .attr('stroke-width', 2);
         } else if (d.node_type === 'hashtag') {
           const r = hubRadiusScale(d.link_count || 0);
+          d._r = r;
           el.append('polygon')
             .attr('points', _hexPoints(r))
             .attr('fill', AXIS_COLORS[d.axis] || HUB_COLOR.hashtag)
@@ -939,6 +1001,7 @@
           .attr('x1', d => d.source.x).attr('y1', d => d.source.y)
           .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
         nodeSel.attr('transform', d => `translate(${d.x},${d.y})`);
+        if (this.showHulls) this._updateHulls();
 
         // レイアウトがほぼ安定したら（end を待たず）一度だけ滑らかにフィット。
         // end まで待つと数秒かかり、その間に瞬間的な縮小が起きて見づらいため。
@@ -953,6 +1016,7 @@
       this._applySearch();
       this._showGraph();
       this._applyHubGlow();
+      this._updateHulls();
 
       // シミュレーション安定後の自動フィット（tick で未実行だった場合の保険）。
       // すでに tick 内でフィット済み、または手動操作済みなら何もしない。
@@ -1833,6 +1897,8 @@
       };
       if (this.linkSel)    this.linkSel.classed('focus-hidden', edgeHidden);
       if (this.linkHitSel) this.linkHitSel.classed('focus-hidden', edgeHidden);
+      // フォーカス中は非表示ノードを含むクラスタ面が誤解を招くため隠す
+      if (this.hullGroup)  this.hullGroup.classed('hull-hidden', true);
 
       this._updateFocusStats(visibleIds);
       return visibleIds;
@@ -1869,6 +1935,7 @@
 
       if (this.linkSel)    this.linkSel.classed('focus-hidden', false);
       if (this.linkHitSel) this.linkHitSel.classed('focus-hidden', false);
+      if (this.hullGroup)  this.hullGroup.classed('hull-hidden', false);
 
       this._hideFocusBanner();
 
@@ -1935,6 +2002,52 @@
         btn.innerHTML = `<i class="bi bi-crosshair me-1"></i>一致した ${count} 件を中心に表示`;
       }
       btn.style.display = 'inline-flex';
+    }
+
+    // ==============================
+    // クラスタ面（ハル）描画
+    //   ハブとそのメンバー銘柄を包む凸包を薄い色面で描く。
+    //   tick ごとに呼ばれるため、showHulls が false なら即座に抜ける
+    // ==============================
+    _updateHulls() {
+      if (!this.hullGroup) return;
+      if (!this.showHulls) {
+        this.hullGroup.selectAll('path').remove();
+        return;
+      }
+      const data = [];
+      (this._clusters || []).forEach(c => {
+        const pts = [];
+        [c.hub, ...c.members].forEach(n => {
+          if (typeof n.x !== 'number' || typeof n.y !== 'number') return;
+          // ノードの半径 + 余白ぶん広げた周囲8点でパディングし、面が窮屈にならないようにする
+          const pad = (n._r || 10) + 14;
+          for (let i = 0; i < 8; i++) {
+            const a = (Math.PI / 4) * i;
+            pts.push([n.x + Math.cos(a) * pad, n.y + Math.sin(a) * pad]);
+          }
+        });
+        if (pts.length < 3) return;
+        const hull = d3.polygonHull(pts);
+        if (!hull) return;
+        data.push({ id: c.id, hull, color: this._clusterColor(c.hub) });
+      });
+
+      const line = d3.line().curve(d3.curveCatmullRomClosed.alpha(0.8));
+      this.hullGroup.selectAll('path')
+        .data(data, d => d.id)
+        .join('path')
+          .attr('d', d => line(d.hull))
+          .attr('fill', d => d.color)
+          .attr('fill-opacity', 0.07)
+          .attr('stroke', d => d.color)
+          .attr('stroke-opacity', 0.25)
+          .attr('stroke-width', 1.5);
+    }
+
+    _clusterColor(hub) {
+      if (hub.node_type === 'sector') return HUB_COLOR.sector;
+      return AXIS_COLORS[hub.axis] || HUB_COLOR.tag;
     }
 
     // ==============================
