@@ -1246,11 +1246,6 @@
             <div class="wizard-step-dot">3</div>
             <span class="wizard-step-label">投資理由</span>
           </div>
-          <div class="wizard-step-connector"></div>
-          <div class="wizard-step-item" data-step-indicator="4">
-            <div class="wizard-step-dot">4</div>
-            <span class="wizard-step-label">タグ・詳細</span>
-          </div>
         </div>
         {% endif %}
 
@@ -1572,29 +1567,10 @@
             </div>
           </div>
 
-          {% if not form.instance.pk %}
-          <!-- ウィザード Step 3 ナビゲーション -->
-          <div class="wizard-nav">
-            <button type="button" class="btn btn-diary btn-diary-outline btn-sm" onclick="wizardBack()">
-              <i class="bi bi-arrow-left me-1"></i> 前へ
-            </button>
-            <button type="button" class="btn-wizard-skip" onclick="wizardSkip()">スキップ</button>
-            <button type="button" class="btn btn-diary btn-diary-primary ms-auto" onclick="wizardNext()">
-              次へ <i class="bi bi-arrow-right ms-1"></i>
-            </button>
-          </div>
-          {% endif %}
-        </div>
-
-        <!-- 画像セクション (ウィザード Step 4) -->
-        <div class="form-section{% if not form.instance.pk %} wizard-step{% endif %}"{% if not form.instance.pk %} data-step="4"{% endif %}>
-          <h4 class="form-section-title">
-            <i class="bi bi-image"></i> 画像添付（任意）
-          </h4>
-
-          <div class="mb-3">
+          <!-- 画像添付（旧 Step 4 から統合。理由の補足としてチャート画像等を添付） -->
+          <div class="mb-3 mt-3">
             <label for="id_image" class="form-label">
-              <i class="bi bi-cloud-upload me-1"></i>画像ファイル
+              <i class="bi bi-image me-1"></i>画像添付（任意）
             </label>
             {{ form.image }}
             <small class="form-text text-muted">
@@ -1604,7 +1580,7 @@
             <!-- 画像プレビュー -->
             <div id="image-preview-container" class="mt-3" style="display: none;">
               <div class="card" style="max-width: 300px;">
-                <img id="image-preview" class="card-img-top" 
+                <img id="image-preview" class="card-img-top"
                      style="max-height: 200px; object-fit: cover;" alt="プレビュー">
                 <div class="card-body p-2">
                   <small class="text-muted">プレビュー</small>
@@ -1634,8 +1610,9 @@
             </div>
             {% endif %}
           </div>
+
           {% if not form.instance.pk %}
-          <!-- ウィザード Step 4 最終ナビゲーション -->
+          <!-- ウィザード Step 3 最終ナビゲーション -->
           <div class="wizard-nav">
             <button type="button" class="btn btn-diary btn-diary-outline btn-sm" onclick="wizardBack()">
               <i class="bi bi-arrow-left me-1"></i> 前へ
@@ -2950,7 +2927,7 @@ function escapeHtml(text) {
 // ============================================
 {% if not form.instance.pk %}
 (function() {
-  const WIZARD_TOTAL_STEPS = 4;
+  const WIZARD_TOTAL_STEPS = 3;
   let currentWizardStep = 1;
 
   // ステップを表示する
@@ -3121,7 +3098,7 @@ function escapeHtml(text) {
 
   // バリデーションエラーがあるステップを検出して自動ジャンプ
   function detectErrorSteps() {
-    var steps = [1, 2, 3, 4];
+    var steps = [1, 2, 3];
     var errorSteps = [];
     steps.forEach(function(s) {
       var container = s === 2
@@ -3340,7 +3317,7 @@ document.addEventListener('DOMContentLoaded', function () {
       element: '#wizardProgressBar',
       popover: {
         title: '4つのステップで簡単記録',
-        description: '「銘柄情報」→「初回取引」→「投資理由」→「タグ・詳細」の順に入力していきます。途中の項目は後からでも編集できるので、気軽に進めてみましょう。',
+        description: '「銘柄情報」→「初回取引」→「投資理由」の順に入力していきます。途中の項目は後からでも編集できるので、気軽に進めてみましょう。',
         side: 'bottom',
       },
     },
