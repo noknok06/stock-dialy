@@ -1204,10 +1204,14 @@
             <!-- チャートコンテナ -->
             <div class="chart-container">
                 <canvas id="roiChart"></canvas>
+                <div id="roiChartEmpty" style="display: none; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--muted); gap: 8px;">
+                    <i class="bi bi-bar-chart" style="font-size: 2rem;"></i>
+                    <p style="margin: 0; font-size: 0.875rem;">この期間に集計できる取引データがありません</p>
+                </div>
             </div>
-            
+
             <!-- チャート説明 -->
-            <div style="text-align: center; margin-top: 0.5rem; font-size: 0.75rem; color: var(--muted);">
+            <div id="roiChartHint" style="text-align: center; margin-top: 0.5rem; font-size: 0.75rem; color: var(--muted);">
                 <i class="bi bi-info-circle"></i> バーをクリックすると詳細が表示されます
             </div>
         </div>
@@ -1424,11 +1428,20 @@
         }
 
         let data = type === 'sector' ? sectorRoiData : stockRoiData;
-        
+
+        // データ0件時は無言の空白にせず、空状態メッセージを表示する
+        const emptyEl = document.getElementById('roiChartEmpty');
+        const hintEl = document.getElementById('roiChartHint');
         if (!data || data.length === 0) {
             ctx.getContext('2d').clearRect(0, 0, ctx.width, ctx.height);
+            ctx.style.display = 'none';
+            if (emptyEl) emptyEl.style.display = 'flex';
+            if (hintEl) hintEl.style.display = 'none';
             return;
         }
+        ctx.style.display = '';
+        if (emptyEl) emptyEl.style.display = 'none';
+        if (hintEl) hintEl.style.display = '';
 
         // 🔧 重複除去：業種名/銘柄名をキーにして重複を削除
         const uniqueData = [];

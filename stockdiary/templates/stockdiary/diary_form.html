@@ -1046,6 +1046,13 @@
     overflow: hidden;
     box-sizing: border-box;
   }
+
+  /* モバイルは右上の固定ナビボタンと最終ステップが重なるため回避余白を確保 */
+  @media (max-width: 991px) {
+    .wizard-progress-bar {
+      padding-right: 3.5rem;
+    }
+  }
   .wizard-step-item {
     display: flex;
     flex-direction: column;
