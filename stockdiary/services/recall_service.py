@@ -19,8 +19,9 @@ from django.utils import timezone
 
 # 「1年前の今日」の許容ウィンドウ（±日数）
 ANNIVERSARY_WINDOW_DAYS = 3
-# 新着開示とみなす日数
-DISCLOSURE_RECENT_DAYS = 7
+# 開示を「決算レビュー待ち」として想起し続ける日数
+# （対象は有報・半報のみ＝年2回。レビューを書くまで残す未処理タスクのため長めにとる）
+DISCLOSURE_RECENT_DAYS = 30
 # 各セクションの最大表示件数
 SECTION_LIMIT = 3
 
@@ -144,12 +145,26 @@ class RecallService:
 
     @classmethod
     def _build_disclosures(cls, user, today):
-        """直近に開示書類が出た日記（latest_disclosure_date を参照）"""
-        from ..models import StockDiary
+        """確定決算（有報・半報）が出たのに決算レビュー未記入の日記。
+
+        開示日以降に note_type='earnings' のノートを書いたら想起から消える。
+        latest_disclosure_date は DisclosureSync が重要種別（有報・半報）のみで
+        更新するため、ここでの種別判定は不要。
+        """
+        from django.db.models import Exists, OuterRef
+        from ..models import StockDiary, DiaryNote
 
         cutoff = today - timedelta(days=DISCLOSURE_RECENT_DAYS)
+
+        reviewed = DiaryNote.objects.filter(
+            diary=OuterRef('pk'),
+            note_type='earnings',
+            date__gte=OuterRef('latest_disclosure_date'),
+        )
         return list(
             StockDiary.objects
             .filter(user=user, is_excluded=False, latest_disclosure_date__gte=cutoff)
+            .annotate(_reviewed=Exists(reviewed))
+            .filter(_reviewed=False)
             .order_by('-latest_disclosure_date')[:SECTION_LIMIT]
         )

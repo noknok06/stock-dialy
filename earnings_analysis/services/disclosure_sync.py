@@ -233,10 +233,10 @@ def fan_out_disclosure_notifications(events) -> int:
             logs.append(NotificationLog(
                 user_id=row['user_id'],
                 disclosure_event=event,
-                title=f"📄 {row['stock_name']} に新しい開示",
+                title=f"📄 {row['stock_name']} の確定決算が出ました",
                 message=(
                     f"{event.file_date.strftime('%Y/%m/%d')} に「{event.doc_type_name}」"
-                    "が提出されました。投資仮説を見直しませんか？"
+                    "が提出されました。仮説を見直して決算レビューを記録しませんか？"
                 ),
                 url=f"/stockdiary/{row['id']}/",
             ))

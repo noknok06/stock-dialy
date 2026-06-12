@@ -181,3 +181,84 @@ class TestNotificationFanOut:
         make_document(securities_code='72030', doc_type_code='120', file_date=date.today())
         update_diary_disclosure_status()
         assert NotificationLog.objects.filter(user=another_user).count() == 0
+
+
+class TestEarningsReviewPrefill:
+    """決算レビューのノート下書き（edinet_note_prefill）"""
+
+    def _prefill(self, client, diary, doc):
+        from django.urls import reverse
+        url = reverse('stockdiary:edinet_note_prefill', args=[diary.id])
+        return client.get(url, {'doc_id': doc.doc_id})
+
+    def test_basic_structure(self, authenticated_client, sample_diary):
+        """財務・感情データなしでもレビュー骨子（仮説の点検）が返る"""
+        sample_diary.reason = 'EV シフトで部品需要が伸びると考えた'
+        sample_diary.save(update_fields=['reason'])
+        doc = make_document(doc_type_code='120', file_date=date.today())
+
+        res = self._prefill(authenticated_client, sample_diary, doc)
+        assert res.status_code == 200
+        data = res.json()
+        assert data['note_type'] == 'earnings'
+        assert '## 決算レビュー: テスト株式会社' in data['content']
+        assert '### 投資仮説の点検' in data['content']
+        assert '> EV シフトで部品需要が伸びると考えた' in data['content']
+        assert '維持 / 修正 / 撤回' in data['content']
+
+    def test_financial_summary_with_previous_period(self, authenticated_client, sample_diary):
+        """XBRL財務データがあれば確定財務サマリー（前回比つき）が差し込まれる"""
+        from earnings_analysis.models import CompanyFinancialData
+
+        prev_doc = make_document(
+            doc_id='S100PREV', doc_type_code='160',
+            file_date=date.today() - timedelta(days=180),
+        )
+        doc = make_document(doc_id='S100CURR', doc_type_code='120', file_date=date.today())
+        CompanyFinancialData.objects.create(
+            document=prev_doc, period_type='HalfYear',
+            net_sales=10_000_000_000, operating_margin=8.0,
+        )
+        CompanyFinancialData.objects.create(
+            document=doc, period_type='FY',
+            net_sales=12_000_000_000, operating_margin=10.5, equity_ratio=55.2,
+            operating_cf=500_000_000, investing_cf=-300_000_000, financing_cf=-100_000_000,
+        )
+
+        res = self._prefill(authenticated_client, sample_diary, doc)
+        content = res.json()['content']
+        assert '### 確定財務サマリー' in content
+        assert '- 売上高: 120.0億円（前回 100.0億円）' in content
+        assert '- 営業利益率: 10.5%（前回 8.0%）' in content
+        assert '- 自己資本比率: 55.2%' in content
+        assert '- CF: 営業+ / 投資− / 財務−' in content
+
+    def test_management_tone_with_trend(self, authenticated_client, sample_diary):
+        """感情分析結果があれば経営トーンと前回比トレンドが差し込まれる"""
+        from earnings_analysis.models import SentimentAnalysisHistory
+
+        prev_doc = make_document(
+            doc_id='S100PREV', doc_type_code='120',
+            file_date=date.today() - timedelta(days=365),
+        )
+        doc = make_document(doc_id='S100CURR', doc_type_code='120', file_date=date.today())
+        SentimentAnalysisHistory.objects.create(
+            document=prev_doc, overall_score=0.10, sentiment_label='neutral',
+        )
+        SentimentAnalysisHistory.objects.create(
+            document=doc, overall_score=0.35, sentiment_label='positive',
+        )
+
+        res = self._prefill(authenticated_client, sample_diary, doc)
+        content = res.json()['content']
+        assert '### 経営トーン' in content
+        assert 'ポジティブ' in content
+        assert '前回 0.10 から改善' in content
+
+    def test_other_users_diary_forbidden(self, authenticated_client, another_user):
+        other_diary = StockDiary.objects.create(
+            user=another_user, stock_symbol='7203', stock_name='トヨタ自動車'
+        )
+        doc = make_document(doc_type_code='120', file_date=date.today())
+        res = self._prefill(authenticated_client, other_diary, doc)
+        assert res.status_code == 404
