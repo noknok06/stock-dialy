@@ -66,11 +66,32 @@ class TestDiaryDisclosureUpdate:
     def test_latest_doc_wins(self, sample_diary):
         """複数書類がある場合は file_date が最新のものを採用"""
         make_document(doc_id='S100OLD1', file_date=date.today() - timedelta(days=3),
-                      doc_type_code='180')
-        make_document(doc_id='S100NEW1', file_date=date.today(), doc_type_code='120')
+                      doc_type_code='120')
+        make_document(doc_id='S100NEW1', file_date=date.today(), doc_type_code='160')
         update_diary_disclosure_status()
         sample_diary.refresh_from_db()
-        assert sample_diary.latest_disclosure_doc_type_name == '有価証券報告書'
+        assert sample_diary.latest_disclosure_doc_type_name == '半期報告書'
+
+    def test_unimportant_doc_type_does_not_update(self, sample_diary):
+        """有報・半報以外（訂正類・臨報等）は表示フィールドを更新しない"""
+        make_document(doc_id='S100AMD1', doc_type_code='130')  # 訂正有価証券報告書
+        make_document(doc_id='S100EXT1', doc_type_code='180')  # 臨時報告書
+        update_diary_disclosure_status()
+        sample_diary.refresh_from_db()
+        assert sample_diary.latest_disclosure_date is None
+
+    def test_stale_unimportant_value_reset(self, sample_diary):
+        """過去に非重要種別が乗っていた場合、重要開示がなければ None に戻る"""
+        sample_diary.latest_disclosure_date = date.today() - timedelta(days=2)
+        sample_diary.latest_disclosure_doc_type_name = '臨時報告書'
+        sample_diary.save(update_fields=[
+            'latest_disclosure_date', 'latest_disclosure_doc_type_name'
+        ])
+        make_document(doc_type_code='180', file_date=date.today())
+        update_diary_disclosure_status()
+        sample_diary.refresh_from_db()
+        assert sample_diary.latest_disclosure_date is None
+        assert sample_diary.latest_disclosure_doc_type_name == ''
 
     def test_non_japanese_symbol_ignored(self, user):
         diary = StockDiary.objects.create(user=user, stock_symbol='AAPL', stock_name='Apple')

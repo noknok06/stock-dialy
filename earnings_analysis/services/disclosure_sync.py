@@ -23,12 +23,14 @@ from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
-# アプリ内通知を出す書類種別（決算・重要イベント系のみ。訂正類は通知しない）
-NOTIFY_DOC_TYPE_CODES = {
+# 想起・バッジ・通知の対象とする「重要開示」書類種別。
+# EDINET は速報フィードではなく「年2回の確定決算による仮説見直しトリガー」として使う方針
+# （docs/improvement_plan.md 論点2改定）のため、有報・半報のみに絞る。
+# 140(四半期報告書)は2024年4月の制度廃止で新規提出なし、180(臨時報告書)は
+# 大半が議決権行使結果等のノイズのため対象外。
+IMPORTANT_DOC_TYPE_CODES = {
     '120',  # 有価証券報告書
-    '140',  # 四半期報告書
     '160',  # 半期報告書
-    '180',  # 臨時報告書
 }
 
 # これより古い開示はイベント化しない（初回実行時の過去分一斉通知を防ぐ）
@@ -100,7 +102,7 @@ def update_diary_disclosure_status() -> int:
 
 
 def _fetch_latest_disclosures(securities_codes) -> dict:
-    """銘柄ごとの最新開示書類を取得する。
+    """銘柄ごとの最新の重要開示書類（有報・半報）を取得する。
 
     Returns:
         dict: securities_code(5桁) → {'doc_id', 'file_date', 'doc_type_code', 'doc_type_name'}
@@ -113,6 +115,7 @@ def _fetch_latest_disclosures(securities_codes) -> dict:
         DocumentMetadata.objects
         .filter(
             securities_code__in=securities_codes,
+            doc_type_code__in=IMPORTANT_DOC_TYPE_CODES,
             legal_status__in=['1', '2'],     # '1'=縦覧中, '2'=延長期間中
             withdrawal_status='0',            # 取り下げられていない
         )
@@ -151,7 +154,7 @@ def _fetch_latest_disclosures(securities_codes) -> dict:
 def _record_disclosure_events(disclosure_map: dict) -> list:
     """通知対象の新規開示を DisclosureEvent として記録し、新規作成分を返す。
 
-    - 通知書類種別（NOTIFY_DOC_TYPE_CODES）かつ EVENT_MAX_AGE_DAYS 以内のみ対象
+    - 重要書類種別（IMPORTANT_DOC_TYPE_CODES）かつ EVENT_MAX_AGE_DAYS 以内のみ対象
     - (securities_code, doc_id) の一意制約により再実行しても重複しない
     """
     from earnings_analysis.models import DisclosureEvent
@@ -160,7 +163,7 @@ def _record_disclosure_events(disclosure_map: dict) -> list:
 
     candidates = {
         code: info for code, info in disclosure_map.items()
-        if info['doc_type_code'] in NOTIFY_DOC_TYPE_CODES and info['file_date'] >= cutoff
+        if info['doc_type_code'] in IMPORTANT_DOC_TYPE_CODES and info['file_date'] >= cutoff
     }
     if not candidates:
         return []
