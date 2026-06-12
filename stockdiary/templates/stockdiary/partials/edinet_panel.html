@@ -62,6 +62,16 @@
     </div>
     {% endif %}
 
+    <!-- 経営トーンの前回比（同一銘柄の前回有報・半報との感情スコア比較） -->
+    {% if item.tone_trend %}
+    <div class="edinet-badges-row">
+      <span class="edinet-badge {% if item.tone_trend.label == '改善' %}edinet-badge-positive{% elif item.tone_trend.label == '悪化' %}edinet-badge-negative{% else %}edinet-badge-neutral{% endif %}"
+            title="経営陣の言葉づかいのトーン（語彙分析）を前回の有報・半報と比較">
+        経営トーン {{ item.tone_trend.label }}（前回比 {% if item.tone_trend.delta >= 0 %}+{% endif %}{{ item.tone_trend.delta|floatformat:2 }}）
+      </span>
+    </div>
+    {% endif %}
+
     <!-- アクションボタン（横一列固定） -->
     <div class="edinet-actions-row">
 

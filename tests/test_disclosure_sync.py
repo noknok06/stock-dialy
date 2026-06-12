@@ -203,12 +203,18 @@ class TestAutoXBRLAnalysis:
         event = self._make_event(doc)
 
         analyzed = []
+        sentiment_run = []
         monkeypatch.setattr(
             'earnings_analysis.services.xbrl_analysis_service.XBRLAnalysisService.analyze_document',
             lambda self, d: analyzed.append(d.doc_id) or {'ok': True},
         )
+        monkeypatch.setattr(
+            'earnings_analysis.services.sentiment_analyzer.SentimentAnalysisService.run_lexicon_analysis',
+            lambda self, d: sentiment_run.append(d.doc_id) or True,
+        )
         tasks.auto_analyze_disclosure_task(event.id)
         assert analyzed == [doc.doc_id]
+        assert sentiment_run == [doc.doc_id]
 
     def test_task_skips_without_xbrl(self, monkeypatch):
         from earnings_analysis import tasks
@@ -238,6 +244,10 @@ class TestAutoXBRLAnalysis:
             'earnings_analysis.services.xbrl_analysis_service.XBRLAnalysisService.analyze_document',
             _fail,
         )
+        monkeypatch.setattr(
+            'earnings_analysis.services.sentiment_analyzer.SentimentAnalysisService.run_lexicon_analysis',
+            lambda self, d: True,
+        )
         tasks.auto_analyze_disclosure_task(event.id)
 
     def test_sync_queues_task_for_new_events(self, sample_diary, monkeypatch):
@@ -255,6 +265,65 @@ class TestAutoXBRLAnalysis:
         assert len(queued) == 1
         func, args = queued[0]
         assert func == 'earnings_analysis.tasks.auto_analyze_disclosure_task'
+
+
+class TestLexiconSentimentAnalysis:
+    """語彙ベースのみの感情分析（run_lexicon_analysis・AI不使用）"""
+
+    SECTIONS = {
+        '経営方針': '当期は増収増益を達成し、業績は好調に推移しています。今後も持続的成長を目指します。',
+    }
+
+    def _service(self, monkeypatch, sections):
+        from earnings_analysis.services.sentiment_analyzer import SentimentAnalysisService
+        service = SentimentAnalysisService()
+        monkeypatch.setattr(
+            service.xbrl_service, 'get_xbrl_text_from_document', lambda doc: sections
+        )
+        return service
+
+    def _forbid_ai(self, monkeypatch):
+        def _fail(*args, **kwargs):
+            raise AssertionError('use_ai=False なのに AI 経路が呼ばれた')
+        monkeypatch.setattr(
+            'earnings_analysis.services.ai_expert_analyzer.AIExpertAnalyzer.analyze_document_comprehensive',
+            _fail,
+        )
+        monkeypatch.setattr(
+            'earnings_analysis.services.gemini_insights.GeminiInsightsGenerator.generate_investment_insights',
+            _fail,
+        )
+
+    def test_saves_history_without_calling_ai(self, monkeypatch):
+        from earnings_analysis.models import SentimentAnalysisHistory
+
+        self._forbid_ai(monkeypatch)
+        doc = make_document(doc_type_code='120', xbrl_flag=True)
+        service = self._service(monkeypatch, self.SECTIONS)
+
+        assert service.run_lexicon_analysis(doc) is True
+        history = SentimentAnalysisHistory.objects.get(document=doc)
+        assert history.overall_score is not None
+        assert history.sentiment_label in ('positive', 'negative', 'neutral')
+
+    def test_skips_when_history_exists(self, monkeypatch):
+        from earnings_analysis.models import SentimentAnalysisHistory
+
+        doc = make_document(doc_type_code='120', xbrl_flag=True)
+        SentimentAnalysisHistory.objects.create(
+            document=doc, overall_score=0.1, sentiment_label='neutral'
+        )
+        service = self._service(monkeypatch, self.SECTIONS)
+        assert service.run_lexicon_analysis(doc) is False
+        assert SentimentAnalysisHistory.objects.filter(document=doc).count() == 1
+
+    def test_skips_without_xbrl_text(self, monkeypatch):
+        from earnings_analysis.models import SentimentAnalysisHistory
+
+        doc = make_document(doc_type_code='120', xbrl_flag=True)
+        service = self._service(monkeypatch, None)
+        assert service.run_lexicon_analysis(doc) is False
+        assert SentimentAnalysisHistory.objects.filter(document=doc).count() == 0
 
 
 class TestEarningsReviewPrefill:

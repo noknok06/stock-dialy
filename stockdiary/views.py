@@ -3401,6 +3401,36 @@ def _get_securities_code(stock_symbol):
     return None
 
 
+def _sentiment_tone_trend(doc, current_score):
+    """同一銘柄の前回の重要開示（有報・半報）と比較した経営トーンの変化を返す。
+
+    Returns:
+        dict | None: {'delta': float, 'label': '改善'|'悪化'|'横ばい', 'prev_score': float}
+    """
+    from earnings_analysis.models.sentiment import SentimentAnalysisHistory
+    from earnings_analysis.services.disclosure_sync import IMPORTANT_DOC_TYPE_CODES
+
+    if current_score is None or not doc.securities_code or not doc.file_date:
+        return None
+
+    prev = (
+        SentimentAnalysisHistory.objects
+        .filter(
+            document__securities_code=doc.securities_code,
+            document__doc_type_code__in=IMPORTANT_DOC_TYPE_CODES,
+            document__file_date__lt=doc.file_date,
+        )
+        .order_by('-document__file_date', '-analysis_date')
+        .first()
+    )
+    if not prev or prev.overall_score is None:
+        return None
+
+    delta = float(current_score) - float(prev.overall_score)
+    label = '改善' if delta > 0.05 else ('悪化' if delta < -0.05 else '横ばい')
+    return {'delta': delta, 'label': label, 'prev_score': float(prev.overall_score)}
+
+
 @login_required
 @require_GET
 def edinet_panel(request, diary_id):
@@ -3461,6 +3491,11 @@ def edinet_panel(request, diary_id):
                 except Exception:
                     pass
             sent = sent_session or sent_history
+
+            # 経営トーンの前回比（同一銘柄の前回有報・半報との比較）
+            tone_trend = None
+            if sent and sent.overall_score is not None:
+                tone_trend = _sentiment_tone_trend(doc, sent.overall_score)
 
             pdf_url = None
             if doc.pdf_flag:
@@ -3585,6 +3620,7 @@ def edinet_panel(request, diary_id):
             documents.append({
                 'doc': doc,
                 'sent': sent,
+                'tone_trend': tone_trend,
                 'fin_data': fin_data,
                 'report_json': report_json,
                 'pdf_url': pdf_url,
@@ -3705,22 +3741,9 @@ def edinet_note_prefill(request, diary_id):
             score = float(sent.overall_score)
             tone_line = f'- 経営トーン: **{label_display}**（スコア {score:.2f}'
 
-            prev_sent = None
-            if doc.securities_code and doc.file_date:
-                prev_sent = (
-                    SentimentAnalysisHistory.objects
-                    .filter(
-                        document__securities_code=doc.securities_code,
-                        document__doc_type_code__in=IMPORTANT_DOC_TYPE_CODES,
-                        document__file_date__lt=doc.file_date,
-                    )
-                    .order_by('-document__file_date', '-analysis_date')
-                    .first()
-                )
-            if prev_sent and prev_sent.overall_score is not None:
-                delta = score - float(prev_sent.overall_score)
-                trend = '改善' if delta > 0.05 else ('悪化' if delta < -0.05 else '横ばい')
-                tone_line += f'、前回 {float(prev_sent.overall_score):.2f} から{trend}'
+            trend = _sentiment_tone_trend(doc, score)
+            if trend:
+                tone_line += f"、前回 {trend['prev_score']:.2f} から{trend['label']}"
             tone_line += '）'
 
             content_parts.append('### 経営トーン')

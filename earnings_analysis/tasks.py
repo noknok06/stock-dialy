@@ -13,13 +13,15 @@ logger = logging.getLogger('earnings_analysis.tdnet')
 
 
 def auto_analyze_disclosure_task(event_id: int):
-    """新規開示イベント（有報・半報）の XBRL 財務分析を自動実行する。
+    """新規開示イベント（有報・半報）の財務・トーン分析を自動実行する。
 
     DisclosureSync が新規 DisclosureEvent を作成した際に async_task で
     キューされる。対象は記録中銘柄の重要開示のみ（年2回×ユニーク銘柄）
     のため件数は少ない。AI（Gemini）は使用しない。
-    成功すると CompanyFinancialData が保存され、detail の開示タブの
-    財務バッジと決算レビュー下書きの財務サマリーが手動操作なしで揃う。
+
+    - XBRL 財務分析 → CompanyFinancialData（detail 開示タブの財務バッジ・
+      決算レビュー下書きの財務サマリー）
+    - 語彙ベース感情分析 → SentimentAnalysisHistory（経営トーンの前回比）
     """
     from .models import CompanyFinancialData, DisclosureEvent, DocumentMetadata
     from .services.xbrl_analysis_service import XBRLAnalysisService
@@ -27,22 +29,29 @@ def auto_analyze_disclosure_task(event_id: int):
     try:
         event = DisclosureEvent.objects.get(pk=event_id)
     except DisclosureEvent.DoesNotExist:
-        logger.warning(f'XBRL自動分析: イベントが見つかりません event_id={event_id}')
+        logger.warning(f'開示自動分析: イベントが見つかりません event_id={event_id}')
         return
 
     doc = DocumentMetadata.objects.filter(doc_id=event.doc_id).first()
     if not doc or not doc.xbrl_flag:
         return
-    if CompanyFinancialData.objects.filter(document=doc).exists():
-        return
 
-    result = XBRLAnalysisService().analyze_document(doc)
-    if result.get('ok'):
-        logger.info(f'XBRL自動分析完了: doc_id={event.doc_id} ({event.doc_type_name})')
-    else:
-        logger.warning(
-            f"XBRL自動分析失敗: doc_id={event.doc_id}, error={result.get('error')}"
-        )
+    # XBRL 財務分析（分析済みならスキップ）
+    if not CompanyFinancialData.objects.filter(document=doc).exists():
+        result = XBRLAnalysisService().analyze_document(doc)
+        if result.get('ok'):
+            logger.info(f'XBRL自動分析完了: doc_id={event.doc_id} ({event.doc_type_name})')
+        else:
+            logger.warning(
+                f"XBRL自動分析失敗: doc_id={event.doc_id}, error={result.get('error')}"
+            )
+
+    # 語彙ベース感情分析（経営トーン蓄積。失敗しても財務分析の結果は活きる）
+    try:
+        from .services.sentiment_analyzer import SentimentAnalysisService
+        SentimentAnalysisService().run_lexicon_analysis(doc)
+    except Exception as e:
+        logger.warning(f'語彙感情分析失敗: doc_id={event.doc_id}, {e}')
 
 
 def generate_report_from_pdf_url_task(

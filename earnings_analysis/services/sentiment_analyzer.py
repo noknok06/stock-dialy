@@ -866,8 +866,13 @@ class TransparentSentimentAnalyzer:
         else:
             logger.warning("AIExpertAnalyzer シングルトンが利用不可")
     
-    def analyze_text(self, text: str, session_id: str = None, document_info: Dict[str, str] = None) -> Dict[str, Any]:
-        """透明性の高い感情分析（AI専門家統合版・デバッグ強化版 + 容量制限対応）"""
+    def analyze_text(self, text: str, session_id: str = None, document_info: Dict[str, str] = None,
+                     use_ai: bool = True) -> Dict[str, Any]:
+        """透明性の高い感情分析（AI専門家統合版・デバッグ強化版 + 容量制限対応）
+
+        use_ai=False の場合は語彙辞書ベースのスコアリングのみ実行し、
+        Gemini（AIExpertAnalyzer / GeminiInsights）を一切呼ばない。
+        """
         try:
             if not text or len(text.strip()) < 10:
                 return self._empty_result(session_id)
@@ -978,9 +983,9 @@ class TransparentSentimentAnalyzer:
             ai_analysis_error_message = None
             ai_analysis_is_retryable = False
             
-            if self.ai_expert and self.ai_expert.api_available and document_info:
+            if use_ai and self.ai_expert and self.ai_expert.api_available and document_info:
                 ai_analysis_attempted = True
-                
+
                 try:
                     logger.info("★ AI専門家による分析を開始")
                     
@@ -1092,20 +1097,25 @@ class TransparentSentimentAnalyzer:
                 'has_fallback': 'ai_fallback_analysis' in basic_result
             }
             
-            # ユーザー向け詳細見解を生成
-            if document_info:
+            # ユーザー向け詳細見解を生成（use_ai=False 時は Gemini 呼び出しを避けるためスキップ）
+            if use_ai and document_info:
                 user_insights = self.insight_generator.generate_detailed_insights(basic_result, document_info)
                 basic_result['user_insights'] = user_insights
-            
+
             return basic_result
-            
+
         except Exception as e:
             logger.error(f"感情分析エラー: {e}")
             raise
 
     
-    def analyze_text_sections(self, text_sections: Dict[str, str], session_id: str = None, document_info: Dict[str, str] = None) -> Dict[str, Any]:
-        """複数セクションの分析（既存ロジック保持・デバッグ強化）"""
+    def analyze_text_sections(self, text_sections: Dict[str, str], session_id: str = None,
+                              document_info: Dict[str, str] = None, use_ai: bool = True) -> Dict[str, Any]:
+        """複数セクションの分析（既存ロジック保持・デバッグ強化）
+
+        use_ai=False の場合は語彙辞書ベースのスコアリングのみ実行し、
+        Gemini（AIExpertAnalyzer / GeminiInsights）を一切呼ばない。
+        """
         try:
             logger.info(f"セクション分析開始: {len(text_sections)}セクション")
             
@@ -1259,9 +1269,9 @@ class TransparentSentimentAnalyzer:
             ai_analysis_error_message = None
             ai_analysis_is_retryable = False
             
-            if self.ai_expert and self.ai_expert.api_available and document_info:
+            if use_ai and self.ai_expert and self.ai_expert.api_available and document_info:
                 ai_analysis_attempted = True
-                
+
                 try:
                     max_text_length = 30000
                     analysis_text = combined_text[:max_text_length] if len(combined_text) > max_text_length else combined_text
@@ -1352,10 +1362,11 @@ class TransparentSentimentAnalyzer:
                 'has_fallback': 'ai_fallback_analysis' in basic_result
             }
             
-            if document_info:
+            # use_ai=False 時は Gemini 呼び出しを避けるためスキップ
+            if use_ai and document_info:
                 user_insights = self.insight_generator.generate_detailed_insights(basic_result, document_info)
                 basic_result['user_insights'] = user_insights
-            
+
             return basic_result
 
         except Exception as e:
@@ -1978,6 +1989,60 @@ class SentimentAnalysisService:
         except Exception as e:
             logger.error(f"分析開始エラー: {e}")
             raise Exception(f"分析開始に失敗しました: {str(e)}")
+
+    def run_lexicon_analysis(self, document) -> bool:
+        """語彙辞書ベースのみの感情分析を同期実行し、履歴に保存する（AI不使用）。
+
+        開示イベント（有報・半報）の自動分析タスク用。Gemini を呼ばないため
+        コストゼロ・再現性ありで、結果は SentimentAnalysisHistory に蓄積され
+        「経営トーンの前回比」表示の比較データになる。
+
+        - 既に履歴がある書類はスキップ
+        - XBRLテキストが取得できない書類はスキップ
+          （サンプルテキストでの擬似分析は自動実行では行わない）
+
+        Returns:
+            bool: 分析を実行して履歴を保存したか
+        """
+        from ..models import SentimentAnalysisHistory
+
+        if SentimentAnalysisHistory.objects.filter(document=document).exists():
+            return False
+
+        try:
+            text_sections = self.xbrl_service.get_xbrl_text_from_document(document)
+        except Exception as e:
+            logger.warning(f"語彙感情分析: XBRL取得失敗 doc_id={document.doc_id}: {e}")
+            return False
+        if not text_sections:
+            logger.info(f"語彙感情分析: XBRLテキストなしのためスキップ doc_id={document.doc_id}")
+            return False
+
+        document_info = {
+            'company_name': document.company_name or '不明',
+            'doc_description': document.doc_description or '不明',
+            'doc_type_code': document.doc_type_code or '不明',
+            'submit_date': document.submit_date_time.strftime('%Y-%m-%d') if document.submit_date_time else '不明',
+            'securities_code': document.securities_code or '',
+            'edinet_code': document.edinet_code or '',
+        }
+        result = self.analyzer.analyze_text_sections(
+            text_sections, None, document_info, use_ai=False
+        )
+        if not result or result.get('overall_score') is None:
+            return False
+
+        SentimentAnalysisHistory.objects.create(
+            document=document,
+            overall_score=result['overall_score'],
+            sentiment_label=result['sentiment_label'],
+            analysis_result=result,
+        )
+        logger.info(
+            f"語彙感情分析完了: doc_id={document.doc_id}, "
+            f"score={result['overall_score']:.3f} ({result['sentiment_label']})"
+        )
+        return True
 
     def cleanup_expired_sessions(self) -> int:
         """期限切れセッションのクリーンアップ（改良版）"""
