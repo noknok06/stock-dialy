@@ -60,25 +60,33 @@
 /* ================================================================
    エッジ（リンク線）
    ================================================================ */
+/* 幅・濃さは JS が「関連の希少度（weight）」に応じて presentation 属性で
+   設定する。CSS で stroke-width / stroke-opacity を指定すると属性に勝って
+   しまい weight 表現が無効になるため、ここでは定義しない。 */
 .graph-link {
-  stroke-opacity: 0.5;
-  stroke-width: 1.5px;
   fill: none;
   transition: stroke-opacity 0.2s ease, stroke-width 0.2s ease;
 }
 .graph-link.highlighted {
   stroke-opacity: 1;
-  stroke-width: 2.5px;
+  stroke-width: 2.8px;
 }
 .graph-link.dimmed {
   stroke-opacity: 0.07;
 }
 
-/* エッジ種別の幅 */
-.graph-link.edge-manual   { stroke-width: 1.8px; }
-.graph-link.edge-tag      { stroke-width: 1.4px; }
-.graph-link.edge-sector   { stroke-width: 1.4px; }
-.graph-link.edge-hashtag  { stroke-width: 1.4px; stroke-dasharray: 4 2; }
+/* エッジ種別の線種 */
+.graph-link.edge-hashtag  { stroke-dasharray: 4 2; }
+.graph-link.edge-mention  { stroke-dasharray: 4 3; }  /* 凡例の破線表現と一致させる */
+
+/* エッジクリック用の透明ヒットライン（細い線でもタップしやすく） */
+.graph-link-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 14px;
+  cursor: pointer;
+  pointer-events: stroke;
+}
 
 /* タグ/ハッシュタグの方向: 追い風(up)=緑の実線 / 向かい風(down)=赤の破線。
    エッジ種別の既定 stroke-dasharray（edge-hashtag の "4 2" 等）や presentation
@@ -201,6 +209,30 @@
 /* ---- セカンダリノード（フィルター条件外の関連ノード）---- */
 .graph-node circle.secondary-node {
   opacity: 0.45;
+}
+
+/* ================================================================
+   鮮度表現（継続記録ベース）
+   - fresh: 直近に継続記録を書いた銘柄 → 明るいリングで強調
+   - stale: 長期間記録のない保有銘柄 → 退色して「放置」を可視化
+   ================================================================ */
+.graph-node circle.node-fresh-ring {
+  fill: none;
+  stroke: #38bdf8;
+  stroke-width: 2px;
+  opacity: 0.9;
+  pointer-events: none;
+}
+.graph-node.stale circle {
+  opacity: 0.5;
+  filter: saturate(0.45);
+}
+.graph-node.stale text {
+  opacity: 0.55;
+}
+.graph-node.stale:hover circle {
+  opacity: 1;
+  filter: none;
 }
 
 /* ================================================================
@@ -905,6 +937,9 @@ body.dark-mode .focus-mode-banner,
   pointer-events: none;
   transition: opacity 0.25s ease;
 }
+.graph-link-hit.focus-hidden {
+  pointer-events: none;
+}
 
 /* ================================================================
    ハブノードのグロートランジション
@@ -1220,6 +1255,50 @@ body.dark-mode .graph-hint,
   font-size: 0.68rem;
   color: var(--text-300, #9aa1aa);
   flex-shrink: 0;
+}
+
+/* 本文抜粋（投資理由・継続記録・エッジ根拠） */
+.sp-excerpt {
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: var(--text-100, #1d1c1c);
+  background: var(--bg-200, #f5f4f1);
+  border-radius: 8px;
+  padding: 7px 10px;
+}
+.sp-note-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  color: var(--text-200, #6b7280);
+  margin-bottom: 4px;
+}
+.sp-note-badge {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  background: rgba(56, 189, 248, 0.15);
+  color: #0284c7;
+}
+.sp-fresh-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #38bdf8;
+  flex-shrink: 0;
+}
+.sp-stale-note {
+  font-size: 0.74rem;
+  color: #d97706;
+}
+body.dark-mode .sp-excerpt,
+[data-theme="dark"] .sp-excerpt {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--dm-foreground, #e0e0e0);
 }
 
 /* グラデーションCTAボタン */

@@ -647,6 +647,19 @@ def extract_stock_mentions(text: str) -> List[str]:
     return unique
 
 
+def mention_excerpt(text: str, symbol: str, radius: int = 40) -> str:
+    """テキスト中の銘柄コード `(symbol)` 周辺の抜粋を返す（エッジ根拠表示用）"""
+    if not text:
+        return ''
+    m = re.search(r'[（(]' + re.escape(symbol) + r'[）)]', text)
+    if not m:
+        return ''
+    start = max(0, m.start() - radius)
+    end = min(len(text), m.end() + radius)
+    body = ' '.join(text[start:end].split())
+    return ('…' if start > 0 else '') + body + ('…' if end < len(text) else '')
+
+
 def get_mention_graph_data(
     primary_diaries,
     symbol_to_diary_id: Dict[str, int],
@@ -660,9 +673,11 @@ def get_mention_graph_data(
 
     Returns:
         {
-            'edges':                [{'source': diary_pk, 'target': diary_pk, 'edge_type': 'mention'}],
+            'edges':                [{'source': diary_pk, 'target': diary_pk,
+                                      'edge_type': 'mention', 'excerpt': str}],
             'mentioned_diary_ids':  primary 外のメンション先 diary ID の set
         }
+        source は「言及した側」、excerpt は言及箇所周辺の本文抜粋。
     """
     edges: List[dict] = []
     edge_set: Set[Tuple[int, int]] = set()
@@ -683,6 +698,7 @@ def get_mention_graph_data(
                     'target': target_id,
                     'edge_type': 'mention',
                     'weight': 0.9,  # 本文の明示的言及は強い関連
+                    'excerpt': mention_excerpt(text, symbol),
                 })
             if target_id not in primary_id_set:
                 mentioned_diary_ids.add(target_id)

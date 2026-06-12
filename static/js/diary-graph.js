@@ -25,6 +25,10 @@
   const FORCE_CHARGE       = -320;
   const FORCE_COLLISION_MULT = 1.6;
 
+  // 鮮度（継続記録ベース）の閾値（日数）
+  const FRESH_DAYS = 14;   // この日数以内に継続記録があれば「最近更新」リング表示
+  const STALE_DAYS = 90;   // 保有中でこの日数を超えて記録がなければ退色表示
+
   // エッジ色
   const EDGE_COLOR = {
     manual:  '#94a3b8',
@@ -104,6 +108,14 @@
       this.currentColorMode = 'axis';
       // 軸フィルター（デフォルト: テーマのみ。ユーザーが追加可）
       this.currentAxes = new Set(['theme']);
+      // URL 同期で「デフォルトと同じならパラメータを省く」ための既定値
+      this._defaults = {
+        statuses: new Set(this.currentStatuses),
+        modes:    new Set(this.currentEdgeModes),
+        axes:     new Set(this.currentAxes),
+        color:    this.currentColorMode,
+      };
+      this._nodeById = new Map();
       this.searchQuery      = '';
       this.sectorColorMap   = {};
       this.focusNodeId      = null;
@@ -120,11 +132,64 @@
     // 初期化
     // ==============================
     _init() {
+      this._loadStateFromUrl();
       this._bindControls();
       this._bindModalControls();
+      this._syncStatusCheckboxes();
       this._syncEdgeModeCheckboxes();
+      this._syncTagSelect();
       this._syncModalState();
       this._fetchAndRender();
+    }
+
+    // ==============================
+    // フィルター状態の URL 同期
+    //   リロード・ブックマーク・共有でグラフの表示状態を再現できるようにする
+    // ==============================
+    _loadStateFromUrl() {
+      const p = new URLSearchParams(window.location.search);
+      const VALID = {
+        status: ['holding', 'sold', 'memo'],
+        modes:  ['manual', 'tag', 'hashtag', 'sector', 'mention'],
+        axes:   ['theme', 'macro', 'business_model', 'capital_policy', 'risk', 'event'],
+        color:  ['axis', 'status', 'sector', 'profit'],
+      };
+      const list = (key, valid) =>
+        (p.get(key) || '').split(',').map(s => s.trim()).filter(v => valid.includes(v));
+
+      const st = list('status', VALID.status);
+      if (st.length) this.currentStatuses = new Set(st);
+      const md = list('modes', VALID.modes);
+      if (md.length) this.currentEdgeModes = new Set(md);
+      const ax = list('axes', VALID.axes);
+      if (ax.length) this.currentAxes = new Set(ax);
+      const color = p.get('color');
+      if (VALID.color.includes(color)) this.currentColorMode = color;
+      const tag = p.get('tag');
+      if (tag && /^\d+$/.test(tag)) this.currentTag = tag;
+    }
+
+    _syncUrl() {
+      const join = s => [...s].sort().join(',');
+      const p = new URLSearchParams();
+      if (join(this.currentStatuses)  !== join(this._defaults.statuses)) p.set('status', join(this.currentStatuses));
+      if (join(this.currentEdgeModes) !== join(this._defaults.modes))    p.set('modes', join(this.currentEdgeModes));
+      if (join(this.currentAxes)      !== join(this._defaults.axes))     p.set('axes', join(this.currentAxes));
+      if (this.currentColorMode       !== this._defaults.color)          p.set('color', this.currentColorMode);
+      if (this.currentTag) p.set('tag', this.currentTag);
+      const qs = p.toString();
+      window.history.replaceState(null, '', window.location.pathname + (qs ? '?' + qs : ''));
+    }
+
+    _syncStatusCheckboxes() {
+      document.querySelectorAll('.status-filter-check').forEach(cb => {
+        cb.checked = this.currentStatuses.has(cb.value);
+      });
+    }
+
+    _syncTagSelect() {
+      const sel = document.getElementById('tagFilter');
+      if (sel && this.currentTag) sel.value = this.currentTag;
     }
 
     _syncEdgeModeCheckboxes() {
@@ -350,6 +415,7 @@
           this._syncModalState();
           this._applyColorMode();
           this._updateLegend();
+          this._syncUrl();
         });
       });
     }
@@ -441,6 +507,7 @@
       this.focusNeighborIds = new Set();
       this.focusSeedIds = [];
       this._hideFocusBanner();
+      this._syncUrl();
 
       if (this.currentStatuses.size === 0) {
         this._showEmpty();
@@ -475,6 +542,9 @@
         });
         this.allNodes = this.allNodes.filter(n => connectedIds.has(String(n.id)));
 
+        // id → ノードの索引（カラーモード適用・パネル遷移などで使い回す）
+        this._nodeById = new Map(this.allNodes.map(n => [String(n.id), n]));
+
         // 隣接マップを1回だけ構築（フォーカスの BFS で使い回す）
         this._buildAdjacency();
 
@@ -508,8 +578,16 @@
       });
     }
 
-    _edgeWidth(d)   { return 1.5; }
-    _edgeOpacity(d) { return 0.55; }
+    // 関連の希少度（weight: 0〜1, 少数銘柄しか結ばない関連ほど大）を
+    // 太さ・濃さに反映する。汎用タグの接続は細く薄く、希少な関連は太く濃く。
+    _edgeWidth(d)   {
+      const w = typeof d.weight === 'number' ? Math.max(0, Math.min(d.weight, 1)) : 0.5;
+      return +(1 + w * 1.6).toFixed(2);
+    }
+    _edgeOpacity(d) {
+      const w = typeof d.weight === 'number' ? Math.max(0, Math.min(d.weight, 1)) : 0.5;
+      return +(0.3 + w * 0.45).toFixed(2);
+    }
 
     // ==============================
     // D3 グラフ描画
@@ -636,6 +714,25 @@
       // トグル変更時に再描画せず強調度だけ更新するため保持
       this.linkSel = linkSel;
 
+      // クリック用の透明ヒットライン（細い線でもタップしやすく）。
+      // クリックでエッジの根拠（なぜ繋がっているか）をサイドパネルに表示する
+      const linkHitSel = g.append('g').attr('class', 'links-hit')
+        .selectAll('line')
+        .data(edges)
+        .join('line')
+          .attr('class', 'graph-link-hit')
+          .on('mouseenter', (event, d) => {
+            linkSel.classed('highlighted', l => l === d);
+          })
+          .on('mouseleave', () => {
+            linkSel.classed('highlighted', false);
+          })
+          .on('click', (event, d) => {
+            event.stopPropagation();
+            this._openEdgePanel(d);
+          });
+      this.linkHitSel = linkHitSel;
+
       // ノードグループ
       const self = this;
       const nodeSel = g.append('g').attr('class', 'nodes')
@@ -672,6 +769,15 @@
           el.append('circle')
             .attr('r', r)
             .classed('secondary-node', !d.is_primary);
+          // 鮮度: 最近継続記録を書いた銘柄はリング、放置中の保有銘柄は退色
+          const fresh = _freshness(d);
+          if (fresh === 'fresh') {
+            el.append('circle')
+              .attr('class', 'node-fresh-ring')
+              .attr('r', r + 3.5);
+          } else if (fresh === 'stale') {
+            el.classed('stale', true);
+          }
           // 銘柄コードをノード内にアイコン的に表示（十分な大きさのノードのみ）
           if (r >= 13 && d.stock_symbol) {
             el.append('text')
@@ -796,6 +902,9 @@
         linkSel
           .attr('x1', d => d.source.x).attr('y1', d => d.source.y)
           .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+        linkHitSel
+          .attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+          .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
         nodeSel.attr('transform', d => `translate(${d.x},${d.y})`);
 
         // レイアウトがほぼ安定したら（end を待たず）一度だけ滑らかにフィット。
@@ -864,8 +973,7 @@
       const axisLegend = document.getElementById('legend-axis');
 
       document.querySelectorAll('.graph-node').forEach(el => {
-        const id   = el.dataset.id;
-        const node = this.allNodes.find(n => String(n.id) === id);
+        const node = this._nodeOf(el.dataset.id);
         if (!node) return;
 
         if (node.node_type !== 'diary') {
@@ -1046,11 +1154,26 @@
           sold:    { c: '#ef4444', t: '売却済み' },
           memo:    { c: '#9ca3af', t: 'メモ' },
         }[d.status] || { c: '#9ca3af', t: d.status };
+        // 継続記録の鮮度（コンテンツ情報を持つ primary ノードのみ）
+        let noteLine = '';
+        if (typeof d.note_count === 'number') {
+          const days = _daysSince(d.last_note_date);
+          if (d.note_count > 0 && days !== null) {
+            const when = days === 0 ? '今日' : `${days}日前`;
+            noteLine = `<div class="tt-meta">継続記録: ${d.note_count}件（最終 ${when}）</div>`;
+          } else {
+            noteLine = '<div class="tt-meta">継続記録: なし</div>';
+          }
+          if (_freshness(d) === 'stale') {
+            noteLine += `<div class="tt-meta" style="color:#d97706;">${STALE_DAYS}日以上 記録の更新なし</div>`;
+          }
+        }
         html = `
           <div class="tt-name"><span class="tt-badge" style="background:${statusInfo.c};">${_esc(statusInfo.t)}</span>${_esc(d.stock_name)}</div>
           <div class="tt-symbol">${_esc(d.stock_symbol || '-')} &nbsp;/&nbsp; ${_esc(d.sector)}</div>
           <div class="tt-profit ${pClass}">実現損益: ${pStr}</div>
           <div class="tt-meta">接続: ${d.link_count}本</div>
+          ${noteLine}
           <div class="tt-hint">クリックで詳細パネル</div>`;
       }
       this.tooltipEl.innerHTML = html;
@@ -1131,7 +1254,45 @@
           </div>
           <div class="side-panel-section">
             <div class="side-panel-label">業種</div><div>${_esc(d.sector || '未分類')}</div>
-          </div>
+          </div>`;
+
+        // 投資理由の抜粋（コンテンツ情報を持つ primary ノードのみ）
+        if (d.reason_excerpt) {
+          html += `
+          <div class="side-panel-section">
+            <div class="side-panel-label">投資理由</div>
+            <div class="sp-excerpt">${_esc(d.reason_excerpt)}</div>
+          </div>`;
+        }
+
+        // 継続記録のサマリー（最新の記録・鮮度）
+        if (typeof d.note_count === 'number') {
+          const fresh = _freshness(d);
+          if (d.note_count > 0) {
+            const days = _daysSince(d.last_note_date);
+            const when = days === null ? '' : days === 0 ? '今日' : `${days}日前`;
+            html += `
+          <div class="side-panel-section">
+            <div class="side-panel-label">継続記録（${d.note_count}件）</div>
+            <div class="sp-note-meta">
+              ${fresh === 'fresh' ? '<span class="sp-fresh-dot"></span>' : ''}
+              <span>${_esc(d.last_note_date || '')}${when ? `（${when}）` : ''}</span>
+              ${d.last_note_type ? `<span class="sp-note-badge">${_esc(d.last_note_type)}</span>` : ''}
+            </div>
+            ${d.last_note_excerpt ? `<div class="sp-excerpt">${_esc(d.last_note_excerpt)}</div>` : ''}
+            ${fresh === 'stale' ? `<div class="sp-stale-note mt-1"><i class="bi bi-hourglass-split me-1"></i>${STALE_DAYS}日以上 記録の更新がありません</div>` : ''}
+          </div>`;
+          } else {
+            html += `
+          <div class="side-panel-section">
+            <div class="side-panel-label">継続記録</div>
+            <div class="text-muted" style="font-size:.78rem;">まだありません</div>
+            ${fresh === 'stale' ? `<div class="sp-stale-note mt-1"><i class="bi bi-hourglass-split me-1"></i>${STALE_DAYS}日以上 記録の更新がありません</div>` : ''}
+          </div>`;
+          }
+        }
+
+        html += `
           <div class="side-panel-section">
             <div class="side-panel-label">接続数</div><div>${d.link_count || 0} 本</div>
           </div>`;
@@ -1169,14 +1330,7 @@
       this.sidePanelBody.innerHTML  = html;
       this.sidePanel.classList.add('open');
       document.getElementById('graph-wrapper').classList.add('panel-open');
-
-      // 関連ノードクリック → そのノードのパネルへ切り替え
-      this.sidePanelBody.querySelectorAll('[data-goto]').forEach(row => {
-        row.addEventListener('click', () => {
-          const target = this.allNodes.find(n => String(n.id) === row.dataset.goto);
-          if (target) this._openSidePanel(target);
-        });
-      });
+      this._bindPanelGoto();
 
       const focusBtn = document.getElementById('focus-mode-btn');
       if (focusBtn) {
@@ -1188,12 +1342,101 @@
       }
     }
 
+    // ==============================
+    // エッジ詳細パネル（接続の根拠表示）
+    // ==============================
+    _openEdgePanel(edge) {
+      this._hideTooltip();
+      const sid = String(typeof edge.source === 'object' ? edge.source.id : edge.source);
+      const tid = String(typeof edge.target === 'object' ? edge.target.id : edge.target);
+      const src = this._nodeOf(sid);
+      const tgt = this._nodeOf(tid);
+      if (!src || !tgt) return;
+
+      const TYPE_INFO = {
+        manual:  { icon: 'bi-link-45deg', label: '手動リンク', desc: '日記詳細ページの「関連日記」で設定した接続' },
+        tag:     { icon: 'bi-tag-fill',   label: 'タグ接続',   desc: '銘柄に付けたタグによる接続' },
+        hashtag: { icon: 'bi-hash',       label: '@タグ接続',  desc: '投資理由・継続記録内の @タグによる接続' },
+        sector:  { icon: 'bi-building',   label: '業種接続',   desc: '同じ業種に属する銘柄の接続' },
+        mention: { icon: 'bi-upc-scan',   label: 'コード参照', desc: '本文中で他銘柄のコードに言及した接続' },
+      };
+      const info = TYPE_INFO[edge.edge_type] || TYPE_INFO.manual;
+
+      let html = `
+        <div class="side-panel-section">
+          <div class="side-panel-label">接続種別</div>
+          <div>${info.label}</div>
+          <div class="text-muted" style="font-size:.74rem;">${info.desc}</div>
+        </div>
+        <div class="side-panel-section">
+          <div class="side-panel-label">つながっているノード</div>
+          <div class="sp-conn-list">${this._connRow(src)}${this._connRow(tgt)}</div>
+        </div>`;
+
+      // タグ/@タグ: 方向属性（追い風・向かい風）
+      if ((edge.edge_type === 'tag' || edge.edge_type === 'hashtag')
+          && (edge.direction === 'up' || edge.direction === 'down')) {
+        const dir = edge.direction === 'up'
+          ? { c: '#16a34a', t: '追い風（プラス影響）' }
+          : { c: '#dc2626', t: '向かい風（マイナス影響）' };
+        html += `
+        <div class="side-panel-section">
+          <div class="side-panel-label">影響方向</div>
+          <div><span class="sp-cdot d-inline-block" style="background:${dir.c};margin-right:6px;"></span>${dir.t}</div>
+        </div>`;
+      }
+
+      // ハブ経由の接続: 共有銘柄数（少ないほど希少で強い関連）
+      const hub = tgt.node_type !== 'diary' ? tgt : (src.node_type !== 'diary' ? src : null);
+      if (hub && typeof hub.diary_count === 'number') {
+        html += `
+        <div class="side-panel-section">
+          <div class="side-panel-label">共有銘柄数</div>
+          <div>${hub.diary_count} 件 <span class="text-muted" style="font-size:.72rem;">（少ないほど希少な関連）</span></div>
+        </div>`;
+      }
+
+      // コード参照: 言及箇所の本文抜粋（source が言及した側）
+      if (edge.edge_type === 'mention' && edge.excerpt) {
+        const srcName = src.stock_name || '';
+        html += `
+        <div class="side-panel-section">
+          <div class="side-panel-label">言及箇所（「${_esc(srcName)}」の本文より）</div>
+          <div class="sp-excerpt">${_esc(edge.excerpt)}</div>
+        </div>`;
+      }
+
+      this.sidePanelTitle.innerHTML = `<i class="bi ${info.icon} me-1"></i>${info.label}`;
+      this.sidePanelBody.innerHTML  = html;
+      this.sidePanel.classList.add('open');
+      document.getElementById('graph-wrapper').classList.add('panel-open');
+      this._bindPanelGoto();
+    }
+
+    // パネル内の「関連ノード」行クリック → そのノードのパネルへ切り替え
+    _bindPanelGoto() {
+      this.sidePanelBody.querySelectorAll('[data-goto]').forEach(row => {
+        row.addEventListener('click', () => {
+          const target = this._nodeOf(row.dataset.goto);
+          if (target) this._openSidePanel(target);
+        });
+      });
+    }
+
+    // id からノードオブジェクトを引く（_nodeById 索引を使用）
+    _nodeOf(id) {
+      if (!this._nodeById || this._nodeById.size === 0) {
+        this._nodeById = new Map(this.allNodes.map(n => [String(n.id), n]));
+      }
+      return this._nodeById.get(String(id));
+    }
+
     // 隣接ノード（オブジェクト配列）を返す
     _neighborsOf(id) {
       if (!this._adj) this._buildAdjacency();
       const set = this._adj.get(String(id)) || new Set();
       return [...set]
-        .map(nid => this.allNodes.find(n => String(n.id) === nid))
+        .map(nid => this._nodeOf(nid))
         .filter(Boolean);
     }
 
@@ -1312,13 +1555,13 @@
         }
       });
 
-      if (this.linkSel) {
-        this.linkSel.classed('focus-hidden', e => {
-          const s = String(typeof e.source === 'object' ? e.source.id : e.source);
-          const t = String(typeof e.target === 'object' ? e.target.id : e.target);
-          return !(visibleIds.has(s) && visibleIds.has(t));
-        });
-      }
+      const edgeHidden = e => {
+        const s = String(typeof e.source === 'object' ? e.source.id : e.source);
+        const t = String(typeof e.target === 'object' ? e.target.id : e.target);
+        return !(visibleIds.has(s) && visibleIds.has(t));
+      };
+      if (this.linkSel)    this.linkSel.classed('focus-hidden', edgeHidden);
+      if (this.linkHitSel) this.linkHitSel.classed('focus-hidden', edgeHidden);
 
       this._updateFocusStats(visibleIds);
       return visibleIds;
@@ -1353,9 +1596,8 @@
           'focus-dist-0', 'focus-dist-1', 'focus-dist-2', 'focus-dist-3');
       });
 
-      if (this.linkSel) {
-        this.linkSel.classed('focus-hidden', false);
-      }
+      if (this.linkSel)    this.linkSel.classed('focus-hidden', false);
+      if (this.linkHitSel) this.linkHitSel.classed('focus-hidden', false);
 
       this._hideFocusBanner();
 
@@ -1370,7 +1612,7 @@
     _showFocusBanner(nodeCount) {
       const banner = document.getElementById('focus-mode-banner');
       if (!banner) return;
-      const node = this.allNodes.find(n => String(n.id) === this.focusNodeId);
+      const node = this._nodeOf(this.focusNodeId);
       const label = node
         ? (node.stock_name || node.tag_name || node.sector_name || 'ノード')
         : 'ノード';
@@ -1415,7 +1657,7 @@
       }
       const count = this._searchMatchIds.length;
       if (count === 1) {
-        const node = this.allNodes.find(n => String(n.id) === this._searchMatchIds[0]);
+        const node = this._nodeOf(this._searchMatchIds[0]);
         const label = node ? (node.stock_name || node.tag_name || node.sector_name || '') : '';
         btn.innerHTML = `<i class="bi bi-crosshair me-1"></i>${_esc(label)} の関連のみ表示`;
       } else {
@@ -1537,6 +1779,28 @@
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
+  }
+
+  // ISO 日付文字列から経過日数を返す（不正値は null）
+  function _daysSince(iso) {
+    if (!iso) return null;
+    const t = new Date(iso + 'T00:00:00');
+    if (isNaN(t.getTime())) return null;
+    return Math.floor((Date.now() - t.getTime()) / 86400000);
+  }
+
+  // 日記ノードの鮮度を判定する: 'fresh' | 'stale' | null
+  // fresh は継続記録の有無のみで判定。stale（放置）は保有中の銘柄に限り、
+  // 最終継続記録（なければ日記作成日）からの経過で判定する。
+  function _freshness(d) {
+    if (d.node_type !== 'diary') return null;
+    const noteDays = _daysSince(d.last_note_date);
+    if (noteDays !== null && noteDays <= FRESH_DAYS) return 'fresh';
+    if (d.status === 'holding') {
+      const baseDays = noteDays !== null ? noteDays : _daysSince(d.created_date);
+      if (baseDays !== null && baseDays > STALE_DAYS) return 'stale';
+    }
+    return null;
   }
 
   // ==============================
