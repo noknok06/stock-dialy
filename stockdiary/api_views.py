@@ -985,6 +985,10 @@ def _build_diary_node(diary, *, is_primary: bool, include_content: bool = False)
         node['reason_excerpt'] = _text_excerpt(diary.reason)
         notes = list(diary.notes.all())
         node['note_count'] = len(notes)
+        # 売却済み銘柄の「振り返り未記入」可視化用
+        node['has_retrospective'] = any(
+            n.note_type == 'retrospective' for n in notes
+        )
         if notes:
             latest = max(notes, key=lambda n: (n.date, n.id))
             node['last_note_date'] = latest.date.isoformat()

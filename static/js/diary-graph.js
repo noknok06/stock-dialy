@@ -84,6 +84,8 @@
   class DiaryGraph {
     constructor(config) {
       this.apiUrl    = config.apiUrl;
+      this.relatedAddUrl    = config.relatedAddUrl || '';
+      this.relatedRemoveUrl = config.relatedRemoveUrl || '';
       this.svgEl     = document.getElementById('diary-graph-svg');
       this.loadingEl = document.getElementById('graph-loading');
       this.emptyEl   = document.getElementById('graph-empty');
@@ -108,6 +110,8 @@
       this.currentColorMode = 'axis';
       // 軸フィルター（デフォルト: テーマのみ。ユーザーが追加可）
       this.currentAxes = new Set(['theme']);
+      // クラスタ面（ハル）表示。ハブごとのメンバー銘柄を薄い面で囲む
+      this.showHulls = false;
       // URL 同期で「デフォルトと同じならパラメータを省く」ための既定値
       this._defaults = {
         statuses: new Set(this.currentStatuses),
@@ -122,6 +126,8 @@
       this.focusNeighborIds = new Set();
       this.focusDepth       = 2;    // フォーカスの探索深さ（ホップ数・デフォルト2）
       this.focusSeedIds     = [];   // フォーカスの起点ノードid（単一/複数共通）。深さ変更時の再探索に使う
+      this.linkSourceId     = null; // リンク作成モードの起点 diary ノードid
+      this._isolatedDiaries = [];   // どのエッジにも繋がっていない primary 日記ノード
       this._adj             = null; // 隣接マップ（_buildAdjacency で構築）
       this._searchMatchIds  = [];
 
@@ -167,6 +173,7 @@
       if (VALID.color.includes(color)) this.currentColorMode = color;
       const tag = p.get('tag');
       if (tag && /^\d+$/.test(tag)) this.currentTag = tag;
+      if (p.get('hull') === '1') this.showHulls = true;
     }
 
     _syncUrl() {
@@ -177,6 +184,7 @@
       if (join(this.currentAxes)      !== join(this._defaults.axes))     p.set('axes', join(this.currentAxes));
       if (this.currentColorMode       !== this._defaults.color)          p.set('color', this.currentColorMode);
       if (this.currentTag) p.set('tag', this.currentTag);
+      if (this.showHulls) p.set('hull', '1');
       const qs = p.toString();
       window.history.replaceState(null, '', window.location.pathname + (qs ? '?' + qs : ''));
     }
@@ -323,12 +331,24 @@
         if (e.key === 'Escape') {
           if (this._isFullscreen) this._toggleFullscreen(false);
           if (this.focusNodeId) this._exitFocusMode();
+          if (this.linkSourceId) this._exitLinkMode();
         }
       });
 
       const focusExitBtn = document.getElementById('focus-banner-exit');
       if (focusExitBtn) {
         focusExitBtn.addEventListener('click', () => this._exitFocusMode());
+      }
+
+      const linkCancelBtn = document.getElementById('link-banner-cancel');
+      if (linkCancelBtn) {
+        linkCancelBtn.addEventListener('click', () => this._exitLinkMode());
+      }
+
+      // 未接続銘柄バッジ → 一覧パネル
+      const isolatedBtn = document.getElementById('stats-isolated');
+      if (isolatedBtn) {
+        isolatedBtn.addEventListener('click', () => this._openIsolatedPanel());
       }
 
       // 深さセレクタ（フォーカス中の探索ホップ数をライブ変更）
@@ -373,8 +393,8 @@
         capital_policy: '#16a34a', risk: '#dc2626', event: '#6b7280',
       };
 
-      // 軸カード: クリックでトグル
-      document.querySelectorAll('.gs-axis-card').forEach(card => {
+      // 軸カード: クリックでトグル（data-axis を持つカードのみ。ハルカードは除外）
+      document.querySelectorAll('.gs-axis-card[data-axis]').forEach(card => {
         card.addEventListener('click', () => {
           const axis = card.dataset.axis;
           if (this.currentAxes.has(axis)) {
@@ -418,6 +438,17 @@
           this._syncUrl();
         });
       });
+
+      // クラスタ面（ハル）トグル
+      const hullCard = document.getElementById('gs-hull-card');
+      if (hullCard) {
+        hullCard.addEventListener('click', () => {
+          this.showHulls = !this.showHulls;
+          this._syncModalState();
+          this._syncUrl();
+          this._updateHulls();
+        });
+      }
     }
 
     // モーダル内UIをcurrentAxes/currentColorModeに合わせる
@@ -427,7 +458,7 @@
         capital_policy: '#16a34a', risk: '#dc2626', event: '#6b7280',
       };
 
-      document.querySelectorAll('.gs-axis-card').forEach(card => {
+      document.querySelectorAll('.gs-axis-card[data-axis]').forEach(card => {
         const axis   = card.dataset.axis;
         const active = this.currentAxes.has(axis);
         const color  = AXIS_COLOR[axis] || '#7c3aed';
@@ -466,6 +497,29 @@
       document.querySelectorAll('.gs-color-card').forEach(card => {
         card.classList.toggle('gs-active', card.dataset.mode === this.currentColorMode);
       });
+
+      // クラスタ面（ハル）カード
+      const hullCard = document.getElementById('gs-hull-card');
+      if (hullCard) {
+        const on = this.showHulls;
+        hullCard.classList.toggle('gs-active', on);
+        hullCard.style.borderColor = on ? '#0891b2' : '';
+        const pill = document.getElementById('gs-hull-pill');
+        if (pill) {
+          pill.textContent = on ? '表示中' : '非表示';
+          pill.classList.toggle('gs-axis-pill-off', !on);
+          pill.style.background = on ? '#0891b222' : '';
+          pill.style.color = on ? '#0891b2' : '';
+          pill.style.borderColor = on ? '#0891b255' : '';
+        }
+        const icon = document.getElementById('gs-hull-icon');
+        if (icon) {
+          icon.className = on
+            ? 'bi bi-check-circle-fill gs-check-icon'
+            : 'bi bi-circle gs-check-icon';
+          icon.style.opacity = on ? '1' : '0.3';
+        }
+      }
 
       this._updateSettingsBadge();
     }
@@ -507,6 +561,7 @@
       this.focusNeighborIds = new Set();
       this.focusSeedIds = [];
       this._hideFocusBanner();
+      this._exitLinkMode();
       this._syncUrl();
 
       if (this.currentStatuses.size === 0) {
@@ -534,12 +589,16 @@
         this.allNodes = data.nodes || [];
         this.allEdges = data.edges || [];
 
-        // 孤立ノード（どのエッジにも接続していない）を除外
+        // 孤立ノード（どのエッジにも接続していない）を除外。
+        // 除外した primary 日記は「未接続銘柄」として控え、バッジから一覧できるようにする
         const connectedIds = new Set();
         this.allEdges.forEach(e => {
           connectedIds.add(String(e.source));
           connectedIds.add(String(e.target));
         });
+        this._isolatedDiaries = this.allNodes.filter(n =>
+          !connectedIds.has(String(n.id)) && n.node_type === 'diary' && n.is_primary
+        );
         this.allNodes = this.allNodes.filter(n => connectedIds.has(String(n.id)));
 
         // id → ノードの索引（カラーモード適用・パネル遷移などで使い回す）
@@ -623,6 +682,9 @@
       const g = svg.append('g').attr('class', 'graph-root');
       this.gRoot = g;
 
+      // クラスタ面（ハル）レイヤー。最初に append してエッジ・ノードの背面に置く
+      this.hullGroup = g.append('g').attr('class', 'graph-hulls');
+
       // ユーザーが手動でズーム・パン操作したかを記録するフラグ
       this._userHasInteracted = false;
       // 自動フィットを一度だけ実行するためのフラグ（多重フィットによる「ガクつき」防止）
@@ -686,6 +748,23 @@
             return radiusScale(d.link_count || 0) * FORCE_COLLISION_MULT;
           })
         );
+
+      // クラスタ面（ハル）用: ハブごとのメンバー日記ノード参照を構築。
+      // forceLink 初期化後は edges の source/target がノードオブジェクトになる
+      const clusterByHub = new Map();
+      edges.forEach(e => {
+        const s = e.source, t = e.target;
+        let hub = null, member = null;
+        if (t && t.node_type && t.node_type !== 'diary') { hub = t; member = s; }
+        else if (s && s.node_type && s.node_type !== 'diary') { hub = s; member = t; }
+        if (!hub || !member || member.node_type !== 'diary') return;
+        if (!clusterByHub.has(hub.id)) {
+          clusterByHub.set(hub.id, { id: hub.id, hub, members: [] });
+        }
+        const c = clusterByHub.get(hub.id);
+        if (!c.members.includes(member)) c.members.push(member);
+      });
+      this._clusters = [...clusterByHub.values()].filter(c => c.members.length >= 2);
 
       // エッジ。希少な関連を太く濃く（_edgeWidth/_edgeOpacity 参照）
       const linkSel = g.append('g').attr('class', 'links')
@@ -766,6 +845,7 @@
         const el = d3.select(this);
         if (d.node_type === 'diary') {
           const r = radiusScale(d.link_count || 0);
+          d._r = r;  // ハル描画時の余白計算に使う
           el.append('circle')
             .attr('r', r)
             .classed('secondary-node', !d.is_primary);
@@ -778,6 +858,14 @@
           } else if (fresh === 'stale') {
             el.classed('stale', true);
           }
+          // 売却済みで振り返りノートが未記入なら右上にマーカー
+          if (_needsRetrospective(d)) {
+            const off = r * 0.72 + 2;
+            el.append('circle')
+              .attr('class', 'retro-marker')
+              .attr('cx', off).attr('cy', -off)
+              .attr('r', 4.5);
+          }
           // 銘柄コードをノード内にアイコン的に表示（十分な大きさのノードのみ）
           if (r >= 13 && d.stock_symbol) {
             el.append('text')
@@ -789,6 +877,7 @@
           }
         } else if (d.node_type === 'tag') {
           const r = hubRadiusScale(d.link_count || 0);
+          d._r = r;
           const axisColor = AXIS_COLORS[d.axis] || HUB_COLOR.tag;
           el.append('polygon')
             .attr('points', _hexPoints(r))
@@ -798,6 +887,7 @@
             .attr('data-axis-color', axisColor);
         } else if (d.node_type === 'sector') {
           const r  = hubRadiusScale(d.link_count || 0);
+          d._r = r;
           const s  = r * 1.5;
           el.append('rect')
             .attr('x', -s / 2).attr('y', -s / 2)
@@ -808,6 +898,7 @@
             .attr('stroke-width', 2);
         } else if (d.node_type === 'hashtag') {
           const r = hubRadiusScale(d.link_count || 0);
+          d._r = r;
           el.append('polygon')
             .attr('points', _hexPoints(r))
             .attr('fill', AXIS_COLORS[d.axis] || HUB_COLOR.hashtag)
@@ -894,6 +985,10 @@
         })
         .on('click', (event, d) => {
           event.stopPropagation();
+          if (this.linkSourceId) {
+            this._handleLinkTargetClick(d);
+            return;
+          }
           this._openSidePanel(d);
         });
 
@@ -906,6 +1001,7 @@
           .attr('x1', d => d.source.x).attr('y1', d => d.source.y)
           .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
         nodeSel.attr('transform', d => `translate(${d.x},${d.y})`);
+        if (this.showHulls) this._updateHulls();
 
         // レイアウトがほぼ安定したら（end を待たず）一度だけ滑らかにフィット。
         // end まで待つと数秒かかり、その間に瞬間的な縮小が起きて見づらいため。
@@ -920,6 +1016,7 @@
       this._applySearch();
       this._showGraph();
       this._applyHubGlow();
+      this._updateHulls();
 
       // シミュレーション安定後の自動フィット（tick で未実行だった場合の保険）。
       // すでに tick 内でフィット済み、または手動操作済みなら何もしない。
@@ -1167,6 +1264,9 @@
           if (_freshness(d) === 'stale') {
             noteLine += `<div class="tt-meta" style="color:#d97706;">${STALE_DAYS}日以上 記録の更新なし</div>`;
           }
+          if (_needsRetrospective(d)) {
+            noteLine += '<div class="tt-meta" style="color:#d97706;"><i class="bi bi-exclamation-circle me-1"></i>振り返りが未記入です</div>';
+          }
         }
         html = `
           <div class="tt-name"><span class="tt-badge" style="background:${statusInfo.c};">${_esc(statusInfo.t)}</span>${_esc(d.stock_name)}</div>
@@ -1292,20 +1392,49 @@
           }
         }
 
+        // 売却済みで振り返り未記入なら注意表示 + CTA
+        if (_needsRetrospective(d)) {
+          html += `
+          <div class="side-panel-section">
+            <div class="sp-stale-note"><i class="bi bi-exclamation-circle me-1"></i>売却済みですが振り返りが未記入です</div>
+            <a href="${_esc(d.url || '#')}" class="btn btn-outline-warning btn-sm w-100 mt-1">
+              <i class="bi bi-pencil me-1"></i>振り返りを書く
+            </a>
+          </div>`;
+        }
+
         html += `
           <div class="side-panel-section">
             <div class="side-panel-label">接続数</div><div>${d.link_count || 0} 本</div>
           </div>`;
       }
 
-      // 関連ノード（関連する銘柄・タグ・業種）リスト — クリックでそのノードへ
-      const conns = this._neighborsOf(d.id);
-      if (conns.length > 0) {
+      // 関連ノードリスト。タグ/@タグハブで方向（追い風/向かい風）が設定されて
+      // いる場合は方向別にグルーピングして表示する
+      const dirGroups = (d.node_type === 'tag' || d.node_type === 'hashtag')
+        ? this._hubNeighborsByDirection(d.id)
+        : null;
+      if (dirGroups && (dirGroups.up.length > 0 || dirGroups.down.length > 0)) {
+        const total = dirGroups.up.length + dirGroups.down.length + dirGroups.neutral.length;
+        const section = (key, icon, label, items) => items.length === 0 ? '' : `
+            <div class="sp-dir-head dir-${key}"><i class="bi ${icon}"></i>${label}（${items.length}）</div>
+            <div class="sp-conn-list">${items.map(c => this._connRow(c)).join('')}</div>`;
         html += `
+          <div class="side-panel-section">
+            <div class="side-panel-label">関連ノード (${total})</div>
+            ${section('up', 'bi-arrow-up-right', '追い風', dirGroups.up)}
+            ${section('down', 'bi-arrow-down-right', '向かい風', dirGroups.down)}
+            ${section('neutral', 'bi-dash-lg', '中立・未設定', dirGroups.neutral)}
+          </div>`;
+      } else {
+        const conns = this._neighborsOf(d.id);
+        if (conns.length > 0) {
+          html += `
           <div class="side-panel-section">
             <div class="side-panel-label">関連ノード (${conns.length})</div>
             <div class="sp-conn-list">${conns.map(c => this._connRow(c)).join('')}</div>
           </div>`;
+        }
       }
 
       // 日記詳細CTA（diaryノードのみ）
@@ -1326,6 +1455,17 @@
           </button>
         </div>`;
 
+      // グラフ上での手動リンク作成（primary の日記ノードのみ）
+      if (d.node_type === 'diary' && d.is_primary && this.relatedAddUrl) {
+        html += `
+        <div class="side-panel-section">
+          <button class="btn btn-outline-secondary btn-sm w-100" id="link-mode-btn"
+                  data-node-id="${_esc(String(d.id))}">
+            <i class="bi bi-link-45deg me-1"></i>この銘柄からリンクを作成
+          </button>
+        </div>`;
+      }
+
       this.sidePanelTitle.innerHTML = title;
       this.sidePanelBody.innerHTML  = html;
       this.sidePanel.classList.add('open');
@@ -1338,6 +1478,15 @@
           const nid = focusBtn.dataset.nodeId;
           this._closeSidePanel();
           this._enterFocusMode(nid);
+        });
+      }
+
+      const linkBtn = document.getElementById('link-mode-btn');
+      if (linkBtn) {
+        linkBtn.addEventListener('click', () => {
+          const nid = linkBtn.dataset.nodeId;
+          this._closeSidePanel();
+          this._enterLinkMode(nid);
         });
       }
     }
@@ -1406,11 +1555,34 @@
         </div>`;
       }
 
+      // 手動リンク: グラフ上から解除できるようにする
+      const canUnlink = edge.edge_type === 'manual'
+        && src.node_type === 'diary' && tgt.node_type === 'diary'
+        && this.relatedRemoveUrl;
+      if (canUnlink) {
+        html += `
+        <div class="side-panel-section mt-2">
+          <button class="btn btn-outline-danger btn-sm w-100" id="unlink-btn"
+                  data-src="${_esc(sid)}" data-tgt="${_esc(tid)}">
+            <i class="bi bi-x-circle me-1"></i>このリンクを解除
+          </button>
+        </div>`;
+      }
+
       this.sidePanelTitle.innerHTML = `<i class="bi ${info.icon} me-1"></i>${info.label}`;
       this.sidePanelBody.innerHTML  = html;
       this.sidePanel.classList.add('open');
       document.getElementById('graph-wrapper').classList.add('panel-open');
       this._bindPanelGoto();
+
+      const unlinkBtn = document.getElementById('unlink-btn');
+      if (unlinkBtn) {
+        unlinkBtn.addEventListener('click', () => {
+          const msg = `「${src.stock_name || ''}」と「${tgt.stock_name || ''}」の手動リンクを解除しますか？`;
+          if (!window.confirm(msg)) return;
+          this._removeManualLink(unlinkBtn.dataset.src, unlinkBtn.dataset.tgt);
+        });
+      }
     }
 
     // パネル内の「関連ノード」行クリック → そのノードのパネルへ切り替え
@@ -1429,6 +1601,157 @@
         this._nodeById = new Map(this.allNodes.map(n => [String(n.id), n]));
       }
       return this._nodeById.get(String(id));
+    }
+
+    // ハブの隣接日記ノードをエッジ方向（追い風/向かい風/中立）でグルーピング
+    _hubNeighborsByDirection(hubId) {
+      const id = String(hubId);
+      const groups = { up: [], down: [], neutral: [] };
+      const seen = new Set();
+      this.allEdges.forEach(e => {
+        const s = String(typeof e.source === 'object' ? e.source.id : e.source);
+        const t = String(typeof e.target === 'object' ? e.target.id : e.target);
+        let otherId = null;
+        if (s === id) otherId = t;
+        else if (t === id) otherId = s;
+        if (!otherId || seen.has(otherId)) return;
+        seen.add(otherId);
+        const node = this._nodeOf(otherId);
+        if (!node) return;
+        const dir = (e.direction === 'up' || e.direction === 'down') ? e.direction : 'neutral';
+        groups[dir].push(node);
+      });
+      return groups;
+    }
+
+    // ==============================
+    // 未接続銘柄の一覧パネル
+    // ==============================
+    _openIsolatedPanel() {
+      const items = this._isolatedDiaries;
+      if (items.length === 0) return;
+      const statusColor = { holding: '#10b981', sold: '#ef4444', memo: '#9ca3af' };
+      const rows = items.map(d => `
+        <a class="sp-conn" href="${_esc(d.url || '#')}" style="text-decoration:none;">
+          <span class="sp-cdot" style="background:${statusColor[d.status] || '#9ca3af'};"></span>
+          <span class="sp-cname">${_esc(d.stock_name || '')}</span>
+          <span class="sp-ck">${_esc(d.stock_symbol || '')}</span>
+        </a>`).join('');
+      this.sidePanelTitle.innerHTML =
+        `<i class="bi bi-exclamation-circle me-1" style="color:#d97706;"></i>未接続の銘柄（${items.length}件）`;
+      this.sidePanelBody.innerHTML = `
+        <div class="side-panel-section">
+          <div class="text-muted" style="font-size:.78rem;line-height:1.6;">
+            現在の表示条件で、どの接続にも繋がっていない銘柄です。
+            タグ・@タグ・関連日記を追加すると地図に繋がります。
+          </div>
+        </div>
+        <div class="side-panel-section">
+          <div class="sp-conn-list">${rows}</div>
+        </div>`;
+      this.sidePanel.classList.add('open');
+      document.getElementById('graph-wrapper').classList.add('panel-open');
+    }
+
+    // ==============================
+    // リンク作成モード（グラフ上で手動リンクを作成・解除）
+    // ==============================
+    _csrfToken() {
+      const input = document.querySelector('#graph-csrf [name=csrfmiddlewaretoken]');
+      if (input && input.value) return input.value;
+      const m = document.cookie.match(/csrftoken=([^;]+)/);
+      return m ? m[1] : '';
+    }
+
+    _enterLinkMode(sourceId) {
+      const src = this._nodeOf(sourceId);
+      if (!src || src.node_type !== 'diary') return;
+      this.linkSourceId = String(sourceId);
+
+      const banner = document.getElementById('link-mode-banner');
+      if (banner) {
+        // エラー表示で書き換えられている場合があるため毎回組み立て直す
+        const text = banner.querySelector('#link-banner-text');
+        if (text) {
+          text.innerHTML = 'リンク元: <span id="link-banner-source" class="fw-semibold"></span>'
+            + ' — リンク先の銘柄ノードをクリックしてください';
+          banner.querySelector('#link-banner-source').textContent = src.stock_name || '';
+        }
+        banner.style.display = 'flex';
+      }
+      const wrapper = document.getElementById('graph-wrapper');
+      if (wrapper) wrapper.classList.add('link-mode');
+      const srcEl = document.querySelector(`.graph-node[data-id="${this.linkSourceId}"]`);
+      if (srcEl) srcEl.classList.add('link-source');
+    }
+
+    _exitLinkMode() {
+      if (!this.linkSourceId) return;
+      this.linkSourceId = null;
+      const banner = document.getElementById('link-mode-banner');
+      if (banner) banner.style.display = 'none';
+      const wrapper = document.getElementById('graph-wrapper');
+      if (wrapper) wrapper.classList.remove('link-mode');
+      document.querySelectorAll('.graph-node.link-source')
+        .forEach(el => el.classList.remove('link-source'));
+    }
+
+    _handleLinkTargetClick(d) {
+      if (d.node_type !== 'diary') return;                 // ハブノードは対象外
+      const targetId = String(d.id);
+      if (targetId === this.linkSourceId) return;          // 自分自身は不可
+      this._createManualLink(this.linkSourceId, targetId);
+    }
+
+    async _createManualLink(sourceId, targetId) {
+      const url = this.relatedAddUrl.replace('/diary/0/', `/diary/${sourceId}/`);
+      try {
+        const resp = await fetch(url, {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': this._csrfToken(),
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+          body: JSON.stringify({ related_id: parseInt(targetId, 10) }),
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok || !data.success) throw new Error(data.error || `HTTP ${resp.status}`);
+        // 成功: 作成したリンクが見えるよう手動モードを有効にして再取得
+        this._exitLinkMode();
+        this.currentEdgeModes.add('manual');
+        this._syncEdgeModeCheckboxes();
+        this._fetchAndRender();
+      } catch (err) {
+        console.error('リンク作成エラー:', err);
+        const text = document.getElementById('link-banner-text');
+        if (text) text.innerHTML = `<span class="text-danger">リンクの作成に失敗しました（${_esc(err.message)}）</span>`;
+        setTimeout(() => this._exitLinkMode(), 2500);
+      }
+    }
+
+    async _removeManualLink(sourceId, targetId) {
+      const url = this.relatedRemoveUrl
+        .replace('/diary/0/', `/diary/${sourceId}/`)
+        .replace('/related/0/', `/related/${targetId}/`);
+      try {
+        const resp = await fetch(url, {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: {
+            'X-CSRFToken': this._csrfToken(),
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok || !data.success) throw new Error(data.error || `HTTP ${resp.status}`);
+        this._closeSidePanel();
+        this._fetchAndRender();
+      } catch (err) {
+        console.error('リンク解除エラー:', err);
+        window.alert('リンクの解除に失敗しました');
+      }
     }
 
     // 隣接ノード（オブジェクト配列）を返す
@@ -1497,6 +1820,18 @@
         }
       }
 
+      // 未接続銘柄バッジ
+      const isolatedBtn = document.getElementById('stats-isolated');
+      if (isolatedBtn) {
+        const n = this._isolatedDiaries.length;
+        if (n > 0) {
+          isolatedBtn.innerHTML = `<i class="bi bi-exclamation-circle"></i>未接続 ${n}件`;
+          isolatedBtn.style.display = 'inline-flex';
+        } else {
+          isolatedBtn.style.display = 'none';
+        }
+      }
+
       this.statsEl.style.display = 'block';
     }
 
@@ -1562,6 +1897,8 @@
       };
       if (this.linkSel)    this.linkSel.classed('focus-hidden', edgeHidden);
       if (this.linkHitSel) this.linkHitSel.classed('focus-hidden', edgeHidden);
+      // フォーカス中は非表示ノードを含むクラスタ面が誤解を招くため隠す
+      if (this.hullGroup)  this.hullGroup.classed('hull-hidden', true);
 
       this._updateFocusStats(visibleIds);
       return visibleIds;
@@ -1598,6 +1935,7 @@
 
       if (this.linkSel)    this.linkSel.classed('focus-hidden', false);
       if (this.linkHitSel) this.linkHitSel.classed('focus-hidden', false);
+      if (this.hullGroup)  this.hullGroup.classed('hull-hidden', false);
 
       this._hideFocusBanner();
 
@@ -1664,6 +2002,52 @@
         btn.innerHTML = `<i class="bi bi-crosshair me-1"></i>一致した ${count} 件を中心に表示`;
       }
       btn.style.display = 'inline-flex';
+    }
+
+    // ==============================
+    // クラスタ面（ハル）描画
+    //   ハブとそのメンバー銘柄を包む凸包を薄い色面で描く。
+    //   tick ごとに呼ばれるため、showHulls が false なら即座に抜ける
+    // ==============================
+    _updateHulls() {
+      if (!this.hullGroup) return;
+      if (!this.showHulls) {
+        this.hullGroup.selectAll('path').remove();
+        return;
+      }
+      const data = [];
+      (this._clusters || []).forEach(c => {
+        const pts = [];
+        [c.hub, ...c.members].forEach(n => {
+          if (typeof n.x !== 'number' || typeof n.y !== 'number') return;
+          // ノードの半径 + 余白ぶん広げた周囲8点でパディングし、面が窮屈にならないようにする
+          const pad = (n._r || 10) + 14;
+          for (let i = 0; i < 8; i++) {
+            const a = (Math.PI / 4) * i;
+            pts.push([n.x + Math.cos(a) * pad, n.y + Math.sin(a) * pad]);
+          }
+        });
+        if (pts.length < 3) return;
+        const hull = d3.polygonHull(pts);
+        if (!hull) return;
+        data.push({ id: c.id, hull, color: this._clusterColor(c.hub) });
+      });
+
+      const line = d3.line().curve(d3.curveCatmullRomClosed.alpha(0.8));
+      this.hullGroup.selectAll('path')
+        .data(data, d => d.id)
+        .join('path')
+          .attr('d', d => line(d.hull))
+          .attr('fill', d => d.color)
+          .attr('fill-opacity', 0.07)
+          .attr('stroke', d => d.color)
+          .attr('stroke-opacity', 0.25)
+          .attr('stroke-width', 1.5);
+    }
+
+    _clusterColor(hub) {
+      if (hub.node_type === 'sector') return HUB_COLOR.sector;
+      return AXIS_COLORS[hub.axis] || HUB_COLOR.tag;
     }
 
     // ==============================
@@ -1787,6 +2171,15 @@
     const t = new Date(iso + 'T00:00:00');
     if (isNaN(t.getTime())) return null;
     return Math.floor((Date.now() - t.getTime()) / 86400000);
+  }
+
+  // 売却済みなのに振り返り（retrospective）ノートが無い日記か
+  // （コンテンツ情報のない secondary ノードは判定対象外）
+  function _needsRetrospective(d) {
+    return d.node_type === 'diary'
+      && d.status === 'sold'
+      && typeof d.note_count === 'number'
+      && !d.has_retrospective;
   }
 
   // 日記ノードの鮮度を判定する: 'fresh' | 'stale' | null
