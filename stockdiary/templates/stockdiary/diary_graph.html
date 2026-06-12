@@ -226,6 +226,19 @@
     </div>
   </div>
 
+  <!-- リンク作成モードバナー -->
+  <div id="link-mode-banner" class="focus-mode-banner" style="display:none;" role="status" aria-live="polite">
+    <div class="focus-banner-info">
+      <i class="bi bi-link-45deg text-primary"></i>
+      <span id="link-banner-text">リンク元: <span id="link-banner-source" class="fw-semibold"></span> — リンク先の銘柄ノードをクリックしてください</span>
+    </div>
+    <div class="focus-banner-controls">
+      <button id="link-banner-cancel" class="btn btn-sm btn-outline-secondary" type="button">
+        <i class="bi bi-x me-1"></i>キャンセル
+      </button>
+    </div>
+  </div>
+
   <!-- グラフエリア（グラフ本体 + サイドパネル） -->
   <div class="graph-outer-wrapper">
 
@@ -308,6 +321,8 @@
         <span class="gsb-pill"><i class="bi bi-circle-fill"></i><span id="stats-nodes"></span></span>
         <span class="gsb-pill"><i class="bi bi-share-fill"></i><span id="stats-edges"></span></span>
         <span id="stats-axis-info" class="gsb-pill gsb-pill-axis" style="display:none;"></span>
+        <button id="stats-isolated" class="gsb-pill gsb-pill-isolated" style="display:none;"
+                type="button" title="どの接続にも繋がっていない銘柄（クリックで一覧）"></button>
       </div>
 
       <!-- 全画面終了ボタン（全画面モード時のみ表示） -->
@@ -520,12 +535,17 @@
 
 {% include 'speed_dial.html' with actions=page_actions %}
 
+<!-- グラフ上のリンク作成API用CSRFトークン -->
+<form id="graph-csrf" style="display:none;" aria-hidden="true">{% csrf_token %}</form>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
   const GRAPH_CONFIG = {
     apiUrl: "{% url 'stockdiary:api_diary_graph_data' %}",
+    relatedAddUrl: "{% url 'stockdiary:api_related_add' diary_id=0 %}",
+    relatedRemoveUrl: "{% url 'stockdiary:api_related_remove' diary_id=0 related_id=0 %}",
     diaryCount: {{ diary_count }},
     defaultEdgeModes: ['tag', 'hashtag'],
   };

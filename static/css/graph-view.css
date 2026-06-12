@@ -235,6 +235,30 @@
   filter: none;
 }
 
+/* 振り返り未記入マーカー（売却済み・retrospective ノートなし） */
+.graph-node circle.retro-marker {
+  fill: #f59e0b;
+  stroke: var(--bg-100, #fffefb);
+  stroke-width: 1.5px;
+  pointer-events: none;
+}
+
+/* ================================================================
+   リンク作成モード（グラフ上で手動リンクを作成）
+   ================================================================ */
+.graph-container.link-mode .graph-node.status-holding,
+.graph-container.link-mode .graph-node.status-sold,
+.graph-container.link-mode .graph-node.status-memo {
+  cursor: crosshair;
+}
+.graph-container.link-mode .graph-node.node-hub {
+  opacity: 0.3;
+}
+.graph-container.link-mode .graph-node.link-source circle {
+  stroke: #2563eb !important;
+  stroke-width: 4px !important;
+}
+
 /* ================================================================
    ツールチップ（ホバー）
    ================================================================ */
@@ -381,6 +405,18 @@
 }
 .gsb-pill-axis {
   background: rgba(124, 58, 237, 0.82);
+}
+
+/* 未接続銘柄バッジ（クリック可能。親は pointer-events:none なので個別に有効化） */
+.gsb-pill-isolated {
+  pointer-events: auto;
+  cursor: pointer;
+  border: none;
+  background: rgba(217, 119, 6, 0.85);
+  transition: background 0.15s ease;
+}
+.gsb-pill-isolated:hover {
+  background: rgba(217, 119, 6, 1);
 }
 
 /* ================================================================
@@ -1295,6 +1331,20 @@ body.dark-mode .graph-hint,
   font-size: 0.74rem;
   color: #d97706;
 }
+
+/* 方向グループ見出し（タグハブパネル: 追い風/向かい風/その他） */
+.sp-dir-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  margin: 8px 0 4px;
+}
+.sp-dir-head:first-child { margin-top: 0; }
+.sp-dir-head.dir-up      { color: #16a34a; }
+.sp-dir-head.dir-down    { color: #dc2626; }
+.sp-dir-head.dir-neutral { color: var(--text-200, #6b7280); }
 body.dark-mode .sp-excerpt,
 [data-theme="dark"] .sp-excerpt {
   background: rgba(255, 255, 255, 0.05);
