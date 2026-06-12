@@ -94,11 +94,36 @@ def update_diary_disclosure_status() -> int:
     # Stage 2: 該当銘柄を記録中のユーザーへアプリ内通知をファンアウト
     notified_count = fan_out_disclosure_notifications(new_events)
 
+    # 新規開示の XBRL 財務分析を非同期実行（決算レビュー素材の事前準備）
+    _queue_auto_analysis(new_events)
+
     logger.info(
         f'開示インジケーター更新完了: 日記更新={updated_count}件, '
         f'新規イベント={len(new_events)}件, 通知={notified_count}件'
     )
     return updated_count
+
+
+def _queue_auto_analysis(events):
+    """新規 DisclosureEvent ごとに XBRL 財務分析タスクを django-q にキューする。
+
+    キュー投入の失敗（qcluster 未稼働・テーブル未作成等）はバッチ全体を
+    止めないよう握りつぶしてログのみ残す。
+    """
+    if not events:
+        return
+    try:
+        from django_q.tasks import async_task
+    except ImportError:
+        return
+
+    for event in events:
+        try:
+            async_task(
+                'earnings_analysis.tasks.auto_analyze_disclosure_task', event.id
+            )
+        except Exception as e:
+            logger.warning(f'XBRL自動分析のキュー投入失敗: event_id={event.id}, {e}')
 
 
 def _fetch_latest_disclosures(securities_codes) -> dict:

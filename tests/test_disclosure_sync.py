@@ -183,6 +183,80 @@ class TestNotificationFanOut:
         assert NotificationLog.objects.filter(user=another_user).count() == 0
 
 
+class TestAutoXBRLAnalysis:
+    """新規開示イベントの XBRL 財務分析自動実行"""
+
+    def _make_event(self, doc):
+        from earnings_analysis.models import DisclosureEvent
+        return DisclosureEvent.objects.create(
+            securities_code=doc.securities_code,
+            doc_id=doc.doc_id,
+            file_date=doc.file_date,
+            doc_type_code=doc.doc_type_code,
+            doc_type_name='有価証券報告書',
+        )
+
+    def test_task_runs_analysis_for_xbrl_document(self, monkeypatch):
+        from earnings_analysis import tasks
+
+        doc = make_document(doc_type_code='120', xbrl_flag=True)
+        event = self._make_event(doc)
+
+        analyzed = []
+        monkeypatch.setattr(
+            'earnings_analysis.services.xbrl_analysis_service.XBRLAnalysisService.analyze_document',
+            lambda self, d: analyzed.append(d.doc_id) or {'ok': True},
+        )
+        tasks.auto_analyze_disclosure_task(event.id)
+        assert analyzed == [doc.doc_id]
+
+    def test_task_skips_without_xbrl(self, monkeypatch):
+        from earnings_analysis import tasks
+
+        doc = make_document(doc_type_code='120', xbrl_flag=False)
+        event = self._make_event(doc)
+
+        def _fail(self, d):
+            raise AssertionError('XBRLなし書類で分析が呼ばれた')
+        monkeypatch.setattr(
+            'earnings_analysis.services.xbrl_analysis_service.XBRLAnalysisService.analyze_document',
+            _fail,
+        )
+        tasks.auto_analyze_disclosure_task(event.id)
+
+    def test_task_skips_when_already_analyzed(self, monkeypatch):
+        from earnings_analysis import tasks
+        from earnings_analysis.models import CompanyFinancialData
+
+        doc = make_document(doc_type_code='120', xbrl_flag=True)
+        event = self._make_event(doc)
+        CompanyFinancialData.objects.create(document=doc, period_type='FY')
+
+        def _fail(self, d):
+            raise AssertionError('分析済み書類で再分析が呼ばれた')
+        monkeypatch.setattr(
+            'earnings_analysis.services.xbrl_analysis_service.XBRLAnalysisService.analyze_document',
+            _fail,
+        )
+        tasks.auto_analyze_disclosure_task(event.id)
+
+    def test_sync_queues_task_for_new_events(self, sample_diary, monkeypatch):
+        """update_diary_disclosure_status が新規イベントをキューに投入する"""
+        import django_q.tasks
+
+        queued = []
+        monkeypatch.setattr(
+            django_q.tasks, 'async_task',
+            lambda func, *args, **kwargs: queued.append((func, args)),
+        )
+        make_document(doc_type_code='120', file_date=date.today(), xbrl_flag=True)
+        update_diary_disclosure_status()
+
+        assert len(queued) == 1
+        func, args = queued[0]
+        assert func == 'earnings_analysis.tasks.auto_analyze_disclosure_task'
+
+
 class TestEarningsReviewPrefill:
     """決算レビューのノート下書き（edinet_note_prefill）"""
 
