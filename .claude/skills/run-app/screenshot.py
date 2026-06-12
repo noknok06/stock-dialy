@@ -33,11 +33,14 @@ JSDELIVR_RE = re.compile(r'https://cdn\.jsdelivr\.net/npm/([^@]+)@[^/]+/(.+?)(?:
 def serve_cdn(route):
     m = JSDELIVR_RE.match(route.request.url)
     if m:
-        local = os.path.join(CDN_DIR, m.group(1), 'package', m.group(2))
-        if os.path.exists(local):
-            ctype = mimetypes.guess_type(local)[0] or 'application/octet-stream'
-            route.fulfill(status=200, content_type=ctype, body=open(local, 'rb').read())
-            return
+        rel = m.group(2)
+        # jsdelivr は .min.js を動的生成するが npm tarball には無いことがある
+        for candidate in (rel, rel.replace('.min.js', '.js'), rel.replace('.min.css', '.css')):
+            local = os.path.join(CDN_DIR, m.group(1), 'package', candidate)
+            if os.path.exists(local):
+                ctype = mimetypes.guess_type(local)[0] or 'application/octet-stream'
+                route.fulfill(status=200, content_type=ctype, body=open(local, 'rb').read())
+                return
     route.abort()
 
 
