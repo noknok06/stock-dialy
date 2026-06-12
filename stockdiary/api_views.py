@@ -30,6 +30,7 @@ from .utils import (
 )
 import json
 import logging
+import re
 import traceback
 import requests
 from bs4 import BeautifulSoup
@@ -698,7 +699,8 @@ def diary_graph_data(request):
         primary_diaries = list(
             primary_qs.prefetch_related('tags', 'notes').only(
                 'id', 'stock_name', 'stock_symbol', 'sector',
-                'realized_profit', 'current_quantity', 'transaction_count', 'reason', 'memo',
+                'realized_profit', 'current_quantity', 'transaction_count',
+                'reason', 'memo', 'created_at',
             )
         )
 
@@ -734,18 +736,7 @@ def diary_graph_data(request):
                     'realized_profit', 'current_quantity', 'transaction_count'
                 ):
                     if d.id not in diary_nodes_map:
-                        diary_nodes_map[d.id] = {
-                            'id': d.id,
-                            'node_type': 'diary',
-                            'stock_name': d.stock_name,
-                            'stock_symbol': d.stock_symbol,
-                            'status': _diary_status(d),
-                            'sector': d.sector or '未分類',
-                            'realized_profit': float(d.realized_profit),
-                            'link_count': 0,
-                            'url': f'/stockdiary/{d.id}/',
-                            'is_primary': False,
-                        }
+                        diary_nodes_map[d.id] = _build_diary_node(d, is_primary=False)
 
             raw_links = Through.objects.filter(
                 from_stockdiary_id__in=manual_all_ids,
@@ -884,36 +875,16 @@ def diary_graph_data(request):
                     'realized_profit', 'current_quantity', 'transaction_count'
                 ):
                     if d.id not in diary_nodes_map:
-                        diary_nodes_map[d.id] = {
-                            'id': d.id,
-                            'node_type': 'diary',
-                            'stock_name': d.stock_name,
-                            'stock_symbol': d.stock_symbol,
-                            'status': _diary_status(d),
-                            'sector': d.sector or '未分類',
-                            'realized_profit': float(d.realized_profit),
-                            'link_count': 0,
-                            'url': f'/stockdiary/{d.id}/',
-                            'is_primary': False,
-                        }
+                        diary_nodes_map[d.id] = _build_diary_node(d, is_primary=False)
 
         # ====================================================
         # primary 日記ノードを diary_nodes_map に追加（重複排除）
         # ====================================================
         for d in primary_diaries:
             if d.id not in diary_nodes_map:
-                diary_nodes_map[d.id] = {
-                    'id': d.id,
-                    'node_type': 'diary',
-                    'stock_name': d.stock_name,
-                    'stock_symbol': d.stock_symbol,
-                    'status': _diary_status(d),
-                    'sector': d.sector or '未分類',
-                    'realized_profit': float(d.realized_profit),
-                    'link_count': 0,
-                    'url': f'/stockdiary/{d.id}/',
-                    'is_primary': True,
-                }
+                diary_nodes_map[d.id] = _build_diary_node(
+                    d, is_primary=True, include_content=True
+                )
 
         # link_count を全エッジから集計（diary ノードのみ）
         link_count_map = {}
@@ -978,6 +949,51 @@ def _diary_status(diary) -> str:
     elif diary.transaction_count > 0:
         return 'sold'
     return 'memo'
+
+
+def _text_excerpt(text, limit: int = 90) -> str:
+    """Markdownテキストから装飾記号を除いた冒頭抜粋を返す"""
+    if not text:
+        return ''
+    t = re.sub(r'!\[[^\]]*\]\([^)]*\)', '', text)          # 画像
+    t = re.sub(r'\[([^\]]*)\]\([^)]*\)', r'\1', t)          # リンク→表示文字
+    t = re.sub(r'[#*`>~|]+', '', t)                          # 見出し・強調等の記号
+    t = ' '.join(t.split())
+    return t[:limit] + ('…' if len(t) > limit else '')
+
+
+def _build_diary_node(diary, *, is_primary: bool, include_content: bool = False) -> dict:
+    """グラフAPI共通の diary ノード dict を生成する。
+
+    include_content=True の場合、サイドパネル表示用に投資理由の抜粋と
+    継続記録（DiaryNote）のサマリー・鮮度情報を付与する。
+    notes が prefetch 済みの QuerySet にのみ指定すること。
+    """
+    node = {
+        'id': diary.id,
+        'node_type': 'diary',
+        'stock_name': diary.stock_name,
+        'stock_symbol': diary.stock_symbol or '',
+        'status': _diary_status(diary),
+        'sector': diary.sector or '未分類',
+        'realized_profit': float(diary.realized_profit),
+        'link_count': 0,
+        'url': f'/stockdiary/{diary.id}/',
+        'is_primary': is_primary,
+    }
+    if include_content:
+        node['reason_excerpt'] = _text_excerpt(diary.reason)
+        notes = list(diary.notes.all())
+        node['note_count'] = len(notes)
+        if notes:
+            latest = max(notes, key=lambda n: (n.date, n.id))
+            node['last_note_date'] = latest.date.isoformat()
+            node['last_note_type'] = latest.get_note_type_display()
+            node['last_note_excerpt'] = _text_excerpt(latest.content, 80)
+        created = getattr(diary, 'created_at', None)
+        if created:
+            node['created_date'] = created.date().isoformat()
+    return node
 
 
 @login_required
@@ -1057,19 +1073,9 @@ def diary_detail_graph_data(request, diary_id):
         all_edges = []
 
         for d in all_diaries:
-            diary_nodes_map[d.id] = {
-                'id': d.id,
-                'node_type': 'diary',
-                'stock_name': d.stock_name,
-                'stock_symbol': d.stock_symbol or '',
-                'status': _diary_status(d),
-                'sector': d.sector or '未分類',
-                'realized_profit': float(d.realized_profit),
-                'link_count': 0,
-                'url': f'/stockdiary/{d.id}/',
-                'is_primary': True,
-                'is_focal': d.id == focal.id,
-            }
+            node = _build_diary_node(d, is_primary=True)
+            node['is_focal'] = d.id == focal.id
+            diary_nodes_map[d.id] = node
 
         # ── エッジ構築 ──────────────────────────────────────────────────
         # manual エッジ
