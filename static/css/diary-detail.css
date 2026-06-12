@@ -859,6 +859,31 @@
   min-height: 200px;
 }
 
+/* === タブ先頭の主要アクション行（全タブ共通の見た目に揃える） ===
+   PC: 自動幅で左寄せ横並び / モバイル: 全幅で縦積み */
+.tab-action-row {
+  display: flex;
+  gap: 0.625rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.tab-action-row .btn {
+  min-height: 48px;
+  padding: 0.75rem 1.5rem;
+}
+
+@media (max-width: 576px) {
+  .tab-action-row {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .tab-action-row .btn {
+    width: 100%;
+  }
+}
+
 /* === 継続記録フォーム === */
 .simplified-note-form {
   background: linear-gradient(135deg, var(--bg-200), var(--bg-100));
