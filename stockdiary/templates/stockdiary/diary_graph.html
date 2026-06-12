@@ -65,6 +65,21 @@
 .gs-color-name { font-weight: 700; font-size: .85rem; margin-bottom: 2px; }
 .gs-color-desc { font-size: .75rem; color: #64748b; }
 
+/* ===== 使い方ヘルプモーダル ===== */
+.gh-list { display: flex; flex-direction: column; gap: 9px; }
+.gh-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  font-size: .84rem; color: #334155; line-height: 1.6;
+}
+.gh-icon {
+  flex-shrink: 0; width: 26px;
+  display: flex; justify-content: center; align-items: center;
+  padding-top: 2px; color: #64748b;
+}
+.gh-icon i { font-size: 1rem; }
+[data-theme="dark"] .gh-item { color: #cbd5e1; }
+[data-theme="dark"] .gh-icon { color: #94a3b8; }
+
 /* ダークモード */
 [data-theme="dark"] .gs-section-desc { color: #94a3b8; }
 [data-theme="dark"] .gs-axis-card { border-color: #334155; background: transparent; }
@@ -197,6 +212,11 @@
           </button>
           <button class="btn btn-outline-secondary btn-sm" id="toggleFullscreen" title="全画面表示" aria-pressed="false">
             <i class="bi bi-arrows-fullscreen"></i>
+          </button>
+          <button class="btn btn-outline-secondary btn-sm" id="graphHelpBtn" type="button"
+                  data-bs-toggle="modal" data-bs-target="#graphHelpModal"
+                  title="このグラフの使い方" aria-label="このグラフの使い方">
+            <i class="bi bi-question-lg"></i>
           </button>
         </div>
         <button class="btn btn-sm btn-primary search-focus-btn" id="search-focus-btn"
@@ -560,6 +580,147 @@
     </div>
   </div>
 </div><!-- /#graphSettingsModal -->
+
+<!-- ========== 使い方ヘルプモーダル ========== -->
+<div class="modal fade" id="graphHelpModal" tabindex="-1"
+     aria-labelledby="graphHelpModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg">
+    <div class="modal-content graph-settings-modal">
+      <div class="modal-header">
+        <h5 class="modal-title" id="graphHelpModalLabel">
+          <i class="bi bi-question-circle me-2 text-primary"></i>日記関連グラフの使い方
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
+      </div>
+
+      <div class="modal-body">
+
+        <p class="gs-section-desc mb-4">
+          日記・タグ・業種のつながりを「自分の投資思考の地図」として俯瞰するページです。
+          記録（日記・@タグ・継続記録・関連付け）が増えるほど地図が育っていきます。
+        </p>
+
+        <!-- ノードの見かた -->
+        <div class="gs-section mb-4">
+          <h6 class="gs-section-title"><i class="bi bi-circle-fill me-2" style="color:#10b981;"></i>ノード（形と色）の見かた</h6>
+          <div class="gh-list">
+            <div class="gh-item">
+              <span class="gh-icon">
+                <svg width="20" height="20" viewBox="-10 -10 20 20"><circle r="7" fill="#10b981" stroke="white" stroke-width="2"/></svg>
+              </span>
+              <span><strong>円 = 銘柄（日記）</strong>。緑=保有中 / 赤=売却済み / グレー=メモ。大きいほど接続が多い銘柄です。</span>
+            </div>
+            <div class="gh-item">
+              <span class="gh-icon">
+                <svg width="20" height="20" viewBox="-10 -10 20 20"><polygon points="6.06,-3.5 6.06,3.5 0,7 -6.06,3.5 -6.06,-3.5 0,-7" fill="#7c3aed" stroke="white" stroke-width="1.5"/></svg>
+              </span>
+              <span><strong>六角形 = タグ・@タグ</strong>。色は分析グループ（テーマ=紫・マクロ=オレンジ など。「設定」で絞り込み可）。</span>
+            </div>
+            <div class="gh-item">
+              <span class="gh-icon">
+                <svg width="20" height="20" viewBox="-10 -10 20 20"><rect x="-6.5" y="-6.5" width="13" height="13" rx="3" fill="#d97706" stroke="white" stroke-width="1.5"/></svg>
+              </span>
+              <span><strong>角丸四角 = 業種</strong>。同じ業種の銘柄を束ねます。</span>
+            </div>
+            <div class="gh-item">
+              <span class="gh-icon">
+                <svg width="20" height="20" viewBox="-10 -10 20 20"><circle r="8.5" fill="none" stroke="#38bdf8" stroke-width="2"/><circle r="5" fill="#10b981"/></svg>
+              </span>
+              <span><strong>水色のリング</strong> = 直近14日以内に継続記録を書いた「考えが新しい」銘柄。</span>
+            </div>
+            <div class="gh-item">
+              <span class="gh-icon">
+                <svg width="20" height="20" viewBox="-10 -10 20 20"><circle r="7" fill="#10b981" opacity="0.4"/></svg>
+              </span>
+              <span><strong>薄く表示</strong> = 90日以上 記録を更新していない保有銘柄。振り返りのきっかけにしてください。</span>
+            </div>
+            <div class="gh-item">
+              <span class="gh-icon">
+                <svg width="20" height="20" viewBox="-10 -10 20 20"><circle r="6.5" fill="#ef4444"/><circle cx="6" cy="-6" r="3.2" fill="#f59e0b" stroke="white" stroke-width="1"/></svg>
+              </span>
+              <span><strong>オレンジの点</strong> = 売却済みなのに「振り返り」ノートが未記入の銘柄。</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 線の見かた -->
+        <div class="gs-section mb-4">
+          <h6 class="gs-section-title"><i class="bi bi-share-fill me-2" style="color:#64748b;"></i>線（つながり）の見かた</h6>
+          <div class="gh-list">
+            <div class="gh-item">
+              <span class="gh-icon"><svg width="24" height="10"><line x1="0" y1="3" x2="24" y2="3" stroke="#a78bfa" stroke-width="3"/><line x1="0" y1="8" x2="24" y2="8" stroke="#a78bfa" stroke-width="1" opacity="0.5"/></svg></span>
+              <span><strong>太く濃い線ほど希少で強い関連</strong>です。多くの銘柄に付く汎用的なタグの線は細く薄く表示されます。</span>
+            </div>
+            <div class="gh-item">
+              <span class="gh-icon"><svg width="24" height="10"><line x1="0" y1="3" x2="24" y2="3" stroke="#16a34a" stroke-width="2.5"/><line x1="0" y1="8" x2="24" y2="8" stroke="#dc2626" stroke-width="2.5" stroke-dasharray="5,4"/></svg></span>
+              <span><strong>緑の実線=追い風 / 赤の破線=向かい風</strong>。タグごとに設定した影響方向です（例: @金利上昇 が銀行には↑、REITには↓）。</span>
+            </div>
+            <div class="gh-item">
+              <span class="gh-icon"><svg width="24" height="10"><line x1="0" y1="5" x2="24" y2="5" stroke="#f59e0b" stroke-width="2.5" stroke-dasharray="4,3"/></svg></span>
+              <span><strong>黄色の破線 = コード参照</strong>。日記本文に「銘柄名(コード)」と書いた銘柄同士が自動で繋がります。</span>
+            </div>
+            <div class="gh-item">
+              <span class="gh-icon"><i class="bi bi-hand-index" style="color:#64748b;"></i></span>
+              <span><strong>線をタップ</strong>すると「なぜ繋がっているのか」の根拠（共有タグ・影響方向・言及した本文の抜粋）が見られます。</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 基本操作 -->
+        <div class="gs-section mb-4">
+          <h6 class="gs-section-title"><i class="bi bi-hand-index-thumb me-2" style="color:#2563eb;"></i>基本操作</h6>
+          <div class="gh-list">
+            <div class="gh-item"><span class="gh-icon"><i class="bi bi-cursor"></i></span>
+              <span><strong>ノードをタップ</strong> → 詳細パネル（投資理由・継続記録・タグ・関連銘柄）。</span></div>
+            <div class="gh-item"><span class="gh-icon"><i class="bi bi-arrows-move"></i></span>
+              <span><strong>背景をドラッグ</strong>で移動、<strong>ホイール / ピンチ</strong>でズーム。<i class="bi bi-aspect-ratio mx-1"></i>で全体表示に戻ります。</span></div>
+            <div class="gh-item"><span class="gh-icon"><i class="bi bi-pin-angle"></i></span>
+              <span><strong>ノードをドラッグ</strong>するとその位置にピン留め。<strong>ダブルタップ</strong>で解除。</span></div>
+            <div class="gh-item"><span class="gh-icon"><i class="bi bi-crosshair"></i></span>
+              <span>パネルの<strong>「この関連のみ表示」</strong>で周辺だけに絞るフォーカス表示（深さ1〜3ホップを変更可。Esc か「解除」で戻る）。</span></div>
+            <div class="gh-item"><span class="gh-icon"><i class="bi bi-search"></i></span>
+              <span><strong>検索ボックス</strong>に銘柄名・コードを入力すると一致ノードを強調。そのまま「一致した銘柄を中心に表示」もできます。</span></div>
+          </div>
+        </div>
+
+        <!-- フィルターと設定 -->
+        <div class="gs-section mb-4">
+          <h6 class="gs-section-title"><i class="bi bi-sliders2 me-2" style="color:#7c3aed;"></i>フィルターと設定</h6>
+          <div class="gh-list">
+            <div class="gh-item"><span class="gh-icon"><i class="bi bi-eye"></i></span>
+              <span><strong>「表示」</strong>= 保有中・売却済み・メモの絞り込み / <strong>「接続」</strong>= 手動リンク・タグ・業種・コード参照のつなぎ方の切り替え。</span></div>
+            <div class="gh-item"><span class="gh-icon"><i class="bi bi-sliders2"></i></span>
+              <span><strong>「設定」</strong>から分析グループ（軸）の絞り込み・ノードの色分け・クラスタ面（タグごとの銘柄群を囲む面）を変更できます。</span></div>
+            <div class="gh-item"><span class="gh-icon"><i class="bi bi-exclamation-circle" style="color:#d97706;"></i></span>
+              <span>右下の<strong>「未接続 N件」</strong>バッジ = どの接続にも繋がっていない銘柄の一覧。タグ付けの目安になります。</span></div>
+            <div class="gh-item"><span class="gh-icon"><i class="bi bi-bookmark"></i></span>
+              <span>フィルター状態は <strong>URL に保存</strong>されるので、お気に入りの表示条件のままブックマークできます。</span></div>
+          </div>
+        </div>
+
+        <!-- 地図を育てるには -->
+        <div class="gs-section">
+          <h6 class="gs-section-title"><i class="bi bi-tree me-2" style="color:#16a34a;"></i>地図を育てるには</h6>
+          <div class="gh-list">
+            <div class="gh-item"><span class="gh-icon"><i class="bi bi-hash"></i></span>
+              <span>日記や継続記録に <strong>@タグ</strong>（例: @AI / @高配当）を書くと、同じタグの銘柄が自動で繋がります。</span></div>
+            <div class="gh-item"><span class="gh-icon"><i class="bi bi-link-45deg"></i></span>
+              <span>銘柄パネルの<strong>「この銘柄からリンクを作成」</strong>で、関連すると思う銘柄同士をグラフ上で直接繋げられます。</span></div>
+            <div class="gh-item"><span class="gh-icon"><i class="bi bi-journal-text"></i></span>
+              <span>本文に <strong>銘柄名(コード)</strong> 形式で他銘柄に触れると「コード参照」で自動的に繋がります。</span></div>
+          </div>
+        </div>
+
+      </div><!-- /.modal-body -->
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+          <i class="bi bi-check-lg me-1"></i>閉じる
+        </button>
+      </div>
+    </div>
+  </div>
+</div><!-- /#graphHelpModal -->
 
 {% include 'speed_dial.html' with actions=page_actions %}
 
