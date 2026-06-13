@@ -97,7 +97,7 @@
               title="財務分析レポートを表示">
         <i class="bi bi-bar-chart-line"></i> 財務
       </button>
-      {% elif not fin_data and doc.xbrl_flag %}
+      {% elif not fin_data and item.can_xbrl_analyze %}
       <button type="button"
               class="edinet-action-btn edinet-action-btn-fin"
               onclick="edinetXBRLAnalyze('{{ diary.id }}', '{{ doc.doc_id }}', this)"

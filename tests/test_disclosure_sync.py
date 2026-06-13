@@ -267,6 +267,45 @@ class TestAutoXBRLAnalysis:
         assert func == 'earnings_analysis.tasks.auto_analyze_disclosure_task'
 
 
+class TestXBRLAnalyzableGuard:
+    """財務諸表を含まない種別（臨報・内部統制等）はXBRL財務分析の対象外"""
+
+    def test_service_rejects_non_financial_doc_type(self, monkeypatch):
+        from earnings_analysis.services.xbrl_analysis_service import XBRLAnalysisService
+
+        def _fail(self, d):
+            raise AssertionError('非対応種別でXBRL取得が呼ばれた')
+        monkeypatch.setattr(
+            'earnings_analysis.services.xbrl_extractor.EDINETXBRLService.get_comprehensive_analysis_from_document',
+            _fail,
+        )
+        doc = make_document(doc_type_code='180', xbrl_flag=True)  # 臨時報告書
+        result = XBRLAnalysisService().analyze_document(doc)
+        assert result['ok'] is False
+        assert '対応していません' in result['error']
+
+    def test_view_rejects_non_financial_doc_type(self, authenticated_client, sample_diary):
+        from django.urls import reverse
+
+        doc = make_document(doc_type_code='235', xbrl_flag=True)  # 内部統制報告書
+        url = reverse('stockdiary:edinet_xbrl_analyze', args=[sample_diary.id])
+        res = authenticated_client.post(url, {'doc_id': doc.doc_id})
+        assert res.status_code == 400
+        assert '対応していません' in res.json()['error']
+
+    def test_panel_hides_analyze_button_for_non_financial_doc(self, authenticated_client, sample_diary):
+        from django.urls import reverse
+
+        make_document(doc_id='S100EXTR', doc_type_code='180', xbrl_flag=True)
+        make_document(doc_id='S100YUHO', doc_type_code='120', xbrl_flag=True)
+        url = reverse('stockdiary:edinet_panel', args=[sample_diary.id])
+        html = authenticated_client.get(url).content.decode()
+
+        # 有報には分析ボタンが出る、臨報には出ない
+        assert "edinetXBRLAnalyze('%s', 'S100YUHO'" % sample_diary.id in html
+        assert "edinetXBRLAnalyze('%s', 'S100EXTR'" % sample_diary.id not in html
+
+
 class TestLexiconSentimentAnalysis:
     """語彙ベースのみの感情分析（run_lexicon_analysis・AI不使用）"""
 
