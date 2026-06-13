@@ -14,7 +14,7 @@
     border-radius: 12px;
     box-shadow: var(--shadow-sm);
     padding: 1.25rem;
-    background: var(--bg-100);
+    background: var(--card-bg-color);
     border: 1px solid var(--border-color);
   }
   .migration-header {
@@ -32,6 +32,22 @@
     margin-bottom: 1.25rem;
     background: rgba(240, 173, 78, 0.07);
     font-size: 0.875rem;
+  }
+
+  /* ========== ダークモード ========== */
+  .dark-mode .migration-header h2,
+  [data-theme="dark"] .migration-header h2 {
+    color: var(--dm-primary-200);
+  }
+  .dark-mode .migration-instructions,
+  [data-theme="dark"] .migration-instructions {
+    background: rgba(251, 191, 36, 0.08);
+    border-left-color: #fbbf24;
+  }
+  .dark-mode .migration-instructions code,
+  [data-theme="dark"] .migration-instructions code {
+    background: rgba(71, 85, 105, 0.4);
+    color: var(--dm-text-100);
   }
 </style>
 {% endblock %}

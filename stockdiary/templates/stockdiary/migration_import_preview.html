@@ -14,8 +14,11 @@
     border-radius: 12px;
     box-shadow: var(--shadow-sm);
     padding: 1.25rem;
-    background: var(--bg-100);
+    background: var(--card-bg-color);
     border: 1px solid var(--border-color);
+  }
+  .preview-title {
+    color: var(--primary-color);
   }
   .count-grid {
     display: grid;
@@ -28,7 +31,7 @@
     padding: 0.75rem;
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    background: var(--bg-200, #f8f9fa);
+    background: var(--bg-secondary);
   }
   .count-item .num {
     font-size: 1.5rem;
@@ -37,7 +40,7 @@
   }
   .count-item .label {
     font-size: 0.8125rem;
-    color: var(--text-muted, #6c757d);
+    color: var(--text-secondary);
   }
   .dup-warning {
     border-left: 4px solid var(--warning-color, #f0ad4e);
@@ -47,6 +50,19 @@
     background: rgba(240, 173, 78, 0.07);
     font-size: 0.875rem;
   }
+
+  /* ========== ダークモード ========== */
+  .dark-mode .preview-title,
+  [data-theme="dark"] .preview-title,
+  .dark-mode .count-item .num,
+  [data-theme="dark"] .count-item .num {
+    color: var(--dm-primary-200);
+  }
+  .dark-mode .dup-warning,
+  [data-theme="dark"] .dup-warning {
+    background: rgba(251, 191, 36, 0.08);
+    border-left-color: #fbbf24;
+  }
 </style>
 {% endblock %}
 
@@ -54,7 +70,7 @@
 <div class="migration-container">
   <div class="migration-card">
     <div class="text-center mb-3">
-      <h2 style="color: var(--primary-color);"><i class="bi bi-clipboard-check"></i> 取り込み内容の確認</h2>
+      <h2 class="preview-title"><i class="bi bi-clipboard-check"></i> 取り込み内容の確認</h2>
       <p class="text-muted mb-0">ファイル: {{ filename }}</p>
       {% if summary.source_username %}
         <p class="text-muted small">エクスポート元: {{ summary.source_username }}{% if summary.exported_at %}（{{ summary.exported_at }}）{% endif %}</p>
