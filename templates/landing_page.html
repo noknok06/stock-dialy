@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>カブログ — 「なぜ買ったか」を記録する投資日記</title>
-<meta name="description" content="投資の「なぜ」を記録・蓄積して、自分だけの知識ベースを育てる投資日記アプリ。タグ・業種で銘柄の繋がりを自動グラフ化。楽天証券・SBI証券CSV対応。">
+<meta name="description" content="投資の「なぜ」を記録・蓄積し、1年前の記録や売却の振り返りを自動で想起する投資日記アプリ。タグ・業種で銘柄の繋がりを自動グラフ化。楽天証券・SBI証券CSV対応。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+JP:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -117,7 +117,7 @@ img{max-width:100%;display:block}
 .shead p{font-size:17px;color:var(--t2);line-height:1.75}
 
 /* features */
-.fgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:22px}
+.fgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
 .fcard{background:#fff;border:1px solid var(--line);border-radius:22px;padding:30px 26px;position:relative;overflow:hidden;
   transition:transform .35s cubic-bezier(.16,1,.3,1),box-shadow .35s,border-color .35s}
 .fcard::after{content:"";position:absolute;inset:0;border-radius:22px;padding:1px;background:var(--grad);opacity:0;
@@ -126,6 +126,7 @@ img{max-width:100%;display:block}
 .fcard:hover::after{opacity:1}
 .fico{width:56px;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:25px;color:#fff;margin-bottom:20px;box-shadow:0 10px 24px rgba(15,23,42,.14)}
 .fcard h3{font-family:var(--fz-jp);font-size:19px;font-weight:700;margin-bottom:10px}
+.fcard h3 .new{font-size:10.5px;background:rgba(124,58,237,.12);color:var(--violet);border-radius:5px;padding:.1rem .42rem;margin-left:.4rem;font-weight:700;vertical-align:middle}
 .fcard p{font-size:14.5px;color:var(--t2);line-height:1.78}
 .fcard p strong{color:var(--t1);font-weight:700}
 
@@ -149,6 +150,34 @@ img{max-width:100%;display:block}
 .sc-device img{border-radius:28px}
 .sc-cap{text-align:center;color:rgba(255,255,255,.5);font-size:13px;margin-top:14px;display:flex;align-items:center;justify-content:center;gap:6px}
 .sc-cap i{color:#a78bfa}
+
+/* recall (light) */
+.recall-inner{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center}
+.rc-badge{display:inline-flex;align-items:center;gap:8px;padding:.45rem .95rem;border-radius:999px;font-size:13px;font-weight:600;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.28);color:#059669;margin-bottom:20px}
+.recall-inner h2{font-family:var(--fz-jp);font-size:clamp(28px,3.4vw,40px);font-weight:800;line-height:1.28;margin-bottom:18px}
+.recall-inner .gtxt{background:linear-gradient(120deg,#10b981,#06b6d4);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.recall-inner .rp{font-size:16.5px;color:var(--t2);line-height:1.8;margin-bottom:26px;max-width:480px}
+.recall-inner .rp strong{color:var(--t1);font-weight:700}
+.rlist{list-style:none;display:flex;flex-direction:column;gap:14px;margin-bottom:34px}
+.rlist li{display:flex;gap:13px;align-items:flex-start;font-size:15px;color:var(--t2)}
+.rlist .ic{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;margin-top:1px;background:rgba(16,185,129,.14);color:#059669}
+.rlist strong{color:var(--t1);font-weight:700}
+/* recall mockup card */
+.rcard{background:#fff;border:1px solid var(--line);border-radius:22px;padding:20px;box-shadow:0 30px 70px rgba(15,23,42,.12);width:100%;max-width:380px;margin:0 auto}
+.rcard-h{display:flex;align-items:center;gap:9px;font-family:var(--fz-jp);font-weight:800;font-size:15.5px;margin-bottom:16px;color:var(--t1)}
+.rcard-h .ic{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;background:linear-gradient(135deg,#10b981,#059669)}
+.ritem{display:flex;flex-direction:column;gap:6px;padding:13px 14px;border-radius:14px;background:var(--paper);border:1px solid var(--line)}
+.ritem+.ritem{margin-top:10px}
+.ritem-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.rb{font-size:10.5px;font-weight:700;border-radius:6px;padding:.16rem .5rem;white-space:nowrap}
+.rb.year{background:rgba(6,182,212,.12);color:var(--cyan-d)}
+.rb.todo{background:rgba(245,158,11,.16);color:#d97706}
+.ritem .rname{font-family:var(--fz-jp);font-weight:700;font-size:14px;color:var(--t1)}
+.ritem .rdate{font-size:11.5px;color:var(--t3);margin-left:auto}
+.ritem .rsnip{font-size:12.5px;color:var(--t2);line-height:1.6}
+.ritem .rfoot{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.ritem .rpl{font-size:13px;font-weight:800;color:#059669}
+.ritem .rlink{font-size:12.5px;font-weight:600;color:var(--violet)}
 
 /* steps */
 .steps{position:relative;display:grid;grid-template-columns:repeat(3,1fr);gap:30px}
@@ -211,6 +240,7 @@ img{max-width:100%;display:block}
   .hero-inner{grid-template-columns:1fr;gap:30px}
   .phones{height:440px;max-width:480px;margin:0 auto}
   .sc-inner{grid-template-columns:1fr;gap:44px}
+  .recall-inner{grid-template-columns:1fr;gap:40px}
   .fgrid{grid-template-columns:1fr 1fr}
   .nav-links{display:none}
   .foot-top{grid-template-columns:1fr 1fr}
@@ -296,6 +326,7 @@ img{max-width:100%;display:block}
     <div class="nav-links">
       <a href="#features">特徴</a>
       <a href="#graph">投資知識グラフ</a>
+      <a href="#recall">振り返り</a>
       <a href="#how">使い方</a>
       <a href="#comparison">比較</a>
     </div>
@@ -314,7 +345,7 @@ img{max-width:100%;display:block}
     <div class="rv">
       <span class="eyebrow"><span class="dot"></span>投資の「思考」を記録する日記アプリ</span>
       <h1 class="jp">「なぜ買ったか」を<br><span class="grad-txt">記録する投資日記。</span></h1>
-      <p class="lead">投資の「なぜ」を記録・蓄積して、<strong>自分だけの知識ベース</strong>を育てましょう。使うほど、あなたの判断・失敗・気づきの地図が積み上がっていく。</p>
+      <p class="lead">投資の「なぜ」を記録・蓄積して、<strong>自分だけの知識ベース</strong>を育てる。さらにアプリが過去の記録を<strong>想起</strong>し、売却の<strong>振り返り</strong>まで導く——使うほど判断の地図が積み上がっていく。</p>
       <div class="hero-actions">
         <a class="btn btn-grad btn-lg" href="/users/signup/"><i class="bi bi-rocket-takeoff"></i>無料で始める</a>
         <a class="btn btn-ghost btn-lg" href="#features"><i class="bi bi-play-circle"></i>詳細を見る</a>
@@ -353,7 +384,7 @@ img{max-width:100%;display:block}
   <div class="wrap">
     <div class="shead rv">
       <span class="stag">Features</span>
-      <h2 class="jp">思考を記録し、知識を育てる機能</h2>
+      <h2 class="jp">記録し、つなげ、振り返る機能</h2>
       <p class="jp">使えば使うほど、自分の判断・失敗・気づきの地図が積み上がっていく。</p>
     </div>
     <div class="fgrid">
@@ -373,7 +404,17 @@ img{max-width:100%;display:block}
         <p class="jp">タグ・業種・テーマで銘柄の繋がりを自動可視化。<strong>使うほど地図が育つ</strong>投資知識グラフです。</p>
       </div>
       <div class="fcard rv">
-        <div class="fico" style="background:linear-gradient(135deg,#10b981,#059669)"><i class="bi bi-file-earmark-arrow-up"></i></div>
+        <div class="fico" style="background:linear-gradient(135deg,#10b981,#059669)"><i class="bi bi-arrow-counterclockwise"></i></div>
+        <h3 class="jp">振り返り・想起<span class="new">NEW</span></h3>
+        <p class="jp">アプリが<strong>1年前の記録</strong>を呼び戻し、売却が完結したら<strong>振り返りを促す</strong>。過去の自分の判断と向き合えます。</p>
+      </div>
+      <div class="fcard rv">
+        <div class="fico" style="background:linear-gradient(135deg,#3b82f6,#2563eb)"><i class="bi bi-clock-history"></i></div>
+        <h3 class="jp">横断タイムライン<span class="new">NEW</span></h3>
+        <p class="jp">全銘柄の日記・継続記録・取引を1本の時系列で一望。<strong>あの時期に何を考えていたか</strong>を、いつでも見返せます。</p>
+      </div>
+      <div class="fcard rv">
+        <div class="fico" style="background:linear-gradient(135deg,#0ea5e9,#0284c7)"><i class="bi bi-file-earmark-arrow-up"></i></div>
         <h3 class="jp">CSVインポート</h3>
         <p class="jp">楽天証券・SBI証券の取引履歴CSVを一括取込。<strong>手入力は不要</strong>で、すぐに使い始められます。</p>
       </div>
@@ -406,6 +447,42 @@ img{max-width:100%;display:block}
   </div>
 </section>
 
+<!-- RECALL -->
+<section class="section" id="recall">
+  <div class="wrap recall-inner">
+    <div class="rv">
+      <span class="rc-badge"><i class="bi bi-arrow-counterclockwise"></i>振り返り・想起</span>
+      <h2 class="jp">記録を、<br><span class="gtxt">未来の自分が想起する。</span></h2>
+      <p class="rp jp">書いて終わりにしない。アプリが過去の記録を呼び戻し、売却が完結したら振り返りを促します。<strong>「あのとき何を考えていたか」</strong>と向き合うほど、判断の質が磨かれていく。</p>
+      <ul class="rlist jp">
+        <li><span class="ic"><i class="bi bi-calendar-event"></i></span><span><strong>1年前の今日</strong> — 過去の記録を日付で自動的に呼び戻す</span></li>
+        <li><span class="ic"><i class="bi bi-check2-circle"></i></span><span><strong>振り返り未記入バッジ</strong> — 売却が完結した銘柄の振り返りを促す</span></li>
+        <li><span class="ic"><i class="bi bi-receipt"></i></span><span><strong>振り返りシート</strong> — 平均買値→売値・実現損益を自動で差し込み</span></li>
+        <li><span class="ic"><i class="bi bi-clock-history"></i></span><span><strong>横断タイムライン</strong> — 全銘柄の記録を時系列で一望できる</span></li>
+      </ul>
+      <a class="btn btn-grad btn-lg" href="/users/signup/"><i class="bi bi-rocket-takeoff"></i>無料で試してみる</a>
+    </div>
+    <div class="rv">
+      <div class="rcard">
+        <div class="rcard-h"><span class="ic"><i class="bi bi-bell-fill"></i></span>今日の想起</div>
+        <div class="ritem">
+          <div class="ritem-top"><span class="rb year">1年前の今日</span><span class="rname">INPEX</span><span class="rdate">2025.06.13</span></div>
+          <div class="rsnip jp">「原油高局面での上流開発に注目。地政学リスクのヘッジとして…」</div>
+        </div>
+        <div class="ritem">
+          <div class="ritem-top"><span class="rb todo">振り返り未記入</span><span class="rname">ソニーグループ</span></div>
+          <div class="rfoot"><span class="rpl">+18,400円 実現</span><span class="rlink jp">振り返りを書く →</span></div>
+        </div>
+        <div class="ritem">
+          <div class="ritem-top"><span class="rb year">1年前の今日</span><span class="rname">三菱重工業</span><span class="rdate">2025.06.13</span></div>
+          <div class="rsnip jp">「防衛費増額の流れを継続記録。次の決算で受注残を確認する」</div>
+        </div>
+      </div>
+      <p class="sc-cap" style="color:var(--t3)"><i class="bi bi-phone" style="color:#059669"></i>ホーム上部に表示される想起カード</p>
+    </div>
+  </div>
+</section>
+
 <!-- HOW IT WORKS -->
 <section class="section paper2" id="how">
   <div class="wrap">
@@ -430,7 +507,7 @@ img{max-width:100%;display:block}
       <div class="step rv">
         <div class="sn">3</div>
         <h4 class="jp">振り返る</h4>
-        <p class="jp">「あのとき何を考えていたか」が時系列で追える。過去の判断を見直し、自分の投資パターンを発見します。</p>
+        <p class="jp">アプリが1年前の記録や売却の振り返りを想起。「あのとき何を考えていたか」を見返し、自分の投資パターンを発見します。</p>
         <span class="stag2 jp"><i class="bi bi-arrow-counterclockwise"></i>自己改善のサイクル</span>
       </div>
     </div>
@@ -461,7 +538,8 @@ img{max-width:100%;display:block}
           <tr class="hl"><td>CSVインポート</td><td class="us-col"><i class="bi bi-check-lg ok"></i></td><td><i class="bi bi-x-lg no"></i></td><td><i class="bi bi-x-lg no"></i></td></tr>
           <tr><td>継続記録機能</td><td class="us-col"><i class="bi bi-check-lg ok"></i></td><td><i class="bi bi-x-lg no"></i></td><td><i class="bi bi-x-lg no"></i></td></tr>
           <tr class="hl"><td>日記関連グラフ・全文検索<span class="new">NEW</span></td><td class="us-col"><i class="bi bi-check-lg ok"></i></td><td><i class="bi bi-x-lg no"></i></td><td><i class="bi bi-x-lg no"></i></td></tr>
-          <tr><td>無料プラン</td><td class="us-col"><span class="free">全機能利用可</span></td><td>基本機能のみ</td><td>制限あり</td></tr>
+          <tr><td>振り返り・想起機能<span class="new">NEW</span></td><td class="us-col"><i class="bi bi-check-lg ok"></i></td><td><i class="bi bi-x-lg no"></i></td><td><i class="bi bi-x-lg no"></i></td></tr>
+          <tr class="hl"><td>無料プラン</td><td class="us-col"><span class="free">全機能利用可</span></td><td>基本機能のみ</td><td>制限あり</td></tr>
         </tbody>
       </table>
     </div>
@@ -498,7 +576,7 @@ img{max-width:100%;display:block}
       </div>
       <div>
         <h4>機能</h4>
-        <ul class="jp"><li><a href="#features">投資日記</a></li><li><a href="#features">取引履歴管理</a></li><li><a href="#features">CSVインポート</a></li></ul>
+        <ul class="jp"><li><a href="#features">投資日記</a></li><li><a href="#graph">投資知識グラフ</a></li><li><a href="#recall">振り返り・想起</a></li><li><a href="#features">CSVインポート</a></li></ul>
       </div>
       <div>
         <h4>サポート</h4>
