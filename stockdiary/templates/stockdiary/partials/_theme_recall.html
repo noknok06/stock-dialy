@@ -10,7 +10,8 @@
 .theme-recall-group:last-child { border-bottom:none; }
 .theme-recall-head { display:flex; align-items:center; gap:0.4rem; cursor:pointer; list-style:none; min-height:44px; }
 .theme-recall-head::-webkit-details-marker { display:none; }
-.theme-recall-chip { font-size:0.78rem; font-weight:600; padding:0.18rem 0.55rem; border-radius:999px;
+.theme-recall-chip { display:inline-flex; align-items:center; white-space:nowrap;
+  font-size:0.78rem; font-weight:600; padding:0.18rem 0.55rem; border-radius:999px;
   color:var(--chip,#7c3aed); background:rgba(148,163,184,0.12); border:1px solid var(--chip,#7c3aed); }
 .theme-recall-est { font-size:0.58rem; margin-left:0.3rem; opacity:0.85; border:1px solid currentColor; border-radius:4px; padding:0 0.2rem; }
 .theme-recall-count { font-size:0.7rem; color:var(--text-tertiary,#9ca3af); margin-left:auto; }
@@ -68,8 +69,9 @@
       <div class="theme-recall-empty text-muted small">
         投資理由を書いて、<code>@テーマ</code> を付けてみましょう。同じテーマで過去に下した判断がここに並びます。
         {% if theme_recall.suggested_themes %}
-        <div class="mt-2">
-          例：{% for name in theme_recall.suggested_themes %}<span class="theme-recall-chip">@{{ name }}</span>{% if not forloop.last %} {% endif %}{% endfor %}
+        <div class="mt-2" style="display:flex;flex-wrap:wrap;gap:0.35rem;align-items:center;">
+          <span style="white-space:nowrap;font-size:0.78rem;">例：</span>
+          {% for name in theme_recall.suggested_themes %}<span class="theme-recall-chip">@{{ name }}</span>{% endfor %}
         </div>
         {% endif %}
       </div>
