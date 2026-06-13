@@ -306,6 +306,49 @@ class TestXBRLAnalyzableGuard:
         assert "edinetXBRLAnalyze('%s', 'S100EXTR'" % sample_diary.id not in html
 
 
+class TestPanelFactsOnlyPayload:
+    """開示タブのモーダル用JSONは判定を含まず、事実と変化のみを出す"""
+
+    def test_report_and_sentiment_json_exclude_judgments(self, authenticated_client, sample_diary):
+        from django.urls import reverse
+        from earnings_analysis.models import CompanyFinancialData, SentimentAnalysisHistory
+
+        prev_doc = make_document(
+            doc_id='S100PREV', doc_type_code='120',
+            file_date=date.today() - timedelta(days=365),
+        )
+        doc = make_document(
+            doc_id='S100CURR', doc_type_code='120',
+            file_date=date.today(), xbrl_flag=True,
+        )
+        CompanyFinancialData.objects.create(
+            document=doc, period_type='FY',
+            net_sales=10_000_000_000, equity_ratio=50.0,
+            operating_cf=500_000_000, investing_cf=-300_000_000, financing_cf=-100_000_000,
+        )
+        SentimentAnalysisHistory.objects.create(
+            document=prev_doc, overall_score=0.10, sentiment_label='neutral',
+        )
+        # AI判定を含む分析結果を保存しても、パネルのJSONには露出しないこと
+        SentimentAnalysisHistory.objects.create(
+            document=doc, overall_score=0.35, sentiment_label='positive',
+            analysis_result={'ai_expert_analysis': {
+                'overall_score': 88, 'investment_points': [{'title': '注目'}],
+            }},
+        )
+
+        url = reverse('stockdiary:edinet_panel', args=[sample_diary.id])
+        html = authenticated_client.get(url).content.decode()
+
+        # 判定要素（リスクラベル・強み/懸念・AIスコア・AIポイント）は出さない
+        for judgment_key in ('risk_label', 'strengths', 'concerns',
+                             'ai_overall_score', 'ai_insights', 'interpretation'):
+            assert judgment_key not in html, judgment_key
+        # 変化（経営トーンの前回比）は出す
+        assert 'tone_trend' in html
+        assert '経営トーン 改善' in html
+
+
 class TestLexiconSentimentAnalysis:
     """語彙ベースのみの感情分析（run_lexicon_analysis・AI不使用）"""
 

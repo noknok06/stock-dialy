@@ -3505,13 +3505,14 @@ def edinet_panel(request, diary_id):
                     pass
 
             # 感情分析データをJSON化（モーダル表示用）
+            # 判定（AIスコア・AI投資ポイント）は載せず、語彙分析の根拠
+            # （キーワード・キーセンテンス・統計）と前回比のみを出す
             sent_json = None
             if sent:
                 try:
                     analysis_result = getattr(sent, 'analysis_result', None) or {}
                     kw = analysis_result.get('keyword_analysis', {})
                     stats_raw = analysis_result.get('statistics', {})
-                    ai_expert = analysis_result.get('ai_expert_analysis') or {}
 
                     # キーワードは {'word': ..., 'count': ...} のdict配列なので文字列に変換
                     def _kw_word(k):
@@ -3526,11 +3527,11 @@ def edinet_panel(request, diary_id):
 
                     sent_json = json.dumps({
                         'overall_score': float(sent.overall_score) if sent.overall_score is not None else 0,
-                        'ai_overall_score': ai_expert.get('overall_score'),
                         'sentiment_label': sent.sentiment_label or '',
                         'label_display': {
                             'positive': 'ポジティブ', 'negative': 'ネガティブ', 'neutral': '中立',
                         }.get(sent.sentiment_label, sent.sentiment_label or '—'),
+                        'tone_trend': tone_trend,
                         'sample_sentences': {
                             'positive': [_sent_text(s) for s in raw_sp[:3]],
                             'negative': [_sent_text(s) for s in raw_sn[:3]],
@@ -3540,7 +3541,6 @@ def edinet_panel(request, diary_id):
                         'stats': {k: stats_raw[k] for k in (
                             'sentences_analyzed', 'positive_words_count', 'negative_words_count'
                         ) if k in stats_raw},
-                        'ai_insights': ai_expert.get('investment_points', []),
                     }, ensure_ascii=False)
                 except Exception:
                     pass
@@ -3559,8 +3559,8 @@ def edinet_panel(request, diary_id):
                 try:
                     from earnings_analysis.services.financial_analyzer import FinancialAnalyzer
                     from decimal import Decimal
-                    _risk_labels = {'low': '低リスク', 'medium': '中リスク', 'high': '高リスク', 'very_high': '非常に高リスク'}
-
+                    # 判定（リスクレベル・強み/懸念・解釈文）は載せず、
+                    # CFパターンの機械的分類（名称・定義）と数値のみを出す
                     cf_data = {}
                     if all(getattr(fin_data, f) is not None for f in ('operating_cf', 'investing_cf', 'financing_cf')):
                         cf_result = FinancialAnalyzer().analyze_cashflow_pattern({
@@ -3570,19 +3570,12 @@ def edinet_panel(request, diary_id):
                         })
                         ptn = cf_result.get('pattern', {})
                         amt = cf_result.get('amounts', {})
-                        ana = cf_result.get('analysis', {})
                         cf_data = {
                             'name': ptn.get('name', ''),
                             'description': ptn.get('description', ''),
-                            'risk_level': ptn.get('risk_level', 'medium'),
-                            'risk_label': _risk_labels.get(ptn.get('risk_level', 'medium'), '中リスク'),
-                            'interpretation': ptn.get('interpretation', ''),
                             'operating_cf': amt.get('operating_cf', 0),
                             'investing_cf': amt.get('investing_cf', 0),
                             'financing_cf': amt.get('financing_cf', 0),
-                            'strengths': ana.get('strengths', [])[:3],
-                            'concerns': ana.get('concerns', [])[:3],
-                            'key_insights': ana.get('key_insights', [])[:3],
                         }
 
                     def _f(v):
