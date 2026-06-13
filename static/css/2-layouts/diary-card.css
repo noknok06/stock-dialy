@@ -77,27 +77,20 @@
   letter-spacing: 0.02em;
   font-variant-numeric: tabular-nums;
   text-decoration: none;
-  box-shadow: 0 4px 10px rgba(74, 144, 194, 0.25);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.15s ease;
 }
 
 .diary-code-icon:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 14px rgba(74, 144, 194, 0.32);
   color: #ffffff;
 }
 
 .diary-code-icon--sold {
   background: linear-gradient(135deg, #c9c9d1 0%, #8b8d99 100%);
-  box-shadow: 0 4px 10px rgba(120, 120, 130, 0.22);
-}
-.diary-code-icon--sold:hover {
-  box-shadow: 0 6px 14px rgba(120, 120, 130, 0.28);
 }
 
 .diary-code-icon--memo {
   background: linear-gradient(135deg, #d6d6db 0%, #a8a8b0 100%);
-  box-shadow: 0 4px 10px rgba(150, 150, 160, 0.22);
 }
 
 @media (min-width: 768px) {
@@ -108,10 +101,6 @@
   }
 }
 
-.dark-mode .diary-code-icon,
-[data-theme="dark"] .diary-code-icon {
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
-}
 
 .diary-profit-pill {
   flex-shrink: 0;
@@ -630,7 +619,7 @@
   color: var(--dm-background);
 }
 
-/* ========== スワイプヒントインジケーター（左端ライン・常時表示） ========== */
+/* ========== スワイプヒントインジケーター ========== */
 .diary-article {
   position: relative;
 }
@@ -638,32 +627,6 @@
 .diary-article--excluded {
   opacity: 0.6;
   border-left: 3px solid var(--text-200, #888);
-}
-
-.diary-article::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 12%;
-  height: 76%;
-  width: 3px;
-  background: linear-gradient(
-    to bottom,
-    transparent,
-    var(--accent-200),
-    transparent
-  );
-  border-radius: 0 2px 2px 0;
-  opacity: 0.28;
-  pointer-events: none;
-  transition: opacity 0.25s ease, width 0.25s ease;
-}
-
-/* スワイプ中（パネルが開いているとき）は強調 */
-.diary-article:has(.diary-header-inner[style*="translateX(-"]) ::before,
-.diary-article:has(.diary-header-inner[style*="translateX(-"])::before {
-  opacity: 0.7;
-  width: 4px;
 }
 
 /* ========== peek アニメーション（JS でクラス付与） ========== */
