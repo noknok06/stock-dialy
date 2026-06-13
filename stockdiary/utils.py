@@ -1019,37 +1019,45 @@ def extract_lead(text: str, max_len: int = 120) -> str:
     """
     if not text:
         return ''
-    summary = _extract_section(text, ['ひとこと要約', '結論ひとこと', '総合評価'])
-    body = summary if summary else text
-    lines: List[str] = []
-    for raw in body.splitlines():
-        line = raw.strip()
-        if not line:
-            continue
-        if line.startswith('#') or line.startswith('>') or line.startswith('|'):
-            continue
-        # 箇条書きの先頭記号を外す
-        m = re.match(r'^[-*]\s+(.*)$', line)
-        if m:
-            line = m.group(1).strip()
-        # 太字ラベルのみ/値が空の箇条書き（**項目**: ）を除外、値があれば値を採用
-        lab = re.match(r'^\*\*[^*]+\*\*\s*[:：]?\s*(.*)$', line)
-        if lab is not None:
-            val = lab.group(1).strip()
-            if not val:
+
+    def _clean(body: str) -> str:
+        lines: List[str] = []
+        for raw in body.splitlines():
+            line = raw.strip()
+            if not line:
                 continue
-            line = val
-        # 全角/半角の括弧だけで構成されたガイダンス行を除外
-        if re.fullmatch(r'[（(].*[)）]', line):
-            continue
-        line = re.sub(r'^[#>*\-\s]+', '', line).strip()
-        line = re.sub(r'\*\*|`', '', line)  # 残った強調記号を除去
-        if len(line) < 2:
-            continue
-        lines.append(line)
-        if len(' '.join(lines)) >= max_len:
-            break
-    result = ' '.join(lines).strip()
+            if line.startswith('#') or line.startswith('>') or line.startswith('|'):
+                continue
+            # 箇条書きの先頭記号を外す
+            m = re.match(r'^[-*]\s+(.*)$', line)
+            if m:
+                line = m.group(1).strip()
+            # 太字ラベルのみ/値が空の箇条書き（**項目**: ）を除外、値があれば値を採用
+            lab = re.match(r'^\*\*[^*]+\*\*\s*[:：]?\s*(.*)$', line)
+            if lab is not None:
+                val = lab.group(1).strip()
+                if not val:
+                    continue
+                line = val
+            # 全角/半角の括弧だけで構成されたガイダンス行を除外
+            if re.fullmatch(r'[（(].*[)）]', line):
+                continue
+            line = re.sub(r'^[#>*\-\s]+', '', line).strip()
+            line = re.sub(r'\*\*|`', '', line)  # 残った強調記号を除去
+            if len(line) < 2:
+                continue
+            lines.append(line)
+            if len(' '.join(lines)) >= max_len:
+                break
+        return ' '.join(lines).strip()
+
+    # 要約セクションを優先。ただし要約が未記入（ガイダンス行のみ等）で空になる場合は
+    # 本文全体へフォールバックし、別見出しに書かれた内容を取りこぼさない。
+    summary = _extract_section(text, ['要約', '結論ひとこと', '総合評価'])
+    result = _clean(summary) if summary else ''
+    if not result:
+        result = _clean(text)
+
     if len(result) > max_len:
         result = result[:max_len].rstrip() + '…'
     return result

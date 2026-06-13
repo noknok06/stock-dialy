@@ -6,7 +6,11 @@
 
 BASIC_TEMPLATE_TITLE = '基本テンプレート'
 
-BASIC_TEMPLATE_BODY = """## なぜ投資する？
+BASIC_TEMPLATE_BODY = """## ひとこと要約
+（1〜2文で結論。ここが1年後の想起カードとタイムラインに表示されます）
+
+
+## なぜ投資する？
 
 
 ## 注目しているテーマ

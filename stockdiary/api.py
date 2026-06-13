@@ -11,13 +11,25 @@ from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from company_master.models import CompanyMaster
 from .models import StockDiary
-from .utils import is_japanese_stock, detect_currency
+from .utils import is_japanese_stock, detect_currency, extract_lead
 from tags.models import Tag
 
 from django.core.exceptions import ValidationError
 
 # 銘柄リストをキャッシュするための変数
 STOCK_DATA_CACHE = None
+
+
+@login_required
+@require_POST
+def lead_preview(request):
+    """投資理由本文から、想起カード/タイムラインに表示される抜粋を返す。
+
+    新規作成フォームのライブプレビュー用。表示側（RecallService / timeline）と
+    同じ extract_lead を使うため、プレビュー文言が実際の表示と完全一致する。
+    """
+    text = request.POST.get('reason', '')
+    return JsonResponse({'lead': extract_lead(text, max_len=60)})
 
 
 def load_stock_data():

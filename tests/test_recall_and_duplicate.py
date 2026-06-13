@@ -274,3 +274,95 @@ class TestRetrospectiveNoteType:
             note_type='retrospective',
         )
         assert note.get_note_type_display() == '振り返り'
+
+
+class TestSummaryExtraction:
+    """投資理由の冒頭要約を想起カード/タイムライン用に抽出する（extract_lead）"""
+
+    def test_summary_heading_preferred(self):
+        from stockdiary.utils import extract_lead
+        text = '## なぜ投資する？\n本文\n## 要約\n割安と判断。中期で見直し余地。\n## リスク\n金利'
+        assert extract_lead(text, 60) == '割安と判断。中期で見直し余地。'
+
+    def test_hitokoto_summary_still_works(self):
+        from stockdiary.utils import extract_lead
+        text = '## ひとこと要約\n結論だけここ\n\n## 詳細\nあれこれ'
+        assert extract_lead(text, 60) == '結論だけここ'
+
+    def test_falls_back_when_summary_is_guidance_only(self):
+        """要約欄が未記入（ガイダンス行のみ）でも、別見出しの本文を取りこぼさない"""
+        from stockdiary.utils import extract_lead
+        text = (
+            '## ひとこと要約\n（1〜2文で結論。ここが想起カードに出ます）\n'
+            '## なぜ投資する？\n実需が強く中期で伸びる'
+        )
+        assert extract_lead(text, 60) == '実需が強く中期で伸びる'
+
+    def test_empty_when_nothing_written(self):
+        from stockdiary.utils import extract_lead
+        text = '## ひとこと要約\n（1〜2文で結論）\n## なぜ投資する？\n\n## リスク\n'
+        assert extract_lead(text, 60) == ''
+
+    def test_anniversary_diary_snippet_uses_summary(self, user):
+        """1年前の日記カードのスニペットが要約セクションを反映する"""
+        diary = StockDiary.objects.create(
+            user=user, stock_symbol='7203', stock_name='トヨタ自動車',
+            reason='## ひとこと要約\nEVシフトの本命と判断\n## 詳細\n長文の分析',
+        )
+        # created_at は auto_now_add のため、保存後に約1年前へ更新する
+        from django.utils import timezone
+        StockDiary.objects.filter(pk=diary.pk).update(
+            created_at=timezone.now() - timedelta(days=365)
+        )
+        recall = RecallService.build(user)
+        snippet = recall['anniversary'][0]['snippet']
+        assert snippet == 'EVシフトの本命と判断'
+
+
+class TestNewDiaryFormPrefill:
+    """新規作成フォームは投資理由に基本スケルトンをプリフィルする"""
+
+    def test_new_form_prefills_summary_skeleton(self):
+        from diary_templates.defaults import BASIC_TEMPLATE_BODY
+        form = StockDiaryForm()
+        assert form['reason'].value() == BASIC_TEMPLATE_BODY
+        assert 'ひとこと要約' in form['reason'].value()
+
+    def test_edit_form_keeps_existing_reason(self, sample_diary):
+        sample_diary.reason = '既存の理由テキスト'
+        sample_diary.save(update_fields=['reason'])
+        form = StockDiaryForm(instance=sample_diary)
+        assert form['reason'].value() == '既存の理由テキスト'
+
+
+class TestLeadPreviewAPI:
+    """ライブプレビュー用エンドポイント（表示側 extract_lead に委譲）
+
+    注: 本番では URL が /stockdiary/api/... となりセキュリティMW対象外だが、
+    テストの ROOT_URLCONF(config.test_urls)では /api/ 直下にマウントされ、
+    SecurityMiddleware がPOST本文の `#` 等を遮断する。Markdown見出しの抽出は
+    TestSummaryExtraction で直接検証済みのため、ここでは配線（認証・メソッド・
+    委譲・JSON形状）をプレーンテキストで確認する。
+    """
+
+    def test_returns_lead(self, authenticated_client):
+        url = reverse('stockdiary:api_lead_preview')
+        response = authenticated_client.post(url, {'reason': '割安と判断したので購入'})
+        assert response.status_code == 200
+        assert response.json()['lead'] == '割安と判断したので購入'
+
+    def test_empty_for_blank(self, authenticated_client):
+        url = reverse('stockdiary:api_lead_preview')
+        response = authenticated_client.post(url, {'reason': '   '})
+        assert response.status_code == 200
+        assert response.json()['lead'] == ''
+
+    def test_requires_login(self, client):
+        url = reverse('stockdiary:api_lead_preview')
+        response = client.post(url, {'reason': 'x'})
+        assert response.status_code == 302
+
+    def test_rejects_get(self, authenticated_client):
+        url = reverse('stockdiary:api_lead_preview')
+        response = authenticated_client.get(url)
+        assert response.status_code == 405

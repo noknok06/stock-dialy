@@ -1505,6 +1505,11 @@
           <!-- タグ機能のヘルプ (コンパクト版) -->
           <p class="text-muted small mb-2"><code style="font-size:0.8em;">@AI</code> などと書くと保存時に自動タグ付けされます。チップをクリックして挿入できます。</p>
 
+          <!-- 要約の役割ヒント（冒頭の要約が想起・タイムラインに表示される） -->
+          <p class="text-muted small mb-2">
+            <i class="bi bi-lightbulb me-1"></i>冒頭の「ひとこと要約」が、1年後の想起カードやタイムラインに表示されます。
+          </p>
+
           <!-- ========== テンプレート呼び出し ========== -->
           <div class="diary-template-picker mb-2">
             <select id="diaryTemplateSelect" class="form-select form-select-sm flex-grow-1">
@@ -1530,6 +1535,16 @@
           {% if form.reason.errors %}
           <div class="text-danger small mt-1">{{ form.reason.errors }}</div>
           {% endif %}
+
+          <!-- ライブプレビュー: 1年後の想起カードでの見え方（サーバーの extract_lead と一致） -->
+          <div id="lead-preview" class="mt-2 d-none">
+            <div class="small text-muted mb-1">
+              <i class="bi bi-clock-history me-1"></i>1年後の想起カードでの見え方
+            </div>
+            <div class="lead-preview-card border rounded p-2 bg-light small text-body">
+              <span id="lead-preview-text"></span>
+            </div>
+          </div>
 
           <!-- おすすめテーマ（書く時点の導線。タップで本文に @テーマ を挿入） -->
           <div id="suggested-themes-panel" class="mt-2" style="display:none;">
@@ -2156,6 +2171,50 @@ window.initReasonEasyMDE = function initReasonEasyMDE() {
 
   window.easyMDE.codemirror.on('change', updateEasyMDECharCount);
   updateEasyMDECharCount();
+
+  // ライブプレビュー: 入力中に「想起カードでの見え方」をサーバーの extract_lead で算出
+  (function setupLeadPreview() {
+    const wrap = document.getElementById('lead-preview');
+    const out = document.getElementById('lead-preview-text');
+    if (!wrap || !out) return;
+    const csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+    let timer = null;
+    let lastSent = null;
+
+    function render(lead) {
+      if (lead) {
+        out.textContent = lead;
+        wrap.classList.remove('d-none');
+      } else {
+        wrap.classList.add('d-none');
+      }
+    }
+
+    function refresh() {
+      const text = window.easyMDE.value();
+      if (text === lastSent) return;
+      lastSent = text;
+      if (!text.trim()) { render(''); return; }
+      const body = new URLSearchParams({ reason: text });
+      fetch("{% url 'stockdiary:api_lead_preview' %}", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-CSRFToken': csrfEl ? csrfEl.value : '',
+        },
+        body: body.toString(),
+      })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => { if (data) render(data.lead); })
+        .catch(() => {});
+    }
+
+    window.easyMDE.codemirror.on('change', function () {
+      clearTimeout(timer);
+      timer = setTimeout(refresh, 400);
+    });
+    refresh();
+  })();
 
   // @ハッシュタグ オートコンプリート（投資仮説フィールド）
   try {

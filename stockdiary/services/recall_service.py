@@ -63,6 +63,7 @@ class RecallService:
     def _build_anniversary(cls, user, today):
         """約1年前(±ウィンドウ)の継続記録・日記作成を新しい順に返す"""
         from ..models import DiaryNote, StockDiary
+        from ..utils import extract_lead
 
         target = today - timedelta(days=365)
         start = target - timedelta(days=ANNIVERSARY_WINDOW_DAYS)
@@ -100,7 +101,7 @@ class RecallService:
                     'diary': diary,
                     'date': diary.created_at.date(),
                     'kind': 'diary',
-                    'snippet': (diary.reason or '')[:60],
+                    'snippet': extract_lead(diary.reason or '', max_len=60),
                 })
 
         return items[:SECTION_LIMIT]

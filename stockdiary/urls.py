@@ -78,6 +78,7 @@ urlpatterns = [
     path('api/stock/historical/<str:stock_code>/', api.get_stock_historical, name='api_stock_historical'),
     path('api/stock/search/', api.search_stock, name='search_stock'),
     path('api/diary/check-duplicate/', api.check_diary_duplicate, name='api_check_duplicate'),
+    path('api/diary/lead-preview/', api.lead_preview, name='api_lead_preview'),
     path('api/industry/list/',   api.get_industry_list,   name='api_industry_list'),
     path('api/industry/stocks/', api.get_industry_stocks, name='api_industry_stocks'),
 path('api/create/', api.api_create_diary, name='api_create'),
