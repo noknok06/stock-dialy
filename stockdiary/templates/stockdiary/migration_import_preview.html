@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}データ移行（確認） | カブログ{% endblock %}
+
+{% block head %}
+<style>
+  .migration-container {
+    max-width: 800px;
+    margin: 1rem auto;
+    padding: 0 0.75rem;
+  }
+  .migration-card {
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    padding: 1.25rem;
+    background: var(--card-bg-color);
+    border: 1px solid var(--border-color);
+  }
+  .preview-title {
+    color: var(--primary-color);
+  }
+  .count-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+  .count-item {
+    text-align: center;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-secondary);
+  }
+  .count-item .num {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+  }
+  .count-item .label {
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+  }
+  .dup-warning {
+    border-left: 4px solid var(--warning-color, #f0ad4e);
+    padding: 0.875rem;
+    border-radius: 4px;
+    margin-bottom: 1.25rem;
+    background: rgba(240, 173, 78, 0.07);
+    font-size: 0.875rem;
+  }
+
+  /* ========== ダークモード ========== */
+  .dark-mode .preview-title,
+  [data-theme="dark"] .preview-title,
+  .dark-mode .count-item .num,
+  [data-theme="dark"] .count-item .num {
+    color: var(--dm-primary-200);
+  }
+  .dark-mode .dup-warning,
+  [data-theme="dark"] .dup-warning {
+    background: rgba(251, 191, 36, 0.08);
+    border-left-color: #fbbf24;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="migration-container">
+  <div class="migration-card">
+    <div class="text-center mb-3">
+      <h2 class="preview-title"><i class="bi bi-clipboard-check"></i> 取り込み内容の確認</h2>
+      <p class="text-muted mb-0">ファイル: {{ filename }}</p>
+      {% if summary.source_username %}
+        <p class="text-muted small">エクスポート元: {{ summary.source_username }}{% if summary.exported_at %}（{{ summary.exported_at }}）{% endif %}</p>
+      {% endif %}
+    </div>
+
+    <div class="count-grid">
+      <div class="count-item"><div class="num">{{ summary.counts.diaries }}</div><div class="label">日記</div></div>
+      <div class="count-item"><div class="num">{{ summary.counts.notes }}</div><div class="label">継続記録</div></div>
+      <div class="count-item"><div class="num">{{ summary.counts.transactions }}</div><div class="label">取引</div></div>
+      <div class="count-item"><div class="num">{{ summary.counts.stock_splits }}</div><div class="label">株式分割</div></div>
+      <div class="count-item"><div class="num">{{ summary.counts.tags }}</div><div class="label">タグ</div></div>
+      <div class="count-item"><div class="num">{{ summary.counts.tag_directions }}</div><div class="label">タグ方向</div></div>
+    </div>
+
+    {% if summary.duplicates %}
+      <div class="dup-warning">
+        <h5><i class="bi bi-exclamation-triangle"></i> 重複の可能性がある銘柄（{{ summary.duplicates|length }}件）</h5>
+        <p class="mb-2">以下の銘柄は既存の日記と類似しています。取り込むと<strong>別の日記として追加</strong>されます。</p>
+        <ul class="mb-0">
+          {% for dup in summary.duplicates %}
+            <li>{{ dup.stock_name }}{% if dup.stock_symbol %}（{{ dup.stock_symbol }}）{% endif %} — 既存 {{ dup.existing_count }} 件</li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    <div class="alert alert-info small">
+      <i class="bi bi-info-circle"></i> 取引・株式分割は取り込み後に保有数・損益を再計算します。
+      株式分割は履歴として取り込まれ、再適用はされません。
+    </div>
+
+    <form method="post" action="{% url 'stockdiary:migration_import_process' %}">
+      {% csrf_token %}
+      <div class="d-grid gap-2">
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-check-circle"></i> この内容で取り込む
+        </button>
+        <a href="{% url 'stockdiary:migration_import' %}" class="btn btn-outline-secondary">
+          <i class="bi bi-arrow-left"></i> やり直す
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

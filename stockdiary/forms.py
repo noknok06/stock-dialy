@@ -455,14 +455,55 @@ class TradeUploadForm(forms.Form):
     
     def clean_csv_file(self):
         csv_file = self.cleaned_data.get('csv_file')
-        
+
         if csv_file:
             # ファイルサイズチェック（10MB以下）
             if csv_file.size > 10 * 1024 * 1024:
                 raise forms.ValidationError('ファイルサイズは10MB以下にしてください')
-            
+
             # ファイル拡張子チェック
             if not csv_file.name.endswith('.csv'):
                 raise forms.ValidationError('CSVファイルを選択してください')
-        
-        return csv_file        
+
+        return csv_file
+
+
+class DataExportForm(forms.Form):
+    """日記データの移行エクスポートフォーム（形式選択）"""
+    FORMAT_CHOICES = [
+        ('json', 'JSON（完全移行・推奨）'),
+        ('csv', 'CSV（ZIP・表計算編集向け）'),
+    ]
+
+    export_format = forms.ChoiceField(
+        label='出力形式',
+        choices=FORMAT_CHOICES,
+        initial='json',
+        widget=forms.RadioSelect(attrs={'class': 'form-check-input'})
+    )
+
+
+class DataImportForm(forms.Form):
+    """日記データの移行インポートフォーム"""
+    data_file = forms.FileField(
+        label='移行データファイル',
+        help_text='カブログでエクスポートした .json または .zip ファイルを選択してください',
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': '.json,.zip'
+        })
+    )
+
+    def clean_data_file(self):
+        data_file = self.cleaned_data.get('data_file')
+
+        if data_file:
+            # ファイルサイズチェック（20MB以下）
+            if data_file.size > 20 * 1024 * 1024:
+                raise forms.ValidationError('ファイルサイズは20MB以下にしてください')
+
+            name = (data_file.name or '').lower()
+            if not (name.endswith('.json') or name.endswith('.zip')):
+                raise forms.ValidationError('.json または .zip ファイルを選択してください')
+
+        return data_file

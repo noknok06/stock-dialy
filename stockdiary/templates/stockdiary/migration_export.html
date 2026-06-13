@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}データ移行（エクスポート） | カブログ{% endblock %}
+
+{% block head %}
+<style>
+  .migration-container {
+    max-width: 800px;
+    margin: 1rem auto;
+    padding: 0 0.75rem;
+  }
+  .migration-card {
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    padding: 1.25rem;
+    background: var(--card-bg-color);
+    border: 1px solid var(--border-color);
+  }
+  .migration-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+  .migration-header h2 {
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+  }
+  .migration-instructions {
+    border-left: 4px solid var(--info-color);
+    padding: 0.875rem;
+    border-radius: 4px;
+    margin-bottom: 1.25rem;
+    background: rgba(113, 196, 239, 0.05);
+    font-size: 0.875rem;
+  }
+  .format-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+  }
+
+  /* ========== ダークモード ========== */
+  .dark-mode .migration-header h2,
+  [data-theme="dark"] .migration-header h2 {
+    color: var(--dm-primary-200);
+  }
+  .dark-mode .migration-instructions,
+  [data-theme="dark"] .migration-instructions {
+    background: rgba(89, 142, 243, 0.08);
+    border-left-color: var(--dm-primary-200);
+  }
+  .dark-mode .migration-instructions h5,
+  [data-theme="dark"] .migration-instructions h5 {
+    color: var(--dm-primary-200);
+  }
+  .dark-mode .format-option,
+  [data-theme="dark"] .format-option {
+    background: rgba(71, 85, 105, 0.2);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="migration-container">
+  <div class="migration-card">
+    <div class="migration-header">
+      <h2><i class="bi bi-box-arrow-up"></i> データ移行（エクスポート）</h2>
+      <p class="text-muted">日記・継続記録・取引・タグをファイルに書き出します</p>
+    </div>
+
+    <div class="migration-instructions">
+      <h5><i class="bi bi-info-circle"></i> エクスポートされる内容</h5>
+      <ul class="mb-0">
+        <li>日記（投資理由・メモ・業種など）と継続記録</li>
+        <li>取引・株式分割（移行先で保有数・損益を再計算します）</li>
+        <li>タグ・タグ方向（移行先のタグと名前で統合されます）</li>
+      </ul>
+      <p class="mb-0 mt-2 text-muted">
+        ※ 画像と関連日記リンクは移行対象外です。別アカウントへの取り込みに利用できます。
+      </p>
+    </div>
+
+    <form method="post">
+      {% csrf_token %}
+      {% if form.export_format.errors %}
+        <div class="alert alert-danger">{{ form.export_format.errors }}</div>
+      {% endif %}
+
+      <div class="mb-3">
+        <label class="form-label fw-bold">{{ form.export_format.label }}</label>
+        {% for radio in form.export_format %}
+          <div class="format-option">
+            <div>{{ radio.tag }}</div>
+            <label for="{{ radio.id_for_label }}" class="mb-0">{{ radio.choice_label }}</label>
+          </div>
+        {% endfor %}
+      </div>
+
+      <div class="d-grid gap-2">
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-download"></i> ダウンロード
+        </button>
+        <a href="{% url 'stockdiary:migration_import' %}" class="btn btn-outline-secondary">
+          <i class="bi bi-box-arrow-in-down"></i> インポート画面へ
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

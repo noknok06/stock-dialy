@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}データ移行（インポート） | カブログ{% endblock %}
+
+{% block head %}
+<style>
+  .migration-container {
+    max-width: 800px;
+    margin: 1rem auto;
+    padding: 0 0.75rem;
+  }
+  .migration-card {
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    padding: 1.25rem;
+    background: var(--card-bg-color);
+    border: 1px solid var(--border-color);
+  }
+  .migration-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+  .migration-header h2 {
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+  }
+  .migration-instructions {
+    border-left: 4px solid var(--warning-color, #f0ad4e);
+    padding: 0.875rem;
+    border-radius: 4px;
+    margin-bottom: 1.25rem;
+    background: rgba(240, 173, 78, 0.07);
+    font-size: 0.875rem;
+  }
+
+  /* ========== ダークモード ========== */
+  .dark-mode .migration-header h2,
+  [data-theme="dark"] .migration-header h2 {
+    color: var(--dm-primary-200);
+  }
+  .dark-mode .migration-instructions,
+  [data-theme="dark"] .migration-instructions {
+    background: rgba(251, 191, 36, 0.08);
+    border-left-color: #fbbf24;
+  }
+  .dark-mode .migration-instructions code,
+  [data-theme="dark"] .migration-instructions code {
+    background: rgba(71, 85, 105, 0.4);
+    color: var(--dm-text-100);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="migration-container">
+  <div class="migration-card">
+    <div class="migration-header">
+      <h2><i class="bi bi-box-arrow-in-down"></i> データ移行（インポート）</h2>
+      <p class="text-muted">エクスポートしたファイルから日記を取り込みます</p>
+    </div>
+
+    <div class="migration-instructions">
+      <h5><i class="bi bi-exclamation-triangle"></i> 取り込み時の注意</h5>
+      <ul class="mb-0">
+        <li>取り込んだ日記は<strong>すべて現在ログイン中のアカウント</strong>に登録されます</li>
+        <li>同じ銘柄の日記が既にある場合も<strong>新しい日記として追加</strong>されます（次の画面で重複を確認できます）</li>
+        <li>カブログでエクスポートした <code>.json</code> または <code>.zip</code> を選択してください</li>
+      </ul>
+    </div>
+
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      {% if form.data_file.errors %}
+        <div class="alert alert-danger">{{ form.data_file.errors }}</div>
+      {% endif %}
+
+      <div class="mb-3">
+        <label for="{{ form.data_file.id_for_label }}" class="form-label fw-bold">
+          {{ form.data_file.label }}
+        </label>
+        {{ form.data_file }}
+        <div class="form-text">{{ form.data_file.help_text }}</div>
+      </div>
+
+      <div class="d-grid gap-2">
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-upload"></i> 内容を確認する
+        </button>
+        <a href="{% url 'stockdiary:migration_export' %}" class="btn btn-outline-secondary">
+          <i class="bi bi-box-arrow-up"></i> エクスポート画面へ
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -6,6 +6,7 @@ from . import api_views  # 🔧 追加
 from . import views_mobile_ux  # 🆕 モバイルUX用ビュー
 from . import views_comparison  # 銘柄比較機能
 from . import views_timeline  # 全銘柄横断タイムライン
+from . import views_migration  # 日記データ移行（インポート/エクスポート）
 from django.contrib.auth.decorators import login_required
 from django.views.generic.base import RedirectView
 
@@ -119,7 +120,14 @@ path('api/create/', api.api_create_diary, name='api_create'),
     # 取引履歴アップロード
     path('trade-upload/', views.TradeUploadView.as_view(), name='trade_upload'),
     path('trade-upload/process/', views.process_trade_upload, name='process_trade_upload'),
-    
+
+    # 日記データ移行（インポート/エクスポート）
+    path('migration/export/', views_migration.MigrationExportView.as_view(), name='migration_export'),
+    path('migration/export/download/', views_migration.migration_export_download, name='migration_export_download'),
+    path('migration/import/', views_migration.MigrationImportView.as_view(), name='migration_import'),
+    path('migration/import/process/', views_migration.migration_import_process, name='migration_import_process'),
+
+
     path('dashboard/', views.TradingDashboardView.as_view(), name='dashboard'),
     path('compare/', views_comparison.StockComparisonView.as_view(), name='stock_comparison'),
     path('investment-hub/', views_comparison.InvestmentHubView.as_view(), name='investment_hub'),
