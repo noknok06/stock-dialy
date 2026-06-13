@@ -3249,30 +3249,23 @@ window.showSentimentModal = function(el) {
     var sl = data.sentiment_label || '';
     var scoreClass = sl === 'positive' ? 'text-success' : sl === 'negative' ? 'text-danger' : 'text-secondary';
     var badgeClass = sl === 'positive' ? 'bg-success' : sl === 'negative' ? 'bg-danger' : 'bg-secondary';
-    // ai_overall_score（0〜100）を優先、なければ overall_score（-1〜+1）を-100〜+100変換
-    var useAiScore = data.ai_overall_score != null;
-    var scoreNum = useAiScore
-      ? parseFloat(data.ai_overall_score).toFixed(0)
-      : (data.overall_score ? (data.overall_score * 100).toFixed(0) : '0');
-    var scoreLabel = useAiScore ? 'スコア(/100点)' : 'スコア(-100〜+100)';
+    // 語彙辞書ベースのスコア（-1〜+1）を-100〜+100に変換して表示
+    var scoreNum = data.overall_score ? (data.overall_score * 100).toFixed(0) : '0';
     var html = '';
 
     // スコアサマリー
     html += '<div class="d-flex align-items-center gap-3 mb-3 pb-3 border-bottom">';
     html += '<div class="text-center"><div class="display-6 fw-bold ' + scoreClass + '">' + scoreNum + '</div>';
-    html += '<div class="text-secondary" style="font-size:0.7rem;">' + scoreLabel + '</div></div>';
-    html += '<div><span class="badge fs-5 ' + badgeClass + '">' + _escH(data.label_display || '—') + '</span></div>';
-    html += '</div>';
-
-    // AI投資ポイント
-    var insights = data.ai_insights || [];
-    if (insights.length > 0) {
-      html += '<h6 class="mb-2 small fw-semibold">AI投資ポイント</h6><ul class="small mb-3 ps-3">';
-      insights.slice(0, 4).forEach(function(p) {
-        html += '<li>' + (p.title ? '<strong>' + _escH(p.title) + '</strong>: ' : '') + _escH(p.description || p.content || '') + '</li>';
-      });
-      html += '</ul>';
+    html += '<div class="text-secondary" style="font-size:0.7rem;">スコア(-100〜+100)</div></div>';
+    html += '<div><span class="badge fs-5 ' + badgeClass + '">' + _escH(data.label_display || '—') + '</span>';
+    // 前回の有報・半報とのトーン変化（単発スコアより重要な情報として併記）
+    var tt = data.tone_trend;
+    if (tt && tt.label) {
+      var ttClass = tt.label === '改善' ? 'text-success' : tt.label === '悪化' ? 'text-danger' : 'text-secondary';
+      html += '<div class="small mt-1 ' + ttClass + '">前回比 ' + _escH(tt.label)
+            + '（' + (tt.delta >= 0 ? '+' : '') + (tt.delta * 100).toFixed(0) + '）</div>';
     }
+    html += '</div></div>';
 
     // ポジティブキーワード
     var kpos = data.keyword_pos || [];
@@ -3341,8 +3334,6 @@ window.showReportModal = function(el) {
 
     var cf = d.cf || {};
     var isIdeal = d.operating_cf > 0 && d.investing_cf < 0 && d.financing_cf < 0;
-    var riskLabelMap = {low:'低リスク', medium:'中リスク', high:'高リスク', very_high:'高リスク'};
-    var riskLabel = riskLabelMap[cf.risk_level] || '';
 
     var html = '';
 
@@ -3372,40 +3363,18 @@ window.showReportModal = function(el) {
           + '<div style="font-size:15px;font-weight:700;color:#777;">' + fmtCF(d.financing_cf) + '</div></div>';
     html += '</div>';
 
-    // CF分類タグ
-    if (cf.name || riskLabel) {
-      html += '<div style="display:flex;justify-content:center;gap:10px;margin-bottom:14px;">';
-      if (cf.name) {
-        html += '<span style="padding:5px 16px;border-radius:20px;font-size:12px;font-weight:600;'
-              + (isIdeal ? 'background:#e6f4ea;color:#2a8b57;border:1px solid #cce8d6;' : 'background:#f1f3f4;color:#555;border:1px solid #e0e0e0;')
-              + '">' + _escH(cf.name) + '</span>';
-      }
-      if (riskLabel) {
-        html += '<span style="padding:5px 16px;border-radius:20px;font-size:12px;font-weight:600;background:#f1f3f4;color:#555;border:1px solid #e0e0e0;">'
-              + _escH(riskLabel) + '</span>';
-      }
+    // CF分類タグ（教科書的なパターン分類。リスク判定・強み/懸念は出さない）
+    if (cf.name) {
+      html += '<div style="display:flex;justify-content:center;gap:10px;margin-bottom:10px;">';
+      html += '<span style="padding:5px 16px;border-radius:20px;font-size:12px;font-weight:600;'
+            + (isIdeal ? 'background:#e6f4ea;color:#2a8b57;border:1px solid #cce8d6;' : 'background:#f1f3f4;color:#555;border:1px solid #e0e0e0;')
+            + '">' + _escH(cf.name) + '</span>';
       html += '</div>';
     }
 
-    // 解説文
-    if (cf.interpretation) {
-      html += '<p style="font-size:13px;line-height:1.65;color:#555;margin-bottom:14px;">' + _escH(cf.interpretation) + '</p>';
-    }
-
-    // 強み
-    if (cf.strengths && cf.strengths.length > 0) {
-      html += '<div style="font-size:13px;font-weight:700;color:#2a8b57;margin-bottom:7px;">強み</div>';
-      html += '<ul style="margin:0 0 14px;padding-left:18px;font-size:13px;color:#333;line-height:1.9;">';
-      cf.strengths.forEach(function(s) { html += '<li>' + _escH(s) + '</li>'; });
-      html += '</ul>';
-    }
-
-    // 懸念点
-    if (cf.concerns && cf.concerns.length > 0) {
-      html += '<div style="font-size:13px;font-weight:700;color:#e05c5c;margin-bottom:7px;">懸念点</div>';
-      html += '<ul style="margin:0 0 14px;padding-left:18px;font-size:13px;color:#333;line-height:1.9;">';
-      cf.concerns.forEach(function(s) { html += '<li>' + _escH(s) + '</li>'; });
-      html += '</ul>';
+    // パターンの定義（機械的分類の説明）
+    if (cf.description) {
+      html += '<p style="font-size:12px;line-height:1.6;color:#888;text-align:center;margin-bottom:14px;">' + _escH(cf.description) + '</p>';
     }
 
     // 自己資本比率（財務安全性）
