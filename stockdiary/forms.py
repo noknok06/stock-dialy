@@ -128,11 +128,6 @@ class StockDiaryForm(forms.ModelForm):
         if not self.instance.pk:
             from django.utils import timezone
             self.fields['initial_purchase_date'].initial = timezone.now().date()
-            # 投資理由は基本スケルトンをプリフィルし、「ひとこと要約」へ書く導線を作る。
-            # （冒頭の要約が想起カード/タイムラインに表示される＝extract_lead が拾う構造）
-            if not self.initial.get('reason'):
-                from diary_templates.defaults import BASIC_TEMPLATE_BODY
-                self.fields['reason'].initial = BASIC_TEMPLATE_BODY
 
     def clean_stock_name(self):
         """銘柄名のバリデーション"""

@@ -319,14 +319,13 @@ class TestSummaryExtraction:
         assert snippet == 'EVシフトの本命と判断'
 
 
-class TestNewDiaryFormPrefill:
-    """新規作成フォームは投資理由に基本スケルトンをプリフィルする"""
+class TestNewDiaryFormDefault:
+    """新規作成フォームは構造を強制しない（既定は空。テンプレ選択に委ねる）"""
 
-    def test_new_form_prefills_summary_skeleton(self):
-        from diary_templates.defaults import BASIC_TEMPLATE_BODY
+    def test_new_form_reason_is_blank(self):
+        """投資理由は空スタート。構造はテンプレ選択（クライアント側で記憶/自動適用）に委ねる"""
         form = StockDiaryForm()
-        assert form['reason'].value() == BASIC_TEMPLATE_BODY
-        assert 'ひとこと要約' in form['reason'].value()
+        assert not (form['reason'].value() or '')
 
     def test_edit_form_keeps_existing_reason(self, sample_diary):
         sample_diary.reason = '既存の理由テキスト'

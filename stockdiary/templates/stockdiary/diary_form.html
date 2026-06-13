@@ -1505,9 +1505,9 @@
           <!-- タグ機能のヘルプ (コンパクト版) -->
           <p class="text-muted small mb-2"><code style="font-size:0.8em;">@AI</code> などと書くと保存時に自動タグ付けされます。チップをクリックして挿入できます。</p>
 
-          <!-- 要約の役割ヒント（冒頭の要約が想起・タイムラインに表示される） -->
+          <!-- 要約の役割ヒント（冒頭の1〜2文が想起・タイムラインに表示される。テンプレは任意） -->
           <p class="text-muted small mb-2">
-            <i class="bi bi-lightbulb me-1"></i>冒頭の「ひとこと要約」が、1年後の想起カードやタイムラインに表示されます。
+            <i class="bi bi-lightbulb me-1"></i>冒頭の1〜2文が、1年後の想起カードやタイムラインに表示されます。テンプレートの「ひとこと要約」を使うと要点が整います。
           </p>
 
           <!-- ========== テンプレート呼び出し ========== -->
@@ -2889,6 +2889,28 @@ if (floatingBtn && formFooter) {
     var applyBtn = document.getElementById('applyTemplateBtn');
     if (!select || !applyBtn) return;
 
+    // 新規作成かどうか（編集時は既存本文を尊重し、記憶テンプレの自動適用はしない）
+    var isCreate = {% if form.instance.pk %}false{% else %}true{% endif %};
+    var LS_KEY = 'stockdiary:lastTemplateId';
+
+    function applyTemplate(id, opts) {
+      opts = opts || {};
+      applyBtn.disabled = true;
+      return fetch('/diary-templates/api/' + encodeURIComponent(id) + '/', { credentials: 'same-origin' })
+        .then(function(r) { return r.ok ? r.json() : Promise.reject(); })
+        .then(function(data) {
+          if (data && data.success && data.template) {
+            setReasonValue(data.template.body || '');
+            try { localStorage.setItem(LS_KEY, String(id)); } catch (e) {}
+            if (!opts.silent && window.showNotification) showNotification('success', 'テンプレートを適用しました');
+          }
+        })
+        .catch(function() {
+          if (!opts.silent && window.showNotification) showNotification('error', 'テンプレートの読み込みに失敗しました');
+        })
+        .finally(function() { applyBtn.disabled = false; });
+    }
+
     fetch('{% url "diary_templates:api_list" %}', { credentials: 'same-origin' })
       .then(function(r) { return r.ok ? r.json() : null; })
       .then(function(data) {
@@ -2899,6 +2921,15 @@ if (floatingBtn && formFooter) {
           opt.textContent = t.title;
           select.appendChild(opt);
         });
+
+        // 既定は空。前回使ったテンプレを記憶していれば、新規かつ未入力時のみ自動適用する。
+        if (!isCreate || getReasonValue().trim()) return;
+        var lastId = null;
+        try { lastId = localStorage.getItem(LS_KEY); } catch (e) {}
+        if (lastId && select.querySelector('option[value="' + lastId + '"]')) {
+          select.value = lastId;
+          applyTemplate(lastId, { silent: true });
+        }
       })
       .catch(function() { /* 通信失敗は静かに無視 */ });
 
@@ -2912,19 +2943,7 @@ if (floatingBtn && formFooter) {
           !confirm('現在の入力内容を破棄してテンプレートで置き換えますか？')) {
         return;
       }
-      applyBtn.disabled = true;
-      fetch('/diary-templates/api/' + encodeURIComponent(id) + '/', { credentials: 'same-origin' })
-        .then(function(r) { return r.ok ? r.json() : Promise.reject(); })
-        .then(function(data) {
-          if (data && data.success && data.template) {
-            setReasonValue(data.template.body || '');
-            if (window.showNotification) showNotification('success', 'テンプレートを適用しました');
-          }
-        })
-        .catch(function() {
-          if (window.showNotification) showNotification('error', 'テンプレートの読み込みに失敗しました');
-        })
-        .finally(function() { applyBtn.disabled = false; });
+      applyTemplate(id);
     });
   });
 })();
