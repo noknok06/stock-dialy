@@ -65,7 +65,6 @@ class StockDiary(models.Model):
     )
     reason = models.TextField(verbose_name='投資理由', blank=True, max_length=5000)
     tags = models.ManyToManyField(Tag, blank=True)
-    memo = models.TextField(blank=True, max_length=1000, verbose_name='メモ')
     sector = models.CharField(max_length=50, blank=True, verbose_name='業種')
     image = models.ImageField(upload_to=get_diary_image_path, null=True, blank=True, help_text="日記に関連する画像")
     

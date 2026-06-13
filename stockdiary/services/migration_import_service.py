@@ -31,6 +31,22 @@ from .migration_export_service import PAYLOAD_FORMAT, PAYLOAD_VERSION, CSV_FILES
 MAX_DIARIES = 2000
 MAX_TRANSACTIONS = 50000
 
+# 旧フォーマット（memo 列を持つエクスポート）との後方互換用ヘッダ。
+# memo フィールドは廃止済み（improvement_plan 論点9）。旧 CSV/JSON の memo は reason へ統合する。
+LEGACY_MEMO_HEADER = '旧メモ'
+
+
+def _merge_reason_memo(reason: str, memo: str) -> str:
+    """旧 memo を reason 末尾へ統合する（migration 0011 と同一フォーマット）。"""
+    reason = (reason or '').strip()
+    memo = (memo or '').strip()
+    if not memo:
+        return reason
+    if not reason:
+        return f'{LEGACY_MEMO_HEADER}: {memo}'
+    return f'{reason}\n\n---\n{LEGACY_MEMO_HEADER}: {memo}'
+
+
 # 列挙値の許容セット（モデル choices と一致）
 VALID_CURRENCY = {'JPY', 'USD'}
 VALID_TRANSACTION_TYPE = {'buy', 'sell'}
@@ -365,8 +381,8 @@ class ImportService:
             stock_symbol=d.get('stock_symbol', '') or '',
             stock_name=d.get('stock_name', ''),
             currency=currency,
-            reason=d.get('reason', '') or '',
-            memo=d.get('memo', '') or '',
+            # 旧フォーマットの memo は reason 末尾へ統合（memo フィールドは廃止済み）
+            reason=_merge_reason_memo(d.get('reason', ''), d.get('memo', '')),
             sector=d.get('sector', '') or '',
             is_excluded=_parse_bool(d.get('is_excluded')),
             latest_disclosure_date=d.get('latest_disclosure_date') or None,

@@ -97,7 +97,6 @@ class ExportService:
                 'stock_name': diary.stock_name,
                 'currency': diary.currency,
                 'reason': diary.reason,
-                'memo': diary.memo,
                 'sector': diary.sector,
                 'is_excluded': diary.is_excluded,
                 'latest_disclosure_date': _date(diary.latest_disclosure_date),
@@ -234,7 +233,6 @@ class ExportService:
                 d['stock_name'],
                 d['currency'],
                 d['reason'],
-                d['memo'],
                 d['sector'],
                 d['is_excluded'],
                 d['latest_disclosure_date'] or '',
@@ -268,7 +266,7 @@ class ExportService:
             'diaries': {
                 'header': [
                     'export_key', 'stock_symbol', 'stock_name', 'currency', 'reason',
-                    'memo', 'sector', 'is_excluded', 'latest_disclosure_date',
+                    'sector', 'is_excluded', 'latest_disclosure_date',
                     'latest_disclosure_doc_type_name', 'tags',
                 ],
                 'rows': diaries_rows,

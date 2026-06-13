@@ -539,9 +539,9 @@ def get_hashtags(request):
 # ==========================================
 
 def _diary_excerpt(diary, length=60):
-    """日記の本文（reason or memo）から簡易抜粋を生成"""
+    """日記の本文（reason）から簡易抜粋を生成"""
     import re
-    text = (diary.reason or diary.memo or '').strip()
+    text = (diary.reason or '').strip()
     text = re.sub(r'#{1,6}\s*', '', text)       # Markdown見出し除去
     text = re.sub(r'[*_`>\-]+', '', text)        # Markdown記号除去
     text = re.sub(r'\s+', ' ', text).strip()
@@ -695,12 +695,12 @@ def diary_graph_data(request):
         primary_ids = set(primary_qs.values_list('id', flat=True))
 
         # 全モードで共通利用する primary 日記を一括取得
-        # mention モードで memo も参照するため常に含める
+        # mention モードで reason 本文を参照するため常に含める
         primary_diaries = list(
             primary_qs.prefetch_related('tags', 'notes').only(
                 'id', 'stock_name', 'stock_symbol', 'sector',
                 'realized_profit', 'current_quantity', 'transaction_count',
-                'reason', 'memo', 'created_at',
+                'reason', 'created_at',
             )
         )
 
@@ -1048,7 +1048,7 @@ def diary_detail_graph_data(request, diary_id):
 
         # テキスト内言及銘柄の日記
         if 'mention' in edge_modes:
-            search_text = ' '.join(filter(None, [focal.memo, focal.reason]))
+            search_text = focal.reason or ''
             mentioned_codes = extract_stock_mentions(search_text)
             if mentioned_codes:
                 mentioned_ids = set(
@@ -1068,7 +1068,7 @@ def diary_detail_graph_data(request, diary_id):
             .only(
                 'id', 'stock_name', 'stock_symbol', 'sector',
                 'realized_profit', 'current_quantity', 'transaction_count',
-                'reason', 'memo',
+                'reason',
             )
         )
 

@@ -198,11 +198,11 @@ def find_backlinks(diary, user, limit=10):
             .filter(user=user)
             .exclude(pk=diary.pk)
             .exclude(stock_symbol__iexact=symbol)
-            .filter(Q(reason__icontains=symbol) | Q(memo__icontains=symbol))
-            .only('id', 'stock_name', 'stock_symbol', 'reason', 'memo', 'updated_at')
+            .filter(Q(reason__icontains=symbol))
+            .only('id', 'stock_name', 'stock_symbol', 'reason', 'updated_at')
         )
         for d in candidates:
-            text = f"{d.reason or ''}\n{d.memo or ''}"
+            text = f"{d.reason or ''}"
             m = mention_re.search(text)
             if not m:
                 continue
@@ -287,7 +287,6 @@ def apply_diary_search(queryset, query: str):
             Q(stock_name__icontains=term) |
             Q(stock_symbol__icontains=term) |
             Q(reason__icontains=term) |
-            Q(memo__icontains=term) |
             Q(sector__icontains=term) |
             Q(notes__content__icontains=term) |
             Q(notes__topic__icontains=term) |
@@ -356,7 +355,6 @@ def annotate_search_matches(diaries, query: str):
         )
         diary.match_body = any(
             t in (diary.reason or '').lower()
-            or t in (diary.memo or '').lower()
             or t in (diary.sector or '').lower()
             for t in terms
         )
@@ -665,10 +663,10 @@ def get_mention_graph_data(
     symbol_to_diary_id: Dict[str, int],
 ) -> Dict[str, Any]:
     """
-    日記テキスト（reason / memo）内の銘柄コードメンションによるエッジを生成。
+    日記テキスト（reason）内の銘柄コードメンションによるエッジを生成。
 
     Args:
-        primary_diaries: StockDiary のリスト（reason, memo フィールドを含む）
+        primary_diaries: StockDiary のリスト（reason フィールドを含む）
         symbol_to_diary_id: stock_symbol -> diary_pk の辞書（全ユーザー日記）
 
     Returns:
@@ -685,7 +683,7 @@ def get_mention_graph_data(
     primary_id_set = {d.pk for d in primary_diaries}
 
     for diary in primary_diaries:
-        text = (diary.reason or '') + ' ' + (getattr(diary, 'memo', '') or '')
+        text = (diary.reason or '')
         for symbol in extract_stock_mentions(text):
             target_id = symbol_to_diary_id.get(symbol)
             if not target_id or target_id == diary.pk:
@@ -949,7 +947,7 @@ def compute_related_strength(focal, user, limit: int = 12) -> List[dict]:
                           'axis': axis, 'estimated': True})
 
     # 6. 銘柄コード言及（双方向）= 明示的参照で強い
-    mentioned = extract_stock_mentions((focal.reason or '') + ' ' + (focal.memo or ''))
+    mentioned = extract_stock_mentions(focal.reason or '')
     if mentioned:
         for d in others.filter(stock_symbol__in=mentioned):
             diary_cache[d.id] = d
@@ -958,7 +956,6 @@ def compute_related_strength(focal, user, limit: int = 12) -> List[dict]:
         sym = focal.stock_symbol
         token_q = (
             Q(reason__icontains=f'({sym})') | Q(reason__icontains=f'（{sym}）')
-            | Q(memo__icontains=f'({sym})') | Q(memo__icontains=f'（{sym}）')
         )
         for d in others.filter(token_q):
             diary_cache[d.id] = d

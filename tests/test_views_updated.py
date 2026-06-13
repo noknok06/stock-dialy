@@ -72,8 +72,7 @@ class TestStockDiaryListView:
             user=self.user,
             stock_symbol='6758',
             stock_name='ソニーグループ',
-            reason='監視銘柄',
-            memo='今後の動向を注視'
+            reason='監視銘柄。今後の動向を注視'
         )
     
     def test_home_view_authenticated(self, client):

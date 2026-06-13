@@ -30,8 +30,7 @@ class TestStockDiaryModel:
             user=self.user,
             stock_symbol='7203',
             stock_name='トヨタ自動車',
-            reason='将来性を評価',
-            memo='メモのみのエントリー',
+            reason='将来性を評価。メモのみのエントリー',
             sector='輸送用機器'
         )
         

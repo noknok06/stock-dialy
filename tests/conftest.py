@@ -107,13 +107,12 @@ def sample_sold_diary(user):
 
 @pytest.fixture
 def sample_memo_diary(user):
-    """メモのみの日記"""
+    """取引なし（メモ的）の日記。memo フィールドは廃止済みのため reason に集約。"""
     return StockDiary.objects.create(
         user=user,
         stock_symbol='6758',
         stock_name='ソニーグループ',
-        reason='監視銘柄',
-        memo='今後の動向を注視'
+        reason='監視銘柄。今後の動向を注視',
     )
 
 

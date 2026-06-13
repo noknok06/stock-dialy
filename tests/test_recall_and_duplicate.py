@@ -204,30 +204,31 @@ class TestStockDiaryFormDuplicate:
 
 
 class TestMemoFieldRemoved:
-    """memo はフォームから廃止（書く場所は reason / DiaryNote の2層）"""
+    """memo フィールドは廃止し reason へ統合（improvement_plan 論点9）。
+    書く場所は「投資仮説(reason)」と「時系列の追記(DiaryNote)」の2層。"""
 
     def test_memo_not_in_form_fields(self):
         form = StockDiaryForm()
         assert 'memo' not in form.fields
 
-    def test_legacy_memo_untouched_on_edit(self, sample_diary):
-        """既存 memo はフォーム編集で消えない（データ移行なし・読み取り専用）"""
-        sample_diary.memo = '旧メモ'
-        sample_diary.save(update_fields=['memo'])
-        form = StockDiaryForm(
-            data={
-                'stock_symbol': '7203',
-                'stock_name': 'トヨタ自動車',
-                'reason': '更新後の理由',
-                'sector': '',
-                'currency': 'JPY',
-            },
-            instance=sample_diary,
-            user=sample_diary.user,
-        )
-        assert form.is_valid(), form.errors
-        diary = form.save()
-        assert diary.memo == '旧メモ'
+    def test_memo_attribute_removed_from_model(self, sample_diary):
+        """StockDiary から memo 属性自体が消えている"""
+        assert not hasattr(sample_diary, 'memo')
+
+    def test_legacy_csv_memo_folded_into_reason(self, user):
+        """旧フォーマット(memo列あり)のインポートで memo が reason 末尾へ統合される"""
+        from stockdiary.services.migration_import_service import _merge_reason_memo
+        merged = _merge_reason_memo('投資仮説', '旧メモの内容')
+        assert '投資仮説' in merged
+        assert '旧メモの内容' in merged
+
+    def test_merge_reason_memo_empty_memo(self):
+        from stockdiary.services.migration_import_service import _merge_reason_memo
+        assert _merge_reason_memo('理由のみ', '') == '理由のみ'
+
+    def test_merge_reason_memo_empty_reason(self):
+        from stockdiary.services.migration_import_service import _merge_reason_memo
+        assert _merge_reason_memo('', 'メモのみ') == '旧メモ: メモのみ'
 
 
 class TestRetrospectivePrompt:

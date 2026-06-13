@@ -302,7 +302,7 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
         # カレンダー表示用にすべての日記データを追加（統計も同一クエリで取得、除外日記は含めない）
         all_diaries_qs = StockDiary.objects.filter(user=self.request.user, is_excluded=False)
         context['all_diaries'] = all_diaries_qs.defer(
-            'reason', 'memo', 'created_at', 'updated_at',
+            'reason', 'created_at', 'updated_at',
         )
 
         # 統計情報を1クエリにまとめて取得
@@ -549,7 +549,7 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         for item in related_strength:
             d = item['diary']
             # 結論を機械的な先頭60字でなく「意味のある先頭文」で抽出（Markdownノイズ除去）
-            excerpt = extract_lead(d.reason or d.memo or '', max_len=60)
+            excerpt = extract_lead(d.reason or '', max_len=60)
             reason_labels = [v.get('label', '') for v in item['via']]
             # 共有タグの方向から順相関/逆相関を集約（逆相関優先で提示）
             correlation = None
@@ -1775,7 +1775,6 @@ def api_stock_diaries(request, symbol):
                 'first_purchase_date': diary.first_purchase_date.strftime('%Y年%m月%d日') if diary.first_purchase_date else None,
                 'created_at': diary.created_at.strftime('%Y年%m月%d日'),
                 'reason': diary.reason,
-                'memo': diary.memo,
                 'tags': tags,
                 # 状態フラグ
                 'is_memo': diary.is_memo,

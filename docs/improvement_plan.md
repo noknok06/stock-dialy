@@ -17,19 +17,23 @@
 | 6 | 全銘柄横断タイムライン | **専用ページとして新設** | ✅ 実装済み |
 | 7 | バックリンク表示 | **detail の関連タブに統合** | ✅ 実装済み |
 | 8 | データエクスポート | **CSVのみ実装** | ✅ 実装済み |
-| 9 | 記入欄の整理 | **DiaryNote は Markdown 化済み / memo は部分対応** | ⚠️ 部分実装 |
+| 9 | 記入欄の整理 | **DiaryNote Markdown 化 + memo を廃止し reason に統合** | ✅ 実装済み |
 | 10 | ナビ・ページ構成 | **メニューを主要5項目に縮退** | ✅ 実装済み |
 
 ---
 
-## 部分実装・未完了
+## 完了記録
 
-### 9. 記入欄の整理（部分実装）
+### 9. 記入欄の整理（完了）
 
-- `DiaryNote.content` の Markdown 化: ✅ 表示は既存の `render_markdown` 基盤を流用、入力欄も軽量エディタ化
-- `memo` 廃止: ⚠️ フォーム・表示コメントでは廃止宣言だが、DB フィールド（StockDiary.memo）は残存
-  - **未完了**: 既存データの reason への統合マイグレーション未実施
-  - **対応**: マイグレーションを作成し、memo → reason へのデータ移行を完了する
+- `DiaryNote.content` の Markdown 化: ✅ `render_markdown` 基盤を流用
+- `memo` 廃止: ✅ 完了
+  - データ移行 migration `0011_merge_memo_into_reason`（memo → reason 末尾へ統合）
+  - `StockDiary.memo` フィールド削除（`is_memo` プロパティ＝取引ゼロ判定は別概念のため存続）
+  - 検索・抜粋・関連グラフ（utils / views / api_views）の memo 参照を除去
+  - CSV エクスポートから memo 列を除去。インポートは旧フォーマット（memo 列あり）を
+    `_merge_reason_memo` で reason へ畳み込む後方互換を維持
+  - **未適用**: 実DB（PostgreSQL: kabulog）への migration 適用は別途 `migrate` が必要
 
 ## 追加決定: 再評価に基づく引き算と初回体験（2026-06・部分実装）
 
