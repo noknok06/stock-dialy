@@ -396,8 +396,8 @@
 .detail-card-stats {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-    padding: 12px;
+    gap: 10px 16px;
+    padding: 14px 16px;
     background: var(--bg-200);
     border-radius: 8px;
 }
@@ -405,18 +405,24 @@
 .detail-stat {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 4px;
+    min-width: 0;
 }
 
 .detail-stat-label {
-    font-size: 10px;
+    font-size: 12px;
+    font-weight: 600;
     color: var(--text-200);
 }
 
 .detail-stat-value {
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 700;
     color: var(--text-100);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .detail-stat-value.positive {
@@ -768,16 +774,16 @@
     }
 
     .detail-card-stats {
-        gap: 6px;
-        padding: 8px;
+        gap: 8px 12px;
+        padding: 12px;
     }
 
     .detail-stat-label {
-        font-size: 9px;
+        font-size: 11px;
     }
 
     .detail-stat-value {
-        font-size: 12px;
+        font-size: 14px;
     }
 }
 
