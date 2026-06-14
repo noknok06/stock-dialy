@@ -53,6 +53,41 @@ class SignUpView(CreateView):
               backend='django.contrib.auth.backends.ModelBackend')
         return response
 
+@require_http_methods(["POST"])
+def demo_login(request):
+    """ワンクリックでデモ共有アカウントにログインする。
+
+    登録の摩擦なくサービスを体験してもらうための入口。
+    対象は settings.DEMO_USERNAME の既存ユーザー（reset_demo コマンドで作成・維持）。
+    安全のため POST 限定。デモ無効時・ユーザー未作成時はログイン画面へ戻す。
+    """
+    from django.conf import settings
+    from django.contrib import messages
+
+    if not getattr(settings, 'DEMO_ENABLED', False):
+        return redirect('users:login')
+
+    demo_username = getattr(settings, 'DEMO_USERNAME', 'demo')
+    try:
+        demo_user = User.objects.get(username=demo_username)
+    except User.DoesNotExist:
+        messages.error(request, 'デモは現在準備中です。少し時間をおいてお試しください。')
+        return redirect('users:login')
+
+    # 万一デモユーザーに強い権限が付いていたらログインさせない（事故防止）
+    if demo_user.is_staff or demo_user.is_superuser or not demo_user.is_active:
+        messages.error(request, 'デモは現在ご利用いただけません。')
+        return redirect('users:login')
+
+    login(request, demo_user, backend='django.contrib.auth.backends.ModelBackend')
+    messages.info(
+        request,
+        'デモアカウントでログインしました。自由にお試しください'
+        '（データは定期的にリセットされます）。',
+    )
+    return redirect('stockdiary:home')
+
+
 class GoogleLoginView(TemplateView):
     template_name = 'users/google_login.html'
 

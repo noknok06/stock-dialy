@@ -202,6 +202,7 @@ TEMPLATES = [
                 'ads.context_processors.ads_processor',  # 広告表示
                 'ads.context_processors.static_version',
                 'users.context_processors.google_oauth_status',  # Google OAuth状態
+                'users.context_processors.demo_status',  # デモ体験ボタン表示可否
             ],
         },
     },
@@ -216,6 +217,11 @@ LOGIN_URL = 'users:login'
 LOGIN_REDIRECT_URL = 'stockdiary:home'
 LOGOUT_REDIRECT_URL = 'users:login'
 ACCOUNT_LOGOUT_REDIRECT_URL = 'users:login'
+
+# デモ体験用の共有アカウント。ワンクリック「デモを試す」でこのユーザーにログインする。
+# データは編集可だが、reset_demo コマンド（cron で定期実行）で初期状態へ戻す。
+DEMO_ENABLED = os.environ.get('DEMO_ENABLED', 'True') == 'True'
+DEMO_USERNAME = os.environ.get('DEMO_USERNAME', 'demo')
 
 # 認証バックエンド
 AUTHENTICATION_BACKENDS = [

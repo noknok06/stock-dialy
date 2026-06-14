@@ -192,6 +192,15 @@ img{display:block;max-width:100%}
         <button type="submit" class="btn btn-primary"><i class="bi bi-box-arrow-in-right"></i>ログイン</button>
       </form>
 
+      {% if demo_enabled %}
+      <div class="divider jp">または</div>
+      <form method="post" action="{% url 'users:demo_login' %}" novalidate>
+        {% csrf_token %}
+        <button type="submit" class="btn btn-google"><i class="bi bi-eye"></i><span class="jp">登録しないでデモを試す</span></button>
+      </form>
+      <p class="legal jp" style="margin-top:8px">デモは共有アカウントです。データは定期的にリセットされます。</p>
+      {% endif %}
+
       {% if google_oauth_enabled %}
       <div class="divider jp">または</div>
 
