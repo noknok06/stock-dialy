@@ -1,0 +1,20 @@
+{% comment %}
+GA4 計測タグ（共通）。base.html と、base を継承しない独立HTML（LP・ログイン等）の
+両方で {% include 'partials/_analytics.html' %} して使う。獲得ファネル
+（デモ起動 demo_start → 登録 sign_up）を全ページで計測するための土台。
+{% endcomment %}
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3QHWL4H3M2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-3QHWL4H3M2');
+
+  // デモ起動を計測（data-demo-cta を付けたフォーム/ボタンの送信時）
+  document.addEventListener('submit', function (e) {
+    var form = e.target;
+    if (form && form.matches('[data-demo-cta]')) {
+      gtag('event', 'demo_start', { source: form.getAttribute('data-demo-cta') || 'unknown' });
+    }
+  }, true);
+</script>

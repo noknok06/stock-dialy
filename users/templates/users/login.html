@@ -1,6 +1,7 @@
 {% load static %}<!DOCTYPE html>
 <html lang="ja">
 <head>
+{% include 'partials/_analytics.html' %}
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ログイン | カブログ</title>
@@ -194,7 +195,7 @@ img{display:block;max-width:100%}
 
       {% if demo_enabled %}
       <div class="divider jp">または</div>
-      <form method="post" action="{% url 'users:demo_login' %}" novalidate>
+      <form method="post" action="{% url 'users:demo_login' %}" novalidate data-demo-cta="login">
         {% csrf_token %}
         <button type="submit" class="btn btn-google"><i class="bi bi-eye"></i><span class="jp">登録しないでデモを試す</span></button>
       </form>

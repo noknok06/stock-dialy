@@ -1,7 +1,7 @@
 # users/views.py
 from django.contrib.auth.views import LoginView, LogoutView
 from django.views.generic import TemplateView, DeleteView
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 from django.views.generic import CreateView
 from django.contrib.auth import get_user_model
 from .forms import CustomUserCreationForm, CustomAuthenticationForm
@@ -47,11 +47,12 @@ class SignUpView(CreateView):
     success_url = reverse_lazy('stockdiary:home')
 
     def form_valid(self, form):
-        # 登録→ログイン画面に戻す摩擦をなくし、そのままホームへ
-        response = super().form_valid(form)
+        # 登録→ログイン画面に戻す摩擦をなくし、そのままホームへ。
+        # ?signup=1 を付けて GA4 の sign_up コンバージョンを発火させる。
+        super().form_valid(form)
         login(self.request, self.object,
               backend='django.contrib.auth.backends.ModelBackend')
-        return response
+        return redirect(f"{reverse('stockdiary:home')}?signup=1")
 
 @require_http_methods(["POST"])
 def demo_login(request):

@@ -1,10 +1,26 @@
 {% load static %}<!DOCTYPE html>
 <html lang="ja">
 <head>
+{% include 'partials/_analytics.html' %}
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>カブログ — 「なぜ買ったか」を記録する投資日記</title>
 <meta name="description" content="投資の「なぜ」を記録・蓄積し、1年前の記録や売却の振り返りを自動で想起する投資日記アプリ。タグ・業種で銘柄の繋がりを自動グラフ化。楽天証券・SBI証券CSV対応。">
+
+{# ── OGP / Twitter カード（SNS共有時の見た目） ── #}
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="カブログ">
+<meta property="og:title" content="「なぜ買ったか」を記録する投資日記 — カブログ">
+<meta property="og:description" content="売買ではなく「思考」を残す。記録が、自分だけの投資知識ベースになる。1年前の記録や売却の振り返りを自動で想起し、銘柄の繋がりをグラフ化。">
+<meta property="og:url" content="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}">
+<meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'images/og-card.png' %}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="「なぜ買ったか」を記録する投資日記 — カブログ">
+<meta name="twitter:description" content="売買ではなく「思考」を残す。記録が、自分だけの投資知識ベースになる。">
+<meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'images/og-card.png' %}">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+JP:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -343,12 +359,15 @@ img{max-width:100%;display:block}
   <div class="grid-lines"></div>
   <div class="wrap hero-inner">
     <div class="rv">
-      <span class="eyebrow"><span class="dot"></span>投資の「思考」を記録する日記アプリ</span>
+      <span class="eyebrow"><span class="dot"></span>あのとき何を考えて買ったか、思い出せますか？</span>
       <h1 class="jp">「なぜ買ったか」を<br><span class="grad-txt">記録する投資日記。</span></h1>
-      <p class="lead">投資の「なぜ」を記録・蓄積して、<strong>自分だけの知識ベース</strong>を育てる。さらにアプリが過去の記録を<strong>想起</strong>し、売却の<strong>振り返り</strong>まで導く——使うほど判断の地図が積み上がっていく。</p>
+      <p class="lead">証券アプリは<strong>売買</strong>を記録する。カブログは<strong>「なぜ」</strong>を記録する。記録・蓄積した<strong>自分だけの知識ベース</strong>をアプリが<strong>想起</strong>し、売却の<strong>振り返り</strong>まで導く——使うほど判断の地図が積み上がっていく。</p>
       <div class="hero-actions">
-        <a class="btn btn-grad btn-lg" href="/users/signup/"><i class="bi bi-rocket-takeoff"></i>無料で始める</a>
-        <a class="btn btn-ghost btn-lg" href="#features"><i class="bi bi-play-circle"></i>詳細を見る</a>
+        <form method="post" action="{% url 'users:demo_login' %}" style="margin:0" data-demo-cta="lp">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-grad btn-lg"><i class="bi bi-eye"></i>登録なしでデモを試す</button>
+        </form>
+        <a class="btn btn-ghost btn-lg" href="/users/signup/"><i class="bi bi-rocket-takeoff"></i>無料で始める</a>
       </div>
       <div class="trust">
         <span class="ti"><i class="bi bi-database-fill-check"></i>記録が資産になる</span>

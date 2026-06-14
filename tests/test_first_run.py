@@ -53,7 +53,9 @@ class TestSignupAutoLogin:
             'password2': 'k4bu-log-Str0ng!',
         })
         assert response.status_code == 302
-        assert response.url == reverse('stockdiary:home')
+        # ホームへ遷移（GA4 の sign_up 計測用に ?signup=1 が付く）
+        assert response.url.split('?')[0] == reverse('stockdiary:home')
+        assert 'signup=1' in response.url
         # セッションが張られている（ログイン画面に戻されない）
         response = client.get(reverse('stockdiary:home'))
         assert response.status_code == 200
