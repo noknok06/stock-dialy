@@ -95,8 +95,11 @@
 .tl-pager a:hover{border-color:var(--tl-accent-100);color:var(--tl-accent)}
 .tl-pager .cur{background:var(--tl-bg2);color:var(--tl-t1);cursor:default}
 
-.tl-btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;height:46px;padding:0 1.3rem;border:none;border-radius:var(--tl-r-md);background:var(--tl-grad);color:#fff;font-weight:700;font-size:14.5px;box-shadow:0 6px 16px rgba(0,102,140,.28);transition:all .2s;text-decoration:none;margin-top:14px}
+.tl-empty-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px}
+.tl-btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;height:46px;padding:0 1.3rem;border:none;border-radius:var(--tl-r-md);background:var(--tl-grad);color:#fff;font-weight:700;font-size:14.5px;box-shadow:0 6px 16px rgba(0,102,140,.28);transition:all .2s;text-decoration:none}
 .tl-btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 22px rgba(0,102,140,.38);color:#fff}
+.tl-btn-ghost{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;height:46px;padding:0 1.3rem;border:1.5px solid var(--tl-line);border-radius:var(--tl-r-md);background:var(--tl-bg);color:var(--tl-t2);font-weight:600;font-size:14.5px;transition:all .16s;text-decoration:none}
+.tl-btn-ghost:hover{border-color:var(--tl-accent-100);color:var(--tl-accent)}
 
 @media(max-width:640px){
   .tl-head-row{flex-direction:column;align-items:flex-start;gap:12px}
@@ -213,7 +216,10 @@
     <div class="ei"><i class="bi bi-clock-history"></i></div>
     <h2>この条件の記録はまだありません</h2>
     <p>期間を「すべて」にするか、日記に記録を追加すると、ここに時系列で表示されます。</p>
-    <a class="tl-btn-primary" href="?period=all&type=all"><i class="bi bi-arrow-counterclockwise"></i>フィルターをリセット</a>
+    <div class="tl-empty-actions">
+      <a class="tl-btn-primary" href="{% url 'stockdiary:create' %}"><i class="bi bi-plus-lg"></i>最初の日記を作る</a>
+      <a class="tl-btn-ghost" href="?period=all&type=all"><i class="bi bi-arrow-counterclockwise"></i>フィルターをリセット</a>
+    </div>
   </div>
   {% endif %}
 </div>

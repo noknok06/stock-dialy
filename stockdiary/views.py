@@ -2893,6 +2893,18 @@ def process_sbi_csv(user, csv_content, filename):
         'errors': errors
     }
     
+# タグの分類軸（Tag.AXIS_CHOICES）ごとの表示色。タグ別成績の軸バッジで使用。
+TAG_AXIS_COLORS = {
+    'theme': '#7c3aed',
+    'business_model': '#0891b2',
+    'risk': '#dc2626',
+    'capital_policy': '#16a34a',
+    'macro': '#d97706',
+    'event': '#db2777',
+    'custom': '#64748b',
+}
+
+
 class TradingDashboardView(LoginRequiredMixin, TemplateView):
     """取引分析ダッシュボード（現物取引のみ・ROI改善版）"""
     template_name = 'stockdiary/trading_dashboard.html'
@@ -3315,6 +3327,7 @@ class TradingDashboardView(LoginRequiredMixin, TemplateView):
                 'name': st['name'],
                 'axis': st['axis'],
                 'axis_label': st['axis_label'],
+                'axis_color': TAG_AXIS_COLORS.get(st['axis'], '#64748b'),
                 'diary_count': st['diary_count'],
                 'realized_profit': round(st['realized_profit'], 0),
                 'total_invested': float(st['total_invested']),

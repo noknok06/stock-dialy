@@ -14,1348 +14,338 @@
 <link rel="stylesheet" href="{% static 'css/2-layouts/stock_diary_modal.css' %}?v={{ STATIC_VERSION }}">
 
 <style>
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-    }
-
-    :root {
-        /* ダッシュボード固有カラー定数 */
-        --primary: #3b82f6;
-        --secondary: #8b5cf6;
-        --success: #10b981;
-        --destructive: #ef4444;
-        --accent: #f59e0b;
-        --chart-1: #3b82f6;
-        /* テーマ追従変数 — ライトモードデフォルト */
-        --foreground: var(--text-100, #1d1c1c);
-        --card: var(--bg-100, #fffefb);
-        --border: rgba(0, 0, 0, 0.1);
-        --muted: var(--text-200, #6b7280);
-        --item-bg: rgba(0, 0, 0, 0.04);
-        --item-bg-hover: rgba(0, 0, 0, 0.08);
-        --item-bg-subtle: rgba(0, 0, 0, 0.025);
-    }
-
-    /* ダークモード上書き */
-    .dark-mode,
-    [data-theme="dark"] {
-        --foreground: var(--dm-foreground, #f1f5f9);
-        --card: var(--dm-card, #1e293b);
-        --border: var(--dm-border, rgba(255, 255, 255, 0.1));
-        --muted: var(--dm-muted-foreground, #94a3b8);
-        --item-bg: rgba(71, 85, 105, 0.3);
-        --item-bg-hover: rgba(71, 85, 105, 0.5);
-        --item-bg-subtle: rgba(71, 85, 105, 0.2);
-    }
-
-    .dashboard-container {
-        max-width: 1320px;
-        margin: 0 auto;
-        padding: 0 12px;
-    }
-
-    /* Header */
-    .dashboard-header {
-        background-color: var(--bg-200, #f5f4f1);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        padding: 16px;
-        margin-bottom: 24px;
-    }
-
-    @media (min-width: 768px) {
-        .dashboard-header {
-            padding: 24px;
-        }
-    }
-
-    .header-content {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-    }
-
-    @media (min-width: 768px) {
-        .header-content {
-            flex-direction: row;
-            justify-content: space-between;
-            align-items: center;
-        }
-    }
-
-    .dashboard-title {
-        font-size: 24px;
-        font-weight: 700;
-        margin-bottom: 4px;
-    }
-
-    @media (min-width: 768px) {
-        .dashboard-title {
-            font-size: 28px;
-        }
-    }
-
-    @media (min-width: 1024px) {
-        .dashboard-title {
-            font-size: 32px;
-        }
-    }
-
-    .dashboard-subtitle {
-        color: var(--muted);
-        font-size: 12px;
-        margin-top: 8px;
-    }
-
-    @media (min-width: 768px) {
-        .dashboard-subtitle {
-            font-size: 14px;
-            margin-top: 12px;
-        }
-    }
-
-    /* Period Filter */
-    .period-filter {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-    }
-
-    .period-btn {
-        padding: 8px 16px;
-        border-radius: 6px;
-        background-color: var(--item-bg);
-        color: var(--foreground);
-        border: 1px solid transparent;
-        cursor: pointer;
-        font-size: 14px;
-        font-weight: 500;
-        transition: all 0.2s;
-        text-decoration: none;
-        display: inline-block;
-    }
-
-    .period-btn:hover {
-        background-color: var(--item-bg-hover);
-        color: var(--foreground);
-    }
-
-    .period-btn.active {
-        background-color: var(--accent-200, #00668c);
-        color: white;
-        border-color: var(--accent-200, #00668c);
-    }
-
-    /* Metrics Grid */
-    .metrics-grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 16px;
-        margin-bottom: 24px;
-    }
-
-    @media (min-width: 768px) {
-        .metrics-grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 24px;
-        }
-    }
-
-    @media (min-width: 1024px) {
-        .metrics-grid {
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-        }
-    }
-
-    /* Card */
-    .card {
-        background-color: var(--card);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        padding: 16px;
-        transition: border-color 0.2s;
-    }
-
-    @media (min-width: 768px) {
-        .card {
-            padding: 24px;
-        }
-    }
-
-    .card:hover {
-        border-color: rgba(59, 130, 246, 0.5);
-    }
-
-    .metric-card {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-    }
-
-    .metric-content {
-        flex: 1;
-    }
-
-    .metric-label {
-        font-size: 12px;
-        color: var(--muted);
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-
-    @media (min-width: 768px) {
-        .metric-label {
-            font-size: 14px;
-        }
-    }
-
-    .metric-value {
-        font-size: 24px;
-        font-weight: 700;
-        color: var(--foreground);
-        margin-top: 8px;
-    }
-
-    @media (min-width: 768px) {
-        .metric-value {
-            font-size: 28px;
-        }
-    }
-
-    .metric-subtext {
-        font-size: 12px;
-        color: var(--muted);
-        margin-top: 4px;
-    }
-
-    .metric-icon {
-        padding: 12px;
-        border-radius: 8px;
-        font-size: 24px;
-        flex-shrink: 0;
-    }
-
-    .metric-sub {
-        font-size: 11px;
-        color: var(--muted);
-        margin-top: 4px;
-    }
-
-    /* Two Column Layout */
-    .two-column {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 24px;
-        margin-bottom: 24px;
-    }
-
-    @media (min-width: 1024px) {
-        .two-column {
-            grid-template-columns: repeat(2, 1fr);
-        }
-    }
-
-    /* Section Title */
-    .section-title {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 24px;
-    }
-
-    .section-icon {
-        padding: 8px;
-        border-radius: 8px;
-        font-size: 20px;
-    }
-
-    .section-heading {
-        font-size: 20px;
-        font-weight: 700;
-        color: var(--foreground);
-    }
-
-    /* ROI Chart */
-    .chart-container {
-        position: relative;
-        height: 400px;
-        margin-bottom: 1rem;
-    }
-
-    .chart-tabs {
-        display: flex;
-        gap: 8px;
-        margin-bottom: 16px;
-        border-bottom: 2px solid var(--border);
-        padding-bottom: 8px;
-    }
-
-    .chart-tab {
-        padding: 8px 16px;
-        border-radius: 6px 6px 0 0;
-        background-color: transparent;
-        color: var(--muted);
-        border: none;
-        cursor: pointer;
-        font-size: 14px;
-        font-weight: 500;
-        transition: all 0.2s;
-    }
-
-    .chart-tab:hover {
-        background-color: var(--item-bg);
-        color: var(--foreground);
-    }
-
-    .chart-tab.active {
-        background-color: var(--accent-200, #00668c);
-        color: white;
-    }
-
-    /* Ranking List */
-    .ranking-list {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-    }
-
-    .ranking-item {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 12px;
-        border-radius: 8px;
-        transition: background-color 0.2s;
-    }
-
-    .ranking-item:hover {
-        background-color: var(--item-bg);
-    }
-
-    .ranking-left {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        flex: 1;
-        min-width: 0;
-    }
-
-    .ranking-number {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        background-color: rgba(59, 130, 246, 0.2);
-        color: var(--primary);
-        font-weight: 700;
-        font-size: 14px;
-        flex-shrink: 0;
-    }
-
-    .ranking-info {
-        min-width: 0;
-        flex: 1;
-    }
-
-    .ranking-name {
-        font-weight: 600;
-        color: var(--foreground);
-        font-size: 14px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    @media (min-width: 768px) {
-        .ranking-name {
-            font-size: 16px;
-        }
-    }
-
-    .ranking-code {
-        font-size: 12px;
-        color: var(--muted);
-    }
-
-    .ranking-right {
-        text-align: right;
-        flex-shrink: 0;
-        margin-left: 8px;
-    }
-
-    .ranking-count {
-        font-size: 18px;
-        font-weight: 700;
-        color: var(--foreground);
-    }
-
-    @media (min-width: 768px) {
-        .ranking-count {
-            font-size: 20px;
-        }
-    }
-
-    .ranking-time {
-        font-size: 12px;
-        color: var(--muted);
-    }
-
-    /* Industry Analysis */
-    .industry-list {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-    }
-
-    .industry-item {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-    }
-
-    .industry-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        font-size: 12px;
-    }
-
-    @media (min-width: 768px) {
-        .industry-header {
-            font-size: 14px;
-        }
-    }
-
-    .industry-name {
-        font-weight: 600;
-        color: var(--foreground);
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .industry-count {
-        color: var(--muted);
-        flex-shrink: 0;
-    }
-
-    .bar-container {
-        display: flex;
-        gap: 8px;
-        align-items: flex-start;
-    }
-
-    .bar {
-        flex: 1;
-        height: 24px;
-        background-color: var(--item-bg);
-        border-radius: 4px;
-        overflow: hidden;
-    }
-
-    .bar-fill {
-        height: 100%;
-        background: linear-gradient(to right, var(--chart-1), rgba(59, 130, 246, 0.8));
-        border-radius: 4px;
-        transition: width 0.3s ease;
-    }
-
-    .profit-badge {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 12px;
-        font-weight: 600;
-        flex-shrink: 0;
-        width: 60px;
-    }
-
-    .profit-badge.positive {
-        background-color: rgba(16, 185, 129, 0.2);
-        color: var(--success);
-    }
-
-    .profit-badge.negative {
-        background-color: rgba(239, 68, 68, 0.2);
-        color: var(--destructive);
-    }
-
-    .sector-ratio {
-        font-size: 12px;
-        color: var(--muted);
-        margin-left: 8px;
-    }
-
-    .roi-badge {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 12px;
-        font-weight: 600;
-        margin-left: 8px;
-    }
-
-    .roi-badge.positive {
-        background-color: rgba(16, 185, 129, 0.2);
-        color: var(--success);
-    }
-
-    .roi-badge.negative {
-        background-color: rgba(239, 68, 68, 0.2);
-        color: var(--destructive);
-    }
-
-    .industry-subinfo {
-        margin-top: 0.5rem;
-        font-size: 0.75rem;
-        color: var(--muted);
-        display: flex;
-        justify-content: space-between;
-        cursor: pointer;
-    }
-
-    /* Profit Loss Grid */
-    .profit-loss-grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 24px;
-    }
-
-    @media (min-width: 768px) {
-        .profit-loss-grid {
-            grid-template-columns: repeat(2, 1fr);
-        }
-    }
-
-    .pl-section {
-        background-color: var(--card);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        padding: 24px;
-    }
-
-    .pl-list {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-    }
-
-    .pl-item {
-        padding: 16px;
-        border-radius: 8px;
-        background-color: var(--item-bg);
-        border: 1px solid transparent;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-
-    .pl-item:hover {
-        background-color: var(--item-bg-hover);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    }
-
-    .pl-item.loss:hover {
-        border-color: rgba(239, 68, 68, 0.3);
-    }
-
-    .pl-item.profit:hover {
-        border-color: rgba(16, 185, 129, 0.3);
-    }
-
-    .pl-header {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        margin-bottom: 8px;
-    }
-
-    .pl-name {
-        font-weight: 600;
-        color: var(--foreground);
-        font-size: 16px;
-    }
-
-    .pl-rate {
-        font-size: 14px;
-        font-weight: 700;
-        padding: 4px 8px;
-        border-radius: 4px;
-        flex-shrink: 0;
-    }
-
-    .pl-rate.profit {
-        background-color: rgba(16, 185, 129, 0.2);
-        color: var(--success);
-    }
-
-    .pl-rate.loss {
-        background-color: rgba(239, 68, 68, 0.2);
-        color: var(--destructive);
-    }
-
-    .pl-count {
-        font-size: 12px;
-        color: var(--muted);
-    }
-
-    .company-list {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-    }
-
-    .company-item {
-        padding: 16px;
-        background-color: var(--item-bg);
-        border-radius: 8px;
-        border: 1px solid transparent;
-        transition: all 0.2s;
-        cursor: pointer;
-    }
-
-    .company-item:hover {
-        background-color: var(--item-bg-hover);
-        border-color: var(--primary);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    }
-
-    .company-link {
-        text-decoration: none;
-        color: inherit;
-        display: block;
-    }
-
-    .company-link:hover {
-        color: inherit;
-        text-decoration: none;
-    }
-
-    .company-name {
-        font-weight: 600;
-        font-size: 16px;
-        color: var(--foreground);
-        transition: color 0.2s;
-    }
-
-    .company-item:hover .company-name {
-        color: var(--primary);
-    }
-
-    .company-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 8px;
-    }
-
-    .company-code {
-        font-size: 12px;
-        color: var(--muted);
-        margin-top: 2px;
-    }
-
-    .company-date {
-        font-size: 11px;
-        color: var(--muted);
-        margin-top: 2px;
-        display: flex;
-        align-items: center;
-        gap: 4px;
-    }
-
-    .company-date::before {
-        content: "📅";
-        font-size: 10px;
-    }
-
-    .company-stats {
-        display: flex;
-        gap: 16px;
-        flex-wrap: wrap;
-        margin-top: 12px;
-        font-size: 13px;
-    }
-
-    .stat-item {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-    }
-
-    .stat-label {
-        color: var(--muted);
-        font-size: 11px;
-    }
-
-    .stat-value {
-        color: var(--foreground);
-        font-weight: 600;
-    }
-
-    .stat-value.positive {
-        color: var(--success);
-    }
-
-    .stat-value.negative {
-        color: var(--destructive);
-    }
-
-    .diary-list-item {
-        padding: 12px;
-        background-color: var(--item-bg-subtle);
-        border-radius: 6px;
-        margin-bottom: 8px;
-        border-left: 3px solid transparent;
-        transition: all 0.2s;
-    }
-
-    .diary-list-item:hover {
-        background-color: var(--item-bg);
-        border-left-color: var(--primary);
-        transform: translateX(4px);
-    }
-
-    .diary-badge {
-        display: inline-block;
-        padding: 2px 8px;
-        border-radius: 12px;
-        font-size: 11px;
-        font-weight: 600;
-        margin-left: 8px;
-    }
-
-    .diary-badge.holding {
-        background-color: rgba(16, 185, 129, 0.2);
-        color: var(--success);
-    }
-
-    .diary-badge.sold {
-        background-color: rgba(100, 116, 139, 0.2);
-        color: var(--muted);
-    }
-
-    /* Empty State */
-    .empty-state {
-        text-align: center;
-        padding: 3rem 1rem;
-        color: var(--muted);
-    }
-
-    .empty-state-icon {
-        font-size: 3rem;
-        margin-bottom: 1rem;
-        opacity: 0.5;
-    }
-
-    .empty-state-text {
-        font-size: 1.1rem;
-        margin-bottom: 0.5rem;
-    }
-
-    .empty-state-subtext {
-        font-size: 0.9rem;
-    }
-
-    /* Mobile Optimization */
-    @media (max-width: 767.98px) {
-        .dashboard-header {
-            padding: 12px;
-            margin-bottom: 16px;
-        }
-
-        .dashboard-title {
-            font-size: 20px;
-            margin-bottom: 4px;
-        }
-
-        .dashboard-subtitle {
-            font-size: 11px;
-            margin-top: 4px;
-        }
-
-        .period-filter {
-            gap: 6px;
-            justify-content: center;
-        }
-
-        .period-btn {
-            padding: 6px 12px;
-            font-size: 12px;
-        }
-
-        .metrics-grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            margin-bottom: 16px;
-        }
-
-        .metric-card {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 8px;
-        }
-
-        .metric-label {
-            font-size: 11px;
-        }
-
-        .metric-value {
-            font-size: 20px;
-            margin-top: 4px;
-        }
-
-        .metric-subtext {
-            font-size: 10px;
-        }
-
-        .metric-icon {
-            padding: 8px;
-            font-size: 18px;
-            align-self: flex-end;
-        }
-
-        .two-column {
-            grid-template-columns: 1fr;
-            gap: 16px;
-            margin-bottom: 16px;
-        }
-
-        .section-title {
-            gap: 8px;
-            margin-bottom: 16px;
-        }
-
-        .section-icon {
-            padding: 6px;
-            font-size: 16px;
-        }
-
-        .section-heading {
-            font-size: 16px;
-        }
-
-        .card {
-            padding: 12px;
-        }
-
-        .chart-container {
-            height: 300px;
-        }
-
-        .chart-tabs {
-            gap: 4px;
-        }
-
-        .chart-tab {
-            padding: 6px 12px;
-            font-size: 12px;
-        }
-
-        .ranking-item {
-            padding: 10px;
-        }
-
-        .ranking-number {
-            width: 28px;
-            height: 28px;
-            font-size: 12px;
-        }
-
-        .ranking-name {
-            font-size: 13px;
-        }
-
-        .ranking-code {
-            font-size: 11px;
-        }
-
-        .ranking-count {
-            font-size: 16px;
-        }
-
-        .ranking-time {
-            font-size: 11px;
-        }
-
-        .industry-list {
-            gap: 12px;
-        }
-
-        .industry-item {
-            gap: 3px;
-        }
-
-        .industry-header {
-            font-size: 12px;
-        }
-
-        .bar {
-            height: 20px;
-        }
-
-        .profit-badge {
-            font-size: 11px;
-            padding: 3px 6px;
-            width: 55px;
-        }
-
-        .industry-subinfo {
-            font-size: 10px !important;
-            margin-top: 0.25rem !important;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .industry-subinfo span {
-            flex: 0 0 auto;
-        }
-
-        .profit-loss-grid {
-            grid-template-columns: 1fr;
-            gap: 16px;
-        }
-
-        .pl-section {
-            padding: 12px;
-        }
-
-        .pl-item {
-            padding: 12px;
-        }
-
-        .pl-name {
-            font-size: 14px;
-        }
-
-        .pl-rate {
-            font-size: 12px;
-            padding: 3px 6px;
-        }
-
-        .pl-count {
-            font-size: 11px;
-        }
-
-        .modal-container {
-            padding: 10px;
-            align-items: flex-start;
-        }
-
-        .modal-content {
-            margin-top: 10px;
-            max-height: 85vh;
-        }
-
-        .modal-header {
-            padding: 12px;
-        }
-
-        .modal-title {
-            font-size: 16px;
-            gap: 8px;
-        }
-
-        .modal-close {
-            font-size: 20px;
-            padding: 4px;
-        }
-
-        .modal-body {
-            padding: 12px;
-        }
-
-        .company-item {
-            padding: 12px;
-        }
-
-        .company-header {
-            margin-bottom: 8px;
-        }
-
-        .company-name {
-            font-size: 14px;
-        }
-
-        .company-code {
-            font-size: 10px;
-        }
-
-        .company-date {
-            font-size: 10px;
-        }
-
-        .company-stats {
-            gap: 12px;
-            font-size: 11px;
-        }
-
-        .stat-label {
-            font-size: 10px;
-        }
-
-        .stat-value {
-            font-size: 12px;
-        }
-    }
-
-    @media (max-width: 480px) {
-        .dashboard-container {
-            padding: 0 8px;
-        }
-
-        .dashboard-title {
-            font-size: 18px;
-        }
-
-        .dashboard-subtitle {
-            font-size: 10px;
-        }
-
-        .period-btn {
-            padding: 5px 10px;
-            font-size: 11px;
-        }
-
-        .metric-value {
-            font-size: 18px;
-        }
-
-        .metric-icon {
-            font-size: 16px;
-            padding: 6px;
-        }
-
-        .section-heading {
-            font-size: 14px;
-        }
-
-        .ranking-name {
-            font-size: 12px;
-        }
-
-        .ranking-count {
-            font-size: 15px;
-        }
-
-        .industry-header {
-            font-size: 11px;
-        }
-
-        .bar {
-            height: 18px;
-        }
-
-        .profit-badge {
-            font-size: 10px;
-            width: 50px;
-        }
-
-        .industry-subinfo {
-            font-size: 9px !important;
-        }
-
-        .pl-name {
-            font-size: 13px;
-        }
-
-        .company-name {
-            font-size: 13px;
-        }
-
-        .company-stats {
-            gap: 10px;
-        }
-    }
-
-    @media (max-width: 767.98px) and (orientation: landscape) {
-        .metrics-grid {
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-        }
-
-        .two-column {
-            grid-template-columns: repeat(2, 1fr);
-        }
-
-        .modal-content {
-            max-height: 90vh;
-        }
-    }
+/* ===== 取引分析ダッシュボード ===== */
+.dashboard-container{
+  max-width:1240px;margin:0 auto;padding:0 12px;
+  --accent-200:#00668c;--accent-100:#71c4ef;
+  --bg-100:#fffefb;--bg-200:#f5f4f1;--bg-300:#e7e5e0;--line:#e9e6df;
+  --t1:#1a2026;--t2:#566069;--t3:#9aa1aa;
+  --grad:linear-gradient(135deg,#71c4ef 0%,#00668c 100%);
+  --grad-txt:linear-gradient(120deg,#00668c,#37a4d4);
+  --hold:#10b981;--sold:#ef4444;
+  --primary:#3b82f6;--secondary:#8b5cf6;--accent:#f59e0b;
+  --shadow-sm:0 2px 8px rgba(20,40,60,.05);
+  --shadow-md:0 8px 24px rgba(20,40,60,.08);
+  --shadow-lg:0 18px 44px rgba(20,40,60,.12);
+  --r-md:14px;--r-lg:18px;--r-xl:22px;
+}
+.dark-mode .dashboard-container,[data-theme="dark"] .dashboard-container{
+  --accent-200:#71c4ef;--accent-100:#37a4d4;
+  --bg-100:#222830;--bg-200:#1a1f24;--bg-300:#3a4047;--line:#3a4047;
+  --t1:#e9ecef;--t2:#adb5bd;--t3:#7a828a;
+  --grad-txt:linear-gradient(120deg,#71c4ef,#a9dcf5);
+  --shadow-sm:0 2px 8px rgba(0,0,0,.25);
+  --shadow-md:0 8px 24px rgba(0,0,0,.35);
+  --shadow-lg:0 18px 44px rgba(0,0,0,.45);
+}
+.dashboard-container .grad-txt{background:var(--grad-txt);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.dashboard-container .mono{font-variant-numeric:tabular-nums}
+
+/* header */
+.phead{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;flex-wrap:wrap;margin-bottom:22px}
+.phead h1{font-size:clamp(24px,3.2vw,32px);font-weight:800;letter-spacing:-.02em;display:flex;align-items:center;gap:12px;margin:0}
+.phead h1 i{font-size:.8em;color:var(--accent-200);-webkit-text-fill-color:var(--accent-200)}
+.phead .psub{font-size:14px;color:var(--t2);margin-top:7px}
+.period{display:flex;gap:7px;flex-wrap:wrap}
+.pbtn{padding:.5rem 1rem;border-radius:999px;border:1.5px solid var(--line);background:var(--bg-100);color:var(--t2);font-size:13.5px;font-weight:600;transition:all .16s;text-decoration:none;display:inline-block}
+.pbtn:hover{background:var(--bg-200);color:var(--t1);transform:translateY(-1px)}
+.pbtn.active{background:var(--accent-200);border-color:var(--accent-200);color:#fff}
+.dark-mode .pbtn.active,[data-theme="dark"] .pbtn.active{color:#0f1417}
+
+/* metrics */
+.metrics{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:22px}
+.metric{background:var(--bg-100);border:1px solid var(--line);border-radius:var(--r-lg);padding:18px;box-shadow:var(--shadow-sm);display:flex;justify-content:space-between;align-items:flex-start;gap:12px;transition:all .22s}
+.metric:hover{transform:translateY(-3px);box-shadow:var(--shadow-md);border-color:var(--accent-100)}
+.metric.hero{background:var(--grad);border:none;color:#fff;box-shadow:0 12px 30px rgba(0,102,140,.3);position:relative;overflow:hidden}
+.metric.hero::after{content:"";position:absolute;top:-40%;right:-10%;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.16),transparent 70%)}
+.m-label{font-size:11.5px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.04em}
+.metric.hero .m-label{color:rgba(255,255,255,.9)}
+.m-value{font-size:1.7rem;font-weight:800;line-height:1.1;margin-top:8px;color:var(--t1)}
+.metric.hero .m-value{color:#fff}
+.m-sub{font-size:11.5px;color:var(--t3);margin-top:5px;font-weight:500}
+.metric.hero .m-sub{color:rgba(255,255,255,.82)}
+.m-ico{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
+.metric.hero .m-ico{background:rgba(255,255,255,.2);color:#fff}
+.m-value.pos{color:var(--hold)}.m-value.neg{color:var(--sold)}
+
+/* layout */
+.two-col{display:grid;grid-template-columns:1.15fr 1fr;gap:18px;margin-bottom:18px}
+.dashboard-container .card{background:var(--bg-100);border:1px solid var(--line);border-radius:var(--r-xl);box-shadow:var(--shadow-sm);padding:20px 22px}
+.sec-title{display:flex;align-items:center;gap:11px;margin-bottom:18px}
+.sec-ico{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.sec-h{font-size:17px;font-weight:800;color:var(--t1)}
+.sec-h .hint{font-size:12px;font-weight:500;color:var(--t3);margin-left:4px}
+
+/* chart */
+.chart-tabs{display:inline-flex;gap:4px;background:var(--bg-200);padding:4px;border-radius:12px;margin-bottom:16px}
+.chart-tab{border:none;background:transparent;padding:.45rem 1.1rem;border-radius:9px;font-size:13.5px;font-weight:700;color:var(--t2);transition:all .18s}
+.chart-tab:hover{color:var(--t1)}
+.chart-tab.active{background:var(--accent-200);color:#fff;box-shadow:0 2px 8px rgba(0,102,140,.3)}
+.dark-mode .chart-tab.active,[data-theme="dark"] .chart-tab.active{color:#0f1417}
+.chart-box{position:relative;height:340px}
+.chart-hint{text-align:center;margin-top:12px;font-size:12px;color:var(--t3);display:flex;align-items:center;justify-content:center;gap:6px}
+
+/* tag / sector rows */
+.rows{display:flex;flex-direction:column;gap:11px}
+.row-item{padding:13px 14px;border-radius:var(--r-md);background:var(--bg-200);border:1px solid transparent;cursor:pointer;transition:all .18s}
+.row-item:hover{background:var(--bg-100);border-color:var(--accent-100);transform:translateX(3px);box-shadow:var(--shadow-sm)}
+.row-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:7px}
+.row-name{font-size:14.5px;font-weight:700;display:flex;align-items:center;gap:7px;min-width:0;color:var(--t1)}
+.row-name .axis{font-size:10.5px;font-weight:600;color:#fff;padding:.1rem .5rem;border-radius:999px;white-space:nowrap}
+.row-meta{font-size:12px;color:var(--t2);font-weight:600;white-space:nowrap;flex-shrink:0}
+.bar{height:8px;border-radius:999px;background:var(--bg-300);overflow:hidden;flex:1}
+.bar-fill{height:100%;border-radius:999px;background:var(--grad);transition:width .5s cubic-bezier(.4,0,.2,1)}
+.row-foot{display:flex;align-items:center;gap:10px;margin-top:9px}
+.roi-badge{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;padding:.18rem .6rem;border-radius:999px;white-space:nowrap}
+.roi-badge.positive{background:rgba(16,185,129,.15);color:#0d9668}
+.roi-badge.negative{background:rgba(239,68,68,.13);color:#dc2626}
+.row-pl{font-size:12.5px;color:var(--t2);font-weight:600;font-variant-numeric:tabular-nums}
+
+/* profit-loss grid */
+.pl-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.pl-item{padding:15px 16px;border-radius:var(--r-md);background:var(--bg-200);border:1px solid transparent;cursor:pointer;transition:all .18s;margin-bottom:11px}
+.pl-item:last-child{margin-bottom:0}
+.pl-item:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.pl-item.profit:hover{border-color:rgba(16,185,129,.35)}
+.pl-item.loss:hover{border-color:rgba(239,68,68,.35)}
+.pl-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.pl-name{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px;color:var(--t1)}
+.pl-rank{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:8px;background:var(--bg-300);color:var(--t2);font-size:12px;font-weight:800;flex-shrink:0}
+.pl-rate{font-size:13.5px;font-weight:800;padding:.2rem .6rem;border-radius:8px;white-space:nowrap}
+.pl-rate.profit{background:rgba(16,185,129,.15);color:#0d9668}
+.pl-rate.loss{background:rgba(239,68,68,.13);color:#dc2626}
+.pl-count{font-size:12px;color:var(--t3);font-weight:600}
+.pl-money{font-size:12.5px;font-weight:600;margin-top:3px;font-variant-numeric:tabular-nums}
+.pl-money.pos{color:#0d9668}.pl-money.neg{color:#dc2626}
+
+.empty-rows{text-align:center;padding:26px 14px;color:var(--t3);font-size:13.5px;font-weight:500}
+
+/* empty state */
+.empty-state{text-align:center;padding:60px 24px}
+.empty-state .ei{width:74px;height:74px;margin:0 auto 16px;border-radius:50%;background:rgba(0,102,140,.08);display:flex;align-items:center;justify-content:center;font-size:32px;color:var(--accent-200)}
+.empty-state-text{font-size:1.15rem;font-weight:700;margin-bottom:8px;color:var(--t1)}
+.empty-state-subtext{font-size:14px;color:var(--t2);margin-bottom:14px}
+
+@media(max-width:1080px){
+  .metrics{grid-template-columns:repeat(3,1fr)}
+  .two-col{grid-template-columns:1fr}
+}
+@media(max-width:640px){
+  .metrics{grid-template-columns:1fr 1fr}
+  .pl-grid{grid-template-columns:1fr}
+  .phead{align-items:flex-start}
+  .chart-box{height:300px}
+  .m-value{font-size:1.4rem}
+}
+@media(max-width:400px){.metrics{grid-template-columns:1fr}}
+
+/* ===== 共通モーダル（モバイル微調整）===== */
+@media (max-width: 767.98px){
+  .modal-container{padding:10px;align-items:flex-start}
+  .modal-content{margin-top:10px;max-height:85vh}
+  .modal-header{padding:12px}
+  .modal-title{font-size:16px;gap:8px}
+  .modal-close{font-size:20px;padding:4px}
+  .modal-body{padding:12px}
+}
+@media (max-width: 767.98px) and (orientation: landscape){
+  .modal-content{max-height:90vh}
+}
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="dashboard-container">
-    <!-- Header with Period Filter -->
-    <div class="dashboard-header">
-        <div class="header-content">
-            <div>
-                <h1 class="dashboard-title">取引分析ダッシュボード</h1>
-                <p class="dashboard-subtitle">株式取引履歴の詳細分析と業種別パフォーマンス追跡</p>
-            </div>
-            <div class="period-filter">
-                <a href="?period=1m" class="period-btn {% if current_period == '1m' %}active{% endif %}">1ヶ月</a>
-                <a href="?period=3m" class="period-btn {% if current_period == '3m' %}active{% endif %}">3ヶ月</a>
-                <a href="?period=6m" class="period-btn {% if current_period == '6m' %}active{% endif %}">6ヶ月</a>
-                <a href="?period=1y" class="period-btn {% if current_period == '1y' %}active{% endif %}">1年</a>
-                <a href="?period=all" class="period-btn {% if current_period == 'all' %}active{% endif %}">すべて</a>
-            </div>
-        </div>
+  <!-- Header -->
+  <div class="phead">
+    <div>
+      <h1><i class="bi bi-bar-chart-line-fill"></i><span class="grad-txt">取引分析ダッシュボード</span></h1>
+      <p class="psub">株式取引履歴の詳細分析と、業種別・タグ別パフォーマンスの追跡。</p>
+    </div>
+    <div class="period">
+      <a href="?period=1m" class="pbtn {% if current_period == '1m' %}active{% endif %}">1ヶ月</a>
+      <a href="?period=3m" class="pbtn {% if current_period == '3m' %}active{% endif %}">3ヶ月</a>
+      <a href="?period=6m" class="pbtn {% if current_period == '6m' %}active{% endif %}">6ヶ月</a>
+      <a href="?period=1y" class="pbtn {% if current_period == '1y' %}active{% endif %}">1年</a>
+      <a href="?period=all" class="pbtn {% if current_period == 'all' %}active{% endif %}">すべて</a>
+    </div>
+  </div>
+
+  {% if has_data %}
+  <!-- Metrics -->
+  <div class="metrics">
+    <div class="metric">
+      <div>
+        <div class="m-label">総取引回数</div>
+        <div class="m-value mono">{{ total_transactions|intcomma }}</div>
+        <div class="m-sub">すべての銘柄</div>
+      </div>
+      <span class="m-ico" style="background:rgba(59,130,246,.16);color:var(--primary)"><i class="bi bi-arrow-left-right"></i></span>
     </div>
 
-    {% if has_data %}
-    <!-- Metrics Overview -->
-    <div class="metrics-grid">
-        <div class="card">
-            <div class="metric-card">
-                <div class="metric-content">
-                    <p class="metric-label">総取引回数</p>
-                    <p class="metric-value">{{ total_transactions|intcomma }}</p>
-                    <p class="metric-subtext">すべての銘柄</p>
-                </div>
-                <div class="metric-icon" style="background: rgba(59, 130, 246, 0.2); color: var(--primary);">📊</div>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="metric-card">
-                <div class="metric-content">
-                    <p class="metric-label">保有銘柄数</p>
-                    <p class="metric-value">{{ holding_count|intcomma }}</p>
-                    <p class="metric-subtext">現在保有中</p>
-                </div>
-                <div class="metric-icon" style="background: rgba(139, 92, 246, 0.2); color: var(--secondary);">⚡</div>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="metric-card">
-                <div class="metric-content">
-                    <p class="metric-label">損益合計</p>
-                    <p class="metric-value">¥{{ total_realized_profit|intcomma_float:0 }}</p>
-                    <p class="metric-sub">投資額: ¥{{ total_invested|intcomma_float:0 }}</p>
-                    <p class="metric-sub">ROI: {{ total_roi|floatformat:1 }}%</p>
-                </div>
-                <div class="metric-icon"
-                    style="background: {% if total_realized_profit >= 0 %}rgba(16, 185, 129, 0.2); color: var(--success){% else %}rgba(239, 68, 68, 0.2); color: var(--destructive){% endif %};">
-                    📈</div>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="metric-card">
-                <div class="metric-content">
-                    <p class="metric-label">平均利益率</p>
-                    <p class="metric-value">{{ avg_profit_rate|floatformat:1 }}%</p>
-                    <p class="metric-subtext">売却済み銘柄の利益率平均</p>
-                    <p>　</p>
-                </div>
-                <div class="metric-icon" style="background: rgba(245, 158, 11, 0.2); color: var(--accent);">🎯</div>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="metric-card">
-                <div class="metric-content">
-                    <p class="metric-label">勝率</p>
-                    {% if win_rate is not None %}
-                    <p class="metric-value">{{ win_rate|floatformat:1 }}%</p>
-                    <p class="metric-sub">{{ winning_count }}/{{ sold_count }}銘柄が黒字</p>
-                    {% if profit_factor is not None %}
-                    <p class="metric-sub">PF: {{ profit_factor }}</p>
-                    {% else %}
-                    <p>　</p>
-                    {% endif %}
-                    {% else %}
-                    <p class="metric-value">—</p>
-                    <p class="metric-subtext">売却実績なし</p>
-                    <p>　</p>
-                    {% endif %}
-                </div>
-                <div class="metric-icon" style="background: rgba(16, 185, 129, 0.2); color: var(--success);">🏆</div>
-            </div>
-        </div>
+    <div class="metric">
+      <div>
+        <div class="m-label">保有銘柄数</div>
+        <div class="m-value mono">{{ holding_count|intcomma }}</div>
+        <div class="m-sub">現在保有中</div>
+      </div>
+      <span class="m-ico" style="background:rgba(139,92,246,.16);color:var(--secondary)"><i class="bi bi-briefcase-fill"></i></span>
     </div>
 
-    <!-- Two Column Section -->
-    <div class="two-column">
-        <!-- ROI ランキングチャート -->
-        <div class="card">
-            <div class="section-title">
-                <div class="section-icon" style="background: rgba(245, 158, 11, 0.2); color: var(--accent);">📊</div>
-                <h2 class="section-heading">ROI ランキング</h2>
-            </div>
-            
-            <!-- タブ切り替え -->
-            <div class="chart-tabs">
-                <button class="chart-tab active" onclick="switchChartTab('sector')">業種別</button>
-                <button class="chart-tab" onclick="switchChartTab('stock')">銘柄別</button>
-            </div>
-            
-            <!-- チャートコンテナ -->
-            <div class="chart-container">
-                <canvas id="roiChart"></canvas>
-                <div id="roiChartEmpty" style="display: none; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--muted); gap: 8px;">
-                    <i class="bi bi-bar-chart" style="font-size: 2rem;"></i>
-                    <p style="margin: 0; font-size: 0.875rem;">この期間に集計できる取引データがありません</p>
-                </div>
-            </div>
-
-            <!-- チャート説明 -->
-            <div id="roiChartHint" style="text-align: center; margin-top: 0.5rem; font-size: 0.75rem; color: var(--muted);">
-                <i class="bi bi-info-circle"></i> バーをクリックすると詳細が表示されます
-            </div>
-        </div>
-
-        <!-- タグ別成績（思考の分類 × 結果） -->
-        <div class="card">
-            <div class="section-title">
-                <div class="section-icon" style="background: rgba(59, 130, 246, 0.2); color: var(--primary);">🏷️</div>
-                <h2 class="section-heading">タグ別成績</h2>
-            </div>
-            <div class="industry-list">
-                {% for tag in tag_analysis %}
-                <div class="industry-item" style="cursor: pointer;"
-                     onclick="location.href='{% url 'tags:detail' tag.tag_id %}'">
-                    <div class="industry-header">
-                        <span class="industry-name">
-                            @{{ tag.name }}
-                            <span style="font-size: 0.7rem; color: var(--muted); font-weight: 400;">{{ tag.axis_label }}</span>
-                        </span>
-                        <span class="industry-count">
-                            {{ tag.diary_count }}銘柄
-                            {% if tag.win_rate is not None %}
-                            | 勝率 {{ tag.win_rate }}% ({{ tag.win_count }}/{{ tag.sold_count }})
-                            {% endif %}
-                        </span>
-                    </div>
-                    <div class="industry-subinfo"
-                        style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--muted); display: flex; justify-content: space-between; align-items: center;">
-                        <span>実現損益: {% if tag.realized_profit >= 0 %}+{% endif %}¥{{ tag.realized_profit|intcomma_float:0 }}</span>
-                        <span class="roi-badge {% if tag.roi >= 0 %}positive{% else %}negative{% endif %}">
-                            {% if tag.roi > 0 %}+{% endif %}{{ tag.roi|floatformat:1 }}%
-                        </span>
-                    </div>
-                </div>
-                {% empty %}
-                <p class="text-muted text-center py-3">
-                    タグ付きの取引データがありません。<br>
-                    日記に @タグ を付けると「思考の分類ごとの成績」がここに表示されます
-                </p>
-                {% endfor %}
-            </div>
-        </div>
+    <div class="metric hero">
+      <div>
+        <div class="m-label">損益合計</div>
+        <div class="m-value mono">{% if total_realized_profit >= 0 %}+¥{{ total_realized_profit|intcomma_float:0 }}{% else %}-¥{{ total_realized_profit|intcomma_float:0|cut:"-" }}{% endif %}</div>
+        <div class="m-sub">投資額 ¥{{ total_invested|intcomma_float:0 }} ・ ROI {% if total_roi > 0 %}+{% endif %}{{ total_roi|floatformat:1 }}%</div>
+      </div>
+      <span class="m-ico"><i class="bi bi-graph-up-arrow"></i></span>
     </div>
 
-    <!-- Industry Analysis Section -->
-    <div class="two-column">
-        <div class="card">
-            <div class="section-title">
-                <div class="section-icon" style="background: rgba(139, 92, 246, 0.2); color: var(--secondary);">📈</div>
-                <h2 class="section-heading">業種別分析</h2>
-            </div>
-            <div class="industry-list">
-                {% for sector in sector_analysis %}
-                <div class="industry-item">
-                    <div class="industry-header">
-                        <span class="industry-name">{{ sector.sector }}</span>
-                        <span class="industry-count">
-                            {{ sector.transaction_count }}件 | {{ sector.diary_count }}社
-                            <span class="sector-ratio">({{ sector.transaction_ratio }}%)</span>
-                        </span>
-                    </div>
-                    <div class="bar-container">
-                        <div class="bar">
-                            <div class="bar-fill" style="width: {{ sector.width_percent }}%;"></div>
-                        </div>
-                        <div class="roi-badge {% if sector.roi >= 0 %}positive{% else %}negative{% endif %}">
-                            {% if sector.roi > 0 %}+{% endif %}{{ sector.roi|floatformat:1 }}%
-                        </div>
-                    </div>
-                    <div class="industry-subinfo"
-                        style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--muted); display: flex; justify-content: space-between; cursor: pointer;"
-                        onclick="showSectorDetail('{{ sector.sector }}', 'profit')">
-                        <span>実現損益: {% if sector.realized_profit >= 0 %}+{% endif %}¥{{ sector.realized_profit|intcomma_float:0 }}</span>
-                        <span>投資額: ¥{{ sector.total_invested|intcomma_float:0 }}</span>
-                        <span style="color: var(--primary);">詳細 →</span>
-                    </div>
-                </div>
-                {% empty %}
-                <p class="text-muted text-center py-3">データがありません</p>
-                {% endfor %}
-            </div>
-        </div>
+    <div class="metric">
+      <div>
+        <div class="m-label">平均利益率</div>
+        <div class="m-value mono {% if avg_profit_rate >= 0 %}pos{% else %}neg{% endif %}">{% if avg_profit_rate > 0 %}+{% endif %}{{ avg_profit_rate|floatformat:1 }}%</div>
+        <div class="m-sub">売却済み銘柄の平均</div>
+      </div>
+      <span class="m-ico" style="background:rgba(245,158,11,.16);color:var(--accent)"><i class="bi bi-bullseye"></i></span>
     </div>
 
-    <!-- Profit Loss Analysis -->
-    <div class="profit-loss-grid">
-        <!-- 利益が出やすい業種 -->
-        <div class="pl-section">
-            <div class="section-title">
-                <div class="section-icon" style="background: rgba(16, 185, 129, 0.2); color: var(--success);">✓</div>
-                <h3 class="section-heading">投資効率が高い業種</h3>
-            </div>
-            <div class="pl-list">
-                {% for sector in profitable_sectors %}
-                <div class="pl-item profit" onclick="showSectorDetail('{{ sector.sector }}', 'profit')">
-                    <div class="pl-header">
-                        <h4 class="pl-name">#{{ forloop.counter }} {{ sector.sector }}</h4>
-                        <span class="pl-rate profit">+{{ sector.roi|floatformat:1 }}%</span>
-                    </div>
-                    <p class="pl-count">取引数: {{ sector.transaction_count }}件 | 銘柄数: {{ sector.diary_count }}社</p>
-                    <p class="pl-count" style="color: var(--success); margin-top: 0.25rem;">実現損益: +¥{{ sector.realized_profit|intcomma_float:0 }} / 投資額: ¥{{ sector.total_invested|intcomma_float:0 }}</p>
-                </div>
-                {% empty %}
-                <p class="text-muted text-center py-3">データがありません</p>
-                {% endfor %}
-            </div>
-        </div>
-
-        <!-- 損失が出やすい業種 -->
-        <div class="pl-section">
-            <div class="section-title">
-                <div class="section-icon" style="background: rgba(239, 68, 68, 0.2); color: var(--destructive);">!</div>
-                <h3 class="section-heading">投資効率が低い業種</h3>
-            </div>
-            <div class="pl-list">
-                {% for sector in loss_sectors %}
-                <div class="pl-item loss" onclick="showSectorDetail('{{ sector.sector }}', 'loss')">
-                    <div class="pl-header">
-                        <h4 class="pl-name">#{{ forloop.counter }} {{ sector.sector }}</h4>
-                        <span class="pl-rate loss">{{ sector.roi|floatformat:1 }}%</span>
-                    </div>
-                    <p class="pl-count">取引数: {{ sector.transaction_count }}件 | 銘柄数: {{ sector.diary_count }}社</p>
-                    <p class="pl-count" style="color: var(--destructive); margin-top: 0.25rem;">実現損益: ¥{{ sector.realized_profit|intcomma_float:0 }} / 投資額: ¥{{ sector.total_invested|intcomma_float:0 }}</p>
-                </div>
-                {% empty %}
-                <p class="text-muted text-center py-3">データがありません</p>
-                {% endfor %}
-            </div>
-        </div>
+    <div class="metric">
+      <div>
+        <div class="m-label">勝率</div>
+        {% if win_rate is not None %}
+        <div class="m-value mono">{{ win_rate|floatformat:1 }}%</div>
+        <div class="m-sub">{{ winning_count }}/{{ sold_count }}銘柄が黒字{% if profit_factor is not None %} ・ PF {{ profit_factor }}{% endif %}</div>
+        {% else %}
+        <div class="m-value mono">—</div>
+        <div class="m-sub">売却実績なし</div>
+        {% endif %}
+      </div>
+      <span class="m-ico" style="background:rgba(16,185,129,.16);color:var(--hold)"><i class="bi bi-trophy-fill"></i></span>
     </div>
+  </div>
 
-    {% else %}
-    <!-- Empty State -->
+  <!-- ROI chart + tag performance -->
+  <div class="two-col">
     <div class="card">
-        <div class="empty-state">
-            <div class="empty-state-icon">📊</div>
-            <p class="empty-state-text">取引データがありません</p>
-            <p class="empty-state-subtext">取引を登録すると、ここに分析結果が表示されます</p>
-            <a href="{% url 'stockdiary:home' %}" class="btn btn-sm btn-primary mt-2">
-                <i class="bi bi-journal-text me-1"></i>日記に取引を記録する
-            </a>
+      <div class="sec-title">
+        <span class="sec-ico" style="background:rgba(245,158,11,.16);color:var(--accent)"><i class="bi bi-bar-chart-fill"></i></span>
+        <span class="sec-h">ROI ランキング</span>
+      </div>
+      <div class="chart-tabs">
+        <button class="chart-tab active" onclick="switchChartTab('sector')">業種別</button>
+        <button class="chart-tab" onclick="switchChartTab('stock')">銘柄別</button>
+      </div>
+      <div class="chart-box">
+        <canvas id="roiChart"></canvas>
+        <div id="roiChartEmpty" style="display:none;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--t3);gap:8px">
+          <i class="bi bi-bar-chart" style="font-size:2rem"></i>
+          <p style="margin:0;font-size:.875rem">この期間に集計できる取引データがありません</p>
         </div>
+      </div>
+      <div class="chart-hint" id="roiChartHint"><i class="bi bi-info-circle"></i>バーをクリックすると詳細が表示されます</div>
     </div>
-    {% endif %}
+
+    <div class="card">
+      <div class="sec-title">
+        <span class="sec-ico" style="background:rgba(59,130,246,.16);color:var(--primary)"><i class="bi bi-tags-fill"></i></span>
+        <span class="sec-h">タグ別成績<span class="hint">思考の分類 × 結果</span></span>
+      </div>
+      <div class="rows">
+        {% for tag in tag_analysis %}
+        <div class="row-item" onclick="location.href='{% url 'tags:detail' tag.tag_id %}'">
+          <div class="row-head">
+            <span class="row-name"><span class="axis" style="background:{{ tag.axis_color }}">{{ tag.axis_label }}</span>@{{ tag.name }}</span>
+            <span class="row-meta">{{ tag.diary_count }}銘柄{% if tag.win_rate is not None %} ・ 勝率 {{ tag.win_rate }}% ({{ tag.win_count }}/{{ tag.sold_count }}){% endif %}</span>
+          </div>
+          <div class="row-foot">
+            <span class="row-pl">実現損益: {% if tag.realized_profit >= 0 %}+¥{{ tag.realized_profit|intcomma_float:0 }}{% else %}-¥{{ tag.realized_profit|intcomma_float:0|cut:"-" }}{% endif %}</span>
+            <span class="roi-badge {% if tag.roi >= 0 %}positive{% else %}negative{% endif %}" style="margin-left:auto"><i class="bi bi-{% if tag.roi >= 0 %}arrow-up{% else %}arrow-down{% endif %}-short"></i>{% if tag.roi > 0 %}+{% endif %}{{ tag.roi|floatformat:1 }}%</span>
+          </div>
+        </div>
+        {% empty %}
+        <div class="empty-rows">タグ付きの取引データがありません。<br>日記に @タグ を付けると「思考の分類ごとの成績」がここに表示されます</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- sector analysis -->
+  <div class="card" style="margin-bottom:18px">
+    <div class="sec-title">
+      <span class="sec-ico" style="background:rgba(139,92,246,.16);color:var(--secondary)"><i class="bi bi-pie-chart-fill"></i></span>
+      <span class="sec-h">業種別分析</span>
+    </div>
+    <div class="rows">
+      {% for sector in sector_analysis %}
+      <div class="row-item" onclick="showSectorDetail('{{ sector.sector }}', 'profit')">
+        <div class="row-head">
+          <span class="row-name">{{ sector.sector }}</span>
+          <span class="row-meta">{{ sector.transaction_count }}件 ・ {{ sector.diary_count }}社 <span style="color:var(--t3)">({{ sector.transaction_ratio }}%)</span></span>
+        </div>
+        <div class="row-foot">
+          <div class="bar"><div class="bar-fill" style="width:{{ sector.width_percent }}%"></div></div>
+          <span class="roi-badge {% if sector.roi >= 0 %}positive{% else %}negative{% endif %}"><i class="bi bi-{% if sector.roi >= 0 %}arrow-up{% else %}arrow-down{% endif %}-short"></i>{% if sector.roi > 0 %}+{% endif %}{{ sector.roi|floatformat:1 }}%</span>
+        </div>
+        <div class="row-foot"><span class="row-pl">実現損益: {% if sector.realized_profit >= 0 %}+¥{{ sector.realized_profit|intcomma_float:0 }}{% else %}-¥{{ sector.realized_profit|intcomma_float:0|cut:"-" }}{% endif %} ・ 投資額: ¥{{ sector.total_invested|intcomma_float:0 }}</span></div>
+      </div>
+      {% empty %}
+      <div class="empty-rows">データがありません</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- profit / loss -->
+  <div class="pl-grid">
+    <div class="card">
+      <div class="sec-title">
+        <span class="sec-ico" style="background:rgba(16,185,129,.16);color:var(--hold)"><i class="bi bi-check-circle-fill"></i></span>
+        <span class="sec-h">投資効率が高い業種</span>
+      </div>
+      <div>
+        {% for sector in profitable_sectors %}
+        <div class="pl-item profit" onclick="showSectorDetail('{{ sector.sector }}', 'profit')">
+          <div class="pl-head"><span class="pl-name"><span class="pl-rank">{{ forloop.counter }}</span>{{ sector.sector }}</span><span class="pl-rate profit">+{{ sector.roi|floatformat:1 }}%</span></div>
+          <div class="pl-count">取引数: {{ sector.transaction_count }}件 ・ 銘柄数: {{ sector.diary_count }}社</div>
+          <div class="pl-money pos">実現損益: +¥{{ sector.realized_profit|intcomma_float:0 }} / 投資額: ¥{{ sector.total_invested|intcomma_float:0 }}</div>
+        </div>
+        {% empty %}
+        <div class="empty-rows">該当データがありません</div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="card">
+      <div class="sec-title">
+        <span class="sec-ico" style="background:rgba(239,68,68,.14);color:var(--sold)"><i class="bi bi-exclamation-circle-fill"></i></span>
+        <span class="sec-h">投資効率が低い業種</span>
+      </div>
+      <div>
+        {% for sector in loss_sectors %}
+        <div class="pl-item loss" onclick="showSectorDetail('{{ sector.sector }}', 'loss')">
+          <div class="pl-head"><span class="pl-name"><span class="pl-rank">{{ forloop.counter }}</span>{{ sector.sector }}</span><span class="pl-rate loss">{{ sector.roi|floatformat:1 }}%</span></div>
+          <div class="pl-count">取引数: {{ sector.transaction_count }}件 ・ 銘柄数: {{ sector.diary_count }}社</div>
+          <div class="pl-money neg">実現損益: -¥{{ sector.realized_profit|intcomma_float:0|cut:"-" }} / 投資額: ¥{{ sector.total_invested|intcomma_float:0 }}</div>
+        </div>
+        {% empty %}
+        <div class="empty-rows">該当データがありません</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  {% else %}
+  <!-- Empty State -->
+  <div class="card">
+    <div class="empty-state">
+      <div class="ei"><i class="bi bi-bar-chart-line-fill"></i></div>
+      <p class="empty-state-text">取引データがありません</p>
+      <p class="empty-state-subtext">取引を登録すると、ここに分析結果が表示されます</p>
+      <a href="{% url 'stockdiary:home' %}" class="btn btn-sm btn-primary mt-2">
+        <i class="bi bi-journal-text me-1"></i>日記に取引を記録する
+      </a>
+    </div>
+  </div>
+  {% endif %}
 </div>
 
 <!-- 共通モーダル -->
@@ -1446,7 +436,7 @@
         // 🔧 重複除去：業種名/銘柄名をキーにして重複を削除
         const uniqueData = [];
         const seenLabels = new Set();
-        
+
         for (const item of data) {
             const normalizedLabel = item.label.trim();
             if (!seenLabels.has(normalizedLabel)) {
@@ -1457,7 +447,7 @@
                 });
             }
         }
-        
+
         // ROIでソート（重複除去後）
         uniqueData.sort((a, b) => b.roi - a.roi);
 
@@ -1468,12 +458,12 @@
 
         const labels = displayData.map(d => d.label);
         const values = displayData.map(d => d.roi);
-        const colors = values.map(v => v >= 0 
-            ? 'rgba(16, 185, 129, 0.8)' 
+        const colors = values.map(v => v >= 0
+            ? 'rgba(16, 185, 129, 0.8)'
             : 'rgba(239, 68, 68, 0.8)'
         );
-        const borderColors = values.map(v => v >= 0 
-            ? 'rgba(16, 185, 129, 1)' 
+        const borderColors = values.map(v => v >= 0
+            ? 'rgba(16, 185, 129, 1)'
             : 'rgba(239, 68, 68, 1)'
         );
 
@@ -1507,7 +497,9 @@
                     data: uniqueValues,
                     backgroundColor: uniqueColors,
                     borderColor: uniqueBorderColors,
-                    borderWidth: 1
+                    borderWidth: 1,
+                    borderRadius: 7,
+                    maxBarThickness: 26
                 }]
             },
             options: {
@@ -1536,6 +528,9 @@
                         display: false
                     },
                     tooltip: {
+                        backgroundColor: '#1a2026',
+                        padding: 11,
+                        cornerRadius: 10,
                         callbacks: {
                             label: function(context) {
                                 const value = context.parsed.x;
@@ -1594,7 +589,7 @@
         document.getElementById('modalTitle').textContent = title;
         document.getElementById('modalIcon').textContent = icon;
         document.getElementById('modalContent').innerHTML = content;
-        
+
         modal.classList.add('active');
         document.body.style.overflow = 'hidden';
     }
@@ -1609,9 +604,9 @@
     // 業種別日記リスト表示（改善版）
     function showSectorDetail(sectorName, type) {
         const companies = sectorDetailData[sectorName] || [];
-        
+
         if (companies.length === 0) {
-            showModal(sectorName, type === 'profit' ? '✓' : '!', 
+            showModal(sectorName, type === 'profit' ? '✓' : '!',
                 '<p class="empty-message"><span class="empty-message-icon">📭</span><p class="empty-message-text">データがありません</p></p>');
             return;
         }
@@ -1639,7 +634,7 @@
 
         // 実現損益: 各銘柄のFIFO計算済み実現損益を合計する
         let realizedProfit = companies.reduce((sum, c) => sum + (c.realized_profit || 0), 0);
-        
+
         const roiClass = totalRoi >= 0 ? 'highlight-positive' : 'highlight-negative';
         const profitClass = realizedProfit >= 0 ? 'highlight-positive' : 'highlight-negative';
 
@@ -1741,7 +736,7 @@
         });
 
         html += '</div>';
-        
+
         const icon = type === 'profit' ? '✓' : '!';
         showModal(sectorName, icon, html);
     }
