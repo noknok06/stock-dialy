@@ -1,145 +1,220 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static humanize %}
 
 {% block title %}タイムライン - カブログ{% endblock %}
 
 {% block head %}
 <style>
-.timeline-page { max-width: 860px; margin: 0 auto; }
-.timeline-filters { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 1rem; }
-.timeline-chip {
-  display: inline-flex; align-items: center; padding: 0.3rem 0.8rem;
-  border-radius: var(--radius-full, 999px); border: 1px solid var(--border-light, #dee2e6);
-  background: var(--bg-secondary, #fff); font-size: 0.85rem; text-decoration: none;
-  color: inherit; transition: all 0.15s ease;
+/* ===== タイムライン（思考の時系列）===== */
+.tl-page{
+  max-width:900px;margin:0 auto;
+  --tl-accent:#00668c;--tl-accent-100:#71c4ef;
+  --tl-bg:#fffefb;--tl-bg2:#f5f4f1;--tl-bg3:#e7e5e0;--tl-line:#e9e6df;
+  --tl-t1:#1a2026;--tl-t2:#566069;--tl-t3:#9aa1aa;
+  --tl-grad:linear-gradient(135deg,#71c4ef 0%,#00668c 100%);
+  --tl-grad-txt:linear-gradient(120deg,#00668c,#37a4d4);
+  --tl-k-note:#0891b2;
+  --tl-shadow-sm:0 2px 8px rgba(20,40,60,.05);
+  --tl-shadow-md:0 8px 24px rgba(20,40,60,.08);
+  --tl-r-md:14px;--tl-r-lg:18px;--tl-r-xl:22px;
 }
-.timeline-chip:hover { border-color: var(--primary-color, #5a7ec5); color: inherit; }
-.timeline-chip.active { background: var(--primary-color, #5a7ec5); border-color: var(--primary-color, #5a7ec5); color: #fff; }
-.timeline-date-header {
-  font-weight: 700; font-size: 0.9rem; color: var(--text-secondary, #6c757d);
-  margin: 1.25rem 0 0.5rem; padding-bottom: 0.25rem; border-bottom: 1px solid var(--border-light, #dee2e6);
+.dark-mode .tl-page,[data-theme="dark"] .tl-page{
+  --tl-accent:#71c4ef;--tl-accent-100:#37a4d4;
+  --tl-bg:#2b3035;--tl-bg2:#1e2125;--tl-bg3:#3a4047;--tl-line:#3a4047;
+  --tl-t1:#e9ecef;--tl-t2:#adb5bd;--tl-t3:#7a828a;
+  --tl-grad-txt:linear-gradient(120deg,#71c4ef,#a9dcf5);
+  --tl-shadow-sm:0 2px 8px rgba(0,0,0,.25);
+  --tl-shadow-md:0 8px 24px rgba(0,0,0,.35);
 }
-.timeline-item {
-  display: block; padding: 0.6rem 0.75rem; margin-bottom: 0.4rem;
-  border-radius: 0.5rem; border: 1px solid var(--border-light, #e9ecef);
-  background: var(--bg-secondary, #fff); text-decoration: none; color: inherit;
-  transition: border-color 0.15s ease;
+.tl-page .grad-txt{background:var(--tl-grad-txt);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.tl-page .mono{font-variant-numeric:tabular-nums}
+
+/* header */
+.tl-head-row{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;margin-bottom:6px}
+.tl-head-row h1{font-size:clamp(24px,3vw,32px);font-weight:800;letter-spacing:-.02em;display:flex;align-items:center;gap:12px;margin:0}
+.tl-head-row h1 i{font-size:.8em;color:var(--tl-accent);-webkit-text-fill-color:var(--tl-accent)}
+.tl-home{display:inline-flex;align-items:center;gap:7px;height:42px;padding:0 1rem;border-radius:var(--tl-r-md);border:1.5px solid var(--tl-line);background:var(--tl-bg);color:var(--tl-t2);font-size:14px;font-weight:600;transition:all .16s;flex-shrink:0;text-decoration:none}
+.tl-home:hover{border-color:var(--tl-accent-100);color:var(--tl-accent)}
+.tl-sub{font-size:14.5px;color:var(--tl-t2);margin-bottom:22px;max-width:640px}
+
+/* filters */
+.tl-filters{background:var(--tl-bg);border:1px solid var(--tl-line);border-radius:var(--tl-r-xl);box-shadow:var(--tl-shadow-sm);padding:16px 18px;margin-bottom:24px;display:flex;flex-direction:column;gap:13px}
+.tl-frow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.tl-flabel{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--tl-t3);text-transform:uppercase;letter-spacing:.05em;width:56px;flex-shrink:0}
+.tl-chips{display:flex;gap:8px;flex-wrap:wrap}
+.tl-chip{display:inline-flex;align-items:center;gap:6px;padding:.42rem .9rem;border-radius:999px;border:1.5px solid var(--tl-line);background:var(--tl-bg);color:var(--tl-t2);font-size:13.5px;font-weight:600;transition:all .16s;white-space:nowrap;text-decoration:none}
+.tl-chip:hover{background:var(--tl-bg2);color:var(--tl-t1);transform:translateY(-1px)}
+.tl-chip.active{background:var(--tl-accent);border-color:var(--tl-accent);color:#fff}
+.dark-mode .tl-chip.active,[data-theme="dark"] .tl-chip.active{color:#0f1417}
+.tl-chip .kd{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.tl-chip.active .kd{box-shadow:0 0 0 2px rgba(255,255,255,.5)}
+.tl-tagsel{position:relative}
+.tl-tagsel select{appearance:none;-webkit-appearance:none;height:40px;border:1.5px solid var(--tl-line);border-radius:999px;background:var(--tl-bg);font-family:inherit;font-size:13.5px;font-weight:600;color:var(--tl-t2);padding:0 38px 0 16px;cursor:pointer;transition:all .16s}
+.tl-tagsel select:focus{outline:none;border-color:var(--tl-accent);box-shadow:0 0 0 3px rgba(0,102,140,.1)}
+.tl-tagsel::after{content:"\F282";font-family:"bootstrap-icons";position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--tl-t3);font-size:13px;pointer-events:none}
+
+/* result meta */
+.tl-rmeta{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--tl-t2);font-weight:600;margin-bottom:16px;flex-wrap:wrap}
+.tl-rmeta b{color:var(--tl-t1)}
+.tl-rmeta .sep{color:var(--tl-bg3)}
+
+/* feed */
+.tl-feed{position:relative}
+.tl-feed::before{content:"";position:absolute;left:21px;top:6px;bottom:14px;width:2px;background:var(--tl-line);z-index:0}
+.tl-date{display:flex;align-items:center;gap:12px;padding-left:56px;position:relative;margin:22px 0 12px;min-height:30px}
+.tl-date:first-child{margin-top:4px}
+.tl-date .nub{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:18px;height:18px;border-radius:50%;background:var(--tl-bg);border:2px solid var(--tl-bg3);z-index:1}
+.tl-date .dlabel{font-size:14px;font-weight:800;color:var(--tl-t1);white-space:nowrap}
+.tl-date .drel{font-size:12px;font-weight:600;color:var(--tl-t3);white-space:nowrap}
+.tl-date .dcount{margin-left:auto;font-size:12px;font-weight:700;color:var(--tl-t3);background:var(--tl-bg);border:1px solid var(--tl-line);padding:.16rem .6rem;border-radius:999px;white-space:nowrap;flex-shrink:0}
+
+.tl-item{position:relative;padding-left:56px;margin-bottom:11px}
+.tl-marker{position:absolute;left:3px;top:2px;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;z-index:1;box-shadow:0 3px 8px rgba(20,40,60,.18),0 0 0 4px var(--tl-bg2)}
+.tl-card{display:block;background:var(--tl-bg);border:1px solid var(--tl-line);border-radius:var(--tl-r-lg);padding:14px 16px;box-shadow:var(--tl-shadow-sm);transition:transform .2s,box-shadow .2s,border-color .2s;border-left:3px solid var(--tl-kc,var(--tl-accent));text-decoration:none;color:inherit}
+.tl-card:hover{transform:translateX(3px);box-shadow:var(--tl-shadow-md);border-left-color:var(--tl-kc,var(--tl-accent));color:inherit}
+.tl-chead{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:7px}
+.tl-sym{font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--tl-accent);background:rgba(0,102,140,.09);padding:.12rem .5rem;border-radius:7px}
+.dark-mode .tl-sym,[data-theme="dark"] .tl-sym{background:rgba(113,196,239,.14)}
+.tl-sname{font-size:15px;font-weight:700;color:var(--tl-t1)}
+.tl-kbadge{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:.18rem .6rem;border-radius:999px;color:#fff}
+.tl-time{margin-left:auto;font-size:12px;color:var(--tl-t3);font-weight:600;font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:5px}
+.tl-lead{font-size:13.5px;color:var(--tl-t2);line-height:1.6}
+.tl-txline{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--tl-t1);font-variant-numeric:tabular-nums;white-space:nowrap}
+.tl-txline .amt{color:var(--tl-t3);font-weight:600}
+.tl-topic{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;color:var(--tl-k-note);background:rgba(8,145,178,.1);border:1px solid rgba(8,145,178,.25);padding:.12rem .5rem;border-radius:7px}
+
+/* empty */
+.tl-empty{text-align:center;padding:60px 24px;background:var(--tl-bg);border:2px dashed var(--tl-line);border-radius:var(--tl-r-xl)}
+.tl-empty .ei{width:74px;height:74px;margin:0 auto 16px;border-radius:50%;background:rgba(0,102,140,.08);display:flex;align-items:center;justify-content:center;font-size:32px;color:var(--tl-accent)}
+.tl-empty h2{font-size:1.2rem;font-weight:700;margin-bottom:8px;color:var(--tl-t1)}
+.tl-empty p{font-size:14px;color:var(--tl-t2);max-width:460px;margin:0 auto 6px}
+
+/* pager */
+.tl-pager{display:flex;justify-content:center;align-items:center;gap:10px;margin-top:30px}
+.tl-pager a,.tl-pager span{display:inline-flex;align-items:center;gap:6px;height:42px;padding:0 1.1rem;border-radius:var(--tl-r-md);font-size:14px;font-weight:600;border:1.5px solid var(--tl-line);background:var(--tl-bg);color:var(--tl-t2);transition:all .16s;text-decoration:none}
+.tl-pager a:hover{border-color:var(--tl-accent-100);color:var(--tl-accent)}
+.tl-pager .cur{background:var(--tl-bg2);color:var(--tl-t1);cursor:default}
+
+.tl-btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;height:46px;padding:0 1.3rem;border:none;border-radius:var(--tl-r-md);background:var(--tl-grad);color:#fff;font-weight:700;font-size:14.5px;box-shadow:0 6px 16px rgba(0,102,140,.28);transition:all .2s;text-decoration:none;margin-top:14px}
+.tl-btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 22px rgba(0,102,140,.38);color:#fff}
+
+@media(max-width:640px){
+  .tl-head-row{flex-direction:column;align-items:flex-start;gap:12px}
+  .tl-flabel{width:100%}
+  .tl-time{display:none}
 }
-.timeline-item:hover { border-color: var(--primary-color, #5a7ec5); color: inherit; }
-.timeline-item-head { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin-bottom: 0.2rem; }
-.timeline-item-lead { font-size: 0.85rem; color: var(--text-secondary, #6c757d); }
-.dark-mode .timeline-item, [data-theme="dark"] .timeline-item { background: var(--dm-muted, #2b3035); border-color: #444; }
-.dark-mode .timeline-chip, [data-theme="dark"] .timeline-chip { background: var(--dm-muted, #2b3035); border-color: #444; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="timeline-page">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h4 class="mb-0"><i class="bi bi-clock-history me-2"></i>タイムライン</h4>
-    <a href="{% url 'stockdiary:home' %}" class="btn btn-sm btn-outline-secondary">
-      <i class="bi bi-journal-text me-1"></i>日記一覧
-    </a>
+<div class="tl-page">
+  <div class="tl-head-row">
+    <h1><i class="bi bi-clock-history"></i><span class="grad-txt">タイムライン</span></h1>
+    <a class="tl-home" href="{% url 'stockdiary:home' %}"><i class="bi bi-journal-text"></i>日記一覧</a>
   </div>
+  <p class="tl-sub">継続記録・振り返り・取引・日記作成を、銘柄を横断して1本の時系列に。「あの時期、自分は何を考えていたか」を見返す画面です。</p>
 
-  <!-- 期間フィルター -->
-  <div class="timeline-filters">
-    <span class="small text-muted">期間:</span>
-    {% for value, label in period_choices %}
-    <a class="timeline-chip{% if period == value %} active{% endif %}"
-       href="?period={{ value }}&type={{ etype }}{% if tag_id %}&tag={{ tag_id }}{% endif %}">{{ label }}</a>
-    {% endfor %}
-  </div>
-
-  <!-- 種類フィルター -->
-  <div class="timeline-filters">
-    <span class="small text-muted">種類:</span>
-    {% for value, label in type_choices %}
-    <a class="timeline-chip{% if etype == value %} active{% endif %}"
-       href="?period={{ period }}&type={{ value }}{% if tag_id %}&tag={{ tag_id }}{% endif %}">{{ label }}</a>
-    {% endfor %}
-  </div>
-
-  <!-- タグフィルター -->
-  {% if tags %}
-  <div class="timeline-filters">
-    <span class="small text-muted">タグ:</span>
-    <select class="form-select form-select-sm" style="max-width: 240px;"
-            onchange="location.href='?period={{ period }}&type={{ etype }}' + (this.value ? '&tag=' + this.value : '')">
-      <option value="">すべて</option>
-      {% for tag in tags %}
-      <option value="{{ tag.id }}" {% if tag_id == tag.id %}selected{% endif %}>@{{ tag.name }}</option>
-      {% endfor %}
-    </select>
-  </div>
-  {% endif %}
-
-  <!-- タイムライン本体 -->
-  {% for event in events %}
-    {% ifchanged event.date %}
-    <div class="timeline-date-header">{{ event.date|date:"Y年n月j日 (D)" }}</div>
-    {% endifchanged %}
-
-    <a href="{% url 'stockdiary:detail' event.diary.pk %}" class="timeline-item">
-      <div class="timeline-item-head">
-        {% if event.diary.stock_symbol %}
-        <span class="badge bg-secondary">{{ event.diary.stock_symbol }}</span>
-        {% endif %}
-        <strong>{{ event.diary.stock_name }}</strong>
-
-        {% if event.kind == 'note' %}
-          <span class="badge bg-primary">{{ event.note.get_note_type_display }}</span>
-          {% if event.note.topic %}<span class="badge bg-light text-dark border"># {{ event.note.topic }}</span>{% endif %}
-        {% elif event.kind == 'retrospective' %}
-          <span class="badge bg-dark">振り返り</span>
-        {% elif event.kind == 'transaction' %}
-          {% if event.transaction.transaction_type == 'buy' %}
-          <span class="badge bg-success">買</span>
-          {% else %}
-          <span class="badge bg-danger">売</span>
-          {% endif %}
-          <span class="small">
-            {{ event.transaction.quantity|floatformat:0 }}株 @ {{ event.diary.currency_symbol }}{{ event.transaction.price|floatformat:2 }}
-          </span>
-        {% elif event.kind == 'diary' %}
-          <span class="badge bg-info">日記作成</span>
-        {% endif %}
+  <!-- フィルター -->
+  <div class="tl-filters">
+    <div class="tl-frow">
+      <span class="tl-flabel"><i class="bi bi-calendar3"></i>期間</span>
+      <div class="tl-chips">
+        {% for value, label in period_choices %}
+        <a class="tl-chip{% if period == value %} active{% endif %}"
+           href="?period={{ value }}&type={{ etype }}{% if tag_id %}&tag={{ tag_id }}{% endif %}">{{ label }}</a>
+        {% endfor %}
       </div>
+    </div>
+    <div class="tl-frow">
+      <span class="tl-flabel"><i class="bi bi-funnel"></i>種類</span>
+      <div class="tl-chips">
+        {% for value, label in type_choices %}
+        <a class="tl-chip{% if etype == value %} active{% endif %}"
+           href="?period={{ period }}&type={{ value }}{% if tag_id %}&tag={{ tag_id }}{% endif %}">
+          {% if value == 'note' %}<span class="kd" style="background:#0891b2"></span>
+          {% elif value == 'retrospective' %}<span class="kd" style="background:#7c3aed"></span>
+          {% elif value == 'transaction' %}<span class="kd" style="background:#10b981"></span>
+          {% elif value == 'diary' %}<span class="kd" style="background:#d97706"></span>
+          {% endif %}{{ label }}</a>
+        {% endfor %}
+      </div>
+    </div>
+    {% if tags %}
+    <div class="tl-frow">
+      <span class="tl-flabel"><i class="bi bi-tag"></i>タグ</span>
+      <div class="tl-tagsel">
+        <select onchange="location.href='?period={{ period }}&type={{ etype }}' + (this.value ? '&tag=' + this.value : '')">
+          <option value="">すべてのタグ</option>
+          {% for tag in tags %}
+          <option value="{{ tag.id }}" {% if tag_id == tag.id %}selected{% endif %}>@{{ tag.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    {% endif %}
+  </div>
 
-      {% if event.lead %}
-      <div class="timeline-item-lead">{{ event.lead }}</div>
-      {% elif event.kind == 'transaction' and event.transaction.memo %}
-      <div class="timeline-item-lead">{{ event.transaction.memo }}</div>
-      {% endif %}
-    </a>
-  {% empty %}
-    <div class="text-center text-muted py-5">
-      <i class="bi bi-clock-history" style="font-size: 2rem;"></i>
-      <p class="mt-2 mb-1">この条件の記録はまだありません</p>
-      <p class="small mb-2">期間を「すべて」にするか、日記に記録を追加すると、ここに時系列で表示されます</p>
-      <a href="{% url 'stockdiary:create' %}" class="btn btn-sm btn-primary">
-        <i class="bi bi-plus-lg me-1"></i>最初の日記を作る
+  {% if event_groups %}
+  <!-- 結果メタ -->
+  <div class="tl-rmeta">
+    <i class="bi bi-collection" style="color:var(--tl-accent)"></i><b>{{ total_count }}</b>件の記録
+    <span class="sep">·</span>{{ total_days }}日分
+    <span class="sep">·</span>期間: {{ period_label }}
+  </div>
+
+  <!-- フィード -->
+  <div class="tl-feed">
+    {% for group in event_groups %}
+    <div class="tl-date">
+      <span class="nub"></span>
+      <span class="dlabel">{{ group.date|date:"Y年n月j日 (D)" }}</span>
+      <span class="drel">{{ group.rel }}</span>
+      <span class="dcount">{{ group.count }}件</span>
+    </div>
+    {% for event in group.events %}
+    <div class="tl-item">
+      <div class="tl-marker" style="background:{{ event.ui.color }}"><i class="bi {{ event.ui.icon }}"></i></div>
+      <a class="tl-card" style="--tl-kc:{{ event.ui.color }}" href="{% url 'stockdiary:detail' event.diary.pk %}">
+        <div class="tl-chead">
+          {% if event.diary.stock_symbol %}<span class="tl-sym mono">{{ event.diary.stock_symbol }}</span>{% endif %}
+          <span class="tl-sname">{{ event.diary.stock_name }}</span>
+          <span class="tl-kbadge" style="background:{{ event.ui.color }}"><i class="bi {{ event.ui.icon }}"></i>{{ event.ui.label }}</span>
+          {% if event.kind == 'note' and event.note.topic %}<span class="tl-topic"><i class="bi bi-hash"></i>{{ event.note.topic }}</span>{% endif %}
+          {% if event.time %}<span class="tl-time"><i class="bi bi-clock"></i>{{ event.time }}</span>{% endif %}
+        </div>
+        {% if event.kind == 'transaction' %}
+        <div class="tl-txline"><i class="bi bi-cart-fill" style="color:{{ event.ui.color }}"></i>{{ event.transaction.quantity|floatformat:0|intcomma }}株 <span class="amt">@ {{ event.diary.currency_symbol }}{{ event.transaction.price|floatformat:2|intcomma }}</span></div>
+        {% if event.transaction.memo %}<div class="tl-lead" style="margin-top:4px">{{ event.transaction.memo }}</div>{% endif %}
+        {% elif event.lead %}
+        <div class="tl-lead">{{ event.lead }}</div>
+        {% endif %}
       </a>
     </div>
-  {% endfor %}
+    {% endfor %}
+    {% endfor %}
+  </div>
 
   <!-- ページネーション -->
   {% if page_obj.has_other_pages %}
-  <nav class="d-flex justify-content-center gap-2 mt-3">
+  <nav class="tl-pager">
     {% if page_obj.has_previous %}
-    <a class="btn btn-sm btn-outline-secondary"
-       href="?period={{ period }}&type={{ etype }}{% if tag_id %}&tag={{ tag_id }}{% endif %}&page={{ page_obj.previous_page_number }}">
-      <i class="bi bi-chevron-left"></i> 前へ
-    </a>
+    <a href="?period={{ period }}&type={{ etype }}{% if tag_id %}&tag={{ tag_id }}{% endif %}&page={{ page_obj.previous_page_number }}"><i class="bi bi-chevron-left"></i>前へ</a>
     {% endif %}
-    <span class="btn btn-sm disabled">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+    <span class="cur">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
     {% if page_obj.has_next %}
-    <a class="btn btn-sm btn-outline-secondary"
-       href="?period={{ period }}&type={{ etype }}{% if tag_id %}&tag={{ tag_id }}{% endif %}&page={{ page_obj.next_page_number }}">
-      次へ <i class="bi bi-chevron-right"></i>
-    </a>
+    <a href="?period={{ period }}&type={{ etype }}{% if tag_id %}&tag={{ tag_id }}{% endif %}&page={{ page_obj.next_page_number }}">次へ<i class="bi bi-chevron-right"></i></a>
     {% endif %}
   </nav>
+  {% endif %}
+
+  {% else %}
+  <!-- 空状態 -->
+  <div class="tl-empty">
+    <div class="ei"><i class="bi bi-clock-history"></i></div>
+    <h2>この条件の記録はまだありません</h2>
+    <p>期間を「すべて」にするか、日記に記録を追加すると、ここに時系列で表示されます。</p>
+    <a class="tl-btn-primary" href="?period=all&type=all"><i class="bi bi-arrow-counterclockwise"></i>フィルターをリセット</a>
+  </div>
   {% endif %}
 </div>
 
