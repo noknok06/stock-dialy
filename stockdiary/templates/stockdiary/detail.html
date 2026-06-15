@@ -2246,9 +2246,8 @@
             {% endfor %}
           </div>
 
-          <!-- 時系列ビュー: 日付ジャンプレール + カード一覧（hidden） -->
+          <!-- 時系列ビュー: 全幅カード + 右端スクラバー（hidden） -->
           <div class="notes-timeline-wrap" id="notes-view-timeline" hidden>
-            <nav class="note-rail note-rail--sticky" id="timelineRail" aria-label="日付ナビゲーション"></nav>
             <div class="notes-list mobile-optimized" id="timelineCards">
               {% for note in notes %}
               {% include "stockdiary/partials/_note_card.html" %}
@@ -2256,6 +2255,7 @@
               {% include "stockdiary/components/_empty_state.html" with icon="bi-journal-text" title="継続記録はまだありません" description="上のボタンから最初の記録を追加しましょう" %}
               {% endfor %}
             </div>
+            <div class="note-scrubber note-scrubber--timeline" id="timelineScrubber" aria-hidden="true"></div>
           </div>
 
           <!-- ノートカード格納庫（モーダル用・非表示） -->
@@ -2639,9 +2639,9 @@ document.addEventListener('DOMContentLoaded', function() {
       b.classList.toggle('active', b.dataset.view === view);
     });
     if (view === 'timeline') {
-      window.rebuildTimelineRail();
+      window.rebuildTimelineScrubber();
     } else {
-      _teardownRail(document.getElementById('timelineRail'));
+      _teardownScrubber(document.getElementById('timelineScrubber'));
     }
   };
 
@@ -2670,7 +2670,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var overlay = document.getElementById('noteDetailOverlay');
     if (overlay) { overlay.setAttribute('hidden', ''); }
     document.body.style.overflow = '';
-    _teardownRail(document.getElementById('noteDetailRail'));
+    _teardownScrubber(document.getElementById('noteDetailScrubber'));
   };
 
   window.navigateTopic = function(dir) {
@@ -2703,137 +2703,137 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       });
       body.scrollTop = 0;
-      // 日付ジャンプレールを再生成（表示中カードのみ）
-      var rail = document.getElementById('noteDetailRail');
+      // 右端スクラバーを再生成（表示中カードのみ）
       var cards = Array.from(body.querySelectorAll('.note-card[data-note-id]'));
-      _buildRail(rail, body, cards);
+      _buildScrubber(document.getElementById('noteDetailScrubber'), body, cards);
     }
   }
 
-  // ===== 日付ジャンプレール（mini-timeline + スクロールスパイ）=====
+  // ===== 右端スクラバー（iOS連絡先風の高速スクロール）=====
   var _prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var _SCRUB_OFFSET = 84; // 時系列(window)スクロール時のヘッダーオフセット
 
-  function _teardownRail(railEl) {
-    if (railEl && railEl._obs) { railEl._obs.disconnect(); railEl._obs = null; }
+  function _teardownScrubber(sc) {
+    if (!sc || !sc._state) return;
+    var s = sc._state;
+    if (s.obs) s.obs.disconnect();
+    if (s.cleanup) s.cleanup();
+    clearTimeout(s.hideTimer);
+    sc._state = null;
   }
 
-  // railEl: レール要素 / scrollContainer: スクロール対象(null=window) / cardEls: 表示対象カードDOM配列(降順)
-  function _buildRail(railEl, scrollContainer, cardEls) {
-    if (!railEl) return;
-    _teardownRail(railEl);
-    railEl.innerHTML = '';
-    railEl.style.display = '';
+  // sc: スクラバー要素 / scrollMode: 'window' または スクロールコンテナDOM / cardEls: 表示中カード(降順)
+  function _buildScrubber(sc, scrollMode, cardEls) {
+    if (!sc) return;
+    _teardownScrubber(sc);
+    sc.innerHTML = '';
+    // 1件以下はスクラバー不要
+    if (!cardEls || cardEls.length <= 1) { sc.style.display = 'none'; return; }
+    sc.style.display = '';
 
-    if (!cardEls || !cardEls.length) {
-      var empty = document.createElement('div');
-      empty.className = 'note-rail-empty';
-      empty.textContent = '該当なし';
-      railEl.appendChild(empty);
-      return;
+    sc.innerHTML =
+      '<div class="note-scrubber-track">' +
+        '<div class="note-scrubber-thumb"><span class="note-scrubber-grip"></span></div>' +
+      '</div>' +
+      '<div class="note-scrubber-bubble" aria-hidden="true"></div>';
+    var track  = sc.querySelector('.note-scrubber-track');
+    var thumb  = sc.querySelector('.note-scrubber-thumb');
+    var bubble = sc.querySelector('.note-scrubber-bubble');
+    var N = cardEls.length;
+    var state = { dragging: false, hideTimer: null, obs: null, cleanup: null };
+    sc._state = state;
+
+    function ym(card) {
+      var p = (card.getAttribute('data-note-date') || '').split('-');
+      return (p.length >= 2) ? (p[0] + '年' + parseInt(p[1], 10) + '月') : '';
     }
-    // 1件のみはジャンプ不要 → レール非表示
-    if (cardEls.length <= 1) {
-      railEl.style.display = 'none';
-      return;
+    function thumbH() { return thumb.offsetHeight || 38; }
+    function setThumbByIndex(i) {
+      var range = track.clientHeight - thumbH();
+      var top = (N > 1) ? (i / (N - 1)) * range : 0;
+      thumb.style.top = Math.max(0, Math.min(range, top)) + 'px';
     }
-
-    var behavior = _prefersReducedMotion ? 'auto' : 'smooth';
-    var prevYear = null, prevDate = null;
-    var items = [];
-
-    cardEls.forEach(function (card) {
-      var id = card.getAttribute('data-note-id');
-      var dateStr = card.getAttribute('data-note-date') || ''; // Y-m-d
-      var importance = card.getAttribute('data-note-importance') || 'medium';
-      var topic = card.getAttribute('data-note-topic') || '';
-      var parts = dateStr.split('-');
-      var year = parts[0] || '';
-      var mm = parts[1] ? parseInt(parts[1], 10) : '';
-      var dd = parts[2] ? parseInt(parts[2], 10) : '';
-      var md = (parts.length === 3) ? (mm + '/' + dd) : dateStr;
-      var jpDate = year + '年' + mm + '月' + dd + '日';
-
-      if (year && year !== prevYear) {
-        var yEl = document.createElement('div');
-        yEl.className = 'note-rail-year';
-        yEl.textContent = year;
-        railEl.appendChild(yEl);
-        prevYear = year;
-      }
-
-      var btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'note-rail-item';
-      btn.setAttribute('data-target-id', id);
-      btn.title = jpDate + (topic ? '・' + topic : '');
-      btn.setAttribute('aria-label', jpDate + 'の記録へ移動');
-
-      var node = document.createElement('span');
-      node.className = 'note-rail-node';
-      node.setAttribute('data-importance', importance);
-      btn.appendChild(node);
-
-      var dateEl = document.createElement('span');
-      dateEl.className = 'note-rail-date';
-      if (dateStr && dateStr === prevDate) {
-        btn.classList.add('note-rail-item--samedate'); // 連続同日はラベル省略
+    function showBubble(i) {
+      bubble.textContent = ym(cardEls[i]);
+      bubble.classList.add('visible');
+      bubble.style.top = (thumb.offsetTop + thumbH() / 2) + 'px';
+    }
+    function hideBubbleSoon() {
+      clearTimeout(state.hideTimer);
+      state.hideTimer = setTimeout(function () { bubble.classList.remove('visible'); }, 650);
+    }
+    function scrollToIndex(i, smooth) {
+      var card = cardEls[i];
+      if (!card) return;
+      var behavior = (smooth && !_prefersReducedMotion) ? 'smooth' : 'auto';
+      if (scrollMode === 'window') {
+        var y = card.getBoundingClientRect().top + window.pageYOffset - _SCRUB_OFFSET;
+        window.scrollTo({ top: y, behavior: behavior });
       } else {
-        dateEl.textContent = md;
+        card.scrollIntoView({ block: 'start', behavior: behavior });
       }
-      btn.appendChild(dateEl);
-      prevDate = dateStr;
-
-      btn.addEventListener('click', function (e) {
-        e.preventDefault();
-        var target = scrollContainer
-          ? scrollContainer.querySelector('.note-card[data-note-id="' + id + '"]')
-          : document.querySelector('#timelineCards .note-card[data-note-id="' + id + '"]');
-        if (!target) return;
-        if (scrollContainer) {
-          target.scrollIntoView({ behavior: behavior, block: 'start' });
-        } else {
-          var y = target.getBoundingClientRect().top + window.pageYOffset - 72;
-          window.scrollTo({ top: y, behavior: behavior });
-        }
-      });
-
-      railEl.appendChild(btn);
-      items.push({ id: String(id), el: btn });
-    });
-
-    // 初期は先頭（最新）を active
-    if (items.length) {
-      items[0].el.classList.add('active');
-      items[0].el.setAttribute('aria-current', 'true');
+    }
+    function indexFromClientY(clientY) {
+      var r = track.getBoundingClientRect();
+      var range = r.height - thumbH();
+      var pos = clientY - r.top - thumbH() / 2;
+      var ratio = range > 0 ? pos / range : 0;
+      return Math.max(0, Math.min(N - 1, Math.round(ratio * (N - 1))));
     }
 
-    // スクロールスパイ（既存サイドバー目次と同方式）
-    if (!('IntersectionObserver' in window)) return;
-    var visible = new Map();
-    var obs = new IntersectionObserver(function (entries) {
-      entries.forEach(function (en) {
-        var nid = en.target.getAttribute('data-note-id');
-        if (en.isIntersecting) visible.set(nid, en.intersectionRatio);
-        else visible.delete(nid);
-      });
-      if (!visible.size) return;
-      var topId = null, topRatio = -1;
-      visible.forEach(function (ratio, nid) {
-        if (ratio > topRatio) { topRatio = ratio; topId = nid; }
-      });
-      items.forEach(function (it) {
-        var on = (it.id === String(topId));
-        it.el.classList.toggle('active', on);
-        if (on) {
-          it.el.setAttribute('aria-current', 'true');
-          it.el.scrollIntoView({ block: 'nearest' });
-        } else {
-          it.el.removeAttribute('aria-current');
-        }
-      });
-    }, { root: scrollContainer || null, rootMargin: '-20% 0px -60% 0px', threshold: [0, 0.25, 0.5, 1] });
-    cardEls.forEach(function (c) { obs.observe(c); });
-    railEl._obs = obs;
+    function onDown(e) {
+      state.dragging = true;
+      sc.classList.add('dragging');
+      try { track.setPointerCapture(e.pointerId); } catch (err) {}
+      var i = indexFromClientY(e.clientY);
+      setThumbByIndex(i); showBubble(i); scrollToIndex(i, false);
+      e.preventDefault();
+    }
+    function onMove(e) {
+      if (!state.dragging) return;
+      var i = indexFromClientY(e.clientY);
+      setThumbByIndex(i); showBubble(i); scrollToIndex(i, false);
+      e.preventDefault();
+    }
+    function onUp() {
+      if (!state.dragging) return;
+      state.dragging = false;
+      sc.classList.remove('dragging');
+      hideBubbleSoon();
+    }
+    track.addEventListener('pointerdown', onDown);
+    window.addEventListener('pointermove', onMove, { passive: false });
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onUp);
+    state.cleanup = function () {
+      window.removeEventListener('pointermove', onMove, { passive: false });
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onUp);
+    };
+
+    // スクロール同期: 表示中の最上位カードの位置につまみを合わせる
+    if ('IntersectionObserver' in window) {
+      var visible = new Map();
+      var root = (scrollMode === 'window') ? null : scrollMode;
+      var rootMargin = (scrollMode === 'window')
+        ? ('-' + _SCRUB_OFFSET + 'px 0px -55% 0px')
+        : '0px 0px -60% 0px';
+      state.obs = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) {
+          var idx = cardEls.indexOf(en.target);
+          if (idx < 0) return;
+          if (en.isIntersecting) visible.set(idx, en.intersectionRatio);
+          else visible.delete(idx);
+        });
+        if (state.dragging || !visible.size) return;
+        var minIdx = Infinity;
+        visible.forEach(function (_, idx) { if (idx < minIdx) minIdx = idx; });
+        if (minIdx !== Infinity) setThumbByIndex(minIdx);
+      }, { root: root, rootMargin: rootMargin, threshold: [0, 1] });
+      cardEls.forEach(function (c) { state.obs.observe(c); });
+    }
+
+    setThumbByIndex(0);
   }
 
   function _visibleTimelineCards() {
@@ -2841,12 +2841,12 @@ document.addEventListener('DOMContentLoaded', function() {
       .filter(function (c) { return c.style.display !== 'none'; });
   }
 
-  // 時系列ビュー用レールの（再）生成。表示中以外は何もしない（別IIFEのフィルタからも呼ぶ）
-  window.rebuildTimelineRail = function () {
-    var rail = document.getElementById('timelineRail');
+  // 時系列ビュー用スクラバーの（再）生成。表示中以外は破棄（別IIFEのフィルタからも呼ぶ）
+  window.rebuildTimelineScrubber = function () {
+    var sc = document.getElementById('timelineScrubber');
     var wrap = document.getElementById('notes-view-timeline');
-    if (!rail || !wrap || wrap.hidden) return;
-    _buildRail(rail, null, _visibleTimelineCards());
+    if (!sc || !wrap || wrap.hidden) { _teardownScrubber(sc); return; }
+    _buildScrubber(sc, 'window', _visibleTimelineCards());
   };
 
   // URLハッシュで直接フォームを開く場合はボトムシートを開く
@@ -4257,9 +4257,9 @@ function applyNoteFilters() {
     emptyMsg.style.display = visibleCount === 0 ? 'block' : 'none';
   }
 
-  // 時系列ビュー表示中なら日付ジャンプレールをカードに同期
-  if (typeof window.rebuildTimelineRail === 'function') {
-    window.rebuildTimelineRail();
+  // 時系列ビュー表示中なら右端スクラバーをカードに同期
+  if (typeof window.rebuildTimelineScrubber === 'function') {
+    window.rebuildTimelineScrubber();
   }
 }
 
@@ -4301,8 +4301,8 @@ function applyNoteFilters() {
       <span class="note-detail-count" id="noteDetailCount"></span>
     </div>
     <div class="note-detail-content">
-      <nav class="note-rail" id="noteDetailRail" aria-label="日付ナビゲーション"></nav>
       <div class="note-detail-body" id="noteDetailBody"></div>
+      <div class="note-scrubber note-scrubber--modal" id="noteDetailScrubber" aria-hidden="true"></div>
     </div>
   </div>
 </div>

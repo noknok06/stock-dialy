@@ -2930,129 +2930,124 @@
 /* モーダル内ノートカードのスワイプ削除シェルフは非表示（操作が混在するため） */
 .note-detail-body .note-delete-shelf { display: none; }
 
-/* ── 日付ジャンプレール（mini-timeline + スクロールスパイ）── */
-/* モーダル: ヘッダー下を「レール列 + 本文列」の2カラムに */
+/* ── 右端スクラバー（iOS連絡先風の高速スクロール）── */
+/* モーダル: 本文を全幅にし、スクラバーは右端にオーバーレイ */
 .note-detail-content {
+  position: relative;
   display: flex;
   flex: 1;
   min-height: 0;
   overflow: hidden;
 }
+.note-detail-body { padding-right: 1.5rem; }
 
-.note-rail {
-  position: relative;
-  flex-shrink: 0;
-  width: 72px;
-  overflow-y: auto;
-  padding: 0.75rem 0 0.75rem 0.5rem;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-}
-/* レールの縦線（timeline の .tl-feed::before を踏襲） */
-.note-rail::before {
-  content: "";
-  position: absolute;
-  left: 14px;
-  top: 1rem;
-  bottom: 1rem;
-  width: 2px;
-  background: var(--bg-300);
-  border-radius: 2px;
-}
-
-/* 時系列ビュー用: ページスクロールに追従する sticky 配置 */
+/* 時系列ビュー: カードは全幅、スクラバーは sticky でビューポート追従 */
 .notes-timeline-wrap {
+  position: relative;
   display: flex;
   align-items: flex-start;
-  gap: 0.25rem;
 }
-.notes-timeline-wrap .notes-list { flex: 1; min-width: 0; }
-.note-rail--sticky {
+.notes-timeline-wrap .notes-list {
+  flex: 1;
+  min-width: 0;
+  padding-right: 0.5rem;
+}
+
+/* スクラバー共通 */
+.note-scrubber {
+  width: 30px;
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  z-index: 1000;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.note-scrubber--timeline {
   position: sticky;
-  top: 80px;
+  top: 120px;
   align-self: flex-start;
-  max-height: calc(100vh - 96px);
+  /* 上部ヘッダーと下部FAB(+ボタン)を避けてビューポート中央に配置 */
+  height: calc(100vh - 260px);
+  min-height: 180px;
+}
+.note-scrubber--modal {
+  position: absolute;
+  right: 0;
+  top: 8px;
+  bottom: 8px;
 }
 
-.note-rail-year {
-  position: sticky;
-  top: 0;
-  font-size: 0.62rem;
-  font-weight: 700;
-  color: var(--text-200);
-  background: var(--bg-100);
-  padding: 0.2rem 0.25rem 0.2rem 1.4rem;
-  z-index: 2;
-  letter-spacing: 0.02em;
-}
-
-.note-rail-item {
+.note-scrubber-track {
   position: relative;
+  width: 6px;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--bg-300);
+  opacity: 0.45;
+  transition: opacity 0.15s ease, width 0.15s ease;
+}
+.note-scrubber.dragging .note-scrubber-track { opacity: 0.85; width: 8px; }
+
+.note-scrubber-thumb {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+  width: 26px;
+  height: 40px;
+  border-radius: 999px;
+  background: var(--accent-200);
+  box-shadow: var(--shadow-md, 0 4px 12px rgba(0,0,0,0.18));
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  width: 100%;
-  padding: 0.3rem 0.2rem 0.3rem 0.1rem;
-  border: none;
-  background: none;
-  cursor: pointer;
-  color: var(--text-200);
-  border-left: 2px solid transparent;
-  transition: color 0.15s ease, border-color 0.15s ease;
+  justify-content: center;
+  cursor: grab;
+  transition: transform 0.12s ease;
 }
-.note-rail-item:hover { color: var(--accent-200); }
-.note-rail-item.active {
-  color: var(--accent-200);
-  border-left-color: var(--accent-200);
-  font-weight: 600;
+.note-scrubber.dragging .note-scrubber-thumb {
+  cursor: grabbing;
+  transform: translateX(-50%) scale(1.08);
 }
-
-.note-rail-node {
-  position: relative;
-  z-index: 1;
-  flex-shrink: 0;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--bg-300);
-  box-shadow: 0 0 0 2px var(--bg-100);
-  transition: box-shadow 0.15s ease, transform 0.15s ease;
-}
-.note-rail-node[data-importance="high"] { background: #dc3545; }
-.note-rail-node[data-importance="medium"] { background: var(--accent-200); }
-.note-rail-node[data-importance="low"] { background: var(--text-200); }
-.note-rail-item.active .note-rail-node {
-  box-shadow: 0 0 0 2px var(--bg-100), 0 0 0 5px rgba(0, 102, 140, 0.25);
-  transform: scale(1.1);
+.note-scrubber-grip {
+  width: 11px;
+  height: 2px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 -4px 0 rgba(255, 255, 255, 0.9), 0 4px 0 rgba(255, 255, 255, 0.9);
 }
 
-.note-rail-date {
-  font-size: 0.7rem;
+.note-scrubber-bubble {
+  position: absolute;
+  right: 34px;
+  transform: translateY(-50%);
+  background: var(--text-100);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.4rem 0.7rem;
+  border-radius: 12px;
   white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  box-shadow: var(--shadow-md, 0 6px 16px rgba(0,0,0,0.22));
+  transition: opacity 0.15s ease;
+  z-index: 1;
 }
-.note-rail-item--samedate .note-rail-node {
-  width: 7px;
-  height: 7px;
-  margin-left: 1.5px;
-}
-
-.note-rail-empty {
-  font-size: 0.7rem;
-  color: var(--text-200);
-  padding: 0.75rem 0.4rem;
-  text-align: center;
-}
-
-/* モバイル（ボトムシート）: レールを極細にして横幅圧迫を最小化 */
-@media (max-width: 767.98px) {
-  .note-rail { width: 44px; padding-left: 0.35rem; }
-  .note-rail::before { left: 11px; }
-  .note-rail-year { padding-left: 1.1rem; font-size: 0.58rem; }
-  .note-rail-date { font-size: 0.6rem; }
+.note-scrubber-bubble.visible { opacity: 1; }
+.note-scrubber-bubble::after {
+  content: "";
+  position: absolute;
+  right: -5px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 5px solid transparent;
+  border-left-color: var(--text-100);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .note-rail-item, .note-rail-node { transition: none; }
+  .note-scrubber-track, .note-scrubber-thumb, .note-scrubber-bubble { transition: none; }
 }
 
 /* ── ダークモード ── */
@@ -3090,50 +3085,23 @@
   border-color: var(--dm-border);
 }
 
-/* 日付ジャンプレール ダークモード */
-.dark-mode .note-rail::before,
-[data-theme="dark"] .note-rail::before {
+/* 右端スクラバー ダークモード */
+.dark-mode .note-scrubber-track,
+[data-theme="dark"] .note-scrubber-track {
   background: var(--dm-border);
 }
-.dark-mode .note-rail-year,
-[data-theme="dark"] .note-rail-year {
-  color: var(--dm-muted-foreground);
-  background: var(--dm-card);
-}
-.dark-mode .note-rail-item,
-[data-theme="dark"] .note-rail-item {
-  color: var(--dm-muted-foreground);
-}
-.dark-mode .note-rail-item:hover,
-[data-theme="dark"] .note-rail-item:hover,
-.dark-mode .note-rail-item.active,
-[data-theme="dark"] .note-rail-item.active {
-  color: var(--dm-primary);
-}
-.dark-mode .note-rail-item.active,
-[data-theme="dark"] .note-rail-item.active {
-  border-left-color: var(--dm-primary);
-}
-.dark-mode .note-rail-node,
-[data-theme="dark"] .note-rail-node {
-  background: var(--dm-border);
-  box-shadow: 0 0 0 2px var(--dm-card);
-}
-.dark-mode .note-rail-node[data-importance="medium"],
-[data-theme="dark"] .note-rail-node[data-importance="medium"] {
+.dark-mode .note-scrubber-thumb,
+[data-theme="dark"] .note-scrubber-thumb {
   background: var(--dm-primary);
 }
-.dark-mode .note-rail-node[data-importance="low"],
-[data-theme="dark"] .note-rail-node[data-importance="low"] {
-  background: var(--dm-muted-foreground);
+.dark-mode .note-scrubber-bubble,
+[data-theme="dark"] .note-scrubber-bubble {
+  background: var(--dm-foreground);
+  color: var(--dm-card);
 }
-.dark-mode .note-rail-item.active .note-rail-node,
-[data-theme="dark"] .note-rail-item.active .note-rail-node {
-  box-shadow: 0 0 0 2px var(--dm-card), 0 0 0 5px rgba(113, 196, 239, 0.3);
-}
-.dark-mode .note-rail-empty,
-[data-theme="dark"] .note-rail-empty {
-  color: var(--dm-muted-foreground);
+.dark-mode .note-scrubber-bubble::after,
+[data-theme="dark"] .note-scrubber-bubble::after {
+  border-left-color: var(--dm-foreground);
 }
 .dark-mode .topic-tag-sm,
 [data-theme="dark"] .topic-tag-sm {
