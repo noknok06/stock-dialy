@@ -2246,13 +2246,16 @@
             {% endfor %}
           </div>
 
-          <!-- 時系列ビュー: 従来のカード一覧（hidden） -->
-          <div class="notes-list mobile-optimized" id="notes-view-timeline" hidden>
-            {% for note in notes %}
-            {% include "stockdiary/partials/_note_card.html" %}
-            {% empty %}
-            {% include "stockdiary/components/_empty_state.html" with icon="bi-journal-text" title="継続記録はまだありません" description="上のボタンから最初の記録を追加しましょう" %}
-            {% endfor %}
+          <!-- 時系列ビュー: 日付ジャンプレール + カード一覧（hidden） -->
+          <div class="notes-timeline-wrap" id="notes-view-timeline" hidden>
+            <nav class="note-rail note-rail--sticky" id="timelineRail" aria-label="日付ナビゲーション"></nav>
+            <div class="notes-list mobile-optimized" id="timelineCards">
+              {% for note in notes %}
+              {% include "stockdiary/partials/_note_card.html" %}
+              {% empty %}
+              {% include "stockdiary/components/_empty_state.html" with icon="bi-journal-text" title="継続記録はまだありません" description="上のボタンから最初の記録を追加しましょう" %}
+              {% endfor %}
+            </div>
           </div>
 
           <!-- ノートカード格納庫（モーダル用・非表示） -->
@@ -2635,6 +2638,11 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.notes-view-btn').forEach(function(b) {
       b.classList.toggle('active', b.dataset.view === view);
     });
+    if (view === 'timeline') {
+      window.rebuildTimelineRail();
+    } else {
+      _teardownRail(document.getElementById('timelineRail'));
+    }
   };
 
   // テーマ別モーダル
@@ -2662,6 +2670,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var overlay = document.getElementById('noteDetailOverlay');
     if (overlay) { overlay.setAttribute('hidden', ''); }
     document.body.style.overflow = '';
+    _teardownRail(document.getElementById('noteDetailRail'));
   };
 
   window.navigateTopic = function(dir) {
@@ -2694,8 +2703,151 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       });
       body.scrollTop = 0;
+      // 日付ジャンプレールを再生成（表示中カードのみ）
+      var rail = document.getElementById('noteDetailRail');
+      var cards = Array.from(body.querySelectorAll('.note-card[data-note-id]'));
+      _buildRail(rail, body, cards);
     }
   }
+
+  // ===== 日付ジャンプレール（mini-timeline + スクロールスパイ）=====
+  var _prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function _teardownRail(railEl) {
+    if (railEl && railEl._obs) { railEl._obs.disconnect(); railEl._obs = null; }
+  }
+
+  // railEl: レール要素 / scrollContainer: スクロール対象(null=window) / cardEls: 表示対象カードDOM配列(降順)
+  function _buildRail(railEl, scrollContainer, cardEls) {
+    if (!railEl) return;
+    _teardownRail(railEl);
+    railEl.innerHTML = '';
+    railEl.style.display = '';
+
+    if (!cardEls || !cardEls.length) {
+      var empty = document.createElement('div');
+      empty.className = 'note-rail-empty';
+      empty.textContent = '該当なし';
+      railEl.appendChild(empty);
+      return;
+    }
+    // 1件のみはジャンプ不要 → レール非表示
+    if (cardEls.length <= 1) {
+      railEl.style.display = 'none';
+      return;
+    }
+
+    var behavior = _prefersReducedMotion ? 'auto' : 'smooth';
+    var prevYear = null, prevDate = null;
+    var items = [];
+
+    cardEls.forEach(function (card) {
+      var id = card.getAttribute('data-note-id');
+      var dateStr = card.getAttribute('data-note-date') || ''; // Y-m-d
+      var importance = card.getAttribute('data-note-importance') || 'medium';
+      var topic = card.getAttribute('data-note-topic') || '';
+      var parts = dateStr.split('-');
+      var year = parts[0] || '';
+      var mm = parts[1] ? parseInt(parts[1], 10) : '';
+      var dd = parts[2] ? parseInt(parts[2], 10) : '';
+      var md = (parts.length === 3) ? (mm + '/' + dd) : dateStr;
+      var jpDate = year + '年' + mm + '月' + dd + '日';
+
+      if (year && year !== prevYear) {
+        var yEl = document.createElement('div');
+        yEl.className = 'note-rail-year';
+        yEl.textContent = year;
+        railEl.appendChild(yEl);
+        prevYear = year;
+      }
+
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'note-rail-item';
+      btn.setAttribute('data-target-id', id);
+      btn.title = jpDate + (topic ? '・' + topic : '');
+      btn.setAttribute('aria-label', jpDate + 'の記録へ移動');
+
+      var node = document.createElement('span');
+      node.className = 'note-rail-node';
+      node.setAttribute('data-importance', importance);
+      btn.appendChild(node);
+
+      var dateEl = document.createElement('span');
+      dateEl.className = 'note-rail-date';
+      if (dateStr && dateStr === prevDate) {
+        btn.classList.add('note-rail-item--samedate'); // 連続同日はラベル省略
+      } else {
+        dateEl.textContent = md;
+      }
+      btn.appendChild(dateEl);
+      prevDate = dateStr;
+
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        var target = scrollContainer
+          ? scrollContainer.querySelector('.note-card[data-note-id="' + id + '"]')
+          : document.querySelector('#timelineCards .note-card[data-note-id="' + id + '"]');
+        if (!target) return;
+        if (scrollContainer) {
+          target.scrollIntoView({ behavior: behavior, block: 'start' });
+        } else {
+          var y = target.getBoundingClientRect().top + window.pageYOffset - 72;
+          window.scrollTo({ top: y, behavior: behavior });
+        }
+      });
+
+      railEl.appendChild(btn);
+      items.push({ id: String(id), el: btn });
+    });
+
+    // 初期は先頭（最新）を active
+    if (items.length) {
+      items[0].el.classList.add('active');
+      items[0].el.setAttribute('aria-current', 'true');
+    }
+
+    // スクロールスパイ（既存サイドバー目次と同方式）
+    if (!('IntersectionObserver' in window)) return;
+    var visible = new Map();
+    var obs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        var nid = en.target.getAttribute('data-note-id');
+        if (en.isIntersecting) visible.set(nid, en.intersectionRatio);
+        else visible.delete(nid);
+      });
+      if (!visible.size) return;
+      var topId = null, topRatio = -1;
+      visible.forEach(function (ratio, nid) {
+        if (ratio > topRatio) { topRatio = ratio; topId = nid; }
+      });
+      items.forEach(function (it) {
+        var on = (it.id === String(topId));
+        it.el.classList.toggle('active', on);
+        if (on) {
+          it.el.setAttribute('aria-current', 'true');
+          it.el.scrollIntoView({ block: 'nearest' });
+        } else {
+          it.el.removeAttribute('aria-current');
+        }
+      });
+    }, { root: scrollContainer || null, rootMargin: '-20% 0px -60% 0px', threshold: [0, 0.25, 0.5, 1] });
+    cardEls.forEach(function (c) { obs.observe(c); });
+    railEl._obs = obs;
+  }
+
+  function _visibleTimelineCards() {
+    return Array.from(document.querySelectorAll('#timelineCards .note-card[data-note-id]'))
+      .filter(function (c) { return c.style.display !== 'none'; });
+  }
+
+  // 時系列ビュー用レールの（再）生成。表示中以外は何もしない（別IIFEのフィルタからも呼ぶ）
+  window.rebuildTimelineRail = function () {
+    var rail = document.getElementById('timelineRail');
+    var wrap = document.getElementById('notes-view-timeline');
+    if (!rail || !wrap || wrap.hidden) return;
+    _buildRail(rail, null, _visibleTimelineCards());
+  };
 
   // URLハッシュで直接フォームを開く場合はボトムシートを開く
   if (window.location.hash === '#add-note') {
@@ -4104,6 +4256,11 @@ function applyNoteFilters() {
   if (emptyMsg) {
     emptyMsg.style.display = visibleCount === 0 ? 'block' : 'none';
   }
+
+  // 時系列ビュー表示中なら日付ジャンプレールをカードに同期
+  if (typeof window.rebuildTimelineRail === 'function') {
+    window.rebuildTimelineRail();
+  }
 }
 
 // ページ読込時にフィルタ状態を復元
@@ -4143,7 +4300,10 @@ function applyNoteFilters() {
       </div>
       <span class="note-detail-count" id="noteDetailCount"></span>
     </div>
-    <div class="note-detail-body" id="noteDetailBody"></div>
+    <div class="note-detail-content">
+      <nav class="note-rail" id="noteDetailRail" aria-label="日付ナビゲーション"></nav>
+      <div class="note-detail-body" id="noteDetailBody"></div>
+    </div>
   </div>
 </div>
 {% endblock %}
