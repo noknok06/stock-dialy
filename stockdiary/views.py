@@ -898,6 +898,9 @@ class AddDiaryNoteView(LoginRequiredMixin, CreateView):
             self.object.source_doc_id = source_doc_id
             self.object.save(update_fields=['source_doc_id'])
 
+        # 継続記録本文の @タグを日記のタグへ同期（本文＋全継続記録が正）
+        _sync_hashtag_tags(diary, self.request.user)
+
         image_file = self.request.FILES.get('image')
         if image_file:
             if image_file.size > 10 * 1024 * 1024:
@@ -942,6 +945,9 @@ class UpdateDiaryNoteView(LoginRequiredMixin, UpdateView):
             self.object.source_doc_id = source_doc_id
             self.object.save(update_fields=['source_doc_id'])
 
+        # 継続記録本文の @タグを日記のタグへ同期（本文＋全継続記録が正）
+        _sync_hashtag_tags(self.object.diary, self.request.user)
+
         image_file = self.request.FILES.get('image')
         if image_file:
             if image_file.size > 10 * 1024 * 1024:
@@ -975,7 +981,14 @@ class DeleteDiaryNoteView(LoginRequiredMixin, DeleteView):
     
     def get_queryset(self):
         return DiaryNote.objects.filter(diary__user=self.request.user)
-    
+
+    def form_valid(self, form):
+        # 削除前に親日記を退避し、削除後に @タグを再同期
+        diary = self.object.diary
+        response = super().form_valid(form)
+        _sync_hashtag_tags(diary, self.request.user)
+        return response
+
     def get_success_url(self):
         diary_pk = self.kwargs.get('diary_pk')
         return reverse_lazy('stockdiary:detail', kwargs={'pk': diary_pk})
