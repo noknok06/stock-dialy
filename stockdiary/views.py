@@ -674,8 +674,15 @@ def _sync_hashtag_tags(diary, user):
     texts = [diary.reason or '']
     texts += list(diary.notes.values_list('content', flat=True))
     found = {h for t in texts for h in extract_hashtags(t)}
-    if not found:
-        return
+
+    # df 再計算は「追加されたタグ」と「解除されたタグ」両方を対象にする
+    affected_names = set(diary.tags.values_list('name', flat=True)) | found
+
+    # 本文に無いタグの紐付けを解除（方向属性 DiaryTagDirection も併せて削除）
+    stale_tags = list(diary.tags.exclude(name__in=found))
+    if stale_tags:
+        diary.tags.remove(*stale_tags)
+        diary.tag_directions.filter(tag__in=stale_tags).delete()
 
     # 標準タグ（MasterTag）に該当すればその軸、なければ個人ラベル（custom 軸）
     master_axis_map = get_master_axis_map()
@@ -686,9 +693,11 @@ def _sync_hashtag_tags(diary, user):
         )
         diary.tags.add(tag)
 
-    for tag in diary.tags.filter(name__in=found):
-        tag.df = tag.stockdiary_set.values('stock_symbol').distinct().count()
-        tag.save(update_fields=['df'])
+    # df（出現銘柄数）を追加・解除の両影響を反映して再計算
+    if affected_names:
+        for tag in Tag.objects.filter(user=user, name__in=affected_names):
+            tag.df = tag.stockdiary_set.values('stock_symbol').distinct().count()
+            tag.save(update_fields=['df'])
 
 
 class StockDiaryCreateView(LoginRequiredMixin, CreateView):
