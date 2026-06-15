@@ -7,6 +7,7 @@
 import datetime
 
 import pytest
+from django.urls import reverse
 
 from stockdiary.models import StockDiary, DiaryNote, DiaryTagDirection
 from stockdiary.views import _sync_hashtag_tags
@@ -79,3 +80,80 @@ class TestHashtagSync:
         DiaryNote.objects.create(diary=diary, date=datetime.date(2025, 1, 1), content='継続記録 @押し目買い')
         _sync_hashtag_tags(diary, user)
         assert set(diary.tags.values_list('name', flat=True)) == {'押し目買い'}
+
+    def test_tag_stays_while_present_in_other_source(self, user):
+        # 本文とノート両方に @成長株 がある状態で本文から消しても、
+        # ノートに残っているのでタグは維持される（本文＋ノートが正）
+        diary = self._make_diary(user, '本文 @成長株')
+        DiaryNote.objects.create(diary=diary, date=datetime.date(2025, 1, 1), content='ノート @成長株')
+        _sync_hashtag_tags(diary, user)
+
+        diary.reason = '本文（タグ削除）'
+        diary.save(update_fields=['reason'])
+        _sync_hashtag_tags(diary, user)
+
+        assert set(diary.tags.values_list('name', flat=True)) == {'成長株'}
+
+
+@pytest.mark.django_db
+class TestNoteViewSync:
+    """継続記録ビュー経由でタグ同期が走ることを検証（不整合バグ修正）。"""
+
+    def _post_note(self, client, diary, content):
+        return client.post(
+            reverse('stockdiary:add_note', kwargs={'pk': diary.pk}),
+            {'date': '2025-01-01', 'note_type': 'analysis',
+             'importance': 'medium', 'topic': '', 'content': content},
+        )
+
+    def test_add_note_syncs_tags(self, authenticated_client, sample_diary):
+        self._post_note(authenticated_client, sample_diary, 'ノート @決算good')
+        assert set(sample_diary.tags.values_list('name', flat=True)) == {'決算good'}
+
+    def test_edit_note_removes_tag(self, authenticated_client, sample_diary):
+        # ノート追加でタグが付く
+        self._post_note(authenticated_client, sample_diary, 'ノート @決算good')
+        note = sample_diary.notes.get()
+        assert sample_diary.tags.filter(name='決算good').exists()
+
+        # ノートを編集して @タグを除去 → 日記からタグが解除される
+        authenticated_client.post(
+            reverse('stockdiary:edit_note', kwargs={'diary_pk': sample_diary.pk, 'pk': note.pk}),
+            {'date': '2025-01-01', 'note_type': 'analysis',
+             'importance': 'medium', 'topic': '', 'content': 'タグ無しに編集'},
+        )
+        assert not sample_diary.tags.filter(name='決算good').exists()
+
+    def test_delete_note_removes_tag(self, authenticated_client, sample_diary):
+        self._post_note(authenticated_client, sample_diary, 'ノート @決算good')
+        note = sample_diary.notes.get()
+
+        authenticated_client.post(
+            reverse('stockdiary:delete_note', kwargs={'diary_pk': sample_diary.pk, 'pk': note.pk})
+        )
+        assert not sample_diary.tags.filter(name='決算good').exists()
+
+    def test_quick_add_note_syncs_tags(self, authenticated_client, sample_diary):
+        authenticated_client.post(
+            reverse('stockdiary:quick_add_note', kwargs={'diary_id': sample_diary.pk}),
+            {'content': 'クイック @急騰', 'importance': 'medium'},
+        )
+        assert set(sample_diary.tags.values_list('name', flat=True)) == {'急騰'}
+
+    def test_other_diary_tags_untouched(self, authenticated_client, user, sample_diary):
+        # 別日記が同名タグを持っていても、片方のノート編集が他方の紐付けに波及しない
+        other = StockDiary.objects.create(
+            user=user, stock_symbol='6758', stock_name='ソニー', reason='別日記 @決算good'
+        )
+        _sync_hashtag_tags(other, user)
+        assert other.tags.filter(name='決算good').exists()
+
+        # sample_diary 側でノート追加→削除
+        self._post_note(authenticated_client, sample_diary, 'ノート @決算good')
+        note = sample_diary.notes.get()
+        authenticated_client.post(
+            reverse('stockdiary:delete_note', kwargs={'diary_pk': sample_diary.pk, 'pk': note.pk})
+        )
+
+        # 他日記の紐付けは維持される
+        assert other.tags.filter(name='決算good').exists()

@@ -148,6 +148,10 @@ def quick_add_note(request, diary_id):
         )
         logger.info(f'[quick_add_note] Created note - id: {note.id}, topic: {repr(note.topic)}')
 
+        # 継続記録本文の @タグを日記のタグへ同期（本文＋全継続記録が正）
+        from .views import _sync_hashtag_tags
+        _sync_hashtag_tags(diary, request.user)
+
         return JsonResponse({
             'success': True,
             'message': '継続記録を追加しました',
