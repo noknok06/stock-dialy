@@ -2930,8 +2930,8 @@
 /* モーダル内ノートカードのスワイプ削除シェルフは非表示（操作が混在するため） */
 .note-detail-body .note-delete-shelf { display: none; }
 
-/* ── 右端スクラバー（iOS連絡先風の高速スクロール）── */
-/* モーダル: 本文を全幅にし、スクラバーは右端にオーバーレイ */
+/* ── カード送りステッパー（前/次ボタンで1件ずつ移動）── */
+/* モーダル: 本文は全幅、ステッパーは右下にフロート */
 .note-detail-content {
   position: relative;
   display: flex;
@@ -2939,115 +2939,50 @@
   min-height: 0;
   overflow: hidden;
 }
-.note-detail-body { padding-right: 1.5rem; }
+.notes-timeline-wrap { position: relative; }
 
-/* 時系列ビュー: カードは全幅、スクラバーは sticky でビューポート追従 */
-.notes-timeline-wrap {
-  position: relative;
-  display: flex;
-  align-items: flex-start;
+/* ステッパー共通: 縦並びの前/次ボタン（既定は非表示・JSで flex 表示） */
+.note-stepper {
+  display: none;
+  flex-direction: column;
+  gap: 0.5rem;
 }
-.notes-timeline-wrap .notes-list {
-  flex: 1;
-  min-width: 0;
-  padding-right: 0.5rem;
+/* 時系列: スピードダイヤル(right16/bottom16・56px)の少し上に固定 */
+.note-stepper--timeline {
+  position: fixed;
+  right: 16px;
+  bottom: 84px;
+  z-index: 1039;
 }
-
-/* スクラバー共通 */
-.note-scrubber {
-  width: 30px;
-  flex-shrink: 0;
-  display: flex;
-  justify-content: center;
-  z-index: 1000;
-  touch-action: none;
-  user-select: none;
-  -webkit-user-select: none;
-}
-.note-scrubber--timeline {
-  position: sticky;
-  top: 120px;
-  align-self: flex-start;
-  /* 上部ヘッダーと下部FAB(+ボタン)を避けてビューポート中央に配置 */
-  height: calc(100vh - 260px);
-  min-height: 180px;
-}
-.note-scrubber--modal {
+/* モーダル: パネル右下にフロート */
+.note-stepper--modal {
   position: absolute;
-  right: 0;
-  top: 8px;
-  bottom: 8px;
+  right: 14px;
+  bottom: 14px;
+  z-index: 2;
 }
 
-.note-scrubber-track {
-  position: relative;
-  width: 6px;
-  height: 100%;
-  border-radius: 999px;
-  background: var(--bg-300);
-  opacity: 0.45;
-  transition: opacity 0.15s ease, width 0.15s ease;
-}
-.note-scrubber.dragging .note-scrubber-track { opacity: 0.85; width: 8px; }
-
-.note-scrubber-thumb {
-  position: absolute;
-  left: 50%;
-  top: 0;
-  transform: translateX(-50%);
-  width: 26px;
-  height: 40px;
-  border-radius: 999px;
-  background: var(--accent-200);
-  box-shadow: var(--shadow-md, 0 4px 12px rgba(0,0,0,0.18));
+.note-stepper-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--bg-300);
+  background: var(--bg-100);
+  color: var(--accent-200);
+  font-size: 1.15rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: grab;
-  transition: transform 0.12s ease;
+  cursor: pointer;
+  box-shadow: var(--shadow-md, 0 4px 12px rgba(0,0,0,0.18));
+  transition: background 0.15s ease, transform 0.1s ease, opacity 0.15s ease;
 }
-.note-scrubber.dragging .note-scrubber-thumb {
-  cursor: grabbing;
-  transform: translateX(-50%) scale(1.08);
-}
-.note-scrubber-grip {
-  width: 11px;
-  height: 2px;
-  border-radius: 2px;
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 -4px 0 rgba(255, 255, 255, 0.9), 0 4px 0 rgba(255, 255, 255, 0.9);
-}
-
-.note-scrubber-bubble {
-  position: absolute;
-  right: 34px;
-  transform: translateY(-50%);
-  background: var(--text-100);
-  color: #fff;
-  font-size: 0.85rem;
-  font-weight: 700;
-  padding: 0.4rem 0.7rem;
-  border-radius: 12px;
-  white-space: nowrap;
-  opacity: 0;
-  pointer-events: none;
-  box-shadow: var(--shadow-md, 0 6px 16px rgba(0,0,0,0.22));
-  transition: opacity 0.15s ease;
-  z-index: 1;
-}
-.note-scrubber-bubble.visible { opacity: 1; }
-.note-scrubber-bubble::after {
-  content: "";
-  position: absolute;
-  right: -5px;
-  top: 50%;
-  transform: translateY(-50%);
-  border: 5px solid transparent;
-  border-left-color: var(--text-100);
-}
+.note-stepper-btn:hover:not(:disabled) { background: var(--bg-200); }
+.note-stepper-btn:active:not(:disabled) { transform: scale(0.92); }
+.note-stepper-btn:disabled { opacity: 0.35; cursor: default; }
 
 @media (prefers-reduced-motion: reduce) {
-  .note-scrubber-track, .note-scrubber-thumb, .note-scrubber-bubble { transition: none; }
+  .note-stepper-btn { transition: none; }
 }
 
 /* ── ダークモード ── */
@@ -3085,23 +3020,16 @@
   border-color: var(--dm-border);
 }
 
-/* 右端スクラバー ダークモード */
-.dark-mode .note-scrubber-track,
-[data-theme="dark"] .note-scrubber-track {
-  background: var(--dm-border);
+/* カード送りステッパー ダークモード */
+.dark-mode .note-stepper-btn,
+[data-theme="dark"] .note-stepper-btn {
+  background: var(--dm-card);
+  border-color: var(--dm-border);
+  color: var(--dm-primary);
 }
-.dark-mode .note-scrubber-thumb,
-[data-theme="dark"] .note-scrubber-thumb {
-  background: var(--dm-primary);
-}
-.dark-mode .note-scrubber-bubble,
-[data-theme="dark"] .note-scrubber-bubble {
-  background: var(--dm-foreground);
-  color: var(--dm-card);
-}
-.dark-mode .note-scrubber-bubble::after,
-[data-theme="dark"] .note-scrubber-bubble::after {
-  border-left-color: var(--dm-foreground);
+.dark-mode .note-stepper-btn:hover:not(:disabled),
+[data-theme="dark"] .note-stepper-btn:hover:not(:disabled) {
+  background: rgba(71, 85, 105, 0.4);
 }
 .dark-mode .topic-tag-sm,
 [data-theme="dark"] .topic-tag-sm {
