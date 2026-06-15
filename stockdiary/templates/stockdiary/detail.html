@@ -2246,13 +2246,15 @@
             {% endfor %}
           </div>
 
-          <!-- 時系列ビュー: 従来のカード一覧（hidden） -->
-          <div class="notes-list mobile-optimized" id="notes-view-timeline" hidden>
-            {% for note in notes %}
-            {% include "stockdiary/partials/_note_card.html" %}
-            {% empty %}
-            {% include "stockdiary/components/_empty_state.html" with icon="bi-journal-text" title="継続記録はまだありません" description="上のボタンから最初の記録を追加しましょう" %}
-            {% endfor %}
+          <!-- 時系列ビュー: 全幅カード（hidden） -->
+          <div class="notes-timeline-wrap" id="notes-view-timeline" hidden>
+            <div class="notes-list mobile-optimized" id="timelineCards">
+              {% for note in notes %}
+              {% include "stockdiary/partials/_note_card.html" %}
+              {% empty %}
+              {% include "stockdiary/components/_empty_state.html" with icon="bi-journal-text" title="継続記録はまだありません" description="上のボタンから最初の記録を追加しましょう" %}
+              {% endfor %}
+            </div>
           </div>
 
           <!-- ノートカード格納庫（モーダル用・非表示） -->
@@ -2320,6 +2322,10 @@
   </div>
 </div>
 {% endif %}
+<div class="note-stepper note-stepper--timeline" id="timelineStepper" aria-hidden="true">
+  <button type="button" class="note-stepper-btn note-stepper-up" aria-label="新しい記録へ"><i class="bi bi-chevron-up"></i></button>
+  <button type="button" class="note-stepper-btn note-stepper-down" aria-label="古い記録へ"><i class="bi bi-chevron-down"></i></button>
+</div>
 
 {% include 'speed_dial.html' with actions=diary_actions %}
 {% endblock %}
@@ -2635,6 +2641,13 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.notes-view-btn').forEach(function(b) {
       b.classList.toggle('active', b.dataset.view === view);
     });
+    if (view === 'timeline') {
+      window.rebuildTimelineStepper();
+    } else {
+      var tStep = document.getElementById('timelineStepper');
+      _teardownStepper(tStep);
+      if (tStep) tStep.style.display = 'none';
+    }
   };
 
   // テーマ別モーダル
@@ -2662,6 +2675,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var overlay = document.getElementById('noteDetailOverlay');
     if (overlay) { overlay.setAttribute('hidden', ''); }
     document.body.style.overflow = '';
+    _teardownStepper(document.getElementById('noteDetailStepper'));
   };
 
   window.navigateTopic = function(dir) {
@@ -2694,8 +2708,113 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       });
       body.scrollTop = 0;
+      // カード送りステッパーを再生成（表示中カードのみ）
+      var cards = Array.from(body.querySelectorAll('.note-card[data-note-id]'));
+      _buildStepper(document.getElementById('noteDetailStepper'), body, cards);
     }
   }
+
+  // ===== カード送りステッパー（前/次ボタンで1件ずつ移動）=====
+  var _prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var _STEP_OFFSET = 84; // 時系列(window)スクロール時のヘッダーオフセット
+
+  function _teardownStepper(el) {
+    if (!el || !el._state) return;
+    var s = el._state;
+    if (s.obs) s.obs.disconnect();
+    if (s.cleanup) s.cleanup();
+    el._state = null;
+  }
+
+  // el: ステッパー要素 / scrollMode: 'window' または スクロールコンテナDOM / cardEls: 表示中カード(降順)
+  function _buildStepper(el, scrollMode, cardEls) {
+    if (!el) return;
+    _teardownStepper(el);
+    // 1件以下は不要
+    if (!cardEls || cardEls.length <= 1) { el.style.display = 'none'; return; }
+    el.style.display = 'flex';
+
+    var up   = el.querySelector('.note-stepper-up');
+    var down = el.querySelector('.note-stepper-down');
+    var N = cardEls.length;
+    var state = { current: 0, obs: null, cleanup: null };
+    el._state = state;
+    var behavior = _prefersReducedMotion ? 'auto' : 'smooth';
+
+    function scrollToIndex(i) {
+      i = Math.max(0, Math.min(N - 1, i));
+      var card = cardEls[i];
+      if (!card) return;
+      state.current = i;
+      if (scrollMode === 'window') {
+        var y = card.getBoundingClientRect().top + window.pageYOffset - _STEP_OFFSET;
+        window.scrollTo({ top: y, behavior: behavior });
+      } else {
+        card.scrollIntoView({ block: 'start', behavior: behavior });
+      }
+      updateDisabled();
+    }
+    function updateDisabled() {
+      if (up)   up.disabled   = (state.current <= 0);
+      if (down) down.disabled = (state.current >= N - 1);
+    }
+    function onUp()   { scrollToIndex(state.current - 1); }
+    function onDown() { scrollToIndex(state.current + 1); }
+    if (up)   up.addEventListener('click', onUp);
+    if (down) down.addEventListener('click', onDown);
+    state.cleanup = function () {
+      if (up)   up.removeEventListener('click', onUp);
+      if (down) down.removeEventListener('click', onDown);
+    };
+
+    // 現在地（最上位の表示中カード）を追従して前/次の活性状態を更新
+    if ('IntersectionObserver' in window) {
+      var visible = new Map();
+      var root = (scrollMode === 'window') ? null : scrollMode;
+      var rootMargin = (scrollMode === 'window')
+        ? ('-' + _STEP_OFFSET + 'px 0px -55% 0px')
+        : '0px 0px -60% 0px';
+      state.obs = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) {
+          var idx = cardEls.indexOf(en.target);
+          if (idx < 0) return;
+          if (en.isIntersecting) visible.set(idx, en.intersectionRatio);
+          else visible.delete(idx);
+        });
+        if (!visible.size) return;
+        var minIdx = Infinity;
+        visible.forEach(function (_, idx) { if (idx < minIdx) minIdx = idx; });
+        if (minIdx !== Infinity) { state.current = minIdx; updateDisabled(); }
+      }, { root: root, rootMargin: rootMargin, threshold: [0, 1] });
+      cardEls.forEach(function (c) { state.obs.observe(c); });
+    }
+
+    updateDisabled();
+  }
+
+  function _visibleTimelineCards() {
+    return Array.from(document.querySelectorAll('#timelineCards .note-card[data-note-id]'))
+      .filter(function (c) { return c.style.display !== 'none'; });
+  }
+
+  // 時系列ビュー用ステッパーの（再）生成。継続記録タブ＋時系列ビュー表示中のみ出す
+  window.rebuildTimelineStepper = function () {
+    var el = document.getElementById('timelineStepper');
+    var wrap = document.getElementById('notes-view-timeline');
+    var pane = document.getElementById('notes-content');
+    var notesActive = pane && pane.classList.contains('active');
+    if (!el || !wrap || wrap.hidden || !notesActive) {
+      _teardownStepper(el);
+      if (el) el.style.display = 'none';
+      return;
+    }
+    _buildStepper(el, 'window', _visibleTimelineCards());
+  };
+
+  // タブ切替時にステッパーの表示可否を再判定（他タブへ移動したら隠す）
+  document.querySelectorAll('#diaryDetailTabs .improved-tab-link').forEach(function (t) {
+    t.addEventListener('shown.bs.tab', function () { window.rebuildTimelineStepper(); });
+  });
 
   // URLハッシュで直接フォームを開く場合はボトムシートを開く
   if (window.location.hash === '#add-note') {
@@ -4104,6 +4223,11 @@ function applyNoteFilters() {
   if (emptyMsg) {
     emptyMsg.style.display = visibleCount === 0 ? 'block' : 'none';
   }
+
+  // 時系列ビュー表示中ならカード送りステッパーをカードに同期
+  if (typeof window.rebuildTimelineStepper === 'function') {
+    window.rebuildTimelineStepper();
+  }
 }
 
 // ページ読込時にフィルタ状態を復元
@@ -4143,7 +4267,13 @@ function applyNoteFilters() {
       </div>
       <span class="note-detail-count" id="noteDetailCount"></span>
     </div>
-    <div class="note-detail-body" id="noteDetailBody"></div>
+    <div class="note-detail-content">
+      <div class="note-detail-body" id="noteDetailBody"></div>
+      <div class="note-stepper note-stepper--modal" id="noteDetailStepper" aria-hidden="true">
+        <button type="button" class="note-stepper-btn note-stepper-up" aria-label="新しい記録へ"><i class="bi bi-chevron-up"></i></button>
+        <button type="button" class="note-stepper-btn note-stepper-down" aria-label="古い記録へ"><i class="bi bi-chevron-down"></i></button>
+      </div>
+    </div>
   </div>
 </div>
 {% endblock %}

@@ -2930,6 +2930,61 @@
 /* モーダル内ノートカードのスワイプ削除シェルフは非表示（操作が混在するため） */
 .note-detail-body .note-delete-shelf { display: none; }
 
+/* ── カード送りステッパー（前/次ボタンで1件ずつ移動）── */
+/* モーダル: 本文は全幅、ステッパーは右下にフロート */
+.note-detail-content {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.notes-timeline-wrap { position: relative; }
+
+/* ステッパー共通: 縦並びの前/次ボタン（既定は非表示・JSで flex 表示） */
+.note-stepper {
+  display: none;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+/* 時系列: スピードダイヤル(right16/bottom16・56px)の少し上に固定 */
+.note-stepper--timeline {
+  position: fixed;
+  right: 16px;
+  bottom: 84px;
+  z-index: 1039;
+}
+/* モーダル: パネル右下にフロート */
+.note-stepper--modal {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  z-index: 2;
+}
+
+.note-stepper-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--bg-300);
+  background: var(--bg-100);
+  color: var(--accent-200);
+  font-size: 1.15rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--shadow-md, 0 4px 12px rgba(0,0,0,0.18));
+  transition: background 0.15s ease, transform 0.1s ease, opacity 0.15s ease;
+}
+.note-stepper-btn:hover:not(:disabled) { background: var(--bg-200); }
+.note-stepper-btn:active:not(:disabled) { transform: scale(0.92); }
+.note-stepper-btn:disabled { opacity: 0.35; cursor: default; }
+
+@media (prefers-reduced-motion: reduce) {
+  .note-stepper-btn { transition: none; }
+}
+
 /* ── ダークモード ── */
 .dark-mode .topic-index-row,
 [data-theme="dark"] .topic-index-row {
@@ -2963,6 +3018,18 @@
 .dark-mode .note-detail-nav-btn,
 [data-theme="dark"] .note-detail-nav-btn {
   border-color: var(--dm-border);
+}
+
+/* カード送りステッパー ダークモード */
+.dark-mode .note-stepper-btn,
+[data-theme="dark"] .note-stepper-btn {
+  background: var(--dm-card);
+  border-color: var(--dm-border);
+  color: var(--dm-primary);
+}
+.dark-mode .note-stepper-btn:hover:not(:disabled),
+[data-theme="dark"] .note-stepper-btn:hover:not(:disabled) {
+  background: rgba(71, 85, 105, 0.4);
 }
 .dark-mode .topic-tag-sm,
 [data-theme="dark"] .topic-tag-sm {
