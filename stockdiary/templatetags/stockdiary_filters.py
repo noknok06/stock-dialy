@@ -686,6 +686,12 @@ def _linkify_mentions(text, mention_map):
     return _MENTION_PATTERN.sub(replace, text)
 
 
+@register.simple_tag
+def tag_direction_map(diary):
+    """日記のタグ方向を {tag_id: direction} の辞書で返す。"""
+    return {td.tag_id: td.direction for td in diary.tag_directions.all()}
+
+
 @register.filter(name='render_markdown_with_mentions')
 def render_markdown_with_mentions(value, mention_map):
     """銘柄コード (CODE) をリンク化してから render_markdown に渡すフィルター。
