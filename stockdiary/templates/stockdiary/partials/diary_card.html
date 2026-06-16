@@ -203,12 +203,15 @@
 
   <!-- ========== タグ行（フッター上部） ========== -->
   {% if diary.tags.all %}
+  {% tag_direction_map diary as dir_map %}
   <div class="diary-tags-row diary-tags-row--footer">
     {% for tag in diary.tags.all %}
-      <span class="tag-pill diary-tag" data-tag-id="{{ tag.id }}">
-        <i class="bi bi-tag-fill"></i>
+      {% with direction=dir_map|get_item:tag.id %}
+      <span class="tag-pill diary-tag {% if direction == 'up' %}tag-pill--up{% elif direction == 'down' %}tag-pill--down{% endif %}" data-tag-id="{{ tag.id }}" title="{% if direction == 'up' %}追い風{% elif direction == 'down' %}向かい風{% else %}中立{% endif %}">
+        <i class="bi {% if direction == 'up' %}bi-arrow-up-right{% elif direction == 'down' %}bi-arrow-down-right{% else %}bi-tag-fill{% endif %}"></i>
         {{ tag.name }}
       </span>
+      {% endwith %}
     {% endfor %}
   </div>
   {% endif %}
