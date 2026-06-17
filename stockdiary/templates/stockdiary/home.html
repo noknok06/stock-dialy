@@ -1706,15 +1706,17 @@
     </div>
   </div>
 
-  <!-- 継続バー：連続記録 ＋ 想起の一言（毎日開きたくなる仕掛け） -->
-  {% if not is_empty_state and record_streak %}
+  <!-- 継続バー：連続記録 ＋ 想起 ＋ 過去の学びの再浮上（毎日開きたくなる仕掛け） -->
+  {% if not is_empty_state and record_streak or resurfaced_note %}
   <div class="rp-continuity">
+    {% if record_streak %}
     <div class="rp-streak">
       <span class="rp-streak-num">{{ record_streak }}</span>
       <span class="rp-streak-label">日連続で記録中</span>
     </div>
+    {% endif %}
     {% if recall and recall.anniversary %}{% with anni=recall.anniversary.0 %}
-    <div class="rp-continuity-sep"></div>
+    {% if record_streak %}<div class="rp-continuity-sep"></div>{% endif %}
     <div class="rp-recall-line">
       <i class="bi bi-arrow-counterclockwise"></i>
       1年前の今日、あなたは
@@ -1722,6 +1724,15 @@
       について書いていました。
     </div>
     {% endwith %}{% endif %}
+    {% if resurfaced_note %}
+    <div class="rp-continuity-sep"></div>
+    <div class="rp-recall-line rp-resurface">
+      <i class="bi bi-stars"></i>
+      <span class="rp-resurface-label">過去の学び</span>
+      <a href="{% url 'stockdiary:detail' resurfaced_note.diary.id %}">{{ resurfaced_note.diary.stock_name }}</a>
+      <span class="rp-resurface-snippet">{{ resurfaced_note.content|striptags|truncatechars:52 }}</span>
+    </div>
+    {% endif %}
   </div>
   {% endif %}
 
@@ -2036,11 +2047,17 @@
 
       <!-- 本文 -->
       <div class="mb-2">
+        <!-- 書き出しのヒント（心理的ハードルを下げる） -->
+        <div class="rp-prompts" aria-label="書き出しのヒント">
+          <button type="button" class="rp-prompt-chip" onclick="qnPrompt('前提の変化：')">前提は変わった？</button>
+          <button type="button" class="rp-prompt-chip" onclick="qnPrompt('今日の気づき：')">今日の気づき</button>
+          <button type="button" class="rp-prompt-chip" onclick="qnPrompt('次に確認すること：')">次に確認すること</button>
+        </div>
         <textarea id="qnContent"
                   class="form-control"
                   rows="5"
                   maxlength="3000"
-                  placeholder="気づいたことや継続観察メモを入力..."
+                  placeholder="気づいたことや継続観察メモを、一行でも。"
                   oninput="updateQnCharCount()"></textarea>
         <div class="text-end mt-1">
           <small id="qnCharCount" class="text-muted">0 / 3000</small>
@@ -2503,6 +2520,22 @@ window.setQnTopic = function(el, value) {
   }
   document.querySelectorAll('.topic-chip').forEach(function(c) { c.classList.remove('active'); });
   if (el) el.classList.add('active');
+};
+
+// クイックノート：書き出しのヒント挿入（心理的ハードルを下げる）
+window.qnPrompt = function(starter) {
+  var ta = document.getElementById('qnContent');
+  if (!ta) return;
+  if (ta.value.trim() === '') {
+    ta.value = starter;
+  } else if (!ta.value.endsWith('\n')) {
+    ta.value += '\n' + starter;
+  } else {
+    ta.value += starter;
+  }
+  ta.focus();
+  ta.setSelectionRange(ta.value.length, ta.value.length);
+  if (typeof updateQnCharCount === 'function') updateQnCharCount();
 };
 
 // クイックノート：記録送信

@@ -397,6 +397,10 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
         # 連続記録日数（毎日開きたくなる仕掛け）
         context['record_streak'] = self._compute_record_streak(self.request.user)
 
+        # 過去の学びの再浮上（Readwise的リサーフェス）。
+        # 高重要 or 振り返りノートのうち、当日基準で1件を日替わりで提示する。
+        context['resurfaced_note'] = self._pick_resurfaced_note(self.request.user)
+
         # 新規ユーザーの空状態（日記0件 & 絞り込みなし）。
         # この時は検索・フィルター群を隠してオンボーディングカードを表示する
         has_filters = any(
@@ -441,6 +445,31 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
             streak += 1
             cursor -= timedelta(days=1)
         return streak
+
+    @staticmethod
+    def _pick_resurfaced_note(user):
+        """過去の学び（高重要 or 振り返りノート）を当日基準で1件選んで返す。
+
+        2週間以上前のノートを対象に、その日の通日番号で安定的に1件を選ぶ
+        （リロードしても変わらず、日が変わると別の学びが浮上する）。
+        該当が無ければ None。
+        """
+        cutoff = timezone.localdate() - timedelta(days=14)
+        candidate_ids = list(
+            DiaryNote.objects.filter(diary__user=user)
+            .filter(Q(importance='high') | Q(note_type='retrospective'))
+            .filter(date__lte=cutoff)
+            .order_by('id')
+            .values_list('id', flat=True)
+        )
+        if not candidate_ids:
+            return None
+        idx = timezone.localdate().toordinal() % len(candidate_ids)
+        return (
+            DiaryNote.objects.select_related('diary')
+            .filter(id=candidate_ids[idx])
+            .first()
+        )
 
     def get(self, request, *args, **kwargs):
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':

@@ -655,6 +655,9 @@ body.writing-focus .pc-only-header:hover { opacity: 1; }
   color: var(--muted-ink);
 }
 .reading-page .rp-recall-line a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.reading-page .rp-resurface-label { font-weight: var(--font-semibold); color: var(--ink-soft); margin: 0 0.15rem; }
+.reading-page .rp-resurface-snippet { color: var(--faint-ink); }
+.reading-page .rp-resurface .bi-stars { color: var(--muted-ink); }
 
 /* ============================================================
    8. 空状態 / 導入：書きたくなる第一歩
@@ -710,6 +713,26 @@ body.writing-focus .pc-only-header:hover { opacity: 1; }
   border-radius: var(--radius-full);
   padding: 0.2rem 0.65rem;
 }
+
+/* 書き出しのヒント chip（クイックノート・ボトムシート内＝reading-page 外でも効くよう非スコープ） */
+.rp-prompts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+}
+.rp-prompt-chip {
+  font-size: 0.8125rem;
+  color: var(--muted-ink);
+  background: var(--paper-sunken);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-full);
+  padding: 0.3rem 0.75rem;
+  cursor: pointer;
+  transition: background var(--duration-150, 150ms) var(--ease-out, ease),
+              border-color var(--duration-150, 150ms) var(--ease-out, ease);
+}
+.rp-prompt-chip:hover { background: var(--paper-raised); border-color: var(--muted-ink); color: var(--ink); }
 
 /* 主要 CTA（新規作成・次へ・記録など）を青 → 墨に統一 */
 .reading-page .btn-primary {
