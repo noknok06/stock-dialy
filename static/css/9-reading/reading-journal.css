@@ -39,6 +39,55 @@
 }
 
 /* ============================================================
+   0b. グローバルヘッダ／フッタの調和（reading 系画面のみ・body.reading-app）
+   端の chrome まで墨×紙トーンへ。--paper/--ink はダークで自動切替するため
+   ライト/ダーク両対応。非 reading 画面（dashboard 等）には一切効かない。
+   ============================================================ */
+/* ヘッダ（Bootstrap navbar .bg-light を上書き） */
+body.reading-app .pc-only-header .navbar {
+  background-color: var(--paper) !important;
+  border-bottom: 1px solid var(--hairline) !important;
+  box-shadow: none !important;
+}
+body.reading-app .pc-only-header .navbar-brand,
+body.reading-app .pc-only-header .navbar-brand span {
+  color: var(--ink) !important;
+}
+body.reading-app .pc-only-header .nav-link {
+  color: var(--muted-ink) !important;
+}
+body.reading-app .pc-only-header .nav-link:hover,
+body.reading-app .pc-only-header .nav-link:focus,
+body.reading-app .pc-only-header .nav-link.active {
+  color: var(--ink) !important;
+}
+
+/* フッタ */
+body.reading-app .app-footer {
+  background-color: var(--paper-sunken) !important;
+  border-top: 1px solid var(--hairline) !important;
+}
+body.reading-app .app-footer .footer-logo,
+body.reading-app .app-footer .footer-logo span,
+body.reading-app .app-footer .footer-description,
+body.reading-app .app-footer .footer-links a,
+body.reading-app .app-footer .footer-copyright,
+body.reading-app .app-footer .text-muted {
+  color: var(--muted-ink) !important;
+}
+body.reading-app .app-footer .footer-links a:hover { color: var(--ink) !important; }
+body.reading-app .app-footer .footer-divider { background: var(--hairline) !important; border-color: var(--hairline) !important; }
+body.reading-app .app-footer .social-link {
+  background-color: var(--paper-raised) !important;
+  border: 1px solid var(--hairline) !important;
+  color: var(--muted-ink) !important;
+}
+body.reading-app .app-footer .social-link:hover {
+  background-color: var(--ink) !important;
+  color: var(--paper) !important;
+}
+
+/* ============================================================
    1. 読書タイポグラフィ（本文＝主役）
    投資理由・継続記録・振り返りの長文を疲れず読める読書カラムに
    ============================================================ */
