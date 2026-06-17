@@ -10,6 +10,7 @@ validate / summarize / import_payload は 1 実装で両形式に対応する。
 - 取引・分割は bulk_create で投入し、Transaction.save() の都度集計を避ける。
   全取引投入後に AggregateService.recalculate(diary) を diary 単位で1回呼ぶ。
 - 株式分割は二重適用を避けるため is_applied=False で取り込み、apply_split() は呼ばない。
+- 仮説（Thesis）は diary×1、検証（Verdict）は thesis×1。claim が空なら取り込まない。
 """
 
 import io
@@ -22,6 +23,7 @@ from django.db import transaction as db_transaction
 
 from ..models import (
     StockDiary, Transaction, StockSplit, DiaryNote, DiaryTagDirection,
+    Thesis, Verdict,
 )
 from ..services.aggregate_service import AggregateService
 from ..utils import find_duplicate_diaries
@@ -53,6 +55,10 @@ VALID_TRANSACTION_TYPE = {'buy', 'sell'}
 VALID_NOTE_TYPE = {'analysis', 'news', 'earnings', 'insight', 'risk', 'retrospective', 'other'}
 VALID_IMPORTANCE = {'high', 'medium', 'low'}
 VALID_DIRECTION = {'up', 'down', 'neutral'}
+VALID_HORIZON = {'next_earnings', '3m', '6m', '1y', 'long'}
+VALID_THESIS_STATUS = {'open', 'verified', 'abandoned'}
+VALID_HYP_RESULT = {'hit', 'partial', 'miss', 'unknown'}
+VALID_PNL_RESULT = {'profit', 'loss', 'flat', 'holding'}
 
 
 def _parse_bool(value, default=False):
@@ -153,6 +159,9 @@ class ImportService:
         split_rows = read_csv(CSV_FILES['stock_splits'])
         note_rows = read_csv(CSV_FILES['notes'])
         direction_rows = read_csv(CSV_FILES['tag_directions'])
+        # v2 で追加。旧 ZIP には存在しないため read_csv は [] を返す。
+        thesis_rows = read_csv(CSV_FILES['theses'])
+        verdict_rows = read_csv(CSV_FILES['verdicts'])
 
         # 親子を export_key で再結合し、JSON と同じネスト構造へ
         diaries_by_key = {}
@@ -179,6 +188,7 @@ class ImportService:
                 'transactions': [],
                 'stock_splits': [],
                 'notes': [],
+                'thesis': None,
             }
             diaries_by_key[key] = diary
             diaries.append(diary)
@@ -219,6 +229,37 @@ class ImportService:
             'tag': r.get('tag', ''),
             'direction': r.get('direction', 'neutral'),
         })
+
+        # 仮説（diary×1）。export_key 単位で先頭行のみ採用。
+        for row in thesis_rows:
+            key = (row.get('diary_export_key') or '').strip()
+            diary = diaries_by_key.get(key)
+            if diary is None or diary['thesis'] is not None:
+                continue
+            basis_field = (row.get('basis_tags') or '').strip()
+            diary['thesis'] = {
+                'claim': row.get('claim', ''),
+                'basis_tags': [t for t in basis_field.split(TAG_SEPARATOR) if t] if basis_field else [],
+                'horizon': row.get('horizon', '6m'),
+                'worst_case': row.get('worst_case', ''),
+                'review_due_date': (row.get('review_due_date') or '') or None,
+                'status': row.get('status', 'open'),
+                'verdict': None,
+            }
+        # 検証（thesis×1）。対応する仮説がある export_key のみ。
+        for row in verdict_rows:
+            key = (row.get('diary_export_key') or '').strip()
+            diary = diaries_by_key.get(key)
+            if diary is None or not diary['thesis'] or diary['thesis']['verdict'] is not None:
+                continue
+            diary['thesis']['verdict'] = {
+                'hypothesis_result': row.get('hypothesis_result', ''),
+                'pnl_result': row.get('pnl_result', ''),
+                'decision_quality': row.get('decision_quality', '3'),
+                'missed_factor': row.get('missed_factor', ''),
+                'is_repeatable': _parse_bool(row.get('is_repeatable')),
+                'learning': row.get('learning', ''),
+            }
 
         tags = [
             {
@@ -306,6 +347,8 @@ class ImportService:
                 'stock_splits': sum(len(d.get('stock_splits', [])) for d in diaries),
                 'notes': sum(len(d.get('notes', [])) for d in diaries),
                 'tag_directions': sum(len(d.get('tag_directions', [])) for d in diaries),
+                'theses': sum(1 for d in diaries if d.get('thesis')),
+                'verdicts': sum(1 for d in diaries if d.get('thesis') and d['thesis'].get('verdict')),
             },
             'duplicates': duplicates,
             'source_username': meta.get('source_username', ''),
@@ -323,6 +366,8 @@ class ImportService:
             'transactions': 0,
             'stock_splits': 0,
             'notes': 0,
+            'theses': 0,
+            'verdicts': 0,
             'tags_reused': 0,
             'tags_created': 0,
             'skipped_diaries': 0,
@@ -485,6 +530,76 @@ class ImportService:
                 result['notes'] += 1
             except Exception as e:  # noqa: BLE001 - 1件のノート不正で全体を止めない
                 result['warnings'].append(f'{diary.stock_name}: 継続記録の取り込みに失敗（{e}）')
+
+        # 仮説（Thesis）と検証（Verdict）。claim が空なら取り込まない。
+        self._import_thesis(diary, d.get('thesis'), tag_map, result)
+
+    def _import_thesis(self, diary, thesis_payload, tag_map, result):
+        from tags.models import Tag
+
+        if not thesis_payload or not (thesis_payload.get('claim') or '').strip():
+            return
+        horizon = thesis_payload.get('horizon')
+        horizon = horizon if horizon in VALID_HORIZON else '6m'
+        status = thesis_payload.get('status')
+        status = status if status in VALID_THESIS_STATUS else Thesis.STATUS_OPEN
+        try:
+            thesis = Thesis.objects.create(
+                diary=diary,
+                claim=(thesis_payload.get('claim') or '')[:200],
+                horizon=horizon,
+                worst_case=(thesis_payload.get('worst_case') or '')[:300],
+                review_due_date=thesis_payload.get('review_due_date') or None,
+                status=status,
+            )
+        except Exception as e:  # noqa: BLE001 - 仮説1件の不正で全体を止めない
+            result['warnings'].append(f'{diary.stock_name}: 仮説の取り込みに失敗（{e}）')
+            return
+        result['theses'] += 1
+
+        # 根拠タグ（M2M）。ファイル内に無い名前も get_or_create で許容。
+        basis = []
+        for tag_name in thesis_payload.get('basis_tags', []):
+            tag_name = (tag_name or '').strip()
+            if not tag_name:
+                continue
+            tag = tag_map.get(tag_name)
+            if tag is None:
+                tag, _ = Tag.objects.get_or_create(
+                    user=self.user, name=tag_name, defaults={'axis': Tag.AXIS_THEME, 'df': 0},
+                )
+                tag_map[tag_name] = tag
+            basis.append(tag)
+        if basis:
+            thesis.basis_tags.set(basis)
+
+        # 検証（Verdict）。仮説の当否・損益が不正なら取り込まない。
+        v = thesis_payload.get('verdict')
+        if not v:
+            return
+        hyp = v.get('hypothesis_result')
+        pnl = v.get('pnl_result')
+        if hyp not in VALID_HYP_RESULT or pnl not in VALID_PNL_RESULT:
+            result['warnings'].append(f'{diary.stock_name}: 検証の当否/損益が不正なためスキップします')
+            return
+        dq = v.get('decision_quality')
+        try:
+            dq = max(1, min(5, int(dq)))
+        except (TypeError, ValueError):
+            dq = 3
+        try:
+            Verdict.objects.create(
+                thesis=thesis,
+                hypothesis_result=hyp,
+                pnl_result=pnl,
+                decision_quality=dq,
+                missed_factor=(v.get('missed_factor') or '')[:300],
+                is_repeatable=_parse_bool(v.get('is_repeatable')),
+                learning=(v.get('learning') or '')[:200],
+            )
+            result['verdicts'] += 1
+        except Exception as e:  # noqa: BLE001
+            result['warnings'].append(f'{diary.stock_name}: 検証の取り込みに失敗（{e}）')
 
     def _recalc_tag_df(self, tags):
         """インポートしたタグの df（出現銘柄数）を再計算する。

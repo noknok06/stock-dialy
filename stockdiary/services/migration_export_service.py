@@ -1,6 +1,6 @@
 """日記データ移行：エクスポートサービス。
 
-StockDiary とその関連（継続記録・取引・株式分割・タグ・タグ方向）を
+StockDiary とその関連（継続記録・取引・株式分割・タグ・タグ方向・仮説・検証）を
 ポータブルな中間dict（payload）に変換し、JSON または CSV(ZIP) として出力する。
 
 JSON と CSV は同じ payload を経由するため、シリアライズ本体はここに集約される。
@@ -21,7 +21,8 @@ from django.utils import timezone
 from ..models import StockDiary
 
 # payload スキーマのバージョン。将来の構造変更時に分岐するためのキー。
-PAYLOAD_VERSION = 1
+# v2: 仮説（Thesis）・検証（Verdict）を追加。
+PAYLOAD_VERSION = 2
 PAYLOAD_FORMAT = 'stockdiary-migration'
 
 # CSV(ZIP) 内のファイル名
@@ -32,6 +33,8 @@ CSV_FILES = {
     'stock_splits': 'stock_splits.csv',
     'notes': 'notes.csv',
     'tag_directions': 'tag_directions.csv',
+    'theses': 'theses.csv',
+    'verdicts': 'verdicts.csv',
 }
 
 # diaries.csv のタグ列で使う区切り文字
@@ -67,12 +70,14 @@ class ExportService:
         """DB から中間dict（payload）を構築する。"""
         diaries_qs = (
             StockDiary.objects.filter(user=self.user)
+            .select_related('thesis__verdict')
             .prefetch_related(
                 'tags',
                 'transactions',
                 'stock_splits',
                 'notes',
                 'tag_directions__tag',
+                'thesis__basis_tags',
             )
             .order_by('id')
         )
@@ -150,6 +155,8 @@ class ExportService:
                         key=lambda n: (n.date, n.id),
                     )
                 ],
+                # 仮説（Thesis）と検証（Verdict）。無ければ None。
+                'thesis': self._thesis_payload(diary),
             })
 
         return {
@@ -166,10 +173,39 @@ class ExportService:
                     'stock_splits': sum(len(d['stock_splits']) for d in diaries_payload),
                     'notes': sum(len(d['notes']) for d in diaries_payload),
                     'tag_directions': sum(len(d['tag_directions']) for d in diaries_payload),
+                    'theses': sum(1 for d in diaries_payload if d['thesis']),
+                    'verdicts': sum(1 for d in diaries_payload if d['thesis'] and d['thesis']['verdict']),
                 },
             },
             'tags': tags_payload,
             'diaries': diaries_payload,
+        }
+
+    @staticmethod
+    def _thesis_payload(diary):
+        """diary に紐づく仮説（と検証）を dict 化する。無ければ None。"""
+        thesis = getattr(diary, 'thesis', None)
+        if thesis is None:
+            return None
+        verdict = getattr(thesis, 'verdict', None)
+        verdict_payload = None
+        if verdict is not None:
+            verdict_payload = {
+                'hypothesis_result': verdict.hypothesis_result,
+                'pnl_result': verdict.pnl_result,
+                'decision_quality': verdict.decision_quality,
+                'missed_factor': verdict.missed_factor,
+                'is_repeatable': verdict.is_repeatable,
+                'learning': verdict.learning,
+            }
+        return {
+            'claim': thesis.claim,
+            'basis_tags': [t.name for t in thesis.basis_tags.all()],
+            'horizon': thesis.horizon,
+            'worst_case': thesis.worst_case,
+            'review_due_date': _date(thesis.review_due_date),
+            'status': thesis.status,
+            'verdict': verdict_payload,
         }
 
     # ------------------------------------------------------------------
@@ -224,6 +260,8 @@ class ExportService:
         stock_splits_rows = []
         notes_rows = []
         tag_directions_rows = []
+        theses_rows = []
+        verdicts_rows = []
 
         for d in payload['diaries']:
             key = d['export_key']
@@ -257,6 +295,18 @@ class ExportService:
                 ])
             for td in d['tag_directions']:
                 tag_directions_rows.append([key, td['tag'], td['direction']])
+            th = d.get('thesis')
+            if th:
+                theses_rows.append([
+                    key, th['claim'], TAG_SEPARATOR.join(th['basis_tags']),
+                    th['horizon'], th['worst_case'], th['review_due_date'] or '', th['status'],
+                ])
+                v = th.get('verdict')
+                if v:
+                    verdicts_rows.append([
+                        key, v['hypothesis_result'], v['pnl_result'], v['decision_quality'],
+                        v['missed_factor'], v['is_repeatable'], v['learning'],
+                    ])
 
         return {
             'tags': {
@@ -292,5 +342,19 @@ class ExportService:
             'tag_directions': {
                 'header': ['diary_export_key', 'tag', 'direction'],
                 'rows': tag_directions_rows,
+            },
+            'theses': {
+                'header': [
+                    'diary_export_key', 'claim', 'basis_tags', 'horizon',
+                    'worst_case', 'review_due_date', 'status',
+                ],
+                'rows': theses_rows,
+            },
+            'verdicts': {
+                'header': [
+                    'diary_export_key', 'hypothesis_result', 'pnl_result',
+                    'decision_quality', 'missed_factor', 'is_repeatable', 'learning',
+                ],
+                'rows': verdicts_rows,
             },
         }

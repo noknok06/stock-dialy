@@ -1,7 +1,7 @@
 """日記データ移行（エクスポート/インポート）ビュー。
 
 別アカウント/別環境へのデータ移行を目的に、StockDiary とその関連
-（継続記録・取引・株式分割・タグ・タグ方向）を JSON または CSV(ZIP) で出力し、
+（継続記録・取引・株式分割・タグ・タグ方向・仮説・検証）を JSON または CSV(ZIP) で出力し、
 同形式のファイルから取り込む。
 
 証券会社CSV取り込み（trade_upload）とは別機能。混同を避けるため別ページ・別動線。
@@ -163,6 +163,8 @@ def migration_import_process(request):
         f'取引: {result["transactions"]}件、'
         f'継続記録: {result["notes"]}件、'
         f'株式分割: {result["stock_splits"]}件、'
+        f'仮説: {result["theses"]}件、'
+        f'検証: {result["verdicts"]}件、'
         f'タグ: 新規{result["tags_created"]}/再利用{result["tags_reused"]}件'
     )
     if result['skipped_diaries']:

@@ -47,7 +47,7 @@ class TestExportPayload:
         payload = ExportService(user).build_payload()
 
         assert payload['meta']['format'] == 'stockdiary-migration'
-        assert payload['meta']['version'] == 1
+        assert payload['meta']['version'] == 2
         assert payload['meta']['counts']['diaries'] == 1
         assert payload['meta']['counts']['transactions'] == 5
         diary = payload['diaries'][0]
@@ -282,3 +282,110 @@ class TestValidation:
         summary = service.summarize(payload)
         assert len(summary['duplicates']) == 1
         assert summary['duplicates'][0]['existing_count'] == 1
+
+
+def _make_thesis_with_verdict(diary, tags=None):
+    """diary に仮説＋検証（的中×利益＝再現すべき勝ち）を付ける。"""
+    from stockdiary.models import Thesis, Verdict
+    thesis = Thesis.objects.create(
+        diary=diary, claim='円安継続で輸出採算が改善する',
+        horizon='6m', worst_case='円高反転', review_due_date=date(2025, 1, 1),
+        status=Thesis.STATUS_VERIFIED,
+    )
+    if tags:
+        thesis.basis_tags.set(tags)
+    Verdict.objects.create(
+        thesis=thesis, hypothesis_result=Verdict.HYP_HIT, pnl_result=Verdict.PNL_PROFIT,
+        decision_quality=4, missed_factor='', is_repeatable=True,
+        learning='テーマが効くなら握り続ける',
+    )
+    return thesis
+
+
+@pytest.mark.django_db
+class TestThesisVerdictRoundTrip:
+    """Phase 8a の仮説・検証が export → import で保持されること。"""
+
+    def test_thesis_in_payload(self, sample_diary, sample_tags):
+        _make_thesis_with_verdict(sample_diary, tags=sample_tags[:2])
+        payload = ExportService(sample_diary.user).build_payload()
+        th = payload['diaries'][0]['thesis']
+        assert th['claim'] == '円安継続で輸出採算が改善する'
+        assert th['status'] == 'verified'
+        assert set(th['basis_tags']) == {sample_tags[0].name, sample_tags[1].name}
+        assert th['verdict']['hypothesis_result'] == 'hit'
+        assert th['verdict']['learning'] == 'テーマが効くなら握り続ける'
+        assert payload['meta']['counts']['theses'] == 1
+        assert payload['meta']['counts']['verdicts'] == 1
+
+    def test_no_thesis_is_none(self, sample_diary):
+        payload = ExportService(sample_diary.user).build_payload()
+        assert payload['diaries'][0]['thesis'] is None
+        assert payload['meta']['counts']['theses'] == 0
+
+    def test_json_round_trip(self, sample_diary, sample_tags, another_user):
+        _make_thesis_with_verdict(sample_diary, tags=sample_tags[:2])
+        upload = _export_json_upload(sample_diary.user)
+        service = ImportService(another_user)
+        result = service.import_payload(service.parse(upload))
+
+        assert result['theses'] == 1
+        assert result['verdicts'] == 1
+        imported = StockDiary.objects.get(user=another_user, stock_symbol='7203')
+        thesis = imported.thesis
+        assert thesis.claim == '円安継続で輸出採算が改善する'
+        assert thesis.status == 'verified'
+        assert thesis.review_due_date == date(2025, 1, 1)
+        # 根拠タグが別ユーザー側で名前統合されて復元される
+        assert set(thesis.basis_tags.values_list('name', flat=True)) == {
+            sample_tags[0].name, sample_tags[1].name,
+        }
+        verdict = thesis.verdict
+        assert verdict.hypothesis_result == 'hit'
+        assert verdict.pnl_result == 'profit'
+        assert verdict.quadrant == 'skill'
+        assert verdict.is_repeatable is True
+
+    def test_zip_round_trip(self, sample_diary, sample_tags, another_user):
+        _make_thesis_with_verdict(sample_diary, tags=sample_tags[:1])
+        upload = _export_zip_upload(sample_diary.user)
+        service = ImportService(another_user)
+        result = service.import_payload(service.parse(upload))
+
+        assert result['theses'] == 1
+        assert result['verdicts'] == 1
+        imported = StockDiary.objects.get(user=another_user, stock_symbol='7203')
+        assert imported.thesis.verdict.learning == 'テーマが効くなら握り続ける'
+
+    def test_open_thesis_without_verdict(self, sample_diary, another_user):
+        from stockdiary.models import Thesis
+        Thesis.objects.create(
+            diary=sample_diary, claim='検証待ちの仮説',
+            review_due_date=date(2099, 1, 1), status=Thesis.STATUS_OPEN,
+        )
+        upload = _export_json_upload(sample_diary.user)
+        service = ImportService(another_user)
+        result = service.import_payload(service.parse(upload))
+
+        assert result['theses'] == 1
+        assert result['verdicts'] == 0
+        imported = StockDiary.objects.get(user=another_user, stock_symbol='7203')
+        assert imported.thesis.status == 'open'
+        from stockdiary.models import Verdict
+        assert not Verdict.objects.filter(thesis=imported.thesis).exists()
+
+    def test_legacy_v1_payload_without_thesis(self, another_user):
+        # 旧 v1 ファイル（thesis キー無し）でも落ちない
+        payload = {
+            'meta': {'format': 'stockdiary-migration', 'version': 1},
+            'tags': [],
+            'diaries': [
+                {'export_key': 'd1', 'stock_symbol': '0003', 'stock_name': '旧データ',
+                 'currency': 'JPY', 'tags': [], 'tag_directions': [],
+                 'transactions': [], 'stock_splits': [], 'notes': []},
+            ],
+        }
+        service = ImportService(another_user)
+        result = service.import_payload(payload)
+        assert result['created_diaries'] == 1
+        assert result['theses'] == 0
