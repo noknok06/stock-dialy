@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% block body_class %} class="reading-app"{% endblock %}
+{% load humanize %}
+{% block title %}投資家カルテ | カブログ{% endblock %}
+
+{% block content %}
+<div class="container py-4 reading-page">
+  <div class="rp-review">
+
+    <header class="rp-review-head">
+      <a href="{% url 'stockdiary:home' %}" class="rp-back">
+        <i class="bi bi-arrow-left"></i> 投資ノートへ
+      </a>
+      <h1 class="rp-review-title">あなたという投資家</h1>
+      <p class="rp-review-sub">成績ではなく、判断の傾向。{{ karte.total }}件の検証から。</p>
+    </header>
+
+    {% if not karte.has_content %}
+      <div class="rp-empty">
+        <h2>まだ検証がありません</h2>
+        <p>各銘柄の「当時の仮説」を答え合わせ（検証）すると、あなたの判断の傾向がここに現れます。</p>
+      </div>
+    {% else %}
+
+      {# 意思決定の質 × 結果 の 2×2 #}
+      <section class="rp-section">
+        <div class="rp-section-title">意思決定の質 × 結果</div>
+        <p class="rp-section-note">損益（結果）と、仮説の当否（判断の質）は別物。あなたの分布です。</p>
+        <div class="karte-matrix">
+          {% for q in karte.quadrants %}
+          <div class="karte-cell karte-q-{{ q.key }}">
+            <div class="karte-cell-count">{{ q.count }}</div>
+            <div class="karte-cell-label">{{ q.label }}</div>
+            <div class="karte-cell-axis">{{ q.axis }}</div>
+          </div>
+          {% endfor %}
+        </div>
+        {% if karte.lucky_share is not None and karte.lucky_share > 0 %}
+        <p class="karte-insight">
+          <i class="bi bi-exclamation-triangle"></i>
+          あなたの勝ちの <strong>{{ karte.lucky_share }}%</strong> は「仮説が外れたのに利益が出た」偶然の勝ち。再現性に注意。
+        </p>
+        {% endif %}
+        {% if karte.hit_rate is not None %}
+        <p class="karte-insight karte-insight--quiet">仮説の的中率（損益と無関係）：<strong>{{ karte.hit_rate }}%</strong></p>
+        {% endif %}
+      </section>
+
+      {# 得意・苦手な分類 #}
+      {% if karte.strong_themes or karte.weak_themes %}
+      <section class="rp-section">
+        <div class="rp-section-title">得意な分類・苦手な分類</div>
+        <p class="rp-section-note">根拠の軸（タグ）ごとの仮説の的中傾向。</p>
+        {% if karte.strong_themes %}
+        <div class="karte-theme-group">
+          <span class="karte-theme-head karte-theme-strong">得意</span>
+          {% for t in karte.strong_themes %}
+          <div class="karte-theme-row">
+            <span class="karte-theme-name">{{ t.name }}</span>
+            <span class="karte-theme-meta">的中 {{ t.hit }}/{{ t.total }}</span>
+            <span class="karte-theme-rate karte-rate-up">{{ t.rate }}%</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+        {% if karte.weak_themes %}
+        <div class="karte-theme-group">
+          <span class="karte-theme-head karte-theme-weak">苦手</span>
+          {% for t in karte.weak_themes %}
+          <div class="karte-theme-row">
+            <span class="karte-theme-name">{{ t.name }}</span>
+            <span class="karte-theme-meta">的中 {{ t.hit }}/{{ t.total }}</span>
+            <span class="karte-theme-rate karte-rate-down">{{ t.rate }}%</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </section>
+      {% endif %}
+
+      {# 繰り返す失敗 #}
+      {% if karte.repeated_misses %}
+      <section class="rp-section">
+        <div class="rp-section-title">繰り返している見落とし</div>
+        <div class="karte-misses">
+          {% for m in karte.repeated_misses %}
+          <div class="karte-miss-row">
+            <span class="karte-miss-count">×{{ m.count }}</span>
+            <span class="karte-miss-text">{{ m.text }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+      {% elif karte.recent_misses %}
+      <section class="rp-section">
+        <div class="rp-section-title">最近の見落とし</div>
+        <div class="karte-misses">
+          {% for m in karte.recent_misses %}
+          <div class="karte-miss-row"><span class="karte-miss-text">{{ m }}</span></div>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      {# 投資哲学＝再現したい学び #}
+      {% if karte.philosophy %}
+      <section class="rp-section">
+        <div class="rp-section-title">あなたの投資哲学</div>
+        <p class="rp-section-note">検証から残った、再現したい判断。</p>
+        <div class="karte-philosophy">
+          {% for l in karte.philosophy %}
+          <a class="karte-philo-row" href="{% url 'stockdiary:detail' l.diary.id %}">
+            <blockquote class="karte-philo-quote">{{ l.text }}</blockquote>
+            <span class="karte-philo-src">{{ l.diary.stock_name }}</span>
+          </a>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

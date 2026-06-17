@@ -130,6 +130,7 @@ path('api/create/', api.api_create_diary, name='api_create'),
 
     path('dashboard/', views.TradingDashboardView.as_view(), name='dashboard'),
     path('review/', views.AnnualReviewView.as_view(), name='annual_review'),
+    path('karte/', views.InvestorKarteView.as_view(), name='investor_karte'),
     # Phase 8a: 検証ループ（仮説・検証）
     path('<int:diary_id>/karte/', views.karte_block, name='karte_block'),
     path('<int:diary_id>/thesis/edit/', views.thesis_edit, name='thesis_edit'),

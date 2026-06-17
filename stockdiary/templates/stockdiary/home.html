@@ -1699,9 +1699,14 @@
         <span class="page-subtitle-count">{{ total_diary_count }}件の記録</span>
       </p>
       {% if not is_empty_state %}
-      <a href="{% url 'stockdiary:annual_review' %}" class="rp-review-link">
-        <i class="bi bi-book"></i>{% now "Y" %}年のふりかえりを読む
-      </a>
+      <div class="rp-review-links">
+        <a href="{% url 'stockdiary:annual_review' %}" class="rp-review-link">
+          <i class="bi bi-book"></i>{% now "Y" %}年のふりかえりを読む
+        </a>
+        <a href="{% url 'stockdiary:investor_karte' %}" class="rp-review-link">
+          <i class="bi bi-clipboard-pulse"></i>投資家カルテを見る
+        </a>
+      </div>
       {% endif %}
     </div>
     <div class="page-header-actions">

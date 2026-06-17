@@ -221,3 +221,91 @@ body.dark-mode, html[data-theme="dark"] {
 .reading-page .rp-due-cta { color: var(--muted-ink); }
 .reading-page .rp-due-item:hover .rp-due-cta { color: var(--ink); text-decoration: underline; }
 .reading-page .rp-due-item:hover .rp-due-stock { text-decoration: underline; text-underline-offset: 3px; }
+
+/* ============================================================
+   9k-3. 投資家カルテ（Phase 8d）
+   ============================================================ */
+/* 2×2 マトリクス */
+.reading-page .karte-matrix {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 1px;
+  background: var(--hairline); border: 1px solid var(--hairline);
+  border-radius: var(--radius-md, 10px); overflow: hidden;
+}
+.reading-page .karte-cell {
+  background: var(--paper-raised);
+  padding: var(--space-5, 1.25rem);
+  border-left: 3px solid transparent;
+}
+.reading-page .karte-cell.karte-q-skill      { border-left-color: var(--verdict-skill); }
+.reading-page .karte-cell.karte-q-unlucky    { border-left-color: var(--verdict-unlucky); }
+.reading-page .karte-cell.karte-q-lucky      { border-left-color: var(--verdict-lucky); }
+.reading-page .karte-cell.karte-q-discipline { border-left-color: var(--verdict-discipline); }
+.reading-page .karte-cell-count {
+  font-size: 1.75rem; font-weight: var(--font-bold); line-height: 1;
+  color: var(--ink); font-variant-numeric: tabular-nums;
+}
+.reading-page .karte-cell-label { font-size: 0.875rem; font-weight: var(--font-semibold); color: var(--ink); margin-top: 0.35rem; }
+.reading-page .karte-q-skill .karte-cell-label      { color: var(--verdict-skill); }
+.reading-page .karte-q-unlucky .karte-cell-label    { color: var(--verdict-unlucky); }
+.reading-page .karte-q-lucky .karte-cell-label      { color: var(--verdict-lucky); }
+.reading-page .karte-q-discipline .karte-cell-label { color: var(--verdict-discipline); }
+.reading-page .karte-cell-axis { font-size: 0.7rem; color: var(--faint-ink); margin-top: 0.15rem; }
+
+.reading-page .karte-insight {
+  font-size: 0.875rem; color: var(--ink-soft); margin: 1rem 0 0;
+  display: flex; gap: 0.4rem; align-items: baseline;
+}
+.reading-page .karte-insight .bi { color: var(--verdict-lucky); }
+.reading-page .karte-insight strong { color: var(--ink); }
+.reading-page .karte-insight--quiet { color: var(--muted-ink); }
+.reading-page .karte-insight--quiet .bi { display: none; }
+
+/* テーマ別 */
+.reading-page .karte-theme-group { margin-bottom: 1rem; }
+.reading-page .karte-theme-head {
+  display: inline-block; font-size: 0.7rem; font-weight: var(--font-semibold);
+  letter-spacing: 0.06em; margin-bottom: 0.4rem;
+}
+.reading-page .karte-theme-strong { color: var(--verdict-skill); }
+.reading-page .karte-theme-weak { color: var(--verdict-lucky); }
+.reading-page .karte-theme-row {
+  display: flex; align-items: baseline; gap: 0.75rem;
+  padding: 0.5rem 0; border-bottom: 1px solid var(--hairline-soft);
+}
+.reading-page .karte-theme-row:last-child { border-bottom: none; }
+.reading-page .karte-theme-name { font-weight: var(--font-medium); color: var(--ink); }
+.reading-page .karte-theme-meta { font-size: 0.8125rem; color: var(--muted-ink); margin-left: auto; }
+.reading-page .karte-theme-rate { font-family: var(--font-family-mono); font-variant-numeric: tabular-nums; font-weight: var(--font-medium); }
+.reading-page .karte-rate-up { color: var(--verdict-skill); }
+.reading-page .karte-rate-down { color: var(--verdict-lucky); }
+
+/* 繰り返す見落とし */
+.reading-page .karte-miss-row {
+  display: flex; gap: 0.6rem; align-items: baseline;
+  padding: 0.5rem 0; border-bottom: 1px solid var(--hairline-soft);
+}
+.reading-page .karte-miss-row:last-child { border-bottom: none; }
+.reading-page .karte-miss-count {
+  font-size: 0.75rem; font-weight: var(--font-semibold); color: var(--paper);
+  background: var(--verdict-lucky); border-radius: var(--radius-full, 999px);
+  padding: 0.05rem 0.45rem; white-space: nowrap;
+}
+.reading-page .karte-miss-text { color: var(--ink-soft); }
+
+/* 投資哲学 */
+.reading-page .karte-philo-row {
+  display: block; text-decoration: none; color: inherit;
+  padding: var(--space-4, 1rem) 0; border-bottom: 1px solid var(--hairline-soft);
+}
+.reading-page .karte-philo-row:last-child { border-bottom: none; }
+.reading-page .karte-philo-quote {
+  font-family: var(--font-family-serif); font-size: 1.0625rem; line-height: 1.7;
+  color: var(--ink); margin: 0 0 0.25rem; padding-left: var(--space-4, 1rem);
+  border-left: 2px solid var(--ink); font-style: normal;
+}
+.reading-page .karte-philo-src { font-size: 0.75rem; color: var(--faint-ink); padding-left: var(--space-4, 1rem); }
+.reading-page .karte-philo-row:hover .karte-philo-src { color: var(--muted-ink); }
+
+@media (max-width: 640px) {
+  .reading-page .karte-matrix { grid-template-columns: 1fr; }
+}

@@ -4092,6 +4092,21 @@ class AnnualReviewView(LoginRequiredMixin, TemplateView):
         return context
 
 
+class InvestorKarteView(LoginRequiredMixin, TemplateView):
+    """投資家カルテ（自己理解）。成績評価ではなく「どういう投資家か」を返す。
+
+    検証（Verdict）を母数に、意思決定の質×結果の2×2分布・テーマ別の的中傾向・
+    繰り返す見落とし・投資哲学（再現したい学び）を可視化する。
+    """
+    template_name = 'stockdiary/karte.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from .services.karte_service import build_investor_karte
+        context['karte'] = build_investor_karte(self.request.user)
+        return context
+
+
 # ============================================================
 # Phase 8a: 検証ループ（予想→結果→検証→学び）
 # ============================================================
