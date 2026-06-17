@@ -2175,6 +2175,88 @@ window.initReasonEasyMDE = function initReasonEasyMDE() {
   window.easyMDE.codemirror.on('change', updateEasyMDECharCount);
   updateEasyMDECharCount();
 
+  // ========== Phase 2: 集中モード ＋ 下書き自動保存（localStorage・正直な復元） ==========
+  (function setupWritingExperience() {
+    const cm = window.easyMDE.codemirror;
+    const container = document.querySelector('.EasyMDEContainer');
+    if (!cm || !container) return;
+    const form = reasonTextareaEl.closest('form');
+    const DRAFT_KEY = 'kabulog_draft:' + location.pathname;
+
+    // --- 集中モード: 執筆中は周辺の chrome を淡くして没入させる ---
+    cm.on('focus', function () { document.body.classList.add('writing-focus'); });
+    cm.on('blur', function () { document.body.classList.remove('writing-focus'); });
+
+    // --- 自動保存インジケーター（実体のある保存のみ表示） ---
+    const indicator = document.createElement('div');
+    indicator.className = 'rp-autosave';
+    indicator.style.display = 'none';
+    indicator.innerHTML = '<span class="rp-autosave-dot"></span><span class="rp-autosave-text"></span>';
+    container.parentNode.insertBefore(indicator, container.nextSibling);
+    const indText = indicator.querySelector('.rp-autosave-text');
+    function showSaved() {
+      const now = new Date();
+      indText.textContent = '下書きを保存しました · ' +
+        String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+      indicator.style.display = 'inline-flex';
+    }
+
+    // --- デバウンス保存 ---
+    let saveTimer = null;
+    cm.on('change', function () {
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(function () {
+        const v = window.easyMDE.value();
+        try {
+          if (v && v.trim()) {
+            localStorage.setItem(DRAFT_KEY, JSON.stringify({ reason: v, ts: Date.now() }));
+            showSaved();
+          } else {
+            localStorage.removeItem(DRAFT_KEY);
+          }
+        } catch (e) { /* private mode 等は無視 */ }
+      }, 800);
+    });
+
+    // --- 復元バナー: 既存の下書きがあり、現在の本文と異なる場合のみ提示 ---
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const draft = JSON.parse(raw);
+        const current = window.easyMDE.value();
+        if (draft && draft.reason && draft.reason.trim() && draft.reason !== current) {
+          const banner = document.createElement('div');
+          banner.className = 'rp-draft-banner';
+          const when = new Date(draft.ts || Date.now());
+          banner.innerHTML =
+            '<span><i class="bi bi-clock-history me-1"></i>前回の下書きがあります（' +
+            when.toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) +
+            '）</span><span class="rp-draft-actions">' +
+            '<button type="button" class="btn-quiet btn-quiet--primary rp-draft-restore">復元する</button>' +
+            '<button type="button" class="btn-quiet rp-draft-dismiss">破棄</button></span>';
+          container.parentNode.insertBefore(banner, container);
+          banner.querySelector('.rp-draft-restore').addEventListener('click', function () {
+            window.easyMDE.value(draft.reason);
+            banner.remove();
+          });
+          banner.querySelector('.rp-draft-dismiss').addEventListener('click', function () {
+            try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+            banner.remove();
+          });
+        }
+      }
+    } catch (e) { /* ignore */ }
+
+    // --- 送信時は下書きを破棄（クライアント検証で弾かれる長さ超過時は残す） ---
+    if (form) {
+      form.addEventListener('submit', function () {
+        if (window.easyMDE.value().length <= MAX_REASON_LENGTH) {
+          try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+        }
+      });
+    }
+  })();
+
   // ライブプレビュー: 入力中に「想起カードでの見え方」をサーバーの extract_lead で算出
   (function setupLeadPreview() {
     const wrap = document.getElementById('lead-preview');

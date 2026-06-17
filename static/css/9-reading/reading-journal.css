@@ -502,6 +502,45 @@
   background: var(--profit-up-quiet);
 }
 
+/* === Phase 2: 集中モード（執筆中は周辺 chrome を淡く） === */
+body.writing-focus .pc-only-header,
+body.writing-focus .app-footer,
+body.writing-focus .nav-btn,
+body.writing-focus .speed-dial,
+body.writing-focus .wizard-progress-bar,
+body.writing-focus .page-header {
+  opacity: 0.28;
+  transition: opacity 0.4s var(--ease-out, ease);
+}
+body.writing-focus .pc-only-header:hover { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  body.writing-focus .pc-only-header,
+  body.writing-focus .app-footer,
+  body.writing-focus .nav-btn,
+  body.writing-focus .speed-dial,
+  body.writing-focus .wizard-progress-bar,
+  body.writing-focus .page-header { transition: none; }
+}
+
+/* 下書き復元バナー（静かに） */
+.reading-page .rp-draft-banner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.85rem;
+  background: var(--paper-sunken);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  color: var(--muted-ink);
+}
+.reading-page .rp-draft-actions { display: flex; gap: 0.5rem; }
+.reading-page .rp-draft-actions .btn-quiet { padding: 0.35rem 0.8rem; min-height: 0; }
+.reading-page .rp-autosave { margin-top: 0.5rem; }
+
 /* テキスト入力全般を紙の質感に */
 .reading-page textarea.form-control,
 .reading-page input.form-control,
