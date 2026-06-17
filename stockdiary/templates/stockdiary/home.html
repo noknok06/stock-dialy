@@ -1713,7 +1713,7 @@
   </div>
 
   <!-- 継続バー：連続記録 ＋ 想起 ＋ 過去の学びの再浮上（毎日開きたくなる仕掛け） -->
-  {% if not is_empty_state and record_streak or resurfaced_note %}
+  {% if not is_empty_state %}{% if record_streak or recall.anniversary or resurfaced_note %}
   <div class="rp-continuity">
     {% if record_streak %}
     <div class="rp-streak">
@@ -1722,25 +1722,27 @@
     </div>
     {% endif %}
     {% if recall and recall.anniversary %}{% with anni=recall.anniversary.0 %}
-    {% if record_streak %}<div class="rp-continuity-sep"></div>{% endif %}
     <div class="rp-recall-line">
       <i class="bi bi-arrow-counterclockwise"></i>
-      1年前の今日、あなたは
+      <span>1年前の今日、あなたは
       <a href="{% url 'stockdiary:detail' anni.diary.id %}">{{ anni.diary.stock_name }}</a>
-      について書いていました。
+      について書いていました。</span>
     </div>
     {% endwith %}{% endif %}
     {% if resurfaced_note %}
-    <div class="rp-continuity-sep"></div>
-    <div class="rp-recall-line rp-resurface">
-      <i class="bi bi-stars"></i>
-      <span class="rp-resurface-label">過去の学び</span>
-      <a href="{% url 'stockdiary:detail' resurfaced_note.diary.id %}">{{ resurfaced_note.diary.stock_name }}</a>
-      <span class="rp-resurface-snippet">{{ resurfaced_note.content|striptags|truncatechars:52 }}</span>
+    <div class="rp-resurface">
+      <div class="rp-resurface-head">
+        <i class="bi bi-stars"></i>
+        <span class="rp-resurface-label">過去の学び</span>
+        <a href="{% url 'stockdiary:detail' resurfaced_note.diary.id %}">{{ resurfaced_note.diary.stock_name }}</a>
+      </div>
+      <a class="rp-resurface-quote" href="{% url 'stockdiary:detail' resurfaced_note.diary.id %}">
+        {{ resurfaced_note.content|striptags|truncatechars:90 }}
+      </a>
     </div>
     {% endif %}
   </div>
-  {% endif %}
+  {% endif %}{% endif %}
 
   <!-- 今日の想起カード -->
   {% include "stockdiary/components/recall_card.html" %}

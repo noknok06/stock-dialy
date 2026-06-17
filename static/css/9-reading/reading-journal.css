@@ -193,6 +193,35 @@ body.reading-app .app-footer .social-link:hover {
   margin-inline: auto;
 }
 
+/* === 日付スパイン：左ガターに時間軸の縦線、月見出しに節（ノード）を打つ === */
+.reading-page #diary-container {
+  position: relative;
+  padding-left: var(--space-7, 1.75rem);
+}
+.reading-page #diary-container::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 0.6rem;
+  bottom: 0;
+  width: 2px;
+  background: var(--hairline);
+}
+.reading-page #diary-container .rp-day-label::before {
+  content: "";
+  position: absolute;
+  left: calc(-1 * var(--space-7, 1.75rem) + 1px);
+  top: 0.1em;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 2px solid var(--muted-ink);
+  box-sizing: border-box;
+}
+/* スパイン分のガターを確保した広告・トリガーは全幅のまま見せる */
+.reading-page #diary-container .grid-column-span { margin-left: calc(-1 * var(--space-7, 1.75rem)); }
+
 /* エントリーは枠なし・ヘアライン区切りで“流れて読める”ように */
 .reading-page .home-diary-grid .diary-article {
   background: transparent;
@@ -716,14 +745,18 @@ body.writing-focus .pc-only-header:hover { opacity: 1; }
    ============================================================ */
 .reading-page .rp-continuity {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  flex-direction: column;
   gap: var(--space-5, 1.25rem);
-  padding: var(--space-5, 1.25rem) var(--space-6, 1.5rem);
-  margin-bottom: var(--space-8, 2rem);
+  padding: var(--space-6, 1.5rem) var(--space-7, 1.75rem);
+  margin-bottom: var(--space-9, 2.25rem);
   background: var(--paper-raised);
   border: 1px solid var(--hairline);
   border-radius: var(--radius-lg);
+}
+/* 2要素目以降は上に細い区切りと余白を持たせ、呼吸させる */
+.reading-page .rp-continuity > * + * {
+  padding-top: var(--space-5, 1.25rem);
+  border-top: 1px solid var(--hairline-soft);
 }
 .reading-page .rp-streak { display: flex; align-items: baseline; gap: 0.5rem; }
 .reading-page .rp-streak-num {
@@ -734,15 +767,42 @@ body.writing-focus .pc-only-header:hover { opacity: 1; }
   line-height: 1;
 }
 .reading-page .rp-streak-label { font-size: 0.8125rem; color: var(--muted-ink); }
-.reading-page .rp-continuity-sep { width: 1px; align-self: stretch; background: var(--hairline); }
 .reading-page .rp-recall-line {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
   font-size: 0.875rem;
   color: var(--muted-ink);
 }
+.reading-page .rp-recall-line .bi { color: var(--faint-ink); }
 .reading-page .rp-recall-line a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
-.reading-page .rp-resurface-label { font-weight: var(--font-semibold); color: var(--ink-soft); margin: 0 0.15rem; }
-.reading-page .rp-resurface-snippet { color: var(--faint-ink); }
-.reading-page .rp-resurface .bi-stars { color: var(--muted-ink); }
+
+/* 過去の学び＝主役級の引用ブロック */
+.reading-page .rp-resurface-head {
+  display: flex; align-items: center; gap: 0.45rem;
+  margin-bottom: 0.6rem;
+}
+.reading-page .rp-resurface-head .bi-stars { color: var(--muted-ink); font-size: 0.875rem; }
+.reading-page .rp-resurface-label {
+  font-size: 0.75rem; font-weight: var(--font-semibold);
+  letter-spacing: 0.04em; color: var(--faint-ink);
+}
+.reading-page .rp-resurface-head a {
+  font-weight: var(--font-semibold); color: var(--ink); font-size: 0.9375rem;
+  text-decoration: none;
+}
+.reading-page .rp-resurface-head a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.reading-page .rp-resurface-quote {
+  display: block;
+  font-family: var(--font-family-serif);
+  font-size: 1.0625rem;
+  line-height: 1.75;
+  color: var(--ink-soft);
+  text-decoration: none;
+  padding-left: var(--space-4, 1rem);
+  border-left: 2px solid var(--hairline);
+}
+.reading-page .rp-resurface-quote:hover { color: var(--ink); border-left-color: var(--muted-ink); }
 
 /* ============================================================
    8. 空状態 / 導入：書きたくなる第一歩
@@ -1063,5 +1123,6 @@ body.writing-focus .pc-only-header:hover { opacity: 1; }
   .reading-page .markdown-content,
   .reading-page .panel-text,
   .reading-page .note-body { font-size: 1rem; }
-  .reading-page .rp-day-label { position: static; }
+  /* モバイルは sticky を解除。ただし日付スパインの節を anchor するため relative は保つ */
+  .reading-page .rp-day-label { position: relative; top: auto; }
 }
