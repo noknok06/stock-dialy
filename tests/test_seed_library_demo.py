@@ -25,6 +25,16 @@ def test_seed_populates_thesis_verdict_and_karte(user):
     assert any(m['text'] == '入るのが早い' and m['count'] >= 2 for m in karte['repeated_misses'])
 
 
+def test_seed_handles_duplicate_symbol_diaries(user):
+    # 同一銘柄コードの日記が2件あっても MultipleObjectsReturned で落ちない
+    from stockdiary.models import StockDiary, Thesis
+    StockDiary.objects.create(user=user, stock_symbol='7203', stock_name='トヨタ自動車(1)')
+    StockDiary.objects.create(user=user, stock_symbol='7203', stock_name='トヨタ自動車(2)')
+    call_command('seed_library_demo', '--username', user.username)
+    # 7203 には仮説が1件だけ付く（先頭の日記に）
+    assert Thesis.objects.filter(diary__user=user, diary__stock_symbol='7203').count() == 1
+
+
 def test_seed_is_idempotent_with_clear(user):
     call_command('seed_library_demo', '--username', user.username)
     call_command('seed_library_demo', '--username', user.username, '--clear')

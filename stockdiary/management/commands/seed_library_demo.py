@@ -168,21 +168,27 @@ class Command(BaseCommand):
 
         n_thesis = n_verdict = n_open = 0
         for spec in DATA:
-            diary, _ = StockDiary.objects.get_or_create(
-                user=user, stock_symbol=spec['code'],
-                defaults={'stock_name': spec['name'], 'sector': spec['sector'],
-                          'reason': spec['reason']},
-            )
-            # 既存日記でも名称/業種/理由を補完
-            updated = False
-            if not diary.stock_name:
-                diary.stock_name = spec['name']; updated = True
-            if not diary.sector:
-                diary.sector = spec['sector']; updated = True
-            if not diary.reason:
-                diary.reason = spec['reason']; updated = True
-            if updated:
-                diary.save()
+            # 同一銘柄コードの日記が複数あっても落ちないよう get_or_create は使わない
+            diary = (StockDiary.objects
+                     .filter(user=user, stock_symbol=spec['code'])
+                     .order_by('id').first())
+            if diary is None:
+                diary = StockDiary.objects.create(
+                    user=user, stock_symbol=spec['code'],
+                    stock_name=spec['name'], sector=spec['sector'],
+                    reason=spec['reason'],
+                )
+            else:
+                # 既存日記でも名称/業種/理由が空なら補完
+                updated = False
+                if not diary.stock_name:
+                    diary.stock_name = spec['name']; updated = True
+                if not diary.sector:
+                    diary.sector = spec['sector']; updated = True
+                if not diary.reason:
+                    diary.reason = spec['reason']; updated = True
+                if updated:
+                    diary.save()
             for tname in spec['tags']:
                 diary.tags.add(get_tag(tname))
 
