@@ -152,6 +152,19 @@ a{text-decoration:none;color:inherit}
 .rc-item .sn{font-family:var(--serif);font-size:13px;color:var(--muted);line-height:1.6}
 .rc-cap{text-align:center;color:var(--faint);font-size:12px;margin-top:14px;display:flex;align-items:center;justify-content:center;gap:6px}
 
+/* 実画像スロット（差し込み式）。画像が無ければCSSモックにフォールバック */
+.shot-fallback{display:none}
+.shot.shot-missing .shot-frame{display:none}
+.shot.shot-missing .shot-fallback{display:block}
+.frame-browser{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--raised);box-shadow:0 30px 70px rgba(32,32,29,.10)}
+.frame-browser .bar{height:38px;display:flex;align-items:center;gap:7px;padding:0 14px;background:var(--paper2);border-bottom:1px solid var(--line2)}
+.frame-browser .bar i{width:11px;height:11px;border-radius:50%;background:#d8d4ca;flex:0 0 auto}
+.frame-browser .bar .u{margin-left:10px;font-size:11.5px;color:var(--faint);background:var(--raised);border:1px solid var(--line);border-radius:7px;padding:.18rem .7rem}
+.frame-browser img{display:block;width:100%}
+.frame-phone{max-width:288px;margin:0 auto;border:8px solid var(--ink);border-radius:36px;overflow:hidden;background:var(--ink);box-shadow:0 30px 70px rgba(32,32,29,.16)}
+.frame-phone img{display:block;width:100%}
+.showband{max-width:940px;margin:0 auto}
+
 /* learning list (library) */
 .libcard{background:var(--raised);border:1px solid var(--line);border-radius:18px;padding:10px 22px;box-shadow:0 24px 60px rgba(32,32,29,.07);max-width:420px;width:100%;margin:0 auto}
 .libq{padding:16px 0;border-top:1px solid var(--line2)}
@@ -313,6 +326,18 @@ a{text-decoration:none;color:inherit}
   </div>
 </header>
 
+<!-- SHOWCASE (実画像。未設置なら自動で非表示) -->
+<section style="padding:0 0 8px">
+  <div class="wrap showband rv">
+    <div class="frame-browser">
+      <div class="bar"><i></i><i></i><i></i><span class="u">kabu-log.net</span></div>
+      <img src="{% static 'images/lp/showcase-home.png' %}" alt="カブログの実際の画面 — 静かな投資ノート" loading="lazy"
+           onerror="this.closest('section').style.display='none'">
+    </div>
+    <p class="rc-cap" style="margin-top:16px"><i class="bi bi-stars"></i>実際の画面 — 静かに積み上がる投資ノート</p>
+  </div>
+</section>
+
 <!-- LOOP -->
 <section class="sec" id="loop">
   <div class="wrap">
@@ -355,14 +380,22 @@ a{text-decoration:none;color:inherit}
 <section class="sec" id="recall">
   <div class="wrap split">
     <div class="rv vis">
-      <div class="rcard" aria-label="ホームの想起の例">
-        <div class="rc-due">
-          <div class="h"><i class="bi bi-bell"></i>答え合わせを待つ仮説<span class="n">2</span></div>
-          <div class="claim"><b>ホンダ</b>「二輪の高採算化で利益率が構造改善する」</div>
-          <div class="meta"><span>検証予定 5/1</span><span class="cta">答え合わせをする →</span></div>
+      <div class="shot">
+        <div class="shot-frame frame-phone">
+          <img src="{% static 'images/lp/recall.png' %}" alt="ホームの想起 — 答え合わせを待つ仮説" loading="lazy"
+               onerror="this.closest('.shot').classList.add('shot-missing')">
         </div>
-        <div class="rc-item"><div class="top"><span class="dt">1年前の今日</span><span class="nm">フジクラ</span></div><div class="sn">「生成AI需要は10年続く。光関連の中核として注目」</div></div>
-        <div class="rc-item"><div class="top"><span class="dt">最近の学び</span><span class="nm">トヨタ自動車</span></div><div class="sn">「為替単独を根拠に投資しない」</div></div>
+        <div class="shot-fallback">
+          <div class="rcard" aria-label="ホームの想起の例">
+            <div class="rc-due">
+              <div class="h"><i class="bi bi-bell"></i>答え合わせを待つ仮説<span class="n">2</span></div>
+              <div class="claim"><b>ホンダ</b>「二輪の高採算化で利益率が構造改善する」</div>
+              <div class="meta"><span>検証予定 5/1</span><span class="cta">答え合わせをする →</span></div>
+            </div>
+            <div class="rc-item"><div class="top"><span class="dt">1年前の今日</span><span class="nm">フジクラ</span></div><div class="sn">「生成AI需要は10年続く。光関連の中核として注目」</div></div>
+            <div class="rc-item"><div class="top"><span class="dt">最近の学び</span><span class="nm">トヨタ自動車</span></div><div class="sn">「為替単独を根拠に投資しない」</div></div>
+          </div>
+        </div>
       </div>
       <p class="rc-cap"><i class="bi bi-phone"></i>ホームに毎日表示される想起</p>
     </div>
@@ -385,12 +418,20 @@ a{text-decoration:none;color:inherit}
       <p class="p" style="margin-bottom:0">「勝率」より「あなたは仮説は当てるが、利確が早い」——成長に効くのは、後者の言葉だ。</p>
     </div>
     <div class="rv vis">
-      <div class="libcard" aria-label="知識ライブラリの例">
-        <div class="libq"><div class="q">為替単独を根拠に投資しない</div><div class="m"><span class="src">トヨタ自動車</span><span class="qd q-lucky">偶然の勝ち</span><span class="chip">円安</span></div></div>
-        <div class="libq"><div class="q">テーマが効くなら、握り続ける</div><div class="m"><span class="src">フジクラ</span><span class="qd q-skill">再現すべき勝ち</span><span class="chip">生成AI</span></div></div>
-        <div class="libq"><div class="q">決算プレイは握れない。分散する</div><div class="m"><span class="src">銘柄A</span><span class="qd q-discipline">想定通りの負け</span><span class="chip">決算プレイ</span></div></div>
+      <div class="shot">
+        <div class="shot-frame frame-phone">
+          <img src="{% static 'images/lp/karte.png' %}" alt="投資家カルテ・知識ライブラリ" loading="lazy"
+               onerror="this.closest('.shot').classList.add('shot-missing')">
+        </div>
+        <div class="shot-fallback">
+          <div class="libcard" aria-label="知識ライブラリの例">
+            <div class="libq"><div class="q">為替単独を根拠に投資しない</div><div class="m"><span class="src">トヨタ自動車</span><span class="qd q-lucky">偶然の勝ち</span><span class="chip">円安</span></div></div>
+            <div class="libq"><div class="q">テーマが効くなら、握り続ける</div><div class="m"><span class="src">フジクラ</span><span class="qd q-skill">再現すべき勝ち</span><span class="chip">生成AI</span></div></div>
+            <div class="libq"><div class="q">決算プレイは握れない。分散する</div><div class="m"><span class="src">銘柄A</span><span class="qd q-discipline">想定通りの負け</span><span class="chip">決算プレイ</span></div></div>
+          </div>
+        </div>
       </div>
-      <p class="rc-cap"><i class="bi bi-collection"></i>知識ライブラリ：学びで過去を引き出す</p>
+      <p class="rc-cap"><i class="bi bi-collection"></i>投資家カルテ・知識ライブラリ</p>
     </div>
   </div>
 </section>
