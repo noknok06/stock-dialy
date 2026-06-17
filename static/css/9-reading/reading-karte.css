@@ -380,3 +380,60 @@ body.dark-mode, html[data-theme="dark"] {
 .reading-page .lib-thesis-claim { font-family: var(--font-family-serif); color: var(--ink-soft); font-size: 0.9375rem; }
 .reading-page .lib-thesis-due { font-size: 0.75rem; color: var(--muted-ink); margin-left: auto; white-space: nowrap; }
 .reading-page .lib-thesis-row:hover .lib-thesis-stock { text-decoration: underline; text-underline-offset: 3px; }
+
+/* ============================================================
+   9k-5. 詳細「関連」タブ・モーダルの静音化（ダーク整合）
+   関連カード/経由バッジ/モーダルが旧テーマの青系・極彩色のままだったのを
+   墨×紙トーンへ統一し、薄すぎる文字も可読域へ。
+   ============================================================ */
+/* 関連日記カード：青系 --dm-card をやめ紙面へ */
+.reading-page .related-unified-item {
+  background: var(--paper-raised) !important;
+  border: 1px solid var(--hairline) !important;
+  box-shadow: none !important;
+}
+.reading-page .related-unified-item:hover {
+  background: var(--paper-sunken) !important;
+  border-color: var(--muted-ink) !important;
+}
+.reading-page .related-unified-name { color: var(--ink) !important; }
+.reading-page .related-unified-excerpt { color: var(--muted-ink) !important; }
+.reading-page .related-unified-note { color: var(--faint-ink) !important; }
+.reading-page .related-unified-code {
+  background: var(--paper-sunken) !important;
+  color: var(--muted-ink) !important;
+  border: 1px solid var(--hairline) !important;
+}
+/* 順相関/逆相関の左罫線（インライン）も囁く色に上書き */
+.reading-page .related-unified-item[style*="16a34a"] { border-left-color: var(--profit-up-quiet) !important; }
+.reading-page .related-unified-item[style*="dc2626"] { border-left-color: var(--profit-down-quiet) !important; }
+
+/* 経由バッジ（rs-via）：極彩色をやめ、ラベル文字で意味を伝える統一チップに。
+   「言及」系（本文・相手）だけ僅かに前面、推定/分類系はより静かに */
+.reading-page .rs-via,
+.reading-page .rs-via-symbol,
+.reading-page .rs-via-manual,
+.reading-page .rs-via-mention,
+.reading-page .rs-via-tag,
+.reading-page .rs-via-sector,
+.reading-page .rs-via-hashtag {
+  background: var(--paper-sunken) !important;
+  color: var(--muted-ink) !important;
+  border: 1px solid var(--hairline) !important;
+}
+.reading-page .rs-via-mention { color: var(--ink-soft) !important; border-color: var(--muted-ink) !important; }
+
+/* モーダル：Bootstrap 既定の青灰をやめ、温かい紙面に統一（ライト/ダーク両対応） */
+body.reading-app .modal-content {
+  background-color: var(--paper-raised) !important;
+  border: 1px solid var(--hairline) !important;
+  color: var(--ink) !important;
+}
+body.reading-app .modal-header,
+body.reading-app .modal-footer {
+  border-color: var(--hairline) !important;
+}
+body.reading-app .modal-title { color: var(--ink) !important; }
+body.reading-app .modal-body { color: var(--ink-soft) !important; }
+body.reading-app .modal-body .text-muted,
+body.reading-app .modal-body small { color: var(--muted-ink) !important; }

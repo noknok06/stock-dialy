@@ -567,14 +567,29 @@ body.reading-app .app-footer .social-link:hover {
     background: var(--bg-300);
   }
 }
-/* 調べる系（セパレータ以降）は控えめに。ホバー/選択時のみ前面へ */
+/* 調べる系（セパレータ以降）は控えめに。ホバー/選択時のみ前面へ
+   ※ 0.55 は暗所で読みにくかったため 0.72 に引き上げ（階層は保ちつつ可読性確保） */
 .reading-page .improved-tabs .improved-tab-sep ~ .improved-tab-item .improved-tab-link {
-  opacity: 0.55;
+  opacity: 0.72;
   transition: opacity var(--duration-200, 200ms) var(--ease-out, ease);
 }
 .reading-page .improved-tabs .improved-tab-sep ~ .improved-tab-item .improved-tab-link:hover,
 .reading-page .improved-tabs .improved-tab-sep ~ .improved-tab-item .improved-tab-link.active {
   opacity: 1;
+}
+
+/* タブの色は青アクセントをやめ、墨×紙へ（選択＝墨、非選択＝ミュート） */
+.reading-page .improved-tab-link { color: var(--muted-ink) !important; }
+.reading-page .improved-tab-link .tab-label,
+.reading-page .improved-tab-link .tab-icon { color: inherit !important; }
+.reading-page .improved-tab-link.active {
+  color: var(--ink) !important;
+  background: transparent !important;
+}
+.reading-page .improved-tab-link.active::after { background-color: var(--ink) !important; }
+.reading-page .improved-tab-link:hover:not(.active) {
+  color: var(--ink-soft) !important;
+  background: transparent !important;
 }
 
 /* 実現損益カード：従属トーン（数字は脇役・損益色は囁く程度） */
