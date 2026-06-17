@@ -1,0 +1,184 @@
+/* ============================================================
+   9k. 投資判断カルテ：検証ループ（予想→結果→検証→学び）
+   Phase 8a。詳細ページの本文直後に置かれる #karte-block を構成。
+   すべて .reading-page スコープ。--paper/--ink 系でダーク自動対応。
+   ============================================================ */
+
+/* 2×2の象限カラー（彩度は抑える。自己診断の可読性のためだけに色を許可） */
+:root {
+  --verdict-skill:      #3f7a5f;  /* 仮説◯×利益: 再現せよ */
+  --verdict-unlucky:    #9a7b3f;  /* 仮説◯×損失: 正しいが報われず */
+  --verdict-lucky:      #b0584f;  /* 仮説×××利益: 偶然（危険） */
+  --verdict-discipline: #5b6b86;  /* 仮説×××損失: 想定通りの負け */
+}
+body.dark-mode, html[data-theme="dark"] {
+  --verdict-skill:      #6cc09a;
+  --verdict-unlucky:    #cBa86a;
+  --verdict-lucky:      #d98a82;
+  --verdict-discipline: #93a4c2;
+}
+
+.reading-page .karte-block {
+  margin: 0 auto var(--space-6, 1.5rem);
+  max-width: 42em;
+}
+
+/* 各行（仮説/検証/学び）は罫線主体で静かに積む */
+.reading-page .karte-row {
+  padding: var(--space-5, 1.25rem) 0;
+  border-top: 1px solid var(--hairline-soft);
+}
+.reading-page .karte-row:first-child { border-top: none; }
+.reading-page .karte-row-head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem;
+}
+.reading-page .karte-row-label {
+  font-size: 0.75rem; font-weight: var(--font-semibold);
+  letter-spacing: 0.06em; color: var(--faint-ink);
+}
+.reading-page .karte-editlink {
+  background: none; border: none; padding: 0;
+  font-size: 0.75rem; color: var(--faint-ink); cursor: pointer;
+}
+.reading-page .karte-editlink:hover { color: var(--ink); text-decoration: underline; }
+
+/* 仮説 */
+.reading-page .karte-claim {
+  font-family: var(--font-family-serif);
+  font-size: 1.0625rem; line-height: 1.7;
+  color: var(--ink); margin: 0.5rem 0 0.6rem;
+}
+.reading-page .karte-thesis-meta {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin-bottom: 0.4rem;
+}
+.reading-page .karte-due {
+  font-size: 0.75rem; color: var(--muted-ink);
+  display: inline-flex; align-items: center; gap: 0.3rem;
+}
+.reading-page .karte-worst {
+  font-size: 0.8125rem; color: var(--muted-ink);
+  margin: 0.2rem 0 0; display: flex; gap: 0.4rem;
+}
+.reading-page .karte-worst .bi { color: var(--faint-ink); }
+
+/* 検証（2×2） */
+.reading-page .karte-verdict {
+  border-left: 3px solid var(--hairline);
+  padding-left: var(--space-4, 1rem);
+}
+.reading-page .karte-q-skill      { border-left-color: var(--verdict-skill); }
+.reading-page .karte-q-unlucky    { border-left-color: var(--verdict-unlucky); }
+.reading-page .karte-q-lucky      { border-left-color: var(--verdict-lucky); }
+.reading-page .karte-q-discipline { border-left-color: var(--verdict-discipline); }
+
+.reading-page .karte-verdict-head {
+  display: flex; align-items: baseline; gap: 0.6rem; margin: 0.3rem 0 0.5rem;
+}
+.reading-page .karte-quadrant {
+  font-weight: var(--font-semibold); color: var(--ink); font-size: 0.9375rem;
+}
+.reading-page .karte-q-skill .karte-quadrant      { color: var(--verdict-skill); }
+.reading-page .karte-q-unlucky .karte-quadrant    { color: var(--verdict-unlucky); }
+.reading-page .karte-q-lucky .karte-quadrant      { color: var(--verdict-lucky); }
+.reading-page .karte-q-discipline .karte-quadrant { color: var(--verdict-discipline); }
+.reading-page .karte-stars { color: var(--muted-ink); font-size: 0.875rem; letter-spacing: 0.05em; }
+
+.reading-page .karte-verdict-axes {
+  display: flex; align-items: baseline; gap: 0.5rem;
+  font-size: 0.875rem; color: var(--ink-soft); margin-bottom: 0.35rem;
+}
+.reading-page .karte-axis-k {
+  font-size: 0.7rem; color: var(--faint-ink); margin-right: 0.3rem;
+}
+.reading-page .karte-axis-sep { color: var(--hairline); }
+.reading-page .karte-missed { font-size: 0.8125rem; color: var(--muted-ink); margin: 0; }
+
+/* 学び＝引用ブロック */
+.reading-page .karte-learning-quote {
+  font-family: var(--font-family-serif);
+  font-size: 1.0625rem; line-height: 1.7; color: var(--ink);
+  margin: 0.5rem 0 0; padding-left: var(--space-4, 1rem);
+  border-left: 2px solid var(--ink);
+  font-style: normal;
+}
+
+/* 検証を促す CTA */
+.reading-page .karte-verify-cta {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: 0.75rem;
+}
+.reading-page .karte-verify-msg { font-size: 0.875rem; color: var(--muted-ink); display: inline-flex; gap: 0.4rem; align-items: center; }
+.reading-page .karte-verify-cta.is-due .karte-verify-msg { color: var(--ink); }
+.reading-page .karte-verify-cta.is-due .karte-verify-msg .bi { color: var(--verdict-unlucky); }
+
+/* 仮説が無いときの控えめな導入ボタン */
+.reading-page .karte-add-thesis {
+  width: 100%; text-align: left;
+  display: grid; grid-template-columns: auto 1fr; column-gap: 0.6rem; row-gap: 0.15rem;
+  align-items: center;
+  background: var(--paper-sunken); border: 1px dashed var(--hairline);
+  border-radius: var(--radius-md, 10px);
+  padding: var(--space-4, 1rem) var(--space-5, 1.25rem);
+  cursor: pointer; color: var(--ink);
+}
+.reading-page .karte-add-thesis:hover { border-color: var(--muted-ink); background: var(--paper-raised); }
+.reading-page .karte-add-thesis .bi { grid-row: 1 / 3; font-size: 1.1rem; color: var(--muted-ink); }
+.reading-page .karte-add-main { font-weight: var(--font-medium); }
+.reading-page .karte-add-hint { font-size: 0.75rem; color: var(--faint-ink); }
+
+/* フォーム */
+.reading-page .karte-form {
+  background: var(--paper-sunken);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md, 10px);
+  padding: var(--space-5, 1.25rem);
+}
+.reading-page .karte-form-title {
+  font-weight: var(--font-semibold); color: var(--ink); margin-bottom: 0.5rem;
+  display: flex; align-items: center; gap: 0.4rem;
+}
+.reading-page .karte-form-claim {
+  font-family: var(--font-family-serif); color: var(--ink-soft);
+  font-size: 0.9375rem; margin: 0 0 0.75rem;
+}
+.reading-page .karte-label {
+  display: block; font-size: 0.8125rem; color: var(--muted-ink);
+  margin: 0.75rem 0 0.3rem; font-weight: var(--font-medium);
+}
+.reading-page .karte-req {
+  font-size: 0.7rem; color: var(--verdict-lucky); margin-left: 0.3rem;
+}
+.reading-page .karte-hint-inline { font-size: 0.7rem; color: var(--faint-ink); font-weight: var(--font-regular); margin-left: 0.4rem; }
+.reading-page .karte-form input[type="text"],
+.reading-page .karte-form input[type="date"],
+.reading-page .karte-form select,
+.reading-page .karte-form .form-control,
+.reading-page .karte-form .form-select {
+  width: 100%;
+  background: var(--paper);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm, 6px);
+  color: var(--ink);
+  padding: 0.5rem 0.65rem;
+  font-size: 0.9375rem;
+}
+.reading-page .karte-form select[multiple] { min-height: 5rem; }
+.reading-page .karte-form-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.reading-page .karte-radio-row { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; margin-top: 0.2rem; }
+.reading-page .karte-radio-row label { font-size: 0.875rem; color: var(--ink-soft); display: inline-flex; align-items: center; gap: 0.3rem; }
+.reading-page .karte-check { display: flex; align-items: center; gap: 0.45rem; margin-top: 0.6rem; font-size: 0.875rem; color: var(--ink-soft); }
+.reading-page .karte-field-err, .reading-page .karte-form-err {
+  color: var(--verdict-lucky); font-size: 0.8125rem; margin-top: 0.3rem;
+}
+.reading-page .karte-form-actions {
+  display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: var(--space-5, 1.25rem);
+}
+.reading-page .btn-quiet-ghost {
+  background: none; border: none; color: var(--muted-ink);
+  font-size: 0.875rem; cursor: pointer; padding: 0.5rem 0.75rem;
+}
+.reading-page .btn-quiet-ghost:hover { color: var(--ink); }
+
+@media (max-width: 640px) {
+  .reading-page .karte-form-2col { grid-template-columns: 1fr; }
+}

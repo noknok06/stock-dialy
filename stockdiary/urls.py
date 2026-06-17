@@ -130,6 +130,10 @@ path('api/create/', api.api_create_diary, name='api_create'),
 
     path('dashboard/', views.TradingDashboardView.as_view(), name='dashboard'),
     path('review/', views.AnnualReviewView.as_view(), name='annual_review'),
+    # Phase 8a: 検証ループ（仮説・検証）
+    path('<int:diary_id>/karte/', views.karte_block, name='karte_block'),
+    path('<int:diary_id>/thesis/edit/', views.thesis_edit, name='thesis_edit'),
+    path('<int:diary_id>/thesis/verify/', views.thesis_verify, name='thesis_verify'),
     path('compare/', views_comparison.StockComparisonView.as_view(), name='stock_comparison'),
     path('investment-hub/', views_comparison.InvestmentHubView.as_view(), name='investment_hub'),
     path('api/gemini-stock-analysis/', views_comparison.api_gemini_stock_analysis, name='api_gemini_stock_analysis'),

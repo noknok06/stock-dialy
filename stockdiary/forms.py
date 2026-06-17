@@ -2,7 +2,7 @@
 from django import forms
 from django.core.exceptions import ValidationError
 from django.core.validators import ProhibitNullCharactersValidator, MaxLengthValidator
-from .models import StockDiary, Transaction, StockSplit, DiaryNote, sanitize_text_content
+from .models import StockDiary, Transaction, StockSplit, DiaryNote, Thesis, Verdict, sanitize_text_content
 from .utils import detect_currency
 from decimal import Decimal
 
@@ -507,3 +507,65 @@ class DataImportForm(forms.Form):
                 raise forms.ValidationError('.json または .zip ファイルを選択してください')
 
         return data_file
+
+
+class ThesisForm(forms.ModelForm):
+    """投資仮説（検証可能な主張）の作成・編集フォーム。"""
+
+    class Meta:
+        model = Thesis
+        fields = ['claim', 'basis_tags', 'horizon', 'worst_case', 'review_due_date']
+        widgets = {
+            'claim': forms.TextInput(attrs={
+                'class': 'form-control', 'maxlength': 200,
+                'placeholder': '例: 円安が続き、輸出採算の改善が利益を押し上げる',
+            }),
+            'basis_tags': forms.SelectMultiple(attrs={'class': 'form-select'}),
+            'horizon': forms.Select(attrs={'class': 'form-select'}),
+            'worst_case': forms.TextInput(attrs={
+                'class': 'form-control', 'maxlength': 300,
+                'placeholder': '例: 為替が円高に反転し、想定の前提が崩れたとき',
+            }),
+            'review_due_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        }
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if user is not None:
+            from tags.models import Tag
+            self.fields['basis_tags'].queryset = Tag.objects.filter(user=user)
+        self.fields['basis_tags'].required = False
+        self.fields['worst_case'].required = False
+        self.fields['review_due_date'].required = False
+
+
+class VerdictForm(forms.ModelForm):
+    """検証（仮説の当否を損益と分離して記録）フォーム。"""
+
+    class Meta:
+        model = Verdict
+        fields = ['hypothesis_result', 'pnl_result', 'decision_quality',
+                  'missed_factor', 'is_repeatable', 'learning']
+        widgets = {
+            'hypothesis_result': forms.RadioSelect(),
+            'pnl_result': forms.RadioSelect(),
+            'decision_quality': forms.Select(
+                choices=[(i, '★' * i + '☆' * (5 - i)) for i in range(1, 6)],
+                attrs={'class': 'form-select'}),
+            'missed_factor': forms.TextInput(attrs={
+                'class': 'form-control', 'maxlength': 300,
+                'placeholder': '例: 為替より米金利の影響を過小評価していた',
+            }),
+            'learning': forms.TextInput(attrs={
+                'class': 'form-control', 'maxlength': 200,
+                'placeholder': '例: 為替単独を根拠に投資しない',
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for f in ('missed_factor', 'is_repeatable', 'learning'):
+            self.fields[f].required = False
+        # RadioSelect の先頭の空選択肢（---------）を除去
+        self.fields['hypothesis_result'].choices = Verdict.HYP_CHOICES
+        self.fields['pnl_result'].choices = Verdict.PNL_CHOICES

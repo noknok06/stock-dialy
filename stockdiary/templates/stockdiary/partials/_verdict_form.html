@@ -1,0 +1,34 @@
+{# 検証フォーム（HTMX）。仮説の当否と損益を分けて記録する #}
+<div id="karte-block" class="karte-block">
+  <form class="karte-form"
+        hx-post="{% url 'stockdiary:thesis_verify' diary.id %}"
+        hx-target="#karte-block" hx-swap="outerHTML">
+    {% csrf_token %}
+    <div class="karte-form-title"><i class="bi bi-check2-circle"></i> 検証（答え合わせ）</div>
+    <p class="karte-form-claim">「{{ thesis.claim }}」</p>
+
+    <label class="karte-label">仮説は正しかったか <span class="karte-hint-inline">※損益とは別に評価</span></label>
+    <div class="karte-radio-row">{{ form.hypothesis_result }}</div>
+
+    <label class="karte-label">損益の結果</label>
+    <div class="karte-radio-row">{{ form.pnl_result }}</div>
+
+    <label class="karte-label">この判断の質（再現したいほど高く）</label>
+    {{ form.decision_quality }}
+
+    <label class="karte-label">見落としていた要因</label>
+    {{ form.missed_factor }}
+
+    <label class="karte-check">{{ form.is_repeatable }} <span>この判断は再現したい</span></label>
+
+    <label class="karte-label">学び（次に活かす一文）</label>
+    {{ form.learning }}
+
+    <div class="karte-form-actions">
+      <button type="button" class="btn-quiet-ghost"
+              hx-get="{% url 'stockdiary:karte_block' diary.id %}"
+              hx-target="#karte-block" hx-swap="outerHTML">キャンセル</button>
+      <button type="submit" class="btn-quiet">検証を保存</button>
+    </div>
+  </form>
+</div>

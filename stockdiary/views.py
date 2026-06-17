@@ -28,9 +28,9 @@ from django.core.cache import cache
 
 from utils.mixins import ObjectNotFoundRedirectMixin
 from .models import StockDiary, DiaryNote, DiaryNotification
-from .models import Transaction, StockSplit
+from .models import Transaction, StockSplit, Thesis, Verdict
 from .forms import TransactionForm, StockSplitForm, TradeUploadForm
-from .forms import StockDiaryForm, DiaryNoteForm
+from .forms import StockDiaryForm, DiaryNoteForm, ThesisForm, VerdictForm
 from .utils import compute_related_strength, extract_lead, build_theme_recall, find_backlinks
 from company_master.models import CompanyMaster
 from tags.models import Tag
@@ -568,6 +568,20 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         context['note_form'] = DiaryNoteForm(initial={'date': timezone.now().date()})
         notes = self.object.notes.all().order_by('-date')
         context['notes'] = notes
+
+        # 検証ループ（Phase 8a）: 仮説（Thesis）と検証（Verdict）
+        try:
+            thesis = self.object.thesis
+        except Thesis.DoesNotExist:
+            thesis = None
+        verdict = None
+        if thesis:
+            try:
+                verdict = thesis.verdict
+            except Verdict.DoesNotExist:
+                verdict = None
+        context['thesis'] = thesis
+        context['verdict'] = verdict
 
         # 時系列タブ: 取引・分割・継続記録を1本の時系列に統合
         # （売買の前後に何を考えていたかを日付の隣接で読み取れるようにする）
@@ -4076,3 +4090,110 @@ class AnnualReviewView(LoginRequiredMixin, TemplateView):
             'today': today,
         })
         return context
+
+
+# ============================================================
+# Phase 8a: 検証ループ（予想→結果→検証→学び）
+# ============================================================
+
+def _suggest_pnl_result(diary):
+    """既存の損益集計から Verdict.pnl_result の初期値を推定する。"""
+    stats = diary.calculate_cash_only_stats()
+    if stats['current_quantity'] and stats['current_quantity'] > 0:
+        return Verdict.PNL_HOLDING
+    realized = stats['realized_profit'] or 0
+    if realized > 0:
+        return Verdict.PNL_PROFIT
+    if realized < 0:
+        return Verdict.PNL_LOSS
+    return Verdict.PNL_FLAT
+
+
+def _default_review_due_date(diary, horizon):
+    """horizon から検証予定日を補完する（基準は初回購入日 or 今日）。"""
+    base = diary.first_purchase_date or timezone.localdate()
+    days = {'next_earnings': 45, '3m': 90, '6m': 180, '1y': 365, 'long': 365}.get(horizon, 180)
+    return base + timedelta(days=days)
+
+
+def _render_karte_block(request, diary):
+    """検証ループのブロック（仮説→結果→検証→学び）を再描画する。"""
+    try:
+        thesis = diary.thesis
+    except Thesis.DoesNotExist:
+        thesis = None
+    verdict = None
+    if thesis:
+        try:
+            verdict = thesis.verdict
+        except Verdict.DoesNotExist:
+            verdict = None
+    return render(request, 'stockdiary/partials/_karte_block.html', {
+        'diary': diary, 'thesis': thesis, 'verdict': verdict,
+    })
+
+
+@login_required
+def karte_block(request, diary_id):
+    """検証ループのブロックを再描画して返す（フォームのキャンセル用 GET）。"""
+    diary = get_object_or_404(StockDiary, pk=diary_id, user=request.user)
+    return _render_karte_block(request, diary)
+
+
+@login_required
+def thesis_edit(request, diary_id):
+    """仮説（Thesis）の作成・編集（HTMX）。"""
+    diary = get_object_or_404(StockDiary, pk=diary_id, user=request.user)
+    try:
+        instance = diary.thesis
+    except Thesis.DoesNotExist:
+        instance = None
+
+    if request.method == 'POST':
+        form = ThesisForm(request.POST, instance=instance, user=request.user)
+        if form.is_valid():
+            thesis = form.save(commit=False)
+            thesis.diary = diary
+            if not thesis.review_due_date:
+                thesis.review_due_date = _default_review_due_date(diary, thesis.horizon)
+            thesis.save()
+            form.save_m2m()
+            return _render_karte_block(request, diary)
+    else:
+        form = ThesisForm(instance=instance, user=request.user)
+
+    return render(request, 'stockdiary/partials/_thesis_form.html', {
+        'diary': diary, 'form': form, 'thesis': instance,
+    })
+
+
+@login_required
+def thesis_verify(request, diary_id):
+    """検証（Verdict）の記録（HTMX）。仮説の当否を損益と分離して残す。"""
+    diary = get_object_or_404(StockDiary, pk=diary_id, user=request.user)
+    try:
+        thesis = diary.thesis
+    except Thesis.DoesNotExist:
+        # 仮説が無ければ検証できない
+        return _render_karte_block(request, diary)
+    try:
+        instance = thesis.verdict
+    except Verdict.DoesNotExist:
+        instance = None
+
+    if request.method == 'POST':
+        form = VerdictForm(request.POST, instance=instance)
+        if form.is_valid():
+            verdict = form.save(commit=False)
+            verdict.thesis = thesis
+            verdict.save()
+            thesis.status = Thesis.STATUS_VERIFIED
+            thesis.save(update_fields=['status', 'updated_at'])
+            return _render_karte_block(request, diary)
+    else:
+        initial = {} if instance else {'pnl_result': _suggest_pnl_result(diary)}
+        form = VerdictForm(instance=instance, initial=initial)
+
+    return render(request, 'stockdiary/partials/_verdict_form.html', {
+        'diary': diary, 'thesis': thesis, 'form': form,
+    })

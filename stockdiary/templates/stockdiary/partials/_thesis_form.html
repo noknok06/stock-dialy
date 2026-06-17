@@ -1,0 +1,37 @@
+{# 仮説の作成・編集フォーム（HTMX）。root に id を保持して outerHTML 置換に追随 #}
+<div id="karte-block" class="karte-block">
+  <form class="karte-form"
+        hx-post="{% url 'stockdiary:thesis_edit' diary.id %}"
+        hx-target="#karte-block" hx-swap="outerHTML">
+    {% csrf_token %}
+    <div class="karte-form-title"><i class="bi bi-lightbulb"></i> 当時の仮説</div>
+
+    <label class="karte-label">主張 <span class="karte-req">必須</span></label>
+    {{ form.claim }}
+    {% if form.claim.errors %}<div class="karte-field-err">{{ form.claim.errors.0 }}</div>{% endif %}
+
+    <label class="karte-label">根拠の軸（タグ）</label>
+    {{ form.basis_tags }}
+
+    <div class="karte-form-2col">
+      <div>
+        <label class="karte-label">想定検証期間</label>
+        {{ form.horizon }}
+      </div>
+      <div>
+        <label class="karte-label">検証予定日（空欄で自動設定）</label>
+        {{ form.review_due_date }}
+      </div>
+    </div>
+
+    <label class="karte-label">最悪のケース</label>
+    {{ form.worst_case }}
+
+    <div class="karte-form-actions">
+      <button type="button" class="btn-quiet-ghost"
+              hx-get="{% url 'stockdiary:karte_block' diary.id %}"
+              hx-target="#karte-block" hx-swap="outerHTML">キャンセル</button>
+      <button type="submit" class="btn-quiet">仮説を保存</button>
+    </div>
+  </form>
+</div>

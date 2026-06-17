@@ -614,3 +614,140 @@ class DiaryTagDirection(models.Model):
 
     def __str__(self):
         return f'{self.diary.stock_name} × @{self.tag.name} ({self.direction})'
+
+
+class Thesis(models.Model):
+    """投資仮説（検証可能な主張）。
+
+    reason（自由文の投資理由）は残しつつ、その隣に「答え合わせ可能な主張」を
+    構造で持つ。review_due_date がホーム想起と継続のトリガーになる。
+    成長OSの検証ループ（予想→結果→検証→学び）の起点。
+    """
+    diary = models.OneToOneField(StockDiary, on_delete=models.CASCADE, related_name='thesis')
+    claim = models.CharField('主張', max_length=200,
+                             help_text='この投資の主張を一文で（例: 円安継続で輸出採算が改善する）')
+    basis_tags = models.ManyToManyField(Tag, blank=True, related_name='theses',
+                                        verbose_name='根拠の軸')
+
+    HORIZON_CHOICES = [
+        ('next_earnings', '次の決算まで'),
+        ('3m', '3ヶ月'),
+        ('6m', '6ヶ月'),
+        ('1y', '1年'),
+        ('long', '長期（1年超）'),
+    ]
+    horizon = models.CharField('想定検証期間', max_length=20, choices=HORIZON_CHOICES, default='6m')
+    worst_case = models.CharField('最悪のケース', max_length=300, blank=True,
+                                  help_text='この仮説が崩れるとしたら何が起きたときか')
+    review_due_date = models.DateField('検証予定日', null=True, blank=True, db_index=True)
+
+    STATUS_OPEN = 'open'
+    STATUS_VERIFIED = 'verified'
+    STATUS_ABANDONED = 'abandoned'
+    STATUS_CHOICES = [
+        (STATUS_OPEN, '未検証'),
+        (STATUS_VERIFIED, '検証済み'),
+        (STATUS_ABANDONED, '取り下げ'),
+    ]
+    status = models.CharField(max_length=12, choices=STATUS_CHOICES, default=STATUS_OPEN, db_index=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = '仮説'
+        verbose_name_plural = '仮説'
+
+    def __str__(self):
+        return f'{self.diary.stock_name}: {self.claim[:30]}'
+
+    @property
+    def is_due(self):
+        """検証予定日が到来した未検証の仮説か（ホーム想起の判定）"""
+        if self.status != self.STATUS_OPEN or not self.review_due_date:
+            return False
+        return self.review_due_date <= timezone.localdate()
+
+
+class Verdict(models.Model):
+    """検証：仮説の当否を損益と分離して記録する。
+
+    意思決定の質（仮説の当否・判断の質）と結果（損益）を別フィールドで持ち、
+    その組み合わせ（2×2）を成長OSの心臓として可視化する。
+    「仮説は正しいが損失」「仮説は外れたが利益」を一級市民にする。
+    """
+    thesis = models.OneToOneField(Thesis, on_delete=models.CASCADE, related_name='verdict')
+
+    HYP_HIT = 'hit'
+    HYP_PARTIAL = 'partial'
+    HYP_MISS = 'miss'
+    HYP_UNKNOWN = 'unknown'
+    HYP_CHOICES = [
+        (HYP_HIT, '的中'),
+        (HYP_PARTIAL, '部分的中'),
+        (HYP_MISS, '外れ'),
+        (HYP_UNKNOWN, '判定不能'),
+    ]
+    hypothesis_result = models.CharField('仮説の当否', max_length=10, choices=HYP_CHOICES)
+
+    PNL_PROFIT = 'profit'
+    PNL_LOSS = 'loss'
+    PNL_FLAT = 'flat'
+    PNL_HOLDING = 'holding'
+    PNL_CHOICES = [
+        (PNL_PROFIT, '利益'),
+        (PNL_LOSS, '損失'),
+        (PNL_FLAT, 'ほぼ変わらず'),
+        (PNL_HOLDING, '保有中'),
+    ]
+    pnl_result = models.CharField('損益の結果', max_length=10, choices=PNL_CHOICES)
+
+    decision_quality = models.PositiveSmallIntegerField('判断の質', default=3,
+                                                        help_text='1〜5。再現したい判断ほど高い')
+    missed_factor = models.CharField('見落とした要因', max_length=300, blank=True)
+    is_repeatable = models.BooleanField('再現したい判断', default=False)
+    learning = models.CharField('学び', max_length=200, blank=True,
+                                help_text='次に活かす一文（引用される学びの原子）')
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = '検証'
+        verbose_name_plural = '検証'
+
+    def __str__(self):
+        return f'{self.thesis.diary.stock_name}: {self.get_hypothesis_result_display()} × {self.get_pnl_result_display()}'
+
+    @property
+    def hyp_ok(self):
+        return self.hypothesis_result in (self.HYP_HIT, self.HYP_PARTIAL)
+
+    @property
+    def pnl_ok(self):
+        return self.pnl_result == self.PNL_PROFIT
+
+    @property
+    def quadrant(self):
+        """意思決定の質 × 結果 の象限を返す。"""
+        if self.hyp_ok and self.pnl_ok:
+            return 'skill'        # 仮説◯×利益: 再現せよ
+        if self.hyp_ok and not self.pnl_ok:
+            return 'unlucky'      # 仮説◯×損失: 運/握力（学び: 継続の是非）
+        if not self.hyp_ok and self.pnl_ok:
+            return 'lucky'        # 仮説×××利益: 偶然（危険）
+        return 'discipline'       # 仮説×××損失: 想定通りの失敗（学び: 撤退の妥当性）
+
+    @property
+    def quadrant_label(self):
+        return {
+            'skill': '再現すべき勝ち',
+            'unlucky': '正しいが報われず',
+            'lucky': '偶然の勝ち（要注意）',
+            'discipline': '想定通りの負け',
+        }[self.quadrant]
+
+    @property
+    def stars(self):
+        q = max(1, min(5, self.decision_quality or 0))
+        return '★' * q + '☆' * (5 - q)
