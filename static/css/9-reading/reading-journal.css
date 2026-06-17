@@ -207,6 +207,9 @@ body.reading-app .app-footer .social-link:hover {
 .reading-page .home-diary-grid .card-body-inner {
   padding: var(--space-8, 2rem) var(--space-1, 0.25rem);
 }
+/* ヘッダ内側はスワイプパネルを覆うため不透明。紙色に揃えてライト/ダーク両方で背景と馴染ませる
+   （ダークでは旧テーマの青系 --dm-card が出ていた） */
+.reading-page .diary-header-inner { background: var(--paper) !important; }
 
 /* 件数チップ行（継続・取引を脇役に） */
 .reading-page .diary-meta-chips {
@@ -540,6 +543,18 @@ body.reading-app .app-footer .social-link:hover {
   font-family: var(--font-family-mono);
 }
 .reading-page .profit-hero-card.loss .profit-value { color: var(--profit-down-quiet) !important; }
+
+/* 詳細の右サイドバーは「沈んだ二次面」として静音化（左の読書面を主役に） */
+.reading-page .detail-sidebar-col .info-card,
+.reading-page .detail-sidebar-col .profit-hero-card {
+  background: var(--paper-sunken) !important;
+  background-image: none !important;
+  border: 1px solid var(--hairline-soft) !important;
+  box-shadow: none !important;
+}
+.reading-page .detail-sidebar-col .info-card-title {
+  color: var(--faint-ink) !important;
+}
 
 /* ============================================================
    5. 記録フォーム（diary_form）：書くことが楽しい執筆環境
