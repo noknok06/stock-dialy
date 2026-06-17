@@ -182,3 +182,42 @@ body.dark-mode, html[data-theme="dark"] {
 @media (max-width: 640px) {
   .reading-page .karte-form-2col { grid-template-columns: 1fr; }
 }
+
+/* ============================================================
+   9k-2. ホーム想起：答え合わせを待つ仮説（Phase 8b）
+   ============================================================ */
+.reading-page .rp-due-theses {
+  margin-bottom: var(--space-9, 2.25rem);
+  padding: var(--space-5, 1.25rem) var(--space-6, 1.5rem);
+  background: var(--paper-raised);
+  border: 1px solid var(--hairline);
+  border-left: 3px solid var(--verdict-unlucky);
+  border-radius: var(--radius-lg, 14px);
+}
+.reading-page .rp-due-head {
+  display: flex; align-items: center; gap: 0.45rem;
+  font-size: 0.8125rem; font-weight: var(--font-semibold);
+  color: var(--ink); margin-bottom: 0.75rem;
+}
+.reading-page .rp-due-head .bi { color: var(--verdict-unlucky); }
+.reading-page .rp-due-count {
+  font-size: 0.7rem; color: var(--paper); background: var(--verdict-unlucky);
+  border-radius: var(--radius-full, 999px); padding: 0.05rem 0.45rem; font-weight: var(--font-semibold);
+}
+.reading-page .rp-due-item {
+  display: block; text-decoration: none; color: inherit;
+  padding: 0.6rem 0; border-top: 1px solid var(--hairline-soft);
+}
+.reading-page .rp-due-item:first-of-type { border-top: none; }
+.reading-page .rp-due-claim {
+  font-family: var(--font-family-serif); font-size: 0.9375rem;
+  color: var(--ink-soft); margin: 0 0 0.2rem; line-height: 1.6;
+}
+.reading-page .rp-due-stock { font-weight: var(--font-semibold); color: var(--ink); font-family: var(--font-family-base); }
+.reading-page .rp-due-meta {
+  display: flex; gap: 0.6rem; align-items: baseline;
+  font-size: 0.75rem; color: var(--faint-ink);
+}
+.reading-page .rp-due-cta { color: var(--muted-ink); }
+.reading-page .rp-due-item:hover .rp-due-cta { color: var(--ink); text-decoration: underline; }
+.reading-page .rp-due-item:hover .rp-due-stock { text-decoration: underline; text-underline-offset: 3px; }

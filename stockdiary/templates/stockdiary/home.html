@@ -1744,6 +1744,22 @@
   </div>
   {% endif %}{% endif %}
 
+  <!-- 答え合わせを待つ仮説（検証ループの想起。損益ではなくこれが毎日連れ戻す） -->
+  {% if not is_empty_state and recall.due_theses %}
+  <section class="rp-due-theses">
+    <div class="rp-due-head">
+      <i class="bi bi-bell"></i> 答え合わせを待つ仮説
+      <span class="rp-due-count">{{ recall.due_theses|length }}</span>
+    </div>
+    {% for t in recall.due_theses %}
+    <a class="rp-due-item" href="{% url 'stockdiary:detail' t.diary.id %}#section-reason">
+      <p class="rp-due-claim"><span class="rp-due-stock">{{ t.diary.stock_name }}</span>「{{ t.claim }}」</p>
+      <span class="rp-due-meta">検証予定 {{ t.review_due_date|date:"Y/n/j" }}<span class="rp-due-cta">答え合わせをする →</span></span>
+    </a>
+    {% endfor %}
+  </section>
+  {% endif %}
+
   <!-- 今日の想起カード -->
   {% include "stockdiary/components/recall_card.html" %}
 

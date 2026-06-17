@@ -96,3 +96,28 @@ class TestThesisVerifyViews:
         url = reverse('stockdiary:thesis_edit', args=[other.id])
         r = authenticated_client.post(url, {'claim': 'x', 'horizon': '6m'}, HTTP_HX_REQUEST='true')
         assert r.status_code == 404
+
+
+class TestRecallDueTheses:
+    """Phase 8b: 検証予定日が来た未検証の仮説をホーム想起に出す"""
+
+    def test_due_open_thesis_surfaces(self, sample_diary):
+        from stockdiary.services.recall_service import RecallService
+        t = Thesis.objects.create(diary=sample_diary, claim='検証待ち',
+                                  review_due_date=date(2000, 1, 1))
+        recall = RecallService.build(sample_diary.user)
+        assert t in recall['due_theses']
+        assert recall['has_content'] is True
+
+    def test_verified_thesis_does_not_surface(self, sample_diary):
+        from stockdiary.services.recall_service import RecallService
+        Thesis.objects.create(diary=sample_diary, claim='済', review_due_date=date(2000, 1, 1),
+                              status=Thesis.STATUS_VERIFIED)
+        recall = RecallService.build(sample_diary.user)
+        assert recall['due_theses'] == []
+
+    def test_future_due_does_not_surface(self, sample_diary):
+        from stockdiary.services.recall_service import RecallService
+        Thesis.objects.create(diary=sample_diary, claim='未来', review_due_date=date(2999, 1, 1))
+        recall = RecallService.build(sample_diary.user)
+        assert recall['due_theses'] == []

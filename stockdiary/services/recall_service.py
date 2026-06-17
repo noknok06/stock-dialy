@@ -48,16 +48,40 @@ class RecallService:
         anniversary = cls._build_anniversary(user, today)
         unreviewed, unreviewed_count = cls._build_unreviewed(user)
         disclosures = cls._build_disclosures(user, today)
+        due_theses = cls._build_due_theses(user, today)
 
         return {
             'anniversary': anniversary,
             'unreviewed': unreviewed,
             'unreviewed_count': unreviewed_count,
             'disclosures': disclosures,
-            'has_content': bool(anniversary or unreviewed or disclosures),
+            'due_theses': due_theses,
+            'has_content': bool(anniversary or unreviewed or disclosures or due_theses),
             # 折りたたみ時の見出しバッジ用の総件数
-            'total_count': len(anniversary) + unreviewed_count + len(disclosures),
+            'total_count': (len(anniversary) + unreviewed_count
+                            + len(disclosures) + len(due_theses)),
         }
+
+    @classmethod
+    def _build_due_theses(cls, user, today):
+        """検証予定日が到来した未検証の仮説（答え合わせ待ち）。
+
+        成長OSの中核トリガー。損益ではなく「答え合わせ」がユーザーを毎日連れ戻す。
+        """
+        from ..models import Thesis
+
+        return list(
+            Thesis.objects
+            .filter(
+                diary__user=user,
+                diary__is_excluded=False,
+                status=Thesis.STATUS_OPEN,
+                review_due_date__isnull=False,
+                review_due_date__lte=today,
+            )
+            .select_related('diary')
+            .order_by('review_due_date')[:SECTION_LIMIT]
+        )
 
     @classmethod
     def _build_anniversary(cls, user, today):
