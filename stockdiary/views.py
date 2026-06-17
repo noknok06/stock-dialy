@@ -423,11 +423,16 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
         カレンダー日を数える。記録がなければ 0。モデル変更は不要。
         """
         today = timezone.localdate()
+        # 連続日数の表示用途では直近のみで十分。大量データでも全スキャンしないよう窓を限定。
+        window_start = today - timedelta(days=400)
         activity_dates = set(
-            DiaryNote.objects.filter(diary__user=user)
+            DiaryNote.objects.filter(diary__user=user, date__gte=window_start)
             .values_list('date', flat=True)
         )
-        for created in StockDiary.objects.filter(user=user).values_list('created_at', flat=True):
+        for created in (
+            StockDiary.objects.filter(user=user, created_at__date__gte=window_start)
+            .values_list('created_at', flat=True)
+        ):
             if created:
                 activity_dates.add(timezone.localtime(created).date())
 

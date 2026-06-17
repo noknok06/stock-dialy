@@ -437,15 +437,36 @@
 }
 
 /* === Phase 3: 詳細タブを「読む（概要・継続記録）／調べる（取引・時系列・関連・開示）」に視覚分離 === */
+/* グループラベル（読む／調べる）。PCは文字、モバイルは細い区切り線に */
+.reading-page .improved-tabs .improved-tab-lead,
 .reading-page .improved-tabs .improved-tab-sep {
   flex: 0 0 auto;
   align-self: center;
-  width: 1px;
-  height: 1.4rem;
   min-width: 0;
-  margin: 0 0.5rem;
+  display: flex;
+  align-items: center;
   padding: 0;
-  background: var(--bg-300);
+}
+.reading-page .improved-tabs .improved-tab-grouptext {
+  font-family: var(--font-family-base);
+  font-size: 0.6875rem;
+  font-weight: var(--font-semibold);
+  letter-spacing: 0.12em;
+  color: var(--faint-ink);
+  white-space: nowrap;
+  padding: 0 0.7rem;
+}
+.reading-page .improved-tabs .improved-tab-lead .improved-tab-grouptext { padding-left: 0.25rem; }
+@media (max-width: 767px) {
+  /* モバイル: ラベル文字は隠し、セパレータは細い線・先頭ラベルは消す */
+  .reading-page .improved-tabs .improved-tab-grouptext { display: none; }
+  .reading-page .improved-tabs .improved-tab-lead { display: none; }
+  .reading-page .improved-tabs .improved-tab-sep {
+    width: 1px;
+    height: 1.4rem;
+    margin: 0 0.4rem;
+    background: var(--bg-300);
+  }
 }
 /* 調べる系（セパレータ以降）は控えめに。ホバー/選択時のみ前面へ */
 .reading-page .improved-tabs .improved-tab-sep ~ .improved-tab-item .improved-tab-link {
@@ -807,6 +828,59 @@ body.writing-focus .pc-only-header:hover { opacity: 1; }
   letter-spacing: 0.02em;
   color: var(--ink-soft);
 }
+
+/* ============================================================
+   9c. ボトムシート（クイック記録）の色統一 — reading-page 外の共有コンポーネント
+   ============================================================ */
+.bottom-sheet .qn-importance-btn.active,
+.bottom-sheet .qn-type-btn.active {
+  background: var(--ink) !important;
+  background-image: none !important;
+  border-color: var(--ink) !important;
+  color: var(--paper) !important;
+}
+.bottom-sheet .qn-importance-btn:hover:not(.active),
+.bottom-sheet .qn-type-btn:hover:not(.active) {
+  border-color: var(--muted-ink) !important;
+  color: var(--ink) !important;
+}
+.bottom-sheet .btn-success {
+  background: var(--ink) !important;
+  background-image: none !important;
+  border-color: var(--ink) !important;
+  color: var(--paper) !important;
+  box-shadow: none !important;
+}
+.bottom-sheet .topic-chip.active {
+  background: var(--ink) !important;
+  border-color: var(--ink) !important;
+  color: var(--paper) !important;
+}
+
+/* ============================================================
+   9d. 実データ対策 — 長文・長い文字列の折返しを堅牢に
+   ============================================================ */
+.reading-page .diary-name,
+.reading-page .diary-name a,
+.reading-page .stock-title,
+.reading-page .markdown-content,
+.reading-page .rp-prose,
+.reading-page .panel-text,
+.reading-page .diary-excerpt,
+.reading-page .note-body,
+.reading-page .rp-recall-line,
+.reading-page .rp-resurface-snippet,
+.reading-page .tl-lead {
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+/* flex 子要素が長文で溢れないように */
+.reading-page .rp-continuity,
+.reading-page .rp-recall-line,
+.reading-page .diary-header-body,
+.reading-page .diary-title-row { min-width: 0; }
+/* 長い銘柄コードでもヘッダが崩れないように */
+.reading-page .diary-code-icon { word-break: break-all; }
 
 /* ============================================================
    10. モバイル微調整（スワイプ/ボトムシート等の挙動は維持）
