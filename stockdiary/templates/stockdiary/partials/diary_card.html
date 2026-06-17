@@ -1,7 +1,7 @@
 {% load stockdiary_filters %}
 {% load humanize %}
 
-<article class="diary-article{% if diary.is_excluded %} diary-article--excluded{% endif %}"
+<article class="diary-article{% if diary.is_excluded %} diary-article--excluded{% endif %}{% if not diary.reason %} diary-article--thin{% endif %}"
          data-diary-id="{{ diary.id }}"
          data-diary-month="{{ diary.updated_at|date:'Y-m' }}"
          data-diary-month-label="{{ diary.updated_at|date:'Y年n月' }}">

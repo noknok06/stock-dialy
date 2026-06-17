@@ -43,6 +43,11 @@
    端の chrome まで墨×紙トーンへ。--paper/--ink はダークで自動切替するため
    ライト/ダーク両対応。非 reading 画面（dashboard 等）には一切効かない。
    ============================================================ */
+/* ページの地を常に紙色に。ダークの global ネイビー(--dm-bg-base #0f172a)を上書きし、
+   reading 系を一貫した「夜の書斎」トーンにする（青みの違和感を解消） */
+body.reading-app {
+  background-color: var(--paper) !important;
+}
 /* ヘッダ（Bootstrap navbar .bg-light を上書き） */
 body.reading-app .pc-only-header .navbar {
   background-color: var(--paper) !important;
@@ -233,8 +238,19 @@ body.reading-app .app-footer .social-link:hover {
   background: transparent;
   box-shadow: none;
 }
+/* 二重パディング解消：記事自体の余白を消し、間隔は card-body-inner に一本化 */
+.reading-page .home-diary-grid .diary-article { padding: 0 !important; }
 .reading-page .home-diary-grid .card-body-inner {
-  padding: var(--space-8, 2rem) var(--space-1, 0.25rem);
+  padding: 1.4rem var(--space-1, 0.25rem);
+}
+/* 余白は文章量に比例させる：本文（理由）が無い薄い記録はさらに詰める */
+.reading-page .home-diary-grid .diary-article--thin .card-body-inner {
+  padding-top: 0.7rem;
+  padding-bottom: 0.5rem;
+}
+.reading-page .home-diary-grid .diary-article--thin .diary-footer {
+  margin-top: 0.4rem;
+  padding-top: 0.5rem;
 }
 /* ヘッダ内側はスワイプパネルを覆うため不透明。紙色に揃えてライト/ダーク両方で背景と馴染ませる
    （ダークでは旧テーマの青系 --dm-card が出ていた） */
@@ -245,11 +261,11 @@ body.reading-app .app-footer .social-link:hover {
   display: flex;
   flex-wrap: wrap;
   gap: 0.45rem;
-  margin-top: 0.85rem;
+  margin-top: 0.6rem;
 }
 
 /* 本文抜粋（理由）は読書セリフ・3行クリップ */
-.reading-page .diary-excerpt { margin-top: 0.9rem; }
+.reading-page .diary-excerpt { margin-top: 0.7rem; }
 
 /* ============================================================
    3. 日記カード：浮いた部品 → 静かなジャーナル行
@@ -372,9 +388,11 @@ body.reading-app .app-footer .social-link:hover {
 /* フッターのアクション：静かなテキストリンク調 */
 .reading-page .diary-footer {
   border-top: 1px solid var(--hairline-soft);
-  padding-top: var(--space-3, 0.75rem);
-  margin-top: var(--space-4, 1rem);
+  padding-top: 0.6rem;
+  margin-top: 0.7rem;
 }
+/* タグ行（フッター上部）も詰める */
+.reading-page .diary-tags-row--footer { margin-top: 0.7rem; gap: 0.4rem; }
 .reading-page .diary-footer .view-detail,
 .reading-page .diary-footer .note-add-footer-btn {
   color: var(--muted-ink) !important;
