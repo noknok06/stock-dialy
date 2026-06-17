@@ -179,6 +179,39 @@ body.dark-mode, html[data-theme="dark"] {
 }
 .reading-page .btn-quiet-ghost:hover { color: var(--ink); }
 
+/* 根拠の軸：チップ＋サジェスト（タグが多くても破綻しない入力） */
+.reading-page .tag-suggest { position: relative; }
+.reading-page .tag-suggest-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.reading-page .tag-suggest-chips:not(:empty) { margin-bottom: 0.45rem; }
+.reading-page .tag-suggest-chip {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  font-size: 0.8125rem; color: var(--ink);
+  background: var(--paper); border: 1px solid var(--hairline);
+  border-radius: var(--radius-full, 999px); padding: 0.18rem 0.3rem 0.18rem 0.6rem;
+}
+.reading-page .tag-suggest-chip .ts-x {
+  border: none; background: none; color: var(--faint-ink);
+  cursor: pointer; font-size: 0.95rem; line-height: 1; padding: 0 0.15rem;
+}
+.reading-page .tag-suggest-chip .ts-x:hover { color: var(--ink); }
+.reading-page .tag-suggest-input {
+  width: 100%; background: var(--paper);
+  border: 1px solid var(--hairline); border-radius: var(--radius-sm, 6px);
+  color: var(--ink); padding: 0.5rem 0.65rem; font-size: 0.9375rem;
+}
+.reading-page .tag-suggest-list {
+  position: absolute; left: 0; right: 0; top: 100%; z-index: 30;
+  background: var(--paper-raised); border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm, 8px); box-shadow: 0 10px 28px rgba(32,32,29,.12);
+  max-height: 220px; overflow-y: auto; margin-top: 4px; padding: 0.2rem;
+}
+.reading-page .tag-suggest-list .ts-opt {
+  display: block; width: 100%; text-align: left; background: none; border: none;
+  padding: 0.5rem 0.6rem; font-size: 0.875rem; color: var(--ink);
+  cursor: pointer; border-radius: 6px;
+}
+.reading-page .tag-suggest-list .ts-opt:hover { background: var(--paper-sunken); }
+
 @media (max-width: 640px) {
   .reading-page .karte-form-2col { grid-template-columns: 1fr; }
 }

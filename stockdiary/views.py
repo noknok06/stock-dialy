@@ -4244,8 +4244,12 @@ def thesis_edit(request, diary_id):
     else:
         form = ThesisForm(instance=instance, user=request.user)
 
+    from tags.models import Tag as _Tag
+    all_tags = list(_Tag.objects.filter(user=request.user).order_by('name').values('id', 'name'))
+    selected_ids = list(instance.basis_tags.values_list('id', flat=True)) if instance else []
     return render(request, 'stockdiary/partials/_thesis_form.html', {
         'diary': diary, 'form': form, 'thesis': instance,
+        'all_tags': all_tags, 'selected_tag_ids': selected_ids,
     })
 
 

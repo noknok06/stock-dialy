@@ -73,6 +73,25 @@ class TestThesisVerifyViews:
         # review_due_date は horizon から自動補完される
         assert thesis.review_due_date is not None
 
+    def test_create_thesis_with_basis_tags(self, authenticated_client, sample_diary, sample_tags):
+        # チップ＋サジェストUIは name="basis_tags" の hidden input を複数送る
+        url = reverse('stockdiary:thesis_edit', args=[sample_diary.id])
+        r = authenticated_client.post(url, {
+            'claim': 'テーマで持続する',
+            'horizon': '6m',
+            'basis_tags': [sample_tags[0].id, sample_tags[1].id],
+        }, HTTP_HX_REQUEST='true')
+        assert r.status_code == 200
+        thesis = Thesis.objects.get(diary=sample_diary)
+        assert set(thesis.basis_tags.values_list('id', flat=True)) == {sample_tags[0].id, sample_tags[1].id}
+
+    def test_thesis_form_get_provides_all_tags(self, authenticated_client, sample_diary, sample_tags):
+        url = reverse('stockdiary:thesis_edit', args=[sample_diary.id])
+        r = authenticated_client.get(url, HTTP_HX_REQUEST='true')
+        assert r.status_code == 200
+        names = [t['name'] for t in r.context['all_tags']]
+        assert sample_tags[0].name in names
+
     def test_verify_creates_verdict_and_sets_status(self, authenticated_client, sample_diary):
         Thesis.objects.create(diary=sample_diary, claim='主張')
         url = reverse('stockdiary:thesis_verify', args=[sample_diary.id])
