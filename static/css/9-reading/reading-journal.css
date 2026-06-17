@@ -736,6 +736,56 @@ body.writing-focus .pc-only-header:hover { opacity: 1; }
 }
 
 /* ============================================================
+   9b. Phase 4 仕上げ — カラー残渣の一掃・数値の tabular-nums
+   ============================================================ */
+
+/* ステータスバッジをモノトーン基調に（意味はアイコン・形で示す） */
+.reading-page .status-badge-improved {
+  background: var(--paper-sunken) !important;
+  background-image: none !important;
+  color: var(--muted-ink) !important;
+  border: 1px solid var(--hairline) !important;
+  box-shadow: none !important;
+  font-weight: var(--font-medium);
+}
+/* 保有中だけ、淡い緑の縁で“今いきている”状態をそっと示す */
+.reading-page .status-badge-active {
+  color: var(--profit-up-quiet) !important;
+  border-color: color-mix(in srgb, var(--profit-up-quiet) 32%, var(--hairline)) !important;
+}
+
+/* アクティブなフィルター（status-tab / filter-chip）を青 → 墨に */
+.reading-page .status-tab.active {
+  background: var(--ink) !important;
+  background-image: none !important;
+  color: var(--paper) !important;
+}
+.reading-page .filter-chip {
+  background: var(--ink) !important;
+  background-image: none !important;
+  color: var(--paper) !important;
+}
+.reading-page .filter-chip-remove { background: rgba(255, 255, 255, 0.28) !important; color: var(--paper) !important; }
+
+/* 数値は tabular-nums で美しく揃える（脇役だが整える） */
+.reading-page .diary-profit-pill .badge,
+.reading-page .profit-hero-card .profit-value,
+.reading-page .note-price,
+.reading-page .info-value-improved,
+.reading-page .diary-meta-chips .chip-quiet,
+.reading-page .tl-txline {
+  font-variant-numeric: tabular-nums;
+}
+
+/* セクション見出しラベルの階層を明確に（小さく・字間広め・ミュート） */
+.reading-page .info-card-title,
+.reading-page .form-section-title {
+  font-family: var(--font-family-base);
+  letter-spacing: 0.02em;
+  color: var(--ink-soft);
+}
+
+/* ============================================================
    10. モバイル微調整（スワイプ/ボトムシート等の挙動は維持）
    ============================================================ */
 @media (max-width: 640px) {
