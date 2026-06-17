@@ -4092,6 +4092,73 @@ class AnnualReviewView(LoginRequiredMixin, TemplateView):
         return context
 
 
+class LibraryView(LoginRequiredMixin, TemplateView):
+    """ライブラリ（知識アーカイブ）。時系列一覧ではなく、学び・テーマ・仮説で再利用する場所。
+
+    「2025年4月の記事」ではなく「海運で失敗した記録」を探せるようにする。
+    銘柄・時系列の軸は既存（home / diary_summary / timeline）へ委譲し再発明しない。
+    """
+    template_name = 'stockdiary/library.html'
+
+    def get_context_data(self, **kwargs):
+        from django.db.models import Count, Q as _Q
+        from tags.models import Tag
+
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        axis = self.request.GET.get('axis', 'learning')
+        q = self.request.GET.get('q', '').strip()
+        tag_id = self.request.GET.get('tag', '').strip()
+        context['axis'] = axis if axis in ('learning', 'theme', 'thesis') else 'learning'
+        context['q'] = q
+        context['active_tag'] = tag_id
+
+        if axis == 'theme':
+            context['theme_rows'] = (
+                Tag.objects.filter(user=user)
+                .annotate(n=Count('stockdiary', distinct=True))
+                .filter(n__gt=0)
+                .order_by('-n', 'name')
+            )
+
+        elif axis == 'thesis':
+            context['open_theses'] = list(
+                Thesis.objects.filter(diary__user=user, verdict__isnull=True)
+                .select_related('diary').order_by('review_due_date')
+            )
+            verdicts = list(
+                Verdict.objects.filter(thesis__diary__user=user)
+                .select_related('thesis', 'thesis__diary').order_by('-created_at')
+            )
+            context['hit_verdicts'] = [v for v in verdicts if v.hyp_ok]
+            context['miss_verdicts'] = [v for v in verdicts if not v.hyp_ok]
+
+        else:  # learning（既定）: 検証から残った学びの索引
+            verdicts = (
+                Verdict.objects.filter(thesis__diary__user=user)
+                .exclude(learning='')
+                .select_related('thesis', 'thesis__diary')
+                .prefetch_related('thesis__basis_tags')
+                .order_by('-created_at')
+            )
+            if tag_id.isdigit():
+                verdicts = verdicts.filter(thesis__basis_tags__id=int(tag_id))
+            if q:
+                verdicts = verdicts.filter(
+                    _Q(learning__icontains=q)
+                    | _Q(missed_factor__icontains=q)
+                    | _Q(thesis__claim__icontains=q)
+                    | _Q(thesis__diary__stock_name__icontains=q)
+                )
+            context['learnings'] = list(verdicts[:60])
+            # 絞り込み用のテーマタグ
+            context['filter_tags'] = (
+                Tag.objects.filter(user=user, theses__verdict__isnull=False)
+                .distinct().order_by('name')
+            )
+        return context
+
+
 class InvestorKarteView(LoginRequiredMixin, TemplateView):
     """投資家カルテ（自己理解）。成績評価ではなく「どういう投資家か」を返す。
 

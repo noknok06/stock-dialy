@@ -309,3 +309,74 @@ body.dark-mode, html[data-theme="dark"] {
 @media (max-width: 640px) {
   .reading-page .karte-matrix { grid-template-columns: 1fr; }
 }
+
+/* ============================================================
+   9k-4. 知識ライブラリ（Phase 8c）
+   ============================================================ */
+.reading-page .lib-search { display: flex; gap: 0.5rem; margin: 0 0 1rem; }
+.reading-page .lib-search-input {
+  flex: 1; background: var(--paper); border: 1px solid var(--hairline);
+  border-radius: var(--radius-md, 10px); padding: 0.6rem 0.85rem;
+  color: var(--ink); font-size: 0.9375rem;
+}
+.reading-page .lib-tag-filter { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1.25rem; }
+.reading-page .lib-tagchip {
+  font-size: 0.75rem; color: var(--muted-ink);
+  background: var(--paper-sunken); border: 1px solid var(--hairline);
+  border-radius: var(--radius-full, 999px); padding: 0.25rem 0.7rem; text-decoration: none;
+}
+.reading-page .lib-tagchip.active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+/* 学びの索引 */
+.reading-page .lib-learning {
+  display: block; text-decoration: none; color: inherit;
+  padding: var(--space-5, 1.25rem) 0; border-bottom: 1px solid var(--hairline-soft);
+}
+.reading-page .lib-learning:last-child { border-bottom: none; }
+.reading-page .lib-learning-quote {
+  font-family: var(--font-family-serif); font-size: 1.0625rem; line-height: 1.7;
+  color: var(--ink); margin: 0 0 0.4rem; padding-left: var(--space-4, 1rem);
+  border-left: 2px solid var(--ink); font-style: normal;
+}
+.reading-page .lib-learning-meta {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem;
+  padding-left: var(--space-4, 1rem);
+}
+.reading-page .lib-learning-src { font-weight: var(--font-semibold); color: var(--ink); font-size: 0.875rem; }
+.reading-page .lib-learning:hover .lib-learning-src { text-decoration: underline; text-underline-offset: 3px; }
+
+/* 象限ラベル（小） */
+.reading-page .lib-quad { font-size: 0.7rem; font-weight: var(--font-semibold); }
+.reading-page .lib-q-skill      { color: var(--verdict-skill); }
+.reading-page .lib-q-unlucky    { color: var(--verdict-unlucky); }
+.reading-page .lib-q-lucky      { color: var(--verdict-lucky); }
+.reading-page .lib-q-discipline { color: var(--verdict-discipline); }
+
+/* テーマのグリッド */
+.reading-page .lib-theme-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.6rem;
+}
+.reading-page .lib-theme-card {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem;
+  text-decoration: none; color: var(--ink);
+  background: var(--paper-raised); border: 1px solid var(--hairline);
+  border-radius: var(--radius-md, 10px); padding: 0.85rem 1rem;
+}
+.reading-page .lib-theme-card:hover { border-color: var(--muted-ink); }
+.reading-page .lib-theme-name { font-weight: var(--font-medium); }
+.reading-page .lib-theme-count { font-size: 0.8125rem; color: var(--faint-ink); }
+
+/* 仮説の行 */
+.reading-page .lib-num {
+  font-size: 0.7rem; color: var(--faint-ink); font-weight: var(--font-regular); margin-left: 0.35rem;
+}
+.reading-page .lib-thesis-row {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem;
+  text-decoration: none; color: inherit;
+  padding: 0.6rem 0; border-bottom: 1px solid var(--hairline-soft);
+}
+.reading-page .lib-thesis-row:last-child { border-bottom: none; }
+.reading-page .lib-thesis-stock { font-weight: var(--font-semibold); color: var(--ink); }
+.reading-page .lib-thesis-claim { font-family: var(--font-family-serif); color: var(--ink-soft); font-size: 0.9375rem; }
+.reading-page .lib-thesis-due { font-size: 0.75rem; color: var(--muted-ink); margin-left: auto; white-space: nowrap; }
+.reading-page .lib-thesis-row:hover .lib-thesis-stock { text-decoration: underline; text-underline-offset: 3px; }

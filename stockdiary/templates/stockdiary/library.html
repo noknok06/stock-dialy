@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% block body_class %} class="reading-app"{% endblock %}
+{% block title %}知識ライブラリ | カブログ{% endblock %}
+
+{% block content %}
+<div class="container py-4 reading-page">
+  <div class="rp-review">
+
+    <header class="rp-review-head">
+      <a href="{% url 'stockdiary:home' %}" class="rp-back">
+        <i class="bi bi-arrow-left"></i> 投資ノートへ
+      </a>
+      <h1 class="rp-review-title">知識ライブラリ</h1>
+      <p class="rp-review-sub">銘柄ではなく、学び・テーマ・仮説で読み返す。</p>
+
+      <div class="rp-review-periods" role="tablist">
+        <a href="?axis=learning" class="rp-period-chip{% if axis == 'learning' %} active{% endif %}">学び</a>
+        <a href="?axis=theme" class="rp-period-chip{% if axis == 'theme' %} active{% endif %}">テーマ</a>
+        <a href="?axis=thesis" class="rp-period-chip{% if axis == 'thesis' %} active{% endif %}">仮説</a>
+        <a href="{% url 'stockdiary:home' %}" class="rp-period-chip">銘柄・時系列</a>
+      </div>
+    </header>
+
+    {# ===== 学び ===== #}
+    {% if axis == 'learning' %}
+      <form method="get" class="lib-search">
+        <input type="hidden" name="axis" value="learning">
+        <input type="text" name="q" value="{{ q }}" class="lib-search-input"
+               placeholder="学び・銘柄・仮説で探す（例: 海運、為替、決算）">
+        <button type="submit" class="btn-quiet"><i class="bi bi-search"></i></button>
+      </form>
+      {% if filter_tags %}
+      <div class="lib-tag-filter">
+        <a href="?axis=learning" class="lib-tagchip{% if not active_tag %} active{% endif %}">すべて</a>
+        {% for t in filter_tags %}
+        <a href="?axis=learning&tag={{ t.id }}" class="lib-tagchip{% if active_tag == t.id|stringformat:'s' %} active{% endif %}">{{ t.name }}</a>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if learnings %}
+      <div class="lib-learnings">
+        {% for v in learnings %}
+        <a class="lib-learning" href="{% url 'stockdiary:detail' v.thesis.diary.id %}">
+          <blockquote class="lib-learning-quote">{{ v.learning }}</blockquote>
+          <div class="lib-learning-meta">
+            <span class="lib-learning-src">{{ v.thesis.diary.stock_name }}</span>
+            <span class="lib-quad lib-q-{{ v.quadrant }}">{{ v.quadrant_label }}</span>
+            {% for tag in v.thesis.basis_tags.all %}<span class="chip-quiet">{{ tag.name }}</span>{% endfor %}
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="rp-empty">
+        <h2>まだ学びがありません</h2>
+        <p>各銘柄の仮説を「検証」すると、そこで得た学びがここに集まり、いつでも探せるようになります。</p>
+      </div>
+      {% endif %}
+
+    {# ===== テーマ ===== #}
+    {% elif axis == 'theme' %}
+      {% if theme_rows %}
+      <div class="lib-theme-grid">
+        {% for t in theme_rows %}
+        <a class="lib-theme-card" href="{% url 'stockdiary:home' %}?tag={{ t.id }}">
+          <span class="lib-theme-name">{{ t.name }}</span>
+          <span class="lib-theme-count">{{ t.n }}件</span>
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="rp-empty"><h2>まだテーマがありません</h2><p>日記にタグを付けると、テーマで束ねて読み返せます。</p></div>
+      {% endif %}
+
+    {# ===== 仮説 ===== #}
+    {% else %}
+      <section class="rp-section">
+        <div class="rp-section-title">未検証（答え合わせ待ち）{% if open_theses %}<span class="lib-num">{{ open_theses|length }}</span>{% endif %}</div>
+        {% for t in open_theses %}
+        <a class="lib-thesis-row" href="{% url 'stockdiary:detail' t.diary.id %}#section-reason">
+          <span class="lib-thesis-stock">{{ t.diary.stock_name }}</span>
+          <span class="lib-thesis-claim">「{{ t.claim }}」</span>
+          {% if t.review_due_date %}<span class="lib-thesis-due">検証予定 {{ t.review_due_date|date:"Y/n/j" }}</span>{% endif %}
+        </a>
+        {% empty %}<p class="rp-section-note">未検証の仮説はありません。</p>{% endfor %}
+      </section>
+
+      <section class="rp-section">
+        <div class="rp-section-title">的中した仮説 {% if hit_verdicts %}<span class="lib-num">{{ hit_verdicts|length }}</span>{% endif %}</div>
+        {% for v in hit_verdicts %}
+        <a class="lib-thesis-row" href="{% url 'stockdiary:detail' v.thesis.diary.id %}">
+          <span class="lib-thesis-stock">{{ v.thesis.diary.stock_name }}</span>
+          <span class="lib-thesis-claim">「{{ v.thesis.claim }}」</span>
+          <span class="lib-quad lib-q-{{ v.quadrant }}">{{ v.quadrant_label }}</span>
+        </a>
+        {% empty %}<p class="rp-section-note">まだありません。</p>{% endfor %}
+      </section>
+
+      <section class="rp-section">
+        <div class="rp-section-title">外れた仮説 {% if miss_verdicts %}<span class="lib-num">{{ miss_verdicts|length }}</span>{% endif %}</div>
+        {% for v in miss_verdicts %}
+        <a class="lib-thesis-row" href="{% url 'stockdiary:detail' v.thesis.diary.id %}">
+          <span class="lib-thesis-stock">{{ v.thesis.diary.stock_name }}</span>
+          <span class="lib-thesis-claim">「{{ v.thesis.claim }}」</span>
+          <span class="lib-quad lib-q-{{ v.quadrant }}">{{ v.quadrant_label }}</span>
+        </a>
+        {% empty %}<p class="rp-section-note">まだありません。</p>{% endfor %}
+      </section>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}
