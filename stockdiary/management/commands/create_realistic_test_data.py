@@ -13,6 +13,9 @@
   - 売却完結した銘柄には振り返り(retrospective)を付与し、想起・教訓を表現
   - 取引のない監視銘柄（メモ的な日記）も含める
   - タグ方向(DiaryTagDirection)で「このテーマは自分にプラス/マイナス」を表現
+  - 検証ループ(Thesis/Verdict)で投資家カルテ・知識ライブラリ・ホーム想起
+    「答え合わせを待つ仮説」を埋める。検証予定日は相対日で持ち、毎日の
+    デモ再投入でも想起が陳腐化しない（status='open' かつ予定日到来で出る）
 
 使い方:
     python manage.py create_realistic_test_data --username testuser --clear
@@ -26,6 +29,7 @@ from django.utils import timezone
 
 from stockdiary.models import (
     StockDiary, Transaction, DiaryNote, StockSplit, DiaryTagDirection,
+    Thesis, Verdict,
 )
 from stockdiary.services.aggregate_service import AggregateService
 from tags.models import Tag
@@ -41,6 +45,15 @@ User = get_user_model()
 #   notes        : (相対日, content, price, note_type, importance, topic)
 #   splits       : (相対日, ratio, memo, applied)
 #   links        : linked_diaries に張る相手の銘柄コード
+#   thesis       : 検証ループ（仮説・検証）。投資家カルテ／知識ライブラリ／
+#                  ホーム想起「答え合わせを待つ仮説」を埋める。
+#     {claim, basis(タグ名), worst, horizon, due(相対日), status, verdict}
+#       due    : 検証予定日の相対日数（負＝過去）。**毎日のデモ再投入に追随する
+#                よう必ず相対日で持つ**（固定日にすると想起が陳腐化する）
+#       status : 'verified'（検証済み）| 'open'（未検証）。open かつ due≤今日 で
+#                ホームの「答え合わせを待つ仮説」に出る
+#       verdict: (仮説の当否, 損益, 判断の質1-5, 見落とし, 学び, 再現したいか)
+#                ／open は None
 # ─────────────────────────────────────────────────────────────────────────
 DIARIES = [
     # ── テーマ1: 半導体製造装置クラスター ────────────────────────────
@@ -68,6 +81,13 @@ DIARIES = [
             (-150, '四半期決算は受注残が過去最高。粗利率も改善傾向。', 21000, 'earnings', 'high', '決算'),
             (-40, 'AI以外のレガシー半導体は調整中。需要の二極化に留意。', 25500, 'risk', 'medium', 'リスク'),
         ],
+        'thesis': {
+            'claim': 'AI設備投資を起点に、半導体の長期成長サイクルへ乗れる',
+            'basis': ['半導体', 'AI需要'],
+            'worst': 'AI投資が一巡し、設備投資が急減速したとき',
+            'horizon': 'long', 'due': -90, 'status': 'verified',
+            'verdict': ('hit', 'profit', 5, '', '実需に近い装置株は長期で握り続ける', True),
+        },
         'links': ['6857', '6920'],
     },
     {
@@ -90,6 +110,12 @@ DIARIES = [
             (-180, 'HBM向けテスタの引き合いが想定以上との報道。', 6200, 'news', 'medium', '需要'),
             (-30, '通期見通しを上方修正。テスト工程の逼迫が追い風。', 7400, 'earnings', 'high', '決算'),
         ],
+        'thesis': {
+            'claim': 'AIチップのテスト工程の逼迫が構造的に続く',
+            'basis': ['半導体', 'AI需要'],
+            'worst': 'AI向け高性能チップの需要が頭打ちになったとき',
+            'horizon': '1y', 'due': 30, 'status': 'open', 'verdict': None,
+        },
         'links': ['8035'],
     },
     {
@@ -122,6 +148,15 @@ DIARIES = [
                 38000, 'retrospective', 'high', '振り返り',
             ),
         ],
+        'thesis': {
+            'claim': 'EUVマスク検査の独占的地位が高成長を支える',
+            'basis': ['半導体'],
+            'worst': '高い期待がバリュエーションに織り込まれ過ぎたとき',
+            'horizon': '6m', 'due': -100, 'status': 'verified',
+            # 利益は出たが仮説は外れ＝偶然の勝ち（要注意）。振り返りの教訓と一致
+            'verdict': ('miss', 'profit', 2, 'バリュエーションの高さを軽視していた',
+                        '割高銘柄は撤退ラインを最初に決める', False),
+        },
         'links': ['8035'],
     },
 
@@ -147,6 +182,13 @@ DIARIES = [
             (-160, '原油が一時急騰。仮説どおりの値動き。', 2100, 'news', 'medium', '原油'),
             (-50, '自社株買いを発表。需給面でも追い風。', 2200, 'insight', 'medium', '還元'),
         ],
+        'thesis': {
+            'claim': '地政学リスクの高まりで資源価格の高止まりが続く',
+            'basis': ['地政学リスク', '高配当'],
+            'worst': '増産合意などで需給が緩むとき',
+            'horizon': '6m', 'due': -80, 'status': 'verified',
+            'verdict': ('hit', 'profit', 4, '', '地政学はヘッジとして一定枠を持つ', True),
+        },
         'links': ['7011'],
     },
     {
@@ -169,6 +211,13 @@ DIARIES = [
             (-120, '中期経営計画で防衛・エネルギーの受注目標を上方修正。', 1300, 'earnings', 'high', '中計'),
             (-20, '株価は急騰後の過熱感あり。短期は調整も想定。', 1600, 'risk', 'medium', '過熱感'),
         ],
+        'thesis': {
+            'claim': '防衛費の増額が中期の受注残を押し上げる',
+            'basis': ['地政学リスク', '防衛'],
+            'worst': '予算の執行が想定より遅れるとき',
+            # 検証予定日が到来済みの未検証＝ホームの「答え合わせを待つ仮説」に出る
+            'horizon': '6m', 'due': -10, 'status': 'open', 'verdict': None,
+        },
         'links': ['1605'],
     },
 
@@ -193,6 +242,13 @@ DIARIES = [
             (-200, '日銀がマイナス金利を解除。仮説の本丸が動き出した。', 1500, 'news', 'high', '金融政策'),
             (-40, '通期最終益が過去最高を更新。利ざや改善が寄与。', 1850, 'earnings', 'high', '決算'),
         ],
+        'thesis': {
+            'claim': '金融正常化（利上げ）の進展で利ざやが構造的に改善する',
+            'basis': ['金利上昇', '高配当'],
+            'worst': '利上げが想定より緩慢で、利ざや改善が鈍るとき',
+            'horizon': '1y', 'due': -120, 'status': 'verified',
+            'verdict': ('hit', 'profit', 4, '', '金融正常化は時間をかけて効く。腰を据える', True),
+        },
         'links': [],
     },
 
@@ -213,6 +269,13 @@ DIARIES = [
         'notes': [
             (-30, '金融子会社のパーシャルスピンオフ方針が報道。カタリストとして注目。', 13000, 'news', 'medium', '再編'),
         ],
+        'thesis': {
+            'claim': '金融子会社の分離（IPO）が再評価のカタリストになる',
+            'basis': ['エンタメ'],
+            'worst': '分離の方針が撤回・後ろ倒しになったとき',
+            # 監視中に仮説だけ先に置くケース（検証予定日はまだ先）
+            'horizon': '1y', 'due': 60, 'status': 'open', 'verdict': None,
+        },
         'links': ['8035'],
     },
 ]
@@ -249,6 +312,7 @@ class Command(BaseCommand):
         tag_cache = {}
         diary_by_code = {}
         tx_count = note_count = split_count = dir_count = 0
+        thesis_count = verdict_count = 0
 
         def get_tag(name):
             if name not in tag_cache:
@@ -313,6 +377,34 @@ class Command(BaseCommand):
 
             # 取引変更後は必ず集計を再計算（CLAUDE.md 必須ルール）
             AggregateService.recalculate(diary)
+
+            # 検証ループ（仮説・検証）。検証予定日は today からの相対日で持つため
+            # 毎日のデモ再投入でも「答え合わせを待つ仮説」が陳腐化しない。
+            th_spec = spec.get('thesis')
+            if th_spec:
+                status = th_spec.get('status', Thesis.STATUS_OPEN)
+                thesis = Thesis.objects.create(
+                    diary=diary,
+                    claim=th_spec['claim'],
+                    horizon=th_spec.get('horizon', '6m'),
+                    worst_case=th_spec.get('worst', ''),
+                    review_due_date=today + timedelta(days=th_spec['due']),
+                    status=status,
+                )
+                thesis.basis_tags.set([get_tag(n) for n in th_spec.get('basis', [])])
+                thesis_count += 1
+
+                vd = th_spec.get('verdict')
+                if vd:
+                    hyp, pnl, dq, missed, learn, rep = vd
+                    Verdict.objects.create(
+                        thesis=thesis,
+                        hypothesis_result=hyp, pnl_result=pnl,
+                        decision_quality=dq, missed_factor=missed,
+                        learning=learn, is_repeatable=rep,
+                    )
+                    verdict_count += 1
+
             self.stdout.write(f'  ✓ {spec["name"]} ({spec["code"]})')
 
         # ── パス2: linked_diaries（手動リンク）を張る ──
@@ -332,6 +424,7 @@ class Command(BaseCommand):
             f'  日記 {len(DIARIES)} / 取引 {tx_count} / 継続記録 {note_count} / '
             f'分割 {split_count} / タグ方向 {dir_count} / 手動リンク {link_count}'
         )
+        self.stdout.write(f'  仮説 {thesis_count} / 検証 {verdict_count}')
         self._show_statistics(user)
 
     def _show_statistics(self, user):
@@ -350,3 +443,16 @@ class Command(BaseCommand):
         )['s'] or 0
         self.stdout.write(f'  保有中: {holding} / 売却済み: {sold} / 監視のみ: {memo_only}')
         self.stdout.write(f'  振り返り記録: {retro} 件 / 実現損益合計: {profit:,.0f} 円')
+
+        # 検証ループ（カルテ／ライブラリ／ホーム想起の状態）
+        today = timezone.now().date()
+        verified = Thesis.objects.filter(
+            diary__user=user, status=Thesis.STATUS_VERIFIED
+        ).count()
+        due = Thesis.objects.filter(
+            diary__user=user, status=Thesis.STATUS_OPEN,
+            review_due_date__lte=today,
+        ).count()
+        self.stdout.write(
+            f'  仮説（検証済み）: {verified} 件 / 答え合わせを待つ仮説: {due} 件'
+        )
