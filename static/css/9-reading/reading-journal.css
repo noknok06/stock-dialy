@@ -624,6 +624,52 @@ body.reading-app .app-footer .social-link:hover {
 }
 .reading-page .EasyMDEContainer .editor-statusbar { color: var(--faint-ink); }
 
+/* === 完全フルスクリーン執筆：紙の上に独り、中央の読書幅で書く（iA Writer/Bear 風） === */
+.reading-page .editor-toolbar.fullscreen {
+  background: var(--paper-sunken);
+  border: none;
+  border-bottom: 1px solid var(--hairline);
+  opacity: 1 !important;
+  padding: 0.5rem 1rem;
+}
+.reading-page .editor-toolbar.fullscreen::before,
+.reading-page .editor-toolbar.fullscreen::after { display: none; }
+.reading-page .CodeMirror-fullscreen {
+  background: var(--paper) !important;
+  border: none !important;
+  color: var(--ink);
+}
+/* テキストを中央の読書カラム幅に収め、たっぷりの天地余白で没入させる */
+.reading-page .CodeMirror-fullscreen .CodeMirror-lines {
+  max-width: 700px;
+  margin: 0 auto !important;
+  padding: 3rem 1rem 6rem !important;
+}
+.reading-page .CodeMirror-fullscreen .CodeMirror-line {
+  font-family: var(--font-family-serif);
+  line-height: var(--reading-leading-note);
+}
+.reading-page .CodeMirror-fullscreen .CodeMirror-cursor { border-left-color: var(--ink); }
+.reading-page .editor-preview-active-fullscreen,
+.reading-page .editor-preview-active-side {
+  background: var(--paper-sunken) !important;
+}
+.reading-page .editor-preview-active-fullscreen {
+  max-width: 700px; margin: 0 auto; padding: 3rem 1rem 6rem;
+  font-family: var(--font-family-serif);
+}
+.reading-page .editor-statusbar.fullscreen,
+.reading-page .CodeMirror-fullscreen + .editor-statusbar {
+  background: var(--paper-sunken);
+  border-top: 1px solid var(--hairline);
+}
+/* 全画面執筆中は浮遊 chrome（FAB・テーマ切替・フィルタ起動）も消して独りにする */
+body:has(.CodeMirror-fullscreen) .speed-dial-container,
+body:has(.CodeMirror-fullscreen) .theme-toggle-btn,
+body:has(.CodeMirror-fullscreen) .nav-btn {
+  display: none !important;
+}
+
 /* 自動保存の安心感（テンプレート側で .rp-autosave を表示） */
 .reading-page .rp-autosave {
   display: inline-flex;
@@ -641,7 +687,7 @@ body.reading-app .app-footer .social-link:hover {
 body.writing-focus .pc-only-header,
 body.writing-focus .app-footer,
 body.writing-focus .nav-btn,
-body.writing-focus .speed-dial,
+body.writing-focus .speed-dial-container,
 body.writing-focus .wizard-progress-bar,
 body.writing-focus .page-header {
   opacity: 0.28;
@@ -652,7 +698,7 @@ body.writing-focus .pc-only-header:hover { opacity: 1; }
   body.writing-focus .pc-only-header,
   body.writing-focus .app-footer,
   body.writing-focus .nav-btn,
-  body.writing-focus .speed-dial,
+  body.writing-focus .speed-dial-container,
   body.writing-focus .wizard-progress-bar,
   body.writing-focus .page-header { transition: none; }
 }
