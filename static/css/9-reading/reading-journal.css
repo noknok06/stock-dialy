@@ -134,10 +134,41 @@
   letter-spacing: 0.02em;
 }
 
-/* グリッドの間隔を広げて呼吸させる */
+/* === Phase 1: 一覧を1カラムの縦ジャーナルに（読み返す歴史） === */
+/* 本文・見出し・継続バーすべてを 1本の読書カラム幅に揃える */
+.reading-page.home-layout .home-main { max-width: 760px; }
 .reading-page .home-diary-grid {
-  gap: var(--space-6, 1.5rem) !important;
+  grid-template-columns: 1fr !important;
+  gap: 0 !important;
+  max-width: 760px;
+  margin-inline: auto;
 }
+
+/* エントリーは枠なし・ヘアライン区切りで“流れて読める”ように */
+.reading-page .home-diary-grid .diary-article {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--hairline);
+  border-radius: 0;
+}
+.reading-page .home-diary-grid .diary-article:hover {
+  background: transparent;
+  box-shadow: none;
+}
+.reading-page .home-diary-grid .card-body-inner {
+  padding: var(--space-8, 2rem) var(--space-1, 0.25rem);
+}
+
+/* 件数チップ行（継続・取引を脇役に） */
+.reading-page .diary-meta-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.85rem;
+}
+
+/* 本文抜粋（理由）は読書セリフ・3行クリップ */
+.reading-page .diary-excerpt { margin-top: 0.9rem; }
 
 /* ============================================================
    3. 日記カード：浮いた部品 → 静かなジャーナル行
@@ -201,7 +232,7 @@
   margin-top: 0.25rem;
 }
 
-/* 損益ピル：囁く程度に */
+/* 損益ピル：囁く程度に（地は透明・損益色は淡く） */
 .reading-page .diary-profit-pill .badge,
 .reading-page .diary-profit-pill .profit-display {
   background: transparent !important;
@@ -210,6 +241,9 @@
   font-weight: var(--font-medium);
   box-shadow: none !important;
 }
+.reading-page .diary-profit-pill .badge.bg-success { color: var(--profit-up-quiet) !important; }
+.reading-page .diary-profit-pill .badge.bg-danger { color: var(--profit-down-quiet) !important; }
+.reading-page .diary-profit-pill .badge.bg-secondary { color: var(--muted-ink) !important; }
 
 /* ステータス/開示インジケータをモノトーン基調に */
 .reading-page .disclosure-indicator {

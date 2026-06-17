@@ -2907,8 +2907,10 @@ document.addEventListener('click', function(e) {
   const isPCView = window.innerWidth >= 992;
 
   // 初期状態を restore
+  // ジャーナル体験を主役にするため、PCでも既定は折りたたみ。
+  // ユーザーが明示的に開いた（'false'）場合のみ展開状態を尊重する。
   function restoreState() {
-    const isCollapsed = localStorage.getItem(STORAGE_KEY) === 'true';
+    const isCollapsed = localStorage.getItem(STORAGE_KEY) !== 'false';
     if (isCollapsed) {
       collapseSidebar();
     } else {
@@ -2919,7 +2921,8 @@ document.addEventListener('click', function(e) {
   // サイドバーを collapse する
   function collapseSidebar() {
     sidebar.classList.add('collapsed');
-    toggleBtn.style.display = 'flex'; // トグルボタンを表示
+    // トグルボタン（フィルターを開く）は PC のみ表示。モバイルでは出さない
+    if (toggleBtn) toggleBtn.style.display = isPCView ? 'flex' : 'none';
     localStorage.setItem(STORAGE_KEY, 'true');
   }
 

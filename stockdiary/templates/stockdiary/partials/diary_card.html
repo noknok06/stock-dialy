@@ -112,95 +112,28 @@
   </figure>
   {% endif %}
 
-  <!-- ========== タブナビゲーション ========== -->
-  <nav class="diary-tabs" role="tablist">
-    <button class="tab-btn active"
-            data-tab="reason-{{ diary.id }}"
-            role="tab"
-            aria-selected="true"
-            aria-controls="reason-{{ diary.id }}">
-      <i class="bi bi-journal-text"></i>
-      <span class="tab-label">{% if diary.is_memo %}メモ{% else %}理由{% endif %}</span>
-    </button>
-
-    {% if diary.notes.exists %}
-    <button class="tab-btn"
-            data-tab="notes-{{ diary.id }}"
-            data-diary-id="{{ diary.id }}"
-            data-loaded="false"
-            role="tab"
-            aria-selected="false"
-            aria-controls="notes-{{ diary.id }}">
-      <i class="bi bi-journals"></i>
-      <span class="tab-label">継続</span>
-      <span class="tab-badge">{{ diary.notes.count }}</span>
-    </button>
+  <!-- ========== 本文の抜粋（一覧では理由を3行クリップ。タブ切替は廃止し読み返しに集中） ========== -->
+  {% if diary.reason %}
+  <div class="diary-excerpt panel-text markdown-content panel-text--clamp">
+    {% if request.GET.query %}
+      {{ diary.reason|render_markdown|highlight:request.GET.query }}
+    {% else %}
+      {{ diary.reason|render_markdown }}
     {% endif %}
-    
-    {% if diary.transaction_count > 0 %}
-    <button class="tab-btn" 
-            data-tab="transactions-{{ diary.id }}"
-            data-diary-id="{{ diary.id }}"
-            data-loaded="false"
-            role="tab"
-            aria-selected="false"
-            aria-controls="transactions-{{ diary.id }}">
-      <i class="bi bi-cash-coin"></i>
-      <span class="tab-label">取引</span>
-      <span class="tab-badge">{{ diary.transaction_count }}</span>
-    </button>
-    {% endif %}
-  </nav>
-
-  <!-- ========== タブコンテンツ ========== -->
-  <div class="diary-tab-content">
-    
-    <!-- 理由タブ -->
-    <div class="tab-panel active"
-         id="reason-{{ diary.id }}"
-         role="tabpanel">
-
-      <!-- 一覧では3行までクリップ表示（全文は「詳細を見る」へ） -->
-      <div class="panel-text markdown-content panel-text--clamp">
-        {% if request.GET.query %}
-          {{ diary.reason|render_markdown|highlight:request.GET.query }}
-        {% else %}
-          {{ diary.reason|render_markdown }}
-        {% endif %}
-      </div>
-
-    </div>
-
-    <!-- 継続記録タブ -->
-    {% if diary.notes.exists %}
-    <div class="tab-panel"
-         id="notes-{{ diary.id }}"
-         role="tabpanel"
-         style="display: none;">
-      <div class="panel-skeleton">
-        <div class="skeleton-line skeleton-line--lg"></div>
-        <div class="skeleton-line skeleton-line--md"></div>
-        <div class="skeleton-line skeleton-line--sm"></div>
-        <div class="skeleton-line skeleton-line--xs"></div>
-      </div>
-    </div>
-    {% endif %}
-
-    <!-- 取引タブ -->
-    {% if diary.transaction_count > 0 %}
-    <div class="tab-panel"
-         id="transactions-{{ diary.id }}"
-         role="tabpanel"
-         style="display: none;">
-      <div class="panel-skeleton">
-        <div class="skeleton-line skeleton-line--lg"></div>
-        <div class="skeleton-line skeleton-line--md"></div>
-        <div class="skeleton-line skeleton-line--sm"></div>
-      </div>
-    </div>
-    {% endif %}
-
   </div>
+  {% endif %}
+
+  <!-- 継続・取引は件数チップに格下げ（数値は脇役） -->
+  {% if diary.notes.exists or diary.transaction_count > 0 %}
+  <div class="diary-meta-chips">
+    {% if diary.notes.exists %}
+    <span class="chip-quiet"><i class="bi bi-journals"></i>継続 {{ diary.notes.count }}</span>
+    {% endif %}
+    {% if diary.transaction_count > 0 %}
+    <span class="chip-quiet"><i class="bi bi-cash-coin"></i>取引 {{ diary.transaction_count }}</span>
+    {% endif %}
+  </div>
+  {% endif %}
 
   </div><!-- /.card-body-inner -->
 
