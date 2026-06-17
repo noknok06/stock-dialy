@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% block body_class %} class="reading-app"{% endblock %}
+{% load stockdiary_filters %}
+{% load humanize %}
+{% block title %}{{ period_label }}のふりかえり | カブログ{% endblock %}
+
+{% block content %}
+<div class="container py-4 reading-page">
+  <div class="rp-review">
+
+    <header class="rp-review-head">
+      <a href="{% url 'stockdiary:home' %}" class="rp-back">
+        <i class="bi bi-arrow-left"></i> 投資ノートへ
+      </a>
+      <h1 class="rp-review-title">{{ period_label }}のふりかえり</h1>
+      <p class="rp-review-sub">この期間、あなたが考え、学んだことの記録。</p>
+
+      <div class="rp-review-periods" role="tablist">
+        <a href="?period=year" class="rp-period-chip{% if period == 'year' %} active{% endif %}">今年</a>
+        <a href="?period=quarter" class="rp-period-chip{% if period == 'quarter' %} active{% endif %}">今四半期</a>
+      </div>
+    </header>
+
+    {% if not has_content %}
+      <div class="rp-empty">
+        <h2>まだ、この期間の記録はありません</h2>
+        <p>書いた記録や学びが、ここに静かに積み上がっていきます。まずは一行、残してみませんか。</p>
+      </div>
+    {% else %}
+
+      <!-- 書いた量 -->
+      <section class="rp-section rp-review-stats">
+        <div class="rp-stat">
+          <span class="rp-stat-num">{{ new_diaries_count }}</span>
+          <span class="rp-stat-label">銘柄を記録</span>
+        </div>
+        <div class="rp-stat">
+          <span class="rp-stat-num">{{ notes_written_count }}</span>
+          <span class="rp-stat-label">継続記録</span>
+        </div>
+        <div class="rp-stat">
+          <span class="rp-stat-num">{{ retrospectives_count }}</span>
+          <span class="rp-stat-label">振り返り</span>
+        </div>
+      </section>
+
+      <!-- この期間の学び -->
+      {% if learnings %}
+      <section class="rp-section">
+        <div class="rp-section-title">この期間の学び</div>
+        <div class="rp-learnings">
+          {% for item in learnings %}
+          <a class="rp-learning" href="{% url 'stockdiary:detail' item.note.diary.id %}">
+            <div class="rp-learning-meta">
+              <span class="rp-learning-date">{{ item.note.date|date:"n月j日" }}</span>
+              <span class="rp-learning-stock">{{ item.note.diary.stock_name }}</span>
+              {% if item.note.note_type == 'retrospective' %}
+                <span class="chip-quiet"><i class="bi bi-arrow-counterclockwise"></i>振り返り</span>
+              {% elif item.note.topic %}
+                <span class="chip-quiet">{{ item.note.topic }}</span>
+              {% endif %}
+            </div>
+            <p class="rp-learning-text rp-prose">{{ item.snippet }}{% if item.snippet|length >= 110 %}…{% endif %}</p>
+          </a>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      <!-- 勝ち筋タグ（通算） -->
+      {% if winning_tags %}
+      <section class="rp-section">
+        <div class="rp-section-title">あなたの勝ち筋（通算）</div>
+        <p class="rp-section-note">どんな「考え方の分類」で勝てているか。実現損益は通算値です。</p>
+        <div class="rp-tagperf">
+          {% for t in winning_tags %}
+          <div class="rp-tagperf-row">
+            <span class="rp-tagperf-name">{{ t.name }}</span>
+            <span class="rp-tagperf-meta">{{ t.diary_count }}銘柄{% if t.win_rate is not None %} ・ 勝率 {{ t.win_rate }}%{% endif %}</span>
+            <span class="rp-tagperf-profit rp-up">+{{ t.realized_profit|floatformat:0|intcomma }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      <!-- 苦戦している分類（通算） -->
+      {% if struggling_tags %}
+      <section class="rp-section">
+        <div class="rp-section-title">苦戦している分類（通算）</div>
+        <p class="rp-section-note">次に活かすために。ここも自分の傾向です。</p>
+        <div class="rp-tagperf">
+          {% for t in struggling_tags %}
+          <div class="rp-tagperf-row">
+            <span class="rp-tagperf-name">{{ t.name }}</span>
+            <span class="rp-tagperf-meta">{{ t.diary_count }}銘柄{% if t.win_rate is not None %} ・ 勝率 {{ t.win_rate }}%{% endif %}</span>
+            <span class="rp-tagperf-profit rp-down">{{ t.realized_profit|floatformat:0|intcomma }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -932,6 +932,114 @@ body.writing-focus .pc-only-header:hover { opacity: 1; }
 .reading-page .diary-code-icon { word-break: break-all; }
 
 /* ============================================================
+   9e. 年間/四半期レビュー（読み物）
+   ============================================================ */
+.reading-page .rp-review { max-width: 720px; margin: 0 auto; }
+.reading-page .rp-back {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  color: var(--muted-ink); font-size: 0.8125rem; text-decoration: none;
+}
+.reading-page .rp-back:hover { color: var(--ink); }
+.reading-page .rp-review-head { margin: 0.5rem 0 var(--space-10, 2.5rem); }
+.reading-page .rp-review-title {
+  font-family: var(--font-family-base);
+  font-size: 2rem;
+  font-weight: var(--font-bold);
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin: 0.75rem 0 0.4rem;
+}
+.reading-page .rp-review-sub {
+  font-family: var(--font-family-serif);
+  color: var(--muted-ink);
+  margin-bottom: 1.1rem;
+}
+.reading-page .rp-review-periods { display: flex; gap: 0.5rem; }
+.reading-page .rp-period-chip {
+  font-size: 0.8125rem;
+  color: var(--muted-ink);
+  background: var(--paper-sunken);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-full);
+  padding: 0.3rem 0.9rem;
+  text-decoration: none;
+}
+.reading-page .rp-period-chip.active {
+  background: var(--ink); color: var(--paper); border-color: var(--ink);
+}
+
+/* 書いた量 */
+.reading-page .rp-review-stats {
+  display: flex;
+  gap: var(--space-8, 2rem);
+  flex-wrap: wrap;
+  padding: var(--space-6, 1.5rem) 0;
+  border-top: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--hairline);
+}
+.reading-page .rp-stat { display: flex; flex-direction: column; gap: 0.2rem; }
+.reading-page .rp-stat-num {
+  font-family: var(--font-family-base);
+  font-size: 2rem; font-weight: var(--font-bold); line-height: 1; color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.reading-page .rp-stat-label { font-size: 0.8125rem; color: var(--muted-ink); }
+
+.reading-page .rp-section-note {
+  font-size: 0.8125rem; color: var(--faint-ink); margin: -0.25rem 0 1rem;
+}
+
+/* 学びのリスト */
+.reading-page .rp-learnings { display: flex; flex-direction: column; }
+.reading-page .rp-learning {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  padding: var(--space-5, 1.25rem) 0;
+  border-bottom: 1px solid var(--hairline-soft);
+}
+.reading-page .rp-learning:last-child { border-bottom: none; }
+.reading-page .rp-learning-meta {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem;
+}
+.reading-page .rp-learning-date {
+  font-family: var(--font-family-mono); font-size: 0.75rem; color: var(--faint-ink);
+}
+.reading-page .rp-learning-stock { font-weight: var(--font-semibold); color: var(--ink); font-size: 0.9375rem; }
+.reading-page .rp-learning-text { margin: 0; color: var(--ink-soft); }
+.reading-page .rp-learning:hover .rp-learning-stock { text-decoration: underline; text-underline-offset: 3px; }
+
+/* タグ別成績 */
+.reading-page .rp-tagperf { display: flex; flex-direction: column; }
+.reading-page .rp-tagperf-row {
+  display: flex; align-items: baseline; gap: 0.75rem;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--hairline-soft);
+}
+.reading-page .rp-tagperf-row:last-child { border-bottom: none; }
+.reading-page .rp-tagperf-name { font-weight: var(--font-medium); color: var(--ink); min-width: 0; }
+.reading-page .rp-tagperf-meta { font-size: 0.8125rem; color: var(--muted-ink); margin-left: auto; white-space: nowrap; }
+.reading-page .rp-tagperf-profit {
+  font-family: var(--font-family-mono); font-variant-numeric: tabular-nums;
+  font-weight: var(--font-medium); white-space: nowrap;
+}
+.reading-page .rp-tagperf-profit.rp-up { color: var(--profit-up-quiet); }
+.reading-page .rp-tagperf-profit.rp-down { color: var(--profit-down-quiet); }
+
+/* レビュー導線リンク（ホーム） */
+.reading-page .rp-review-link {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  font-size: 0.8125rem; color: var(--muted-ink); text-decoration: none;
+}
+.reading-page .rp-review-link:hover { color: var(--ink); }
+
+@media (max-width: 640px) {
+  .reading-page .rp-review-title { font-size: 1.6rem; }
+  .reading-page .rp-review-stats { gap: var(--space-5, 1.25rem); }
+  .reading-page .rp-stat-num { font-size: 1.6rem; }
+}
+
+/* ============================================================
    10. モバイル微調整（スワイプ/ボトムシート等の挙動は維持）
    ============================================================ */
 @media (max-width: 640px) {

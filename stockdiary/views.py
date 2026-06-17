@@ -39,7 +39,7 @@ from django.views.generic import FormView
 
 from django.db import transaction as db_transaction
 from decimal import Decimal, InvalidOperation
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from collections import Counter, defaultdict, OrderedDict
 import calendar
 import chardet
@@ -2995,6 +2995,74 @@ TAG_AXIS_COLORS = {
 }
 
 
+def build_tag_performance(diaries, limit=15):
+    """タグ別の通算成績（思考の分類 × 結果）を集計して返す。
+
+    「@地政学リスクで買った銘柄は勝てているか」を可視化する自己分析。
+    realized_profit はライフタイム値（通算）である点に注意（呼び出し側でラベリング）。
+    TradingDashboardView と AnnualReviewView で共有する。
+    """
+    tag_stats = {}
+    for diary in diaries:
+        cash_stats = diary.calculate_cash_only_stats()
+        total_invested = cash_stats['total_buy_amount']
+        total_sell = cash_stats['total_sell_amount']
+        current_value = Decimal('0')
+        if cash_stats['current_quantity'] > 0 and cash_stats['average_purchase_price']:
+            current_value = cash_stats['current_quantity'] * cash_stats['average_purchase_price']
+        realized = float(cash_stats['realized_profit'] or 0)
+        is_sold = bool(total_sell and total_sell > 0)
+
+        for tag in diary.tags.all():
+            st = tag_stats.setdefault(tag.id, {
+                'tag_id': tag.id,
+                'name': tag.name,
+                'axis': tag.axis,
+                'axis_label': tag.get_axis_display(),
+                'diary_count': 0,
+                'realized_profit': 0.0,
+                'total_invested': Decimal('0'),
+                'total_sell_amount': Decimal('0'),
+                'current_value': Decimal('0'),
+                'sold_count': 0,
+                'win_count': 0,
+            })
+            st['diary_count'] += 1
+            st['realized_profit'] += realized
+            st['total_invested'] += total_invested
+            st['total_sell_amount'] += total_sell
+            st['current_value'] += current_value
+            if is_sold:
+                st['sold_count'] += 1
+                if realized > 0:
+                    st['win_count'] += 1
+
+    tag_analysis = []
+    for st in tag_stats.values():
+        roi = Decimal('0')
+        if st['total_invested'] > 0:
+            roi = ((st['total_sell_amount'] + st['current_value'] - st['total_invested'])
+                   / st['total_invested'] * 100)
+        tag_win_rate = (round(st['win_count'] / st['sold_count'] * 100, 1)
+                        if st['sold_count'] > 0 else None)
+        tag_analysis.append({
+            'tag_id': st['tag_id'],
+            'name': st['name'],
+            'axis': st['axis'],
+            'axis_label': st['axis_label'],
+            'axis_color': TAG_AXIS_COLORS.get(st['axis'], '#64748b'),
+            'diary_count': st['diary_count'],
+            'realized_profit': round(st['realized_profit'], 0),
+            'total_invested': float(st['total_invested']),
+            'roi': float(round(roi, 1)),
+            'win_rate': tag_win_rate,
+            'sold_count': st['sold_count'],
+            'win_count': st['win_count'],
+        })
+    tag_analysis.sort(key=lambda x: (x['diary_count'], x['realized_profit']), reverse=True)
+    return tag_analysis[:limit]
+
+
 class TradingDashboardView(LoginRequiredMixin, TemplateView):
     """取引分析ダッシュボード（現物取引のみ・ROI改善版）"""
     template_name = 'stockdiary/trading_dashboard.html'
@@ -3932,3 +4000,79 @@ def toggle_exclude_diary(request, diary_id):
     if request.headers.get('HX-Request') == 'true':
         return render(request, 'stockdiary/partials/_exclude_toggle_button.html', {'diary': diary})
     return redirect('stockdiary:detail', pk=diary_id)
+
+
+class AnnualReviewView(LoginRequiredMixin, TemplateView):
+    """年間／四半期レビュー（蓄積の喜び）。
+
+    その期間に「書いた記録・学び」を読み物として振り返り、通算の勝ち筋タグを添える。
+    数値分析ではなく「今年、自分は何を考え、何を学んだか」を読み返す体験。
+    """
+    template_name = 'stockdiary/review.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        today = timezone.localdate()
+
+        period = self.request.GET.get('period', 'year')
+        if period == 'quarter':
+            q = (today.month - 1) // 3          # 0..3
+            start_month = q * 3 + 1
+            start = date(today.year, start_month, 1)
+            end_month = start_month + 2
+            if end_month >= 12:
+                end = date(today.year, 12, 31)
+            else:
+                end = date(today.year, end_month + 1, 1) - timedelta(days=1)
+            period_label = f"{today.year}年 第{q + 1}四半期"
+        else:
+            period = 'year'
+            start = date(today.year, 1, 1)
+            end = date(today.year, 12, 31)
+            period_label = f"{today.year}年"
+
+        # 期間スコープの「書いた量」
+        new_diaries_count = StockDiary.objects.filter(
+            user=user, created_at__date__gte=start, created_at__date__lte=end
+        ).count()
+        notes_qs = DiaryNote.objects.filter(
+            diary__user=user, date__gte=start, date__lte=end
+        )
+        notes_written_count = notes_qs.count()
+        retrospectives_count = notes_qs.filter(note_type='retrospective').count()
+
+        # 今年の学び（高重要 or 振り返り）。スニペットは RecallService と同じ方針で抽出
+        learnings = []
+        for note in (
+            notes_qs.filter(Q(importance='high') | Q(note_type='retrospective'))
+            .select_related('diary')
+            .order_by('-date')[:12]
+        ):
+            if note.note_type == 'retrospective':
+                snippet = (note.content or '')[:110]
+            else:
+                snippet = (note.content or note.topic or '')[:110]
+            learnings.append({'note': note, 'snippet': snippet})
+
+        # 勝ち筋タグ（通算）。realized_profit はライフタイム値のため「通算」と明示して使う
+        tag_analysis = build_tag_performance(
+            StockDiary.objects.filter(user=user).prefetch_related('tags')
+        )
+        winning_tags = [t for t in tag_analysis if t['realized_profit'] > 0][:6]
+        struggling_tags = [t for t in tag_analysis if t['realized_profit'] < 0][:4]
+
+        context.update({
+            'period': period,
+            'period_label': period_label,
+            'new_diaries_count': new_diaries_count,
+            'notes_written_count': notes_written_count,
+            'retrospectives_count': retrospectives_count,
+            'total_records': new_diaries_count + notes_written_count,
+            'learnings': learnings,
+            'winning_tags': winning_tags,
+            'struggling_tags': struggling_tags,
+            'has_content': bool(new_diaries_count or notes_written_count or learnings or winning_tags),
+            'today': today,
+        })
+        return context

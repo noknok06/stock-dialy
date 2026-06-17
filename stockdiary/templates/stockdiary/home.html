@@ -1698,6 +1698,11 @@
         <span class="page-subtitle-dot">·</span>
         <span class="page-subtitle-count">{{ total_diary_count }}件の記録</span>
       </p>
+      {% if not is_empty_state %}
+      <a href="{% url 'stockdiary:annual_review' %}" class="rp-review-link">
+        <i class="bi bi-book"></i>{% now "Y" %}年のふりかえりを読む
+      </a>
+      {% endif %}
     </div>
     <div class="page-header-actions">
       <a href="{% url 'stockdiary:create' %}" class="btn btn-primary d-none d-lg-inline-flex align-items-center">
