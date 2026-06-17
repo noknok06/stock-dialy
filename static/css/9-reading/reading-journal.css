@@ -436,6 +436,27 @@
   box-shadow: none !important;
 }
 
+/* === Phase 3: 詳細タブを「読む（概要・継続記録）／調べる（取引・時系列・関連・開示）」に視覚分離 === */
+.reading-page .improved-tabs .improved-tab-sep {
+  flex: 0 0 auto;
+  align-self: center;
+  width: 1px;
+  height: 1.4rem;
+  min-width: 0;
+  margin: 0 0.5rem;
+  padding: 0;
+  background: var(--bg-300);
+}
+/* 調べる系（セパレータ以降）は控えめに。ホバー/選択時のみ前面へ */
+.reading-page .improved-tabs .improved-tab-sep ~ .improved-tab-item .improved-tab-link {
+  opacity: 0.55;
+  transition: opacity var(--duration-200, 200ms) var(--ease-out, ease);
+}
+.reading-page .improved-tabs .improved-tab-sep ~ .improved-tab-item .improved-tab-link:hover,
+.reading-page .improved-tabs .improved-tab-sep ~ .improved-tab-item .improved-tab-link.active {
+  opacity: 1;
+}
+
 /* 実現損益カード：従属トーン（数字は脇役・損益色は囁く程度） */
 .reading-page .profit-hero-card {
   background: var(--paper-raised) !important;
