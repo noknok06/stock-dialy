@@ -1,0 +1,654 @@
+/* ========================================================================
+   Quiet Journal — reading-journal.css
+   核3画面（home / detail / diary_form）＋ timeline だけに深く効く本命レイヤー。
+
+   .reading-page 配下にのみ強いスタイルを適用し、ダッシュボード・比較・グラフ等の
+   非対象画面には波及させない（可逆・低リスク）。既存の class 名・JSフックは温存し、
+   見た目（タイポ・余白・色・装飾）だけを「静かな投資日誌」へ寄せる。
+   ======================================================================== */
+
+/* ============================================================
+   0. ページの地（紙）と呼吸
+   ============================================================ */
+.reading-page {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-family-base);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* 過剰演出の抑制：背景メッシュ/グラデを .reading-page 内で鎮める */
+.reading-page [class*="gradient-mesh"],
+.reading-page .glass-backdrop {
+  background-image: none !important;
+}
+
+/* 上品なフェードイン（控えめ・reduced-motion 尊重） */
+@keyframes rp-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.reading-page .diary-article,
+.reading-page .rp-section,
+.reading-page .rp-day-group {
+  animation: rp-fade-in var(--duration-300, 300ms) var(--ease-out, ease) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .reading-page * { animation: none !important; }
+}
+
+/* ============================================================
+   1. 読書タイポグラフィ（本文＝主役）
+   投資理由・継続記録・振り返りの長文を疲れず読める読書カラムに
+   ============================================================ */
+.reading-page .markdown-content,
+.reading-page .panel-text,
+.reading-page .note-body,
+.reading-page .reason-fullscreen-body,
+.reading-page .reason-text,
+.reading-page .rp-prose {
+  font-family: var(--font-family-serif);
+  font-size: 1.0625rem;          /* 17px 相当 */
+  line-height: var(--reading-leading);
+  color: var(--ink);
+  letter-spacing: 0.01em;
+  word-break: normal;
+  overflow-wrap: anywhere;
+}
+
+/* 読書カラムの最大幅（measure）。クランプ表示中は適用しない */
+.reading-page .rp-prose,
+.reading-page .reason-fullscreen-body,
+.reading-page .note-body:not(.panel-text--clamp) {
+  max-width: var(--reading-measure);
+}
+
+.reading-page .markdown-content p,
+.reading-page .rp-prose p {
+  margin-bottom: 1.1em;
+}
+.reading-page .markdown-content h1,
+.reading-page .markdown-content h2,
+.reading-page .markdown-content h3,
+.reading-page .rp-prose h2,
+.reading-page .rp-prose h3 {
+  font-family: var(--font-family-base);
+  font-weight: var(--font-semibold);
+  letter-spacing: -0.01em;
+  line-height: 1.4;
+  margin-top: 1.6em;
+  margin-bottom: 0.6em;
+  color: var(--ink);
+}
+.reading-page .markdown-content blockquote,
+.reading-page .rp-prose blockquote {
+  border-left: 2px solid var(--hairline);
+  padding-left: 1em;
+  margin-left: 0;
+  color: var(--muted-ink);
+  font-style: normal;
+}
+.reading-page .markdown-content a {
+  color: var(--ink-soft);
+  text-decoration: underline;
+  text-decoration-color: var(--faint-ink);
+  text-underline-offset: 3px;
+}
+.reading-page .markdown-content code {
+  font-family: var(--font-family-mono);
+  background: var(--paper-sunken);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+  font-size: 0.875em;
+}
+
+/* ============================================================
+   2. 一覧（home）：管理画面 → 投資の歴史（ジャーナル）
+   ============================================================ */
+
+/* 日付グルーピングの見出し（テンプレート側で .rp-day-group / .rp-day-label を挿入） */
+.reading-page .rp-day-group { margin-bottom: var(--space-10, 2.5rem); }
+.reading-page .rp-day-label {
+  grid-column: 1 / -1;   /* グリッド全幅にまたがる日付見出し */
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  font-family: var(--font-family-base);
+  font-size: 0.8125rem;
+  font-weight: var(--font-semibold);
+  letter-spacing: 0.08em;
+  color: var(--muted-ink);
+  text-transform: none;
+  padding: 0 0.25rem 0.75rem;
+  margin-bottom: var(--space-5, 1.25rem);
+  border-bottom: 1px solid var(--hairline-soft);
+  position: sticky;
+  top: 0;
+  background: linear-gradient(var(--paper) 70%, transparent);
+  z-index: 2;
+}
+.reading-page .rp-day-label .rp-day-count {
+  font-weight: var(--font-regular);
+  color: var(--faint-ink);
+  letter-spacing: 0.02em;
+}
+
+/* グリッドの間隔を広げて呼吸させる */
+.reading-page .home-diary-grid {
+  gap: var(--space-6, 1.5rem) !important;
+}
+
+/* ============================================================
+   3. 日記カード：浮いた部品 → 静かなジャーナル行
+   ============================================================ */
+.reading-page .diary-article {
+  background: var(--paper-raised);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  box-shadow: none;
+  transition: border-color var(--duration-200, 200ms) var(--ease-out, ease),
+              box-shadow var(--duration-200, 200ms) var(--ease-out, ease);
+}
+.reading-page .diary-article:hover {
+  border-color: var(--bg-300);
+  box-shadow: var(--shadow-sm);
+}
+/* ホバー時の青いグラデーション・グロー（rich-animations）を鎮める */
+.reading-page .diary-article::before,
+.reading-page .diary-article:hover::before {
+  opacity: 0 !important;
+  animation: none !important;
+  background: none !important;
+}
+.reading-page .card-body-inner { padding: var(--space-6, 1.5rem); }
+
+/* 銘柄名を主役に（大きく上品に） */
+.reading-page .diary-name {
+  font-family: var(--font-family-base);
+  font-size: 1.3125rem;
+  font-weight: var(--font-semibold);
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+}
+.reading-page .diary-name a { color: var(--ink); text-decoration: none; }
+.reading-page .diary-name a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* 銘柄コードは控えめなラベルへ（彩色アイコンを鎮める） */
+.reading-page .diary-code-icon,
+.reading-page .diary-code-icon--active,
+.reading-page .diary-code-icon--sold,
+.reading-page .diary-code-icon--memo {
+  background: var(--paper-sunken) !important;
+  color: var(--muted-ink) !important;
+  border: 1px solid var(--hairline) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  font-family: var(--font-family-mono);
+  font-weight: var(--font-medium);
+  letter-spacing: 0.02em;
+}
+/* 保有中だけ、ごく淡い印で状態を示す（色に頼りすぎない） */
+.reading-page .diary-code-icon--active {
+  border-color: var(--profit-up-quiet) !important;
+  color: var(--profit-up-quiet) !important;
+}
+
+/* メタ行を静かに */
+.reading-page .diary-meta-row {
+  color: var(--muted-ink);
+  font-size: 0.8125rem;
+  margin-top: 0.25rem;
+}
+
+/* 損益ピル：囁く程度に */
+.reading-page .diary-profit-pill .badge,
+.reading-page .diary-profit-pill .profit-display {
+  background: transparent !important;
+  border: 1px solid var(--hairline);
+  font-family: var(--font-family-mono);
+  font-weight: var(--font-medium);
+  box-shadow: none !important;
+}
+
+/* ステータス/開示インジケータをモノトーン基調に */
+.reading-page .disclosure-indicator {
+  background: var(--paper-sunken) !important;
+  color: var(--muted-ink) !important;
+  border: 1px solid var(--hairline) !important;
+}
+
+/* タブ：色面 → 罫線の静かな切替 */
+.reading-page .diary-tabs {
+  border-bottom: 1px solid var(--hairline-soft);
+  gap: 0.25rem;
+}
+.reading-page .diary-tabs .tab-btn {
+  background: transparent !important;
+  color: var(--muted-ink) !important;
+  border: none !important;
+  border-bottom: 2px solid transparent !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  font-weight: var(--font-medium);
+}
+.reading-page .diary-tabs .tab-btn.active {
+  color: var(--ink) !important;
+  border-bottom-color: var(--ink) !important;
+}
+.reading-page .diary-tabs .tab-badge {
+  background: var(--paper-sunken) !important;
+  color: var(--muted-ink) !important;
+}
+
+/* 一覧の理由クランプ：本文は読みやすく、でも詰め込みすぎない */
+.reading-page .panel-text--clamp { color: var(--ink-soft); }
+
+/* タグ：控えめなチップ（方向の色は淡く残す） */
+.reading-page .tag-pill {
+  background: var(--paper-sunken) !important;
+  color: var(--muted-ink) !important;
+  border: 1px solid var(--hairline) !important;
+  font-size: 0.75rem;
+}
+.reading-page .tag-pill--up    { color: var(--profit-up-quiet) !important; }
+.reading-page .tag-pill--down  { color: var(--profit-down-quiet) !important; }
+
+/* フッターのアクション：静かなテキストリンク調 */
+.reading-page .diary-footer {
+  border-top: 1px solid var(--hairline-soft);
+  padding-top: var(--space-3, 0.75rem);
+  margin-top: var(--space-4, 1rem);
+}
+.reading-page .diary-footer .view-detail,
+.reading-page .diary-footer .note-add-footer-btn {
+  color: var(--muted-ink) !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  font-weight: var(--font-medium);
+  font-size: 0.8125rem;
+}
+.reading-page .diary-footer .view-detail:hover,
+.reading-page .diary-footer .note-add-footer-btn:hover { color: var(--ink) !important; }
+
+/* 検索ヒットのバッジ/スニペットも静かに */
+.reading-page .search-hit-badge,
+.reading-page .diary-search-note-snippet {
+  background: var(--paper-sunken) !important;
+  color: var(--muted-ink) !important;
+  border: 1px solid var(--hairline-soft) !important;
+}
+
+/* 画像は枠を細く、余計な影を消す */
+.reading-page .diary-figure img,
+.reading-page .note-figure img {
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--hairline);
+  box-shadow: none;
+}
+
+/* ============================================================
+   4. 詳細（detail）：未来の自分が過去から学ぶ読書体験
+   ============================================================ */
+
+/* セクションの呼吸（現状比 1.3–1.5倍を目安） */
+.reading-page .rp-section { margin-bottom: var(--space-12, 3rem); }
+.reading-page .rp-section-title {
+  font-family: var(--font-family-base);
+  font-size: 0.8125rem;
+  font-weight: var(--font-semibold);
+  letter-spacing: 0.08em;
+  color: var(--faint-ink);
+  margin-bottom: var(--space-3, 0.75rem);
+}
+
+/* 本文（理由）を最上部の読書ブロックとして強調 */
+.reading-page .rp-reason-block {
+  background: var(--paper-raised);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  padding: clamp(1.5rem, 4vw, 2.75rem);
+  margin-bottom: var(--space-10, 2.5rem);
+}
+.reading-page .rp-reason-block .rp-prose { margin: 0 auto; }
+
+/* 「学び」ブロック（振り返り・気づきの強調） */
+.reading-page .rp-insight {
+  border-left: 3px solid var(--ink);
+  background: var(--paper-sunken);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  padding: var(--space-5, 1.25rem) var(--space-6, 1.5rem);
+}
+
+/* 売却後の振り返りプロンプトを目立たせる（でも上品に） */
+.reading-page .rp-retro-prompt {
+  border: 1px dashed var(--bg-300);
+  border-radius: var(--radius-md);
+  padding: var(--space-5, 1.25rem) var(--space-6, 1.5rem);
+  background: var(--paper-raised);
+}
+.reading-page .rp-retro-prompt .rp-retro-title {
+  font-family: var(--font-family-base);
+  font-weight: var(--font-semibold);
+  color: var(--ink);
+  margin-bottom: 0.4rem;
+}
+
+/* 継続記録ノート：カード羅列 → 細い時間軸で結ぶジャーナル */
+.reading-page .notes-list { position: relative; }
+.reading-page .note-item {
+  position: relative;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 0 var(--space-8, 2rem) var(--space-6, 1.5rem);
+  margin: 0 !important;
+  border-left: 2px solid var(--hairline) !important;
+}
+.reading-page .note-item::before {
+  content: "";
+  position: absolute;
+  left: -5px;
+  top: 0.55rem;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 2px solid var(--muted-ink);
+}
+.reading-page .note-item:last-child { border-left-color: transparent !important; }
+
+/* 数値/取引タブは従属トーン（前に出ない） */
+.reading-page .tab_transactions,
+.reading-page .transactions-table,
+.reading-page .note-price {
+  color: var(--muted-ink);
+  font-family: var(--font-family-mono);
+}
+
+/* 詳細上部のアクションバーを静かに */
+.reading-page .detail-actionbar,
+.reading-page .detail-sticky-actions {
+  background: color-mix(in srgb, var(--paper) 88%, transparent);
+  border-bottom: 1px solid var(--hairline-soft);
+}
+
+/* 銘柄名を主役の墨色に（大きく上品に） */
+.reading-page .stock-title {
+  color: var(--ink) !important;
+  font-family: var(--font-family-base);
+  font-size: 1.6rem;
+  font-weight: var(--font-semibold);
+  letter-spacing: -0.01em;
+}
+
+/* 情報カード・サイドバーを紙の面に統一（青みを除去） */
+.reading-page .info-card {
+  background: var(--paper-raised) !important;
+  background-image: none !important;
+  border: 1px solid var(--hairline) !important;
+  box-shadow: none !important;
+}
+
+/* 銘柄コードバッジ・primary バッジ・タグを控えめに */
+.reading-page .stock-symbol-badge,
+.reading-page .badge-primary,
+.reading-page .badge.badge-primary {
+  background: var(--paper-sunken) !important;
+  background-image: none !important;
+  color: var(--muted-ink) !important;
+  border: 1px solid var(--hairline) !important;
+  box-shadow: none !important;
+}
+
+/* 実現損益カード：従属トーン（数字は脇役・損益色は囁く程度） */
+.reading-page .profit-hero-card {
+  background: var(--paper-raised) !important;
+  background-image: none !important;
+  border: 1px solid var(--hairline) !important;
+  box-shadow: none !important;
+}
+.reading-page .profit-hero-card .profit-label { color: var(--muted-ink) !important; }
+.reading-page .profit-hero-card .profit-value {
+  color: var(--profit-up-quiet) !important;
+  font-family: var(--font-family-mono);
+}
+.reading-page .profit-hero-card.loss .profit-value { color: var(--profit-down-quiet) !important; }
+
+/* ============================================================
+   5. 記録フォーム（diary_form）：書くことが楽しい執筆環境
+   ============================================================ */
+.reading-page .form-section {
+  margin-bottom: var(--space-10, 2.5rem);
+}
+.reading-page .form-section-title {
+  font-family: var(--font-family-base);
+  font-weight: var(--font-semibold);
+  color: var(--ink-soft);
+  letter-spacing: 0.01em;
+}
+
+/* EasyMDE：紙に書く感。フォーカス時にツールバーを引かせて没入 */
+.reading-page .EasyMDEContainer .CodeMirror {
+  font-family: var(--font-family-serif);
+  font-size: 1.0625rem;
+  line-height: var(--reading-leading-note);
+  color: var(--ink);
+  background: var(--paper-raised);
+  border: 1px solid var(--hairline);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  padding: 0.75rem 0.25rem;
+}
+.reading-page .EasyMDEContainer .editor-toolbar {
+  border: 1px solid var(--hairline);
+  border-bottom: none;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  background: var(--paper-sunken);
+  opacity: 0.55;
+  transition: opacity var(--duration-200, 200ms) var(--ease-out, ease);
+}
+.reading-page .EasyMDEContainer:focus-within .editor-toolbar { opacity: 1; }
+.reading-page .EasyMDEContainer .editor-toolbar a {
+  color: var(--muted-ink) !important;
+  border: none !important;
+}
+.reading-page .EasyMDEContainer .editor-statusbar { color: var(--faint-ink); }
+
+/* 自動保存の安心感（テンプレート側で .rp-autosave を表示） */
+.reading-page .rp-autosave {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--faint-ink);
+}
+.reading-page .rp-autosave .rp-autosave-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--profit-up-quiet);
+}
+
+/* テキスト入力全般を紙の質感に */
+.reading-page textarea.form-control,
+.reading-page input.form-control,
+.reading-page .form-select {
+  background: var(--paper-raised);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+}
+.reading-page textarea.form-control:focus,
+.reading-page input.form-control:focus,
+.reading-page .form-select:focus {
+  border-color: var(--muted-ink);
+  box-shadow: 0 0 0 3px var(--paper-sunken);
+}
+
+/* ============================================================
+   6. タイムライン（timeline）：時間軸を Quiet Journal トーンへ
+   ============================================================ */
+.reading-page .tl-card {
+  background: var(--paper-raised) !important;
+  border: 1px solid var(--hairline) !important;
+  border-left: 2px solid var(--bg-300) !important;
+  box-shadow: none !important;
+  border-radius: var(--radius-md) !important;
+}
+.reading-page .tl-card:hover { border-color: var(--bg-300) !important; box-shadow: var(--shadow-sm) !important; }
+.reading-page .tl-marker {
+  background: var(--paper) !important;
+  border: 2px solid var(--muted-ink) !important;
+  color: var(--muted-ink) !important;
+  box-shadow: none !important;
+}
+.reading-page .tl-sym {
+  background: var(--paper-sunken) !important;
+  color: var(--muted-ink) !important;
+  font-family: var(--font-family-mono);
+}
+.reading-page .tl-sname { color: var(--ink); font-weight: var(--font-semibold); }
+.reading-page .tl-kbadge {
+  background: var(--paper-sunken) !important;
+  color: var(--muted-ink) !important;
+  border: 1px solid var(--hairline);
+}
+.reading-page .tl-lead {
+  font-family: var(--font-family-serif);
+  line-height: var(--reading-leading-note);
+  color: var(--ink-soft);
+}
+
+/* グラデーション文字を墨色へ（静けさ優先） */
+.reading-page .grad-txt,
+.reading-page .page-title {
+  background: none !important;
+  -webkit-background-clip: initial !important;
+  background-clip: initial !important;
+  -webkit-text-fill-color: currentColor !important;
+  color: var(--ink) !important;
+}
+.reading-page .tl-sub,
+.reading-page .page-subtitle {
+  color: var(--muted-ink);
+}
+
+/* ============================================================
+   7. 継続利用：ストリーク / 1年前の今日（home 上部に常設）
+   ============================================================ */
+.reading-page .rp-continuity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-5, 1.25rem);
+  padding: var(--space-5, 1.25rem) var(--space-6, 1.5rem);
+  margin-bottom: var(--space-8, 2rem);
+  background: var(--paper-raised);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+}
+.reading-page .rp-streak { display: flex; align-items: baseline; gap: 0.5rem; }
+.reading-page .rp-streak-num {
+  font-family: var(--font-family-base);
+  font-size: 1.75rem;
+  font-weight: var(--font-bold);
+  color: var(--ink);
+  line-height: 1;
+}
+.reading-page .rp-streak-label { font-size: 0.8125rem; color: var(--muted-ink); }
+.reading-page .rp-continuity-sep { width: 1px; align-self: stretch; background: var(--hairline); }
+.reading-page .rp-recall-line {
+  font-size: 0.875rem;
+  color: var(--muted-ink);
+}
+.reading-page .rp-recall-line a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+
+/* ============================================================
+   8. 空状態 / 導入：書きたくなる第一歩
+   ============================================================ */
+.reading-page .rp-empty {
+  max-width: 32em;
+  margin: var(--space-16, 4rem) auto;
+  text-align: center;
+  color: var(--muted-ink);
+}
+.reading-page .rp-empty h2 {
+  font-family: var(--font-family-base);
+  font-weight: var(--font-semibold);
+  color: var(--ink);
+  font-size: 1.375rem;
+  margin-bottom: 0.75rem;
+}
+.reading-page .rp-empty p {
+  font-family: var(--font-family-serif);
+  line-height: var(--reading-leading-note);
+}
+
+/* ============================================================
+   9. 統一コンポーネント（静かなボタン/チップ/カード）
+   新規の文言ボタン等で再利用
+   ============================================================ */
+.btn-quiet {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-family-base);
+  font-weight: var(--font-medium);
+  font-size: 0.875rem;
+  color: var(--ink);
+  background: var(--paper-raised);
+  border: 1px solid var(--bg-300);
+  border-radius: var(--radius-sm);
+  padding: 0.55rem 1rem;
+  min-height: var(--touch-target-min);
+  cursor: pointer;
+  transition: background var(--duration-150,150ms) var(--ease-out,ease),
+              border-color var(--duration-150,150ms) var(--ease-out,ease);
+}
+.btn-quiet:hover { background: var(--paper-sunken); border-color: var(--muted-ink); }
+.btn-quiet--primary { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.btn-quiet--primary:hover { background: var(--ink-soft); border-color: var(--ink-soft); }
+
+.chip-quiet {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  font-size: 0.75rem; color: var(--muted-ink);
+  background: var(--paper-sunken);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-full);
+  padding: 0.2rem 0.65rem;
+}
+
+/* 主要 CTA（新規作成・次へ・記録など）を青 → 墨に統一 */
+.reading-page .btn-primary {
+  background: var(--ink) !important;
+  background-image: none !important;
+  border-color: var(--ink) !important;
+  color: var(--paper) !important;
+  box-shadow: none !important;
+}
+.reading-page .btn-primary:hover,
+.reading-page .btn-primary:focus {
+  background: var(--ink-soft) !important;
+  border-color: var(--ink-soft) !important;
+  color: var(--paper) !important;
+}
+/* アクティブなフィルターチップも墨ベースに */
+.reading-page .filter-preset.active,
+.reading-page .status-filter-btn.active,
+.reading-page .sidebar-preset.active {
+  background: var(--ink) !important;
+  background-image: none !important;
+  border-color: var(--ink) !important;
+  color: var(--paper) !important;
+}
+
+/* ============================================================
+   10. モバイル微調整（スワイプ/ボトムシート等の挙動は維持）
+   ============================================================ */
+@media (max-width: 640px) {
+  .reading-page .card-body-inner { padding: var(--space-5, 1.25rem); }
+  .reading-page .diary-name { font-size: 1.1875rem; }
+  .reading-page .markdown-content,
+  .reading-page .panel-text,
+  .reading-page .note-body { font-size: 1rem; }
+  .reading-page .rp-day-label { position: static; }
+}

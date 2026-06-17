@@ -1513,7 +1513,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="diary-detail-container">
+<div class="diary-detail-container reading-page">
   {% if diary.is_excluded %}
   <div class="alert alert-warning d-flex align-items-center gap-2 mb-3" role="alert">
     <i class="bi bi-eye-slash-fill"></i>
@@ -1807,16 +1807,16 @@
         <div class="tab-pane fade show active" id="basic-content" role="tabpanel" aria-labelledby="basic-tab">
           {% if needs_retrospective %}
           <!-- 振り返りプロンプト（売却完結済み・retrospectiveノート未記入時のみ） -->
-          <div class="alert alert-warning d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+          <div class="rp-retro-prompt d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
             <div class="small">
-              <i class="bi bi-arrow-counterclockwise me-1"></i>
+              <div class="rp-retro-title"><i class="bi bi-arrow-counterclockwise me-1"></i>未来のあなたへ、いま学びを残しませんか</div>
               この銘柄は売却済みです。実現損益
               <strong class="{% if diary.realized_profit >= 0 %}text-success{% else %}text-danger{% endif %}">
                 {{ diary.currency_symbol }}{{ diary.realized_profit|floatformat:0 }}
               </strong>
-              — 結果どうだったか・なぜか、を残しておきませんか？
+              — 結果どうだったか・なぜか、を一度書き留めておくと、次の判断が変わります。
             </div>
-            <button type="button" class="btn btn-sm btn-warning" onclick="startRetrospective()">
+            <button type="button" class="btn-quiet btn-quiet--primary" onclick="startRetrospective()">
               <i class="bi bi-pencil me-1"></i>振り返りを書く
             </button>
           </div>
@@ -1843,20 +1843,20 @@
           </div>
           {% endif %}
 
-          <!-- 投資理由/メモ（全幅） -->
-          <div class="info-card mobile-optimized fade-in" id="section-reason" style="margin-bottom: 1rem;">
+          <!-- 投資理由/メモ（全幅・読書ブロックとして主役化） -->
+          <div class="info-card mobile-optimized fade-in rp-reason-block" id="section-reason" style="margin-bottom: 1rem;">
             <div class="info-card-title">
               <i class="bi bi-journal-text"></i>
-              {% if diary.is_memo %}メモ内容{% else %}投資理由{% endif %}
+              {% if diary.is_memo %}メモ{% else %}この銘柄を選んだ理由{% endif %}
               {% if diary.reason %}
               <button type="button" class="reason-expand-btn" id="reasonExpandBtn"
-                      title="全画面で表示">
+                      title="全画面で読む">
                 <i class="bi bi-arrows-fullscreen"></i>
-                <span>全画面</span>
+                <span>全画面で読む</span>
               </button>
               {% endif %}
             </div>
-            <div class="reason-content mobile-optimized markdown-content">
+            <div class="reason-content mobile-optimized markdown-content rp-prose">
               {{ diary.reason|render_markdown_with_mentions:mention_map }}
             </div>
           </div>

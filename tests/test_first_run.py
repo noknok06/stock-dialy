@@ -16,8 +16,8 @@ class TestEmptyStateHome:
         assert response.status_code == 200
         assert response.context['is_empty_state'] is True
         html = response.content.decode()
-        assert 'カブログへようこそ' in html
-        assert '最初の日記を作る' in html
+        assert 'id="onboardingCard"' in html
+        assert '最初の一行を書く' in html
         # フィルター群は非表示
         assert 'id="homeSidebar"' not in html
         assert 'id="filterPanel"' not in html
@@ -26,7 +26,7 @@ class TestEmptyStateHome:
         response = authenticated_client.get(reverse('stockdiary:home'))
         assert response.context['is_empty_state'] is False
         html = response.content.decode()
-        assert 'カブログへようこそ' not in html
+        assert 'id="onboardingCard"' not in html
         assert 'id="homeSidebar"' in html
         assert 'id="filterPanel"' in html
 
@@ -34,7 +34,7 @@ class TestEmptyStateHome:
         """0件でも検索条件があれば通常UI（検索結果なし表示）を出す"""
         response = authenticated_client.get(reverse('stockdiary:home'), {'query': '存在しない'})
         assert response.context['is_empty_state'] is False
-        assert 'カブログへようこそ' not in response.content.decode()
+        assert 'id="onboardingCard"' not in response.content.decode()
 
     def test_no_duplicate_empty_alert(self, authenticated_client):
         """オンボーディングカード表示時は旧空状態アラートを出さない"""

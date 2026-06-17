@@ -394,6 +394,9 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
         from .services.recall_service import RecallService
         context['recall'] = RecallService.build(self.request.user)
 
+        # 連続記録日数（毎日開きたくなる仕掛け）
+        context['record_streak'] = self._compute_record_streak(self.request.user)
+
         # 新規ユーザーの空状態（日記0件 & 絞り込みなし）。
         # この時は検索・フィルター群を隠してオンボーディングカードを表示する
         has_filters = any(
@@ -407,6 +410,37 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
         )
 
         return context
+
+    @staticmethod
+    def _compute_record_streak(user):
+        """直近の連続記録日数を返す（記録のあった日＝継続記録 or 日記作成日）。
+
+        当日または前日に記録があれば「継続中」とみなし、そこから連続する
+        カレンダー日を数える。記録がなければ 0。モデル変更は不要。
+        """
+        today = timezone.localdate()
+        activity_dates = set(
+            DiaryNote.objects.filter(diary__user=user)
+            .values_list('date', flat=True)
+        )
+        for created in StockDiary.objects.filter(user=user).values_list('created_at', flat=True):
+            if created:
+                activity_dates.add(timezone.localtime(created).date())
+
+        if not activity_dates:
+            return 0
+
+        # 当日に記録が無くても、前日まで続いていれば連続中として数える
+        anchor = today if today in activity_dates else today - timedelta(days=1)
+        if anchor not in activity_dates:
+            return 0
+
+        streak = 0
+        cursor = anchor
+        while cursor in activity_dates:
+            streak += 1
+            cursor -= timedelta(days=1)
+        return streak
 
     def get(self, request, *args, **kwargs):
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':

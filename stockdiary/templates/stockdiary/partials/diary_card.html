@@ -1,7 +1,10 @@
 {% load stockdiary_filters %}
 {% load humanize %}
 
-<article class="diary-article{% if diary.is_excluded %} diary-article--excluded{% endif %}" data-diary-id="{{ diary.id }}">
+<article class="diary-article{% if diary.is_excluded %} diary-article--excluded{% endif %}"
+         data-diary-id="{{ diary.id }}"
+         data-diary-month="{{ diary.updated_at|date:'Y-m' }}"
+         data-diary-month-label="{{ diary.updated_at|date:'Y年n月' }}">
 
   <div class="card-body-inner">
 
@@ -219,8 +222,8 @@
   <!-- ========== フッター ========== -->
   <footer class="diary-footer">
     <a href="{% url 'stockdiary:detail' diary.id %}" class="view-detail">
-      <i class="bi bi-box-arrow-up-right"></i>
-      <span class="view-detail-label">詳細を見る</span>
+      <i class="bi bi-book"></i>
+      <span class="view-detail-label">読み返す</span>
     </a>
     {% if diary.is_excluded %}
     <button type="button"
@@ -238,8 +241,8 @@
             class="note-add-footer-btn"
             data-diary-header=".diary-article[data-diary-id='{{ diary.id }}'] .diary-header"
             aria-label="{{ diary.stock_name }}に継続記録を追加">
-      <i class="bi bi-plus-lg"></i>
-      <span>記録追加</span>
+      <i class="bi bi-pencil"></i>
+      <span>いまの考えを残す</span>
     </button>
     {% endif %}
   </footer>

@@ -1496,7 +1496,7 @@
   {% show_template_ad "diary_top" %}
 {% endif %}
 
-<div class="home-layout">
+<div class="home-layout reading-page">
 
 <!-- PC用フィルターサイドバー -->
 <!-- PC用フィルターサイドバー（統合版） -->
@@ -1690,21 +1690,40 @@
     <div class="page-header-content">
       <h1 class="page-title">
         <i class="bi bi-journal-richtext"></i>
-        <span>株式日記</span>
+        <span>投資ノート</span>
       </h1>
       <p class="page-subtitle">
-        あなたの投資思考の記録
+        あなたの思考と経験が積み上がる場所
         <span class="page-subtitle-dot">·</span>
-        <span class="page-subtitle-count">{{ total_diary_count }}件</span>
+        <span class="page-subtitle-count">{{ total_diary_count }}件の記録</span>
       </p>
     </div>
     <div class="page-header-actions">
       <a href="{% url 'stockdiary:create' %}" class="btn btn-primary d-none d-lg-inline-flex align-items-center">
         <i class="bi bi-plus-lg me-1"></i>
-        <span>新規作成</span>
+        <span>いまの考えを残す</span>
       </a>
     </div>
   </div>
+
+  <!-- 継続バー：連続記録 ＋ 想起の一言（毎日開きたくなる仕掛け） -->
+  {% if not is_empty_state and record_streak %}
+  <div class="rp-continuity">
+    <div class="rp-streak">
+      <span class="rp-streak-num">{{ record_streak }}</span>
+      <span class="rp-streak-label">日連続で記録中</span>
+    </div>
+    {% if recall and recall.anniversary %}{% with anni=recall.anniversary.0 %}
+    <div class="rp-continuity-sep"></div>
+    <div class="rp-recall-line">
+      <i class="bi bi-arrow-counterclockwise"></i>
+      1年前の今日、あなたは
+      <a href="{% url 'stockdiary:detail' anni.diary.id %}">{{ anni.diary.stock_name }}</a>
+      について書いていました。
+    </div>
+    {% endwith %}{% endif %}
+  </div>
+  {% endif %}
 
   <!-- 今日の想起カード -->
   {% include "stockdiary/components/recall_card.html" %}
@@ -1938,6 +1957,38 @@
   </div>
 </main><!-- /.home-main -->
 </div><!-- /.home-layout -->
+
+<!-- ジャーナル感：月ごとの日付見出しを挿入（HTMX追記にも追随・冪等） -->
+<script>
+(function () {
+  function groupDiaryJournal() {
+    var grid = document.getElementById('diary-container');
+    if (!grid) return;
+    // 既存の見出しを一旦除去（冪等に再計算）
+    grid.querySelectorAll('.rp-day-label').forEach(function (el) { el.remove(); });
+    var lastMonth = null;
+    // article 要素のみを対象（広告・トリガー要素は無視）
+    Array.prototype.forEach.call(grid.querySelectorAll('article.diary-article'), function (card) {
+      var month = card.getAttribute('data-diary-month');
+      var label = card.getAttribute('data-diary-month-label') || month;
+      if (!month || month === lastMonth) return;
+      lastMonth = month;
+      var head = document.createElement('div');
+      head.className = 'rp-day-label';
+      head.innerHTML = '<span>' + label + '</span>';
+      card.parentNode.insertBefore(head, card);
+    });
+  }
+  document.addEventListener('DOMContentLoaded', groupDiaryJournal);
+  // HTMX による検索・絞り込み・無限スクロール後にも再構築
+  document.body.addEventListener('htmx:afterSwap', function (e) {
+    if (e.target && (e.target.id === 'diary-container' ||
+        (e.target.closest && e.target.closest('#diary-container')))) {
+      groupDiaryJournal();
+    }
+  });
+})();
+</script>
 
 <!-- コンテンツ下部の広告 -->
 {% if show_ads %}
