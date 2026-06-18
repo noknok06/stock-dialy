@@ -238,47 +238,47 @@
 body.dark-mode,
 html[data-theme="dark"],
 html[data-theme="dark"] body {
-  /* ダークモード基本色 */
-  --dm-background: #0f172a;
-  --dm-foreground: #f1f5f9;
-  --dm-card: #1e293b;
-  --dm-border: #334155;
-  --dm-muted: #475569;
-  --dm-muted-foreground: #94a3b8;
-  
-  /* プライマリカラー（新パレット対応） */
-  --dm-primary: var(--accent-100);
-  --dm-primary-hover: var(--accent-200);
-  --dm-primary-active: var(--primary-300);
-  
+  /* ダークモード基本色（ニュートラル・チャコール / 真の黒ベース） */
+  --dm-background: #0a0a0b;        /* ページ背景（ほぼ黒） */
+  --dm-foreground: #ececf1;        /* 本文テキスト */
+  --dm-card: #161618;             /* カード面 */
+  --dm-border: #2c2c30;           /* 境界線 */
+  --dm-muted: #3a3a40;
+  --dm-muted-foreground: #9b9ba5;
+
+  /* プライマリカラー（機能的アクセント = 抑えたスチールブルー） */
+  --dm-primary: #3b82f6;
+  --dm-primary-hover: #60a5fa;
+  --dm-primary-active: #2563eb;
+
   --dm-secondary: var(--primary-200);
   --dm-success: #47d9a8;
   --dm-destructive: #ef4444;
   --dm-accent: #e2b870;
-  --dm-info: var(--accent-100);
-  
+  --dm-info: #60a5fa;
+
   /* ⚠️ 重要: これらの変数をオーバーライド */
   --bg-primary: var(--dm-card);
-  --bg-secondary: rgba(71, 85, 105, 0.3);
-  --bg-tertiary: rgba(71, 85, 105, 0.2);
+  --bg-secondary: rgba(44, 44, 50, 0.45);
+  --bg-tertiary: rgba(44, 44, 50, 0.28);
   --bg-color: var(--dm-background) !important;  /* 強制適用 */
   --card-bg-color: var(--dm-card);
-  
+
   --text-primary: var(--dm-foreground);
   --text-secondary: var(--dm-muted-foreground);
   --text-tertiary: var(--dm-muted);
   --text-color: var(--dm-foreground);
   --text-light: var(--dm-muted-foreground);
-  
+
   --border-primary: var(--dm-border);
   --border-secondary: var(--dm-muted);
-  --border-light: rgba(51, 65, 85, 0.5);
+  --border-light: rgba(44, 44, 50, 0.6);
   --border-color: var(--dm-border);
-  
-  /* グラデーション */
-  --gradient-primary: linear-gradient(135deg, var(--accent-100) 0%, var(--accent-200) 100%);
-  --gradient-secondary: linear-gradient(135deg, rgba(113, 196, 239, 0.2) 0%, rgba(0, 102, 140, 0.2) 100%);
-  --gradient-card: linear-gradient(135deg, var(--dm-card) 0%, rgba(71, 85, 105, 0.3) 100%);
+
+  /* グラデーション（ニュートラル中心 / 青はアクセントのみ） */
+  --gradient-primary: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  --gradient-secondary: linear-gradient(135deg, rgba(96, 165, 250, 0.12) 0%, rgba(37, 99, 235, 0.12) 100%);
+  --gradient-card: linear-gradient(135deg, var(--dm-card) 0%, #1c1c20 100%);
   
   /* ダークモード用シャドウ */
   --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.3);

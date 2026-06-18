@@ -1,9 +1,14 @@
 /* ========================================
-   日記カード ダークモード配色調整
-   サンプル画像に忠実な再現版
-   
+   日記カード ダークモード配色
+   ニュートラル・チャコール（真の黒ベース）版
+
    ⚠️ 重要: このファイルはダークモード専用です
    ライトモードの変数は variables.css で定義されています
+
+   設計方針:
+   - サーフェスは紺(slate)ではなく無彩色のチャコール
+   - 全体を青被りさせるグロー/影は使わない（影はニュートラル）
+   - 青は「機能的アクセント」として意味のある箇所だけに限定
    ======================================== */
 
 /* ========================================
@@ -13,19 +18,31 @@
 [data-theme="dark"],
 body.dark-mode,
 html[data-theme="dark"] body {
-  /* ダークモード専用カラーパレット */
+  /* 機能的アクセント（抑えたスチールブルー） */
   --dm-primary-100: #2563eb;
-  --dm-primary-200: #598EF3;
-  --dm-primary-300: #D3E6FE;
-  --dm-accent-100: #d946ef;
-  --dm-accent-200: #fae8ff;
-  --dm-text-100: #e2e8f0;
-  --dm-text-200: #94a3b8;
-  --dm-text-300: #64748b;
-  --dm-bg-100: #1e293b;
-  --dm-bg-200: #334155;
-  --dm-bg-300: #475569;
-  --dm-bg-base: #0f172a; /* より暗いベース背景 */
+  --dm-primary-200: #60a5fa;
+  --dm-primary-300: #bfdbfe;
+  --dm-accent-100: #d946ef;   /* 売却（マゼンタ系・対の意味色） */
+  --dm-accent-200: #f5d0fe;
+
+  /* テキスト（無彩色寄り） */
+  --dm-text-100: #ececf1;
+  --dm-text-200: #9b9ba5;
+  --dm-text-300: #6b6b75;
+
+  /* サーフェス（チャコール階層） */
+  --dm-bg-100: #161618;   /* カード面 */
+  --dm-bg-200: #202023;   /* 一段上（入力欄・ヘッダー等） */
+  --dm-bg-300: #2c2c30;   /* さらに上 */
+  --dm-bg-base: #0a0a0b;  /* ページ背景（ほぼ黒） */
+
+  /* rgba 合成用ヘルパー（サーフェス/境界/アクセント） */
+  --dm-surface-1-rgb: 22, 22, 24;   /* カード面 */
+  --dm-surface-2-rgb: 32, 32, 36;   /* 一段上 */
+  --dm-border-rgb: 44, 44, 50;
+  --dm-accent-rgb: 96, 165, 250;    /* スチールブルー */
+  --dm-accent-strong-rgb: 37, 99, 235;
+  --dm-sold-rgb: 217, 70, 239;
 }
 
 /* ========================================
@@ -46,18 +63,17 @@ html[data-theme="dark"] body {
    ======================================== */
 .dark-mode .diary-card,
 [data-theme="dark"] .diary-card {
-  background: linear-gradient(145deg, 
-    #1e293b 0%, 
-    #0f172a 100%);
-  border: 1px solid rgba(71, 85, 105);
-  box-shadow: 
+  background: linear-gradient(145deg,
+    #18181b 0%,
+    #131315 100%);
+  border: 1px solid var(--dm-border);
+  box-shadow:
     0 4px 6px -1px rgba(0, 0, 0, 0.5),
-    0 2px 4px -1px rgba(0, 0, 0, 0.3),
-    0 0 0 1px rgba(89, 142, 243, 0.05);
+    0 2px 4px -1px rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(10px);
 }
 
-/* アクセントバー（左側） */
+/* アクセントバー（左側）- 種別の識別に最小限の色を使う */
 .dark-mode .diary-card::before,
 [data-theme="dark"] .diary-card::before {
   opacity: 1;
@@ -65,26 +81,26 @@ html[data-theme="dark"] body {
 
 .dark-mode .diary-card.memo-card::before,
 [data-theme="dark"] .diary-card.memo-card::before {
-  background: linear-gradient(to bottom, 
-    rgba(89, 142, 243, 1) 0%, 
-    rgba(37, 99, 235, 0.8) 70%, 
-    rgba(37, 99, 235, 0) 100%);
+  background: linear-gradient(to bottom,
+    rgba(var(--dm-accent-rgb), 0.9) 0%,
+    rgba(var(--dm-accent-rgb), 0.5) 70%,
+    rgba(var(--dm-accent-rgb), 0) 100%);
 }
 
 .dark-mode .diary-card.sold-card::before,
 [data-theme="dark"] .diary-card.sold-card::before {
-  background: linear-gradient(to bottom, 
-    rgba(217, 70, 239, 1) 0%, 
-    rgba(217, 70, 239, 0.8) 70%, 
-    rgba(217, 70, 239, 0) 100%);
+  background: linear-gradient(to bottom,
+    rgba(var(--dm-sold-rgb), 0.9) 0%,
+    rgba(var(--dm-sold-rgb), 0.5) 70%,
+    rgba(var(--dm-sold-rgb), 0) 100%);
 }
 
 .dark-mode .diary-card:not(.memo-card):not(.sold-card)::before,
 [data-theme="dark"] .diary-card:not(.memo-card):not(.sold-card)::before {
-  background: linear-gradient(to bottom, 
-    rgba(37, 99, 235, 1) 0%, 
-    rgba(37, 99, 235, 0.8) 70%, 
-    rgba(37, 99, 235, 0) 100%);
+  background: linear-gradient(to bottom,
+    rgba(var(--dm-accent-strong-rgb), 0.9) 0%,
+    rgba(var(--dm-accent-strong-rgb), 0.5) 70%,
+    rgba(var(--dm-accent-strong-rgb), 0) 100%);
 }
 
 /* ========================================
@@ -92,10 +108,10 @@ html[data-theme="dark"] body {
    ======================================== */
 .dark-mode .diary-card-header,
 [data-theme="dark"] .diary-card-header {
-  background: linear-gradient(135deg, 
-    rgba(51, 65, 85, 0.4) 0%, 
-    rgba(30, 41, 59, 0.5) 100%);
-  border-bottom: 1px solid rgba(71, 85, 105);
+  background: linear-gradient(135deg,
+    rgba(var(--dm-surface-2-rgb), 0.5) 0%,
+    rgba(var(--dm-surface-1-rgb), 0.6) 100%);
+  border-bottom: 1px solid var(--dm-border);
   backdrop-filter: blur(10px);
   position: relative;
 }
@@ -108,24 +124,22 @@ html[data-theme="dark"] body {
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, 
+  background: linear-gradient(90deg,
     transparent 0%,
-    rgba(89, 142, 243, 0.3) 50%,
+    rgba(255, 255, 255, 0.06) 50%,
     transparent 100%);
 }
 
-/* タイトル - より明るく目立たせる */
+/* タイトル */
 .dark-mode .diary-title,
 [data-theme="dark"] .diary-title {
   color: var(--dm-text-100);
-  text-shadow: 0 0 10px rgba(89, 142, 243, 0.3);
   font-weight: 700;
 }
 
 .dark-mode .diary-title .text-muted,
 [data-theme="dark"] .diary-title .text-muted {
   color: var(--dm-text-200) !important;
-  text-shadow: none;
 }
 
 /* メタ情報 */
@@ -140,119 +154,87 @@ html[data-theme="dark"] body {
 }
 
 /* ========================================
-   ダークモード: バッジ - グロー効果追加
+   ダークモード: バッジ
    ======================================== */
 .dark-mode .status-badge,
 [data-theme="dark"] .status-badge {
-  background: linear-gradient(135deg, 
-    rgba(51, 65, 85, 0.6) 0%, 
-    rgba(30, 41, 59, 0.8) 100%);
-  border: 1px solid rgba(71, 85, 105, 0.4);
+  background: rgba(var(--dm-surface-2-rgb), 0.7);
+  border: 1px solid var(--dm-border);
   backdrop-filter: blur(5px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .dark-mode .memo-badge,
 [data-theme="dark"] .memo-badge {
-  background: linear-gradient(135deg, 
-    rgba(89, 142, 243, 0.3) 0%, 
-    rgba(37, 99, 235, 0.2) 100%);
+  background: rgba(var(--dm-accent-rgb), 0.14);
   color: var(--dm-primary-300);
-  border: 1px solid rgba(89, 142, 243, 0.5);
-  box-shadow: 
-    0 2px 8px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    0 0 10px rgba(37, 99, 235, 0.3);
+  border: 1px solid rgba(var(--dm-accent-rgb), 0.35);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .dark-mode .sold-badge,
 [data-theme="dark"] .sold-badge {
-  background: linear-gradient(135deg, 
-    rgba(217, 70, 239, 0.3) 0%, 
-    rgba(217, 70, 239, 0.2) 100%);
+  background: rgba(var(--dm-sold-rgb), 0.14);
   color: var(--dm-accent-200);
-  border: 1px solid rgba(217, 70, 239, 0.5);
-  box-shadow: 
-    0 2px 8px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    0 0 10px rgba(217, 70, 239, 0.3);
+  border: 1px solid rgba(var(--dm-sold-rgb), 0.35);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .dark-mode .purchase-badge,
 [data-theme="dark"] .purchase-badge {
-  background: linear-gradient(135deg, 
-    rgba(37, 99, 235, 0.3) 0%, 
-    rgba(37, 99, 235, 0.2) 100%);
+  background: rgba(var(--dm-accent-strong-rgb), 0.16);
   color: var(--dm-primary-300);
-  border: 1px solid rgba(37, 99, 235, 0.5);
-  box-shadow: 
-    0 2px 8px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    0 0 10px rgba(37, 99, 235, 0.3);
+  border: 1px solid rgba(var(--dm-accent-strong-rgb), 0.35);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
-/* 損益バッジ - より目立たせる */
+/* 損益バッジ */
 .dark-mode .badge.bg-success,
 [data-theme="dark"] .badge.bg-success {
-  background: linear-gradient(135deg, 
-    rgba(89, 142, 243, 0.4) 0%, 
-    rgba(37, 99, 235, 0.6) 100%) !important;
+  background: rgba(var(--dm-accent-strong-rgb), 0.22) !important;
   color: var(--dm-primary-300) !important;
-  border: 1px solid rgba(89, 142, 243, 0.6);
-  box-shadow: 
-    0 2px 8px rgba(0, 0, 0, 0.3),
-    0 0 15px rgba(37, 99, 235, 0.4);
+  border: 1px solid rgba(var(--dm-accent-rgb), 0.4);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   font-weight: 700;
-  text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
 }
 
 .dark-mode .badge.bg-danger,
 [data-theme="dark"] .badge.bg-danger {
-  background: linear-gradient(135deg, 
-    rgba(217, 70, 239, 0.4) 0%, 
-    rgba(217, 70, 239, 0.6) 100%) !important;
+  background: rgba(var(--dm-sold-rgb), 0.22) !important;
   color: var(--dm-accent-200) !important;
-  border: 1px solid rgba(217, 70, 239, 0.6);
-  box-shadow: 
-    0 2px 8px rgba(0, 0, 0, 0.3),
-    0 0 15px rgba(217, 70, 239, 0.4);
+  border: 1px solid rgba(var(--dm-sold-rgb), 0.4);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   font-weight: 700;
-  text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
 }
 
 /* ========================================
-   ダークモード: タグ - より魅力的に
+   ダークモード: タグ
    ======================================== */
 .dark-mode .diary-tag,
 [data-theme="dark"] .diary-tag {
-  background: linear-gradient(135deg, 
-    rgba(89, 142, 243, 0.25) 0%, 
-    rgba(37, 99, 235, 0.15) 100%);
-  color: var(--dm-primary-300);
-  border: 1px solid rgba(89, 142, 243, 0.4);
-  box-shadow: 
+  background: rgba(var(--dm-surface-2-rgb), 0.7);
+  color: var(--dm-text-100);
+  border: 1px solid var(--dm-border);
+  box-shadow:
     0 2px 4px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
   backdrop-filter: blur(5px);
 }
 
 .dark-mode .diary-tag:hover,
 [data-theme="dark"] .diary-tag:hover {
-  background: linear-gradient(135deg, 
-    rgba(89, 142, 243, 0.35) 0%, 
-    rgba(37, 99, 235, 0.25) 100%);
-  border-color: rgba(89, 142, 243, 0.6);
-  box-shadow: 
-    0 4px 8px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    0 0 15px rgba(37, 99, 235, 0.4);
+  background: rgba(var(--dm-surface-2-rgb), 0.95);
+  border-color: rgba(var(--dm-accent-rgb), 0.45);
+  color: var(--dm-primary-300);
+  box-shadow:
+    0 4px 8px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
   transform: translateY(-2px);
 }
 
 .dark-mode .diary-tag i,
 [data-theme="dark"] .diary-tag i {
   color: var(--dm-primary-200);
-  text-shadow: 0 0 5px rgba(89, 142, 243, 0.5);
 }
 
 /* ========================================
@@ -260,10 +242,8 @@ html[data-theme="dark"] body {
    ======================================== */
 .dark-mode .card-tabs,
 [data-theme="dark"] .card-tabs {
-  background: linear-gradient(135deg, 
-    rgba(51, 65, 85, 0.3) 0%, 
-    rgba(30, 41, 59, 0.4) 100%);
-  border-bottom: 1px solid rgba(71, 85, 105);
+  background: rgba(var(--dm-surface-1-rgb), 0.5);
+  border-bottom: 1px solid var(--dm-border);
   backdrop-filter: blur(5px);
 }
 
@@ -276,27 +256,21 @@ html[data-theme="dark"] body {
 .dark-mode .card-tabs .nav-link:hover:not(.active),
 [data-theme="dark"] .card-tabs .nav-link:hover:not(.active) {
   color: var(--dm-text-100);
-  background: linear-gradient(135deg, 
-    rgba(71, 85, 105) 0%, 
-    rgba(51, 65, 85, 0.4) 100%);
+  background: rgba(var(--dm-surface-2-rgb), 0.6);
 }
 
 .dark-mode .card-tabs .nav-link.active,
 [data-theme="dark"] .card-tabs .nav-link.active {
   color: var(--dm-primary-300);
-  background: linear-gradient(135deg, 
-    rgba(37, 99, 235, 0.2) 0%, 
-    rgba(37, 99, 235, 0.1) 100%);
-  text-shadow: 0 0 10px rgba(89, 142, 243, 0.3);
+  background: rgba(var(--dm-accent-strong-rgb), 0.14);
 }
 
 .dark-mode .card-tabs .nav-link.active::after,
 [data-theme="dark"] .card-tabs .nav-link.active::after {
-  background: linear-gradient(90deg, 
+  background: linear-gradient(90deg,
     transparent 0%,
-    var(--dm-primary-100) 50%,
+    var(--dm-primary-200) 50%,
     transparent 100%);
-  box-shadow: 0 0 10px rgba(37, 99, 235, 0.5);
 }
 
 /* ========================================
@@ -332,11 +306,9 @@ html[data-theme="dark"] body {
    ======================================== */
 .dark-mode .note-item,
 [data-theme="dark"] .note-item {
-  background: linear-gradient(135deg, 
-    rgba(51, 65, 85, 0.3) 0%, 
-    rgba(30, 41, 59, 0.4) 100%);
-  border: 1px solid rgba(71, 85, 105);
-  box-shadow: 
+  background: rgba(var(--dm-surface-2-rgb), 0.45);
+  border: 1px solid var(--dm-border);
+  box-shadow:
     0 2px 4px rgba(0, 0, 0, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(5px);
@@ -344,14 +316,11 @@ html[data-theme="dark"] body {
 
 .dark-mode .note-item:hover,
 [data-theme="dark"] .note-item:hover {
-  background: linear-gradient(135deg, 
-    rgba(51, 65, 85, 0.5) 0%, 
-    rgba(30, 41, 59, 0.6) 100%);
-  border-color: rgba(89, 142, 243, 0.5);
-  box-shadow: 
+  background: rgba(var(--dm-surface-2-rgb), 0.7);
+  border-color: rgba(var(--dm-accent-rgb), 0.4);
+  box-shadow:
     0 4px 8px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 0 15px rgba(37, 99, 235, 0.2);
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .dark-mode .note-date,
@@ -369,11 +338,9 @@ html[data-theme="dark"] body {
    ======================================== */
 .dark-mode .analysis-template-card,
 [data-theme="dark"] .analysis-template-card {
-  background: linear-gradient(135deg, 
-    rgba(51, 65, 85, 0.3) 0%, 
-    rgba(30, 41, 59, 0.4) 100%);
-  border: 1px solid rgba(71, 85, 105);
-  box-shadow: 
+  background: rgba(var(--dm-surface-2-rgb), 0.45);
+  border: 1px solid var(--dm-border);
+  box-shadow:
     0 2px 4px rgba(0, 0, 0, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(5px);
@@ -381,14 +348,11 @@ html[data-theme="dark"] body {
 
 .dark-mode .analysis-template-card:hover,
 [data-theme="dark"] .analysis-template-card:hover {
-  background: linear-gradient(135deg, 
-    rgba(51, 65, 85, 0.5) 0%, 
-    rgba(30, 41, 59, 0.6) 100%);
-  border-color: rgba(89, 142, 243, 0.5);
-  box-shadow: 
+  background: rgba(var(--dm-surface-2-rgb), 0.7);
+  border-color: rgba(var(--dm-accent-rgb), 0.4);
+  box-shadow:
     0 4px 8px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 0 15px rgba(37, 99, 235, 0.2);
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .dark-mode .template-title,
@@ -406,10 +370,8 @@ html[data-theme="dark"] body {
    ======================================== */
 .dark-mode .info-item,
 [data-theme="dark"] .info-item {
-  background: linear-gradient(135deg, 
-    rgba(51, 65, 85, 0.25) 0%, 
-    rgba(30, 41, 59, 0.3) 100%);
-  border: 1px solid rgba(71, 85, 105, 0.3);
+  background: rgba(var(--dm-surface-2-rgb), 0.35);
+  border: 1px solid var(--dm-border);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
 }
 
@@ -428,15 +390,14 @@ html[data-theme="dark"] body {
    ======================================== */
 .dark-mode .btn-diary-primary,
 [data-theme="dark"] .btn-diary-primary {
-  background: linear-gradient(135deg, 
-    var(--dm-primary-100) 0%, 
-    var(--dm-primary-200) 100%);
-  border: 1px solid rgba(89, 142, 243, 0.5);
+  background: linear-gradient(135deg,
+    var(--dm-primary-200) 0%,
+    var(--dm-primary-100) 100%);
+  border: 1px solid rgba(var(--dm-accent-rgb), 0.5);
   color: white;
-  box-shadow: 
-    0 2px 8px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2),
-    0 0 10px rgba(37, 99, 235, 0.3);
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 .dark-mode .btn-diary-outline,
@@ -448,25 +409,21 @@ html[data-theme="dark"] body {
 
 .dark-mode .btn-diary-primary:hover,
 [data-theme="dark"] .btn-diary-primary:hover {
-  background: linear-gradient(135deg, 
-    var(--dm-primary-200) 0%, 
-    var(--dm-primary-100) 100%);
+  background: linear-gradient(135deg,
+    var(--dm-primary-100) 0%,
+    var(--dm-primary-200) 100%);
   border-color: var(--dm-primary-200);
   transform: translateY(-2px);
-  box-shadow: 
-    0 4px 12px rgba(37, 99, 235, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3),
-    0 0 20px rgba(37, 99, 235, 0.4);
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .dark-mode .btn-diary-outline:hover,
 [data-theme="dark"] .btn-diary-outline:hover {
-  background: linear-gradient(135deg, 
-    rgba(37, 99, 235, 0.2) 0%, 
-    rgba(37, 99, 235, 0.15) 100%);
+  background: rgba(var(--dm-accent-strong-rgb), 0.15);
   border-color: var(--dm-primary-200);
   color: var(--dm-primary-300);
-  box-shadow: 0 0 20px rgba(37, 99, 235, 0.4);
 }
 
 /* ========================================
@@ -475,7 +432,6 @@ html[data-theme="dark"] body {
 .dark-mode .diary-card a,
 [data-theme="dark"] .diary-card a {
   color: var(--dm-primary-300);
-  text-shadow: 0 0 5px rgba(89, 142, 243, 0.3);
 }
 
 /* ========================================
@@ -485,28 +441,23 @@ html[data-theme="dark"] body {
 .dark-mode .analysis-templates-container::-webkit-scrollbar-track,
 [data-theme="dark"] .notes-timeline::-webkit-scrollbar-track,
 [data-theme="dark"] .analysis-templates-container::-webkit-scrollbar-track {
-  background: rgba(30, 41, 59, 0.5);
+  background: rgba(var(--dm-surface-1-rgb), 0.6);
 }
 
 .dark-mode .notes-timeline::-webkit-scrollbar-thumb,
 .dark-mode .analysis-templates-container::-webkit-scrollbar-thumb,
 [data-theme="dark"] .notes-timeline::-webkit-scrollbar-thumb,
 [data-theme="dark"] .analysis-templates-container::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, 
-    var(--dm-bg-300) 0%, 
-    var(--dm-bg-200) 100%);
+  background: var(--dm-bg-300);
   border-radius: 10px;
-  border: 1px solid rgba(71, 85, 105);
+  border: 1px solid var(--dm-border);
 }
 
 .dark-mode .notes-timeline::-webkit-scrollbar-thumb:hover,
 .dark-mode .analysis-templates-container::-webkit-scrollbar-thumb:hover,
 [data-theme="dark"] .notes-timeline::-webkit-scrollbar-thumb:hover,
 [data-theme="dark"] .analysis-templates-container::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, 
-    var(--dm-primary-200) 0%, 
-    var(--dm-primary-100) 100%);
-  box-shadow: 0 0 10px rgba(37, 99, 235, 0.5);
+  background: var(--dm-primary-100);
 }
 
 /* ========================================
@@ -516,20 +467,16 @@ html[data-theme="dark"] body {
 .dark-mode .note-image img,
 [data-theme="dark"] .diary-image img,
 [data-theme="dark"] .note-image img {
-  border: 1px solid rgba(71, 85, 105);
-  box-shadow: 
-    0 4px 6px rgba(0, 0, 0, 0.4),
-    0 0 0 1px rgba(89, 142, 243, 0.1);
+  border: 1px solid var(--dm-border);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
 }
 
 .dark-mode .diary-attached-image:hover,
 .dark-mode .note-attached-image:hover,
 [data-theme="dark"] .diary-attached-image:hover,
 [data-theme="dark"] .note-attached-image:hover {
-  border-color: rgba(89, 142, 243, 0.5);
-  box-shadow: 
-    0 8px 12px rgba(0, 0, 0, 0.5),
-    0 0 20px rgba(37, 99, 235, 0.3);
+  border-color: rgba(var(--dm-accent-rgb), 0.5);
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.5);
   transform: scale(1.02);
 }
 
@@ -538,19 +485,15 @@ html[data-theme="dark"] body {
    ======================================== */
 .dark-mode .mobile-search-container,
 [data-theme="dark"] .mobile-search-container {
-  background: #1e293b;
-  border: 1px solid rgba(71, 85, 105);
-  box-shadow: 
-    0 4px 6px -1px rgba(0, 0, 0, 0.5),
-    0 0 0 1px rgba(89, 142, 243, 0.05);
+  background: var(--dm-bg-100);
+  border: 1px solid var(--dm-border);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
 }
 
 .dark-mode .main-search-input,
 [data-theme="dark"] .main-search-input {
-  background: linear-gradient(135deg, 
-    rgba(51, 65, 85, 0.6) 0%, 
-    rgba(30, 41, 59, 0.8) 100%);
-  border: 1px solid rgba(71, 85, 105, 0.4);
+  background: rgba(var(--dm-surface-2-rgb), 0.7);
+  border: 1px solid var(--dm-border);
   color: var(--dm-text-100);
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
 }
@@ -558,10 +501,9 @@ html[data-theme="dark"] body {
 .dark-mode .main-search-input:focus,
 [data-theme="dark"] .main-search-input:focus {
   border-color: var(--dm-primary-200);
-  box-shadow: 
-    0 0 0 3px rgba(89, 142, 243, 0.2),
-    inset 0 1px 2px rgba(0, 0, 0, 0.3),
-    0 0 15px rgba(37, 99, 235, 0.3);
+  box-shadow:
+    0 0 0 3px rgba(var(--dm-accent-rgb), 0.2),
+    inset 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .dark-mode .main-search-input::placeholder,
@@ -571,9 +513,9 @@ html[data-theme="dark"] body {
 
 .dark-mode .search-suggestions,
 [data-theme="dark"] .search-suggestions {
-  background: #1e293b;
-  border: 1px solid rgba(71, 85, 105, 0.4);
-  box-shadow: 
+  background: var(--dm-bg-100);
+  border: 1px solid var(--dm-border);
+  box-shadow:
     0 10px 15px -3px rgba(0, 0, 0, 0.6),
     0 4px 6px -2px rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(10px);
@@ -581,22 +523,19 @@ html[data-theme="dark"] body {
 
 .dark-mode .suggestion-item:hover,
 [data-theme="dark"] .suggestion-item:hover {
-  background: linear-gradient(135deg, 
-    rgba(51, 65, 85, 0.6) 0%, 
-    rgba(30, 41, 59, 0.7) 100%);
+  background: rgba(var(--dm-surface-2-rgb), 0.7);
 }
 
 .dark-mode .filter-chip,
 [data-theme="dark"] .filter-chip {
-  background: linear-gradient(135deg, 
-    var(--dm-primary-100) 0%, 
-    var(--dm-primary-200) 100%);
+  background: linear-gradient(135deg,
+    var(--dm-primary-200) 0%,
+    var(--dm-primary-100) 100%);
   color: white;
-  border: 1px solid rgba(89, 142, 243, 0.5);
-  box-shadow: 
+  border: 1px solid rgba(var(--dm-accent-rgb), 0.5);
+  box-shadow:
     0 2px 4px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2),
-    0 0 10px rgba(37, 99, 235, 0.3);
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 /* ========================================
@@ -604,11 +543,9 @@ html[data-theme="dark"] body {
    ======================================== */
 .dark-mode .more-tags,
 [data-theme="dark"] .more-tags {
-  background: linear-gradient(135deg, 
-    rgba(71, 85, 105, 0.4) 0%, 
-    rgba(51, 65, 85, 0.5) 100%);
+  background: rgba(var(--dm-surface-2-rgb), 0.6);
   color: var(--dm-text-200);
-  border: 1px solid rgba(71, 85, 105);
+  border: 1px solid var(--dm-border);
 }
 
 .dark-mode .empty-message,
@@ -627,39 +564,21 @@ html[data-theme="dark"] body {
    ======================================== */
 .dark-mode .filter-notification,
 [data-theme="dark"] .filter-notification {
-  background: linear-gradient(135deg, 
-    var(--dm-primary-100) 0%, 
-    var(--dm-primary-200) 100%);
-  box-shadow: 
-    0 4px 16px rgba(0, 0, 0, 0.6),
-    0 0 20px rgba(37, 99, 235, 0.4);
+  background: linear-gradient(135deg,
+    var(--dm-primary-200) 0%,
+    var(--dm-primary-100) 100%);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
 }
 
 /* ========================================
-   ダークモード: アニメーション
+   ダークモード: フォーカス時の控えめなリング
    ======================================== */
-@keyframes dark-glow {
-  0% {
-    box-shadow: 
-      0 0 5px rgba(37, 99, 235, 0.3),
-      0 4px 6px -1px rgba(0, 0, 0, 0.5);
-  }
-  50% {
-    box-shadow: 
-      0 0 20px rgba(89, 142, 243, 0.5),
-      0 8px 12px -1px rgba(0, 0, 0, 0.6);
-  }
-  100% {
-    box-shadow: 
-      0 0 5px rgba(37, 99, 235, 0.3),
-      0 4px 6px -1px rgba(0, 0, 0, 0.5);
-  }
-}
-
 .dark-mode .diary-card:focus-within,
 [data-theme="dark"] .diary-card:focus-within {
-  animation: dark-glow 2s ease-in-out infinite;
-  border-color: rgba(89, 142, 243, 0.5);
+  border-color: rgba(var(--dm-accent-rgb), 0.5);
+  box-shadow:
+    0 0 0 1px rgba(var(--dm-accent-rgb), 0.25),
+    0 4px 6px -1px rgba(0, 0, 0, 0.5);
 }
 
 /* ========================================
@@ -678,34 +597,32 @@ html[data-theme="dark"] body {
 @media (max-width: 768px) {
   .dark-mode .diary-card,
   [data-theme="dark"] .diary-card {
-    background: #1e293b;
-    box-shadow: 
-      0 2px 4px rgba(0, 0, 0, 0.4),
-      0 0 0 1px rgba(89, 142, 243, 0.05);
+    background: var(--dm-bg-100);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
     backdrop-filter: none;
   }
-  
+
   .dark-mode .diary-card-header,
   [data-theme="dark"] .diary-card-header {
-    background: rgba(51, 65, 85, 0.3);
+    background: rgba(var(--dm-surface-2-rgb), 0.4);
     backdrop-filter: none;
   }
-  
+
   .dark-mode .note-item,
   [data-theme="dark"] .note-item {
-    background: #1e293b;
+    background: var(--dm-bg-100);
     backdrop-filter: none;
   }
-  
+
   .dark-mode .analysis-template-card,
   [data-theme="dark"] .analysis-template-card {
-    background: #1e293b;
+    background: var(--dm-bg-100);
     backdrop-filter: none;
   }
-  
+
   .dark-mode .info-item,
   [data-theme="dark"] .info-item {
-    background: #1e293b;
+    background: var(--dm-bg-100);
     backdrop-filter: none;
   }
 }
@@ -713,26 +630,26 @@ html[data-theme="dark"] body {
 @media (max-width: 576px) {
   .dark-mode .diary-card,
   [data-theme="dark"] .diary-card {
-    background: #1e293b;
+    background: var(--dm-bg-100);
     backdrop-filter: none;
   }
-  
+
   .dark-mode .diary-card-header,
   [data-theme="dark"] .diary-card-header {
-    background: rgba(30, 41, 59, 0.6);
-    border-bottom: 2px solid rgba(71, 85, 105);
+    background: rgba(var(--dm-surface-1-rgb), 0.7);
+    border-bottom: 2px solid var(--dm-border);
     backdrop-filter: none;
   }
-  
+
   /* グラデーションを完全に無効化 */
   .dark-mode .note-text,
   [data-theme="dark"] .note-text {
-    background: rgba(51, 65, 85, 0.4);
+    background: rgba(var(--dm-surface-2-rgb), 0.5);
   }
-  
+
   .dark-mode .card-tabs,
   [data-theme="dark"] .card-tabs {
-    background: rgba(51, 65, 85, 0.3);
+    background: rgba(var(--dm-surface-1-rgb), 0.5);
     backdrop-filter: none;
   }
 }
