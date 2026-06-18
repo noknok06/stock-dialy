@@ -57,7 +57,7 @@ class TestThesisDue:
 
 class TestThesisVerifyViews:
     def test_create_thesis_via_htmx(self, authenticated_client, sample_diary):
-        url = reverse('stockdiary:thesis_edit', args=[sample_diary.id])
+        url = reverse('stockdiary:thesis_create', args=[sample_diary.id])
         # GET returns the form
         r = authenticated_client.get(url, HTTP_HX_REQUEST='true')
         assert r.status_code == 200
@@ -76,7 +76,7 @@ class TestThesisVerifyViews:
 
     def test_create_thesis_with_basis_tags(self, authenticated_client, sample_diary, sample_tags):
         # チップ＋サジェストUIは name="basis_tags" の hidden input を複数送る
-        url = reverse('stockdiary:thesis_edit', args=[sample_diary.id])
+        url = reverse('stockdiary:thesis_create', args=[sample_diary.id])
         r = authenticated_client.post(url, {
             'claim': 'テーマで持続する',
             'horizon': '6m',
@@ -87,15 +87,15 @@ class TestThesisVerifyViews:
         assert set(thesis.basis_tags.values_list('id', flat=True)) == {sample_tags[0].id, sample_tags[1].id}
 
     def test_thesis_form_get_provides_all_tags(self, authenticated_client, sample_diary, sample_tags):
-        url = reverse('stockdiary:thesis_edit', args=[sample_diary.id])
+        url = reverse('stockdiary:thesis_create', args=[sample_diary.id])
         r = authenticated_client.get(url, HTTP_HX_REQUEST='true')
         assert r.status_code == 200
         names = [t['name'] for t in r.context['all_tags']]
         assert sample_tags[0].name in names
 
     def test_verify_creates_verdict_and_sets_status(self, authenticated_client, sample_diary):
-        Thesis.objects.create(diary=sample_diary, claim='主張')
-        url = reverse('stockdiary:thesis_verify', args=[sample_diary.id])
+        thesis = Thesis.objects.create(diary=sample_diary, claim='主張')
+        url = reverse('stockdiary:thesis_verify', args=[sample_diary.id, thesis.id])
         r = authenticated_client.get(url, HTTP_HX_REQUEST='true')
         assert r.status_code == 200
         r = authenticated_client.post(url, {
@@ -105,7 +105,7 @@ class TestThesisVerifyViews:
             'learning': '為替単独を根拠に投資しない',
         }, HTTP_HX_REQUEST='true')
         assert r.status_code == 200
-        thesis = Thesis.objects.get(diary=sample_diary)
+        thesis.refresh_from_db()
         assert thesis.status == Thesis.STATUS_VERIFIED
         assert thesis.verdict.quadrant == 'lucky'
         assert thesis.verdict.learning == '為替単独を根拠に投資しない'
@@ -113,7 +113,7 @@ class TestThesisVerifyViews:
     def test_cannot_touch_others_diary(self, authenticated_client, another_user):
         from stockdiary.models import StockDiary
         other = StockDiary.objects.create(user=another_user, stock_name='他人', stock_symbol='9999')
-        url = reverse('stockdiary:thesis_edit', args=[other.id])
+        url = reverse('stockdiary:thesis_create', args=[other.id])
         r = authenticated_client.post(url, {'claim': 'x', 'horizon': '6m'}, HTTP_HX_REQUEST='true')
         assert r.status_code == 404
 
@@ -125,11 +125,11 @@ class TestMemoDiaryThesis:
         # 取引のないメモ日記でも「当時の仮説を記録する」導線が出る
         assert sample_memo_diary.is_memo is True
         rendered = render_to_string('stockdiary/partials/_karte_block.html',
-                                    {'diary': sample_memo_diary, 'thesis': None, 'verdict': None})
+                                    {'diary': sample_memo_diary, 'theses': []})
         assert '当時の仮説を記録する' in rendered
 
     def test_create_thesis_on_memo_diary(self, authenticated_client, sample_memo_diary):
-        url = reverse('stockdiary:thesis_edit', args=[sample_memo_diary.id])
+        url = reverse('stockdiary:thesis_create', args=[sample_memo_diary.id])
         r = authenticated_client.post(url, {
             'claim': '次の決算が良ければ買う。需要回復が本物か見極める',
             'horizon': '3m',
@@ -142,8 +142,8 @@ class TestMemoDiaryThesis:
 
     def test_verify_memo_diary_thesis(self, authenticated_client, sample_memo_diary):
         # 買わなかったが「仮説は当たっていた」= 機会損失という学びを残せる
-        Thesis.objects.create(diary=sample_memo_diary, claim='需要回復が本物')
-        url = reverse('stockdiary:thesis_verify', args=[sample_memo_diary.id])
+        thesis = Thesis.objects.create(diary=sample_memo_diary, claim='需要回復が本物')
+        url = reverse('stockdiary:thesis_verify', args=[sample_memo_diary.id, thesis.id])
         r = authenticated_client.post(url, {
             'hypothesis_result': Verdict.HYP_HIT,
             'pnl_result': Verdict.PNL_FLAT,
