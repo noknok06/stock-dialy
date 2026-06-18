@@ -26,9 +26,6 @@
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&family=Noto+Serif+JP:wght@500;600;700&display=swap">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&family=Noto+Serif+JP:wght@500;600;700&display=swap" media="print" onload="this.media='all'">
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&family=Noto+Serif+JP:wght@500;600;700&display=swap"></noscript>
-<link rel="preload" as="style" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"></noscript>
 <style>
 :root{
   --paper:#fcfbf8; --paper2:#f4f2ec; --raised:#ffffff;
@@ -266,9 +263,65 @@ a{text-decoration:none;color:inherit}
   .foot-bottom{justify-content:center;text-align:center}
   .nav-cta .btn-sm{padding:.45rem .7rem;font-size:12.5px}
 }
+.bi{display:inline-block;width:1em;height:1em;vertical-align:-0.125em;fill:currentColor}
 </style>
 </head>
 <body>
+
+<!-- Bootstrap Icons SVG sprite (inline, no CDN needed) -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <symbol id="i-stars" viewBox="0 0 16 16">
+    <path d="M7.657 6.247c.11-.33.576-.33.686 0l.645 1.937a2.89 2.89 0 0 0 1.829 1.828l1.936.645c.33.11.33.576 0 .686l-1.937.645a2.89 2.89 0 0 0-1.828 1.829l-.645 1.936a.361.361 0 0 1-.686 0l-.645-1.937a2.89 2.89 0 0 0-1.828-1.828l-1.937-.645a.361.361 0 0 1 0-.686l1.937-.645a2.89 2.89 0 0 0 1.828-1.828zM3.794 1.148a.217.217 0 0 1 .412 0l.387 1.162c.173.518.579.924 1.097 1.097l1.162.387a.217.217 0 0 1 0 .412l-1.162.387A1.73 1.73 0 0 0 4.593 5.69l-.387 1.162a.217.217 0 0 1-.412 0L3.407 5.69A1.73 1.73 0 0 0 2.31 4.593l-1.162-.387a.217.217 0 0 1 0-.412l1.162-.387A1.73 1.73 0 0 0 3.407 2.31zM10.863.099a.145.145 0 0 1 .274 0l.258.774c.115.346.386.617.732.732l.774.258a.145.145 0 0 1 0 .274l-.774.258a1.16 1.16 0 0 0-.732.732l-.258.774a.145.145 0 0 1-.274 0l-.258-.774a1.16 1.16 0 0 0-.732-.732L9.1 2.137a.145.145 0 0 1 0-.274l.774-.258c.346-.115.617-.386.732-.732z"/>
+  </symbol>
+  <symbol id="i-bell" viewBox="0 0 16 16">
+    <path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2M8 1.918l-.797.161A4 4 0 0 0 4 6c0 .628-.134 2.197-.459 3.742-.16.767-.376 1.566-.663 2.258h10.244c-.287-.692-.502-1.49-.663-2.258C12.134 8.197 12 6.628 12 6a4 4 0 0 0-3.203-3.92zM14.22 12c.223.447.481.801.78 1H1c.299-.199.557-.553.78-1C2.68 10.2 3 6.88 3 6c0-2.42 1.72-4.44 4.005-4.901a1 1 0 1 1 1.99 0A5 5 0 0 1 13 6c0 .88.32 4.2 1.22 6"/>
+  </symbol>
+  <symbol id="i-book" viewBox="0 0 16 16">
+    <path d="M1 2.828c.885-.37 2.154-.769 3.388-.893 1.33-.134 2.458.063 3.112.752v9.746c-.935-.53-2.12-.603-3.213-.493-1.18.12-2.37.461-3.287.811zm7.5-.141c.654-.689 1.782-.886 3.112-.752 1.234.124 2.503.523 3.388.893v9.923c-.918-.35-2.107-.692-3.287-.81-1.094-.111-2.278-.039-3.213.492zM8 1.783C7.015.936 5.587.81 4.287.94c-1.514.153-3.042.672-3.994 1.105A.5.5 0 0 0 0 2.5v11a.5.5 0 0 0 .707.455c.882-.4 2.303-.881 3.68-1.02 1.409-.142 2.59.087 3.223.877a.5.5 0 0 0 .78 0c.633-.79 1.814-1.019 3.222-.877 1.378.139 2.8.62 3.681 1.02A.5.5 0 0 0 16 13.5v-11a.5.5 0 0 0-.293-.455c-.952-.433-2.48-.952-3.994-1.105C10.413.809 8.985.936 8 1.783"/>
+  </symbol>
+  <symbol id="i-check-lg" viewBox="0 0 16 16">
+    <path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425z"/>
+  </symbol>
+  <symbol id="i-clock" viewBox="0 0 16 16">
+    <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71z"/>
+    <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0"/>
+  </symbol>
+  <symbol id="i-collection" viewBox="0 0 16 16">
+    <path d="M2.5 3.5a.5.5 0 0 1 0-1h11a.5.5 0 0 1 0 1zm2-2a.5.5 0 0 1 0-1h7a.5.5 0 0 1 0 1zM0 13a1.5 1.5 0 0 0 1.5 1.5h13A1.5 1.5 0 0 0 16 13V6a1.5 1.5 0 0 0-1.5-1.5h-13A1.5 1.5 0 0 0 0 6zm1.5.5A.5.5 0 0 1 1 13V6a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-.5.5z"/>
+  </symbol>
+  <symbol id="i-dash" viewBox="0 0 16 16">
+    <path d="M4 8a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7A.5.5 0 0 1 4 8"/>
+  </symbol>
+  <symbol id="i-diagram-3" viewBox="0 0 16 16">
+    <path fill-rule="evenodd" d="M6 3.5A1.5 1.5 0 0 1 7.5 2h1A1.5 1.5 0 0 1 10 3.5v1A1.5 1.5 0 0 1 8.5 6v1H14a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0v-1A.5.5 0 0 1 2 7h5.5V6A1.5 1.5 0 0 1 6 4.5zM8.5 5a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5zM0 11.5A1.5 1.5 0 0 1 1.5 10h1A1.5 1.5 0 0 1 4 11.5v1A1.5 1.5 0 0 1 2.5 14h-1A1.5 1.5 0 0 1 0 12.5zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zm4.5.5A1.5 1.5 0 0 1 7.5 10h1a1.5 1.5 0 0 1 1.5 1.5v1A1.5 1.5 0 0 1 8.5 14h-1A1.5 1.5 0 0 1 6 12.5zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zm4.5.5a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5z"/>
+  </symbol>
+  <symbol id="i-exclamation-triangle" viewBox="0 0 16 16">
+    <path d="M7.938 2.016A.13.13 0 0 1 8.002 2a.13.13 0 0 1 .063.016.15.15 0 0 1 .054.057l6.857 11.667c.036.06.035.124.002.183a.2.2 0 0 1-.054.06.1.1 0 0 1-.066.017H1.146a.1.1 0 0 1-.066-.017.2.2 0 0 1-.054-.06.18.18 0 0 1 .002-.183L7.884 2.073a.15.15 0 0 1 .054-.057m1.044-.45a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767z"/>
+    <path d="M7.002 12a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 5.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/>
+  </symbol>
+  <symbol id="i-eye" viewBox="0 0 16 16">
+    <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8M1.173 8a13 13 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5s3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5s-3.879-1.168-5.168-2.457A13 13 0 0 1 1.172 8z"/>
+    <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0"/>
+  </symbol>
+  <symbol id="i-feather" viewBox="0 0 16 16">
+    <path d="M15.807.531c-.174-.177-.41-.289-.64-.363a3.8 3.8 0 0 0-.833-.15c-.62-.049-1.394 0-2.252.175C10.365.545 8.264 1.415 6.315 3.1S3.147 6.824 2.557 8.523c-.294.847-.44 1.634-.429 2.268.005.316.05.62.154.88q.025.061.056.122A68 68 0 0 0 .08 15.198a.53.53 0 0 0 .157.72.504.504 0 0 0 .705-.16 68 68 0 0 1 2.158-3.26c.285.141.616.195.958.182.513-.02 1.098-.188 1.723-.49 1.25-.605 2.744-1.787 4.303-3.642l1.518-1.55a.53.53 0 0 0 0-.739l-.729-.744 1.311.209a.5.5 0 0 0 .443-.15l.663-.684c.663-.68 1.292-1.325 1.763-1.892.314-.378.585-.752.754-1.107.163-.345.278-.773.112-1.188a.5.5 0 0 0-.112-.172M3.733 11.62C5.385 9.374 7.24 7.215 9.309 5.394l1.21 1.234-1.171 1.196-.027.03c-1.5 1.789-2.891 2.867-3.977 3.393-.544.263-.99.378-1.324.39a1.3 1.3 0 0 1-.287-.018Zm6.769-7.22c1.31-1.028 2.7-1.914 4.172-2.6a7 7 0 0 1-.4.523c-.442.533-1.028 1.134-1.681 1.804l-.51.524zm3.346-3.357C9.594 3.147 6.045 6.8 3.149 10.678c.007-.464.121-1.086.37-1.806.533-1.535 1.65-3.415 3.455-4.976 1.807-1.561 3.746-2.36 5.31-2.68a8 8 0 0 1 1.564-.173"/>
+  </symbol>
+  <symbol id="i-file-earmark-arrow-up" viewBox="0 0 16 16">
+    <path d="M8.5 11.5a.5.5 0 0 1-1 0V7.707L6.354 8.854a.5.5 0 1 1-.708-.708l2-2a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1-.708.708L8.5 7.707z"/>
+    <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2M9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5z"/>
+  </symbol>
+  <symbol id="i-phone" viewBox="0 0 16 16">
+    <path d="M11 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1zM5 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z"/>
+    <path d="M8 14a1 1 0 1 0 0-2 1 1 0 0 0 0 2"/>
+  </symbol>
+  <symbol id="i-shield-check" viewBox="0 0 16 16">
+    <path d="M5.338 1.59a61 61 0 0 0-2.837.856.48.48 0 0 0-.328.39c-.554 4.157.726 7.19 2.253 9.188a10.7 10.7 0 0 0 2.287 2.233c.346.244.652.42.893.533q.18.085.293.118a1 1 0 0 0 .101.025 1 1 0 0 0 .1-.025q.114-.034.294-.118c.24-.113.547-.29.893-.533a10.7 10.7 0 0 0 2.287-2.233c1.527-1.997 2.807-5.031 2.253-9.188a.48.48 0 0 0-.328-.39c-.651-.213-1.75-.56-2.837-.855C9.552 1.29 8.531 1.067 8 1.067c-.53 0-1.552.223-2.662.524zM5.072.56C6.157.265 7.31 0 8 0s1.843.265 2.928.56c1.11.3 2.229.655 2.887.87a1.54 1.54 0 0 1 1.044 1.262c.596 4.477-.787 7.795-2.465 9.99a11.8 11.8 0 0 1-2.517 2.453 7 7 0 0 1-1.048.625c-.28.132-.581.24-.829.24s-.548-.108-.829-.24a7 7 0 0 1-1.048-.625 11.8 11.8 0 0 1-2.517-2.453C1.928 10.487.545 7.169 1.141 2.692A1.54 1.54 0 0 1 2.185 1.43 63 63 0 0 1 5.072.56"/>
+    <path d="M10.854 5.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 7.793l2.646-2.647a.5.5 0 0 1 .708 0"/>
+  </symbol>
+  <symbol id="i-x-lg" viewBox="0 0 16 16">
+    <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z"/>
+  </symbol>
+</svg>
 
 <!-- NAV -->
 <nav class="nav" id="nav">
@@ -298,14 +351,14 @@ a{text-decoration:none;color:inherit}
       <div class="hero-actions">
         <form method="post" action="{% url 'users:demo_login' %}" style="margin:0" data-demo-cta="lp">
           {% csrf_token %}
-          <button type="submit" class="btn btn-ink btn-lg"><i class="bi bi-eye"></i>登録なしでデモを試す</button>
+          <button type="submit" class="btn btn-ink btn-lg"><svg class="bi bi-eye" aria-hidden="true"><use href="#i-eye"></use></svg>登録なしでデモを試す</button>
         </form>
         <a class="btn btn-line btn-lg" href="/users/signup/">無料で始める</a>
       </div>
       <div class="trust">
-        <span><i class="bi bi-feather"></i>損益で一喜一憂しない設計</span>
-        <span><i class="bi bi-clock"></i>30秒で登録</span>
-        <span><i class="bi bi-file-earmark-arrow-up"></i>CSV対応</span>
+        <span><svg class="bi bi-feather" aria-hidden="true"><use href="#i-feather"></use></svg>損益で一喜一憂しない設計</span>
+        <span><svg class="bi bi-clock" aria-hidden="true"><use href="#i-clock"></use></svg>30秒で登録</span>
+        <span><svg class="bi bi-file-earmark-arrow-up" aria-hidden="true"><use href="#i-file-earmark-arrow-up"></use></svg>CSV対応</span>
       </div>
     </div>
     <div class="rv">
@@ -314,7 +367,7 @@ a{text-decoration:none;color:inherit}
         <div class="kx-row">
           <div class="kx-lab">当時の仮説</div>
           <div class="kx-claim">円安が続き、輸出採算の改善が利益を押し上げる。</div>
-          <div class="kx-worst"><i class="bi bi-exclamation-triangle"></i>最悪のケース：為替が円高に反転したとき</div>
+          <div class="kx-worst"><svg class="bi bi-exclamation-triangle" aria-hidden="true"><use href="#i-exclamation-triangle"></use></svg>最悪のケース：為替が円高に反転したとき</div>
         </div>
         <div class="kx-row kx-verdict">
           <div class="kx-lab">検証（答え合わせ）</div>
@@ -346,7 +399,7 @@ a{text-decoration:none;color:inherit}
              onerror="this.closest('section').style.display='none'">
       </picture>
     </div>
-    <p class="rc-cap" style="margin-top:16px"><i class="bi bi-stars"></i>実際の画面 — 静かに積み上がる投資ノート</p>
+    <p class="rc-cap" style="margin-top:16px"><svg class="bi bi-stars" aria-hidden="true"><use href="#i-stars"></use></svg>実際の画面 — 静かに積み上がる投資ノート</p>
   </div>
 </section>
 
@@ -383,7 +436,7 @@ a{text-decoration:none;color:inherit}
         <div class="mc q-lucky"><div class="mn">1</div><div class="ml">偶然の勝ち（要注意）</div><div class="ma">仮説× × 利益</div></div>
         <div class="mc q-discipline"><div class="mn">6</div><div class="ml">想定通りの負け</div><div class="ma">仮説× × 損失</div></div>
       </div>
-      <p class="mx-note"><i class="bi bi-exclamation-triangle"></i><span>あなたの勝ちの<strong>33%</strong>は「仮説が外れたのに利益が出た」偶然の勝ち。再現性に注意。</span></p>
+      <p class="mx-note"><svg class="bi bi-exclamation-triangle" aria-hidden="true"><use href="#i-exclamation-triangle"></use></svg><span>あなたの勝ちの<strong>33%</strong>は「仮説が外れたのに利益が出た」偶然の勝ち。再現性に注意。</span></p>
     </div>
   </div>
 </section>
@@ -408,7 +461,7 @@ a{text-decoration:none;color:inherit}
         <div class="shot-fallback">
           <div class="rcard" aria-label="ホームの想起の例">
             <div class="rc-due">
-              <div class="h"><i class="bi bi-bell"></i>答え合わせを待つ仮説<span class="n">2</span></div>
+              <div class="h"><svg class="bi bi-bell" aria-hidden="true"><use href="#i-bell"></use></svg>答え合わせを待つ仮説<span class="n">2</span></div>
               <div class="claim"><b>ホンダ</b>「二輪の高採算化で利益率が構造改善する」</div>
               <div class="meta"><span>検証予定 5/1</span><span class="cta">答え合わせをする →</span></div>
             </div>
@@ -417,7 +470,7 @@ a{text-decoration:none;color:inherit}
           </div>
         </div>
       </div>
-      <p class="rc-cap"><i class="bi bi-phone"></i>ホームに毎日表示される想起</p>
+      <p class="rc-cap"><svg class="bi bi-phone" aria-hidden="true"><use href="#i-phone"></use></svg>ホームに毎日表示される想起</p>
     </div>
     <div class="rv">
       <span class="stag">Recall</span>
@@ -459,7 +512,7 @@ a{text-decoration:none;color:inherit}
           </div>
         </div>
       </div>
-      <p class="rc-cap"><i class="bi bi-collection"></i>投資家カルテ・知識ライブラリ</p>
+      <p class="rc-cap"><svg class="bi bi-collection" aria-hidden="true"><use href="#i-collection"></use></svg>投資家カルテ・知識ライブラリ</p>
     </div>
   </div>
 </section>
@@ -473,9 +526,9 @@ a{text-decoration:none;color:inherit}
       <p>判断の記録に集中できるよう、足回りは既存の資産を活かして整えています。</p>
     </div>
     <div class="fgrid">
-      <div class="fcard rv"><div class="fi"><i class="bi bi-feather"></i></div><h3>没入できる執筆</h3><p>空白ページではなく問いから書き始め、自動保存。<strong>完全フルスクリーン</strong>で思考に集中できる執筆空間。</p></div>
-      <div class="fcard rv"><div class="fi"><i class="bi bi-book"></i></div><h3>年間レビュー</h3><p>その年に書いた記録・学び・勝ち筋タグを一本の読み物に。<strong>蓄積を実感</strong>できる年次の振り返り。</p></div>
-      <div class="fcard rv"><div class="fi"><i class="bi bi-diagram-3"></i></div><h3>関連グラフ・CSV</h3><p>タグ・業種で銘柄の繋がりを可視化。楽天証券・SBI証券の<strong>CSVを一括取込</strong>で、すぐ始められる。</p></div>
+      <div class="fcard rv"><div class="fi"><svg class="bi bi-feather" aria-hidden="true"><use href="#i-feather"></use></svg></div><h3>没入できる執筆</h3><p>空白ページではなく問いから書き始め、自動保存。<strong>完全フルスクリーン</strong>で思考に集中できる執筆空間。</p></div>
+      <div class="fcard rv"><div class="fi"><svg class="bi bi-book" aria-hidden="true"><use href="#i-book"></use></svg></div><h3>年間レビュー</h3><p>その年に書いた記録・学び・勝ち筋タグを一本の読み物に。<strong>蓄積を実感</strong>できる年次の振り返り。</p></div>
+      <div class="fcard rv"><div class="fi"><svg class="bi bi-diagram-3" aria-hidden="true"><use href="#i-diagram-3"></use></svg></div><h3>関連グラフ・CSV</h3><p>タグ・業種で銘柄の繋がりを可視化。楽天証券・SBI証券の<strong>CSVを一括取込</strong>で、すぐ始められる。</p></div>
     </div>
   </div>
 </section>
@@ -522,12 +575,12 @@ a{text-decoration:none;color:inherit}
           <tr><th>記録できるもの</th><th class="us">カブログ<small>成長OS</small></th><th>証券口座アプリ<small>損益管理</small></th><th>家計簿・資産アプリ<small>資産管理</small></th></tr>
         </thead>
         <tbody>
-          <tr><td>損益・保有</td><td class="us-col"><i class="bi bi-check-lg ok"></i></td><td><i class="bi bi-check-lg ok"></i></td><td><i class="bi bi-check-lg ok"></i></td></tr>
-          <tr><td>なぜ買ったか（仮説）</td><td class="us-col"><i class="bi bi-check-lg ok"></i></td><td><i class="bi bi-x-lg no"></i></td><td><i class="bi bi-x-lg no"></i></td></tr>
-          <tr><td>仮説の検証（当否）</td><td class="us-col"><i class="bi bi-check-lg ok"></i></td><td><i class="bi bi-x-lg no"></i></td><td><i class="bi bi-x-lg no"></i></td></tr>
-          <tr><td>意思決定の質 × 損益の分離</td><td class="us-col"><i class="bi bi-check-lg ok"></i></td><td><i class="bi bi-x-lg no"></i></td><td><i class="bi bi-x-lg no"></i></td></tr>
-          <tr><td>過去の自分の想起</td><td class="us-col"><i class="bi bi-check-lg ok"></i></td><td><i class="bi bi-x-lg no"></i></td><td><i class="bi bi-dash dash"></i></td></tr>
-          <tr><td>学びの蓄積・投資家カルテ</td><td class="us-col"><i class="bi bi-check-lg ok"></i></td><td><i class="bi bi-x-lg no"></i></td><td><i class="bi bi-x-lg no"></i></td></tr>
+          <tr><td>損益・保有</td><td class="us-col"><svg class="bi bi-check-lg ok" aria-hidden="true"><use href="#i-check-lg"></use></svg></td><td><svg class="bi bi-check-lg ok" aria-hidden="true"><use href="#i-check-lg"></use></svg></td><td><svg class="bi bi-check-lg ok" aria-hidden="true"><use href="#i-check-lg"></use></svg></td></tr>
+          <tr><td>なぜ買ったか（仮説）</td><td class="us-col"><svg class="bi bi-check-lg ok" aria-hidden="true"><use href="#i-check-lg"></use></svg></td><td><svg class="bi bi-x-lg no" aria-hidden="true"><use href="#i-x-lg"></use></svg></td><td><svg class="bi bi-x-lg no" aria-hidden="true"><use href="#i-x-lg"></use></svg></td></tr>
+          <tr><td>仮説の検証（当否）</td><td class="us-col"><svg class="bi bi-check-lg ok" aria-hidden="true"><use href="#i-check-lg"></use></svg></td><td><svg class="bi bi-x-lg no" aria-hidden="true"><use href="#i-x-lg"></use></svg></td><td><svg class="bi bi-x-lg no" aria-hidden="true"><use href="#i-x-lg"></use></svg></td></tr>
+          <tr><td>意思決定の質 × 損益の分離</td><td class="us-col"><svg class="bi bi-check-lg ok" aria-hidden="true"><use href="#i-check-lg"></use></svg></td><td><svg class="bi bi-x-lg no" aria-hidden="true"><use href="#i-x-lg"></use></svg></td><td><svg class="bi bi-x-lg no" aria-hidden="true"><use href="#i-x-lg"></use></svg></td></tr>
+          <tr><td>過去の自分の想起</td><td class="us-col"><svg class="bi bi-check-lg ok" aria-hidden="true"><use href="#i-check-lg"></use></svg></td><td><svg class="bi bi-x-lg no" aria-hidden="true"><use href="#i-x-lg"></use></svg></td><td><svg class="bi bi-dash dash" aria-hidden="true"><use href="#i-dash"></use></svg></td></tr>
+          <tr><td>学びの蓄積・投資家カルテ</td><td class="us-col"><svg class="bi bi-check-lg ok" aria-hidden="true"><use href="#i-check-lg"></use></svg></td><td><svg class="bi bi-x-lg no" aria-hidden="true"><use href="#i-x-lg"></use></svg></td><td><svg class="bi bi-x-lg no" aria-hidden="true"><use href="#i-x-lg"></use></svg></td></tr>
           <tr><td>料金</td><td class="us-col"><span class="free">無料で全機能</span></td><td>口座開設</td><td>一部有料</td></tr>
         </tbody>
       </table>
@@ -544,14 +597,14 @@ a{text-decoration:none;color:inherit}
       <div class="cta-actions">
         <form method="post" action="{% url 'users:demo_login' %}" style="margin:0" data-demo-cta="lp-bottom">
           {% csrf_token %}
-          <button type="submit" class="btn btn-ink btn-lg"><i class="bi bi-eye"></i>登録なしでデモを試す</button>
+          <button type="submit" class="btn btn-ink btn-lg"><svg class="bi bi-eye" aria-hidden="true"><use href="#i-eye"></use></svg>登録なしでデモを試す</button>
         </form>
         <a class="btn btn-line btn-lg" href="/users/signup/">無料で始める</a>
       </div>
       <div class="cta-feats">
-        <span><i class="bi bi-shield-check"></i>クレジットカード不要</span>
-        <span><i class="bi bi-clock"></i>30秒で登録</span>
-        <span><i class="bi bi-file-earmark-arrow-up"></i>CSVインポート対応</span>
+        <span><svg class="bi bi-shield-check" aria-hidden="true"><use href="#i-shield-check"></use></svg>クレジットカード不要</span>
+        <span><svg class="bi bi-clock" aria-hidden="true"><use href="#i-clock"></use></svg>30秒で登録</span>
+        <span><svg class="bi bi-file-earmark-arrow-up" aria-hidden="true"><use href="#i-file-earmark-arrow-up"></use></svg>CSVインポート対応</span>
       </div>
     </div>
   </div>
@@ -585,10 +638,8 @@ a{text-decoration:none;color:inherit}
 <script>
   const nav = document.getElementById('nav');
   addEventListener('scroll', () => nav.classList.toggle('scrolled', scrollY > 40));
-  const inView = (el) => { const r = el.getBoundingClientRect(); return r.top < innerHeight * 0.92 && r.bottom > 0; };
   const io = new IntersectionObserver((es) => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold: .1, rootMargin: '0px 0px -40px 0px' });
-  document.querySelectorAll('.rv').forEach(el => { if (inView(el)) el.classList.add('in'); else io.observe(el); });
-  setTimeout(() => document.querySelectorAll('.rv:not(.in)').forEach(el => { if (inView(el)) el.classList.add('in'); }), 400);
+  document.querySelectorAll('.rv').forEach(el => io.observe(el));
 </script>
 </body>
 </html>
