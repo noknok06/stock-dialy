@@ -1,144 +1,324 @@
 {% comment %}
-クイック記録用ボトムシート
-使用方法: {% include 'components/quick_record_sheet.html' %}
+クイック記録：note.com 風のフルスクリーン執筆エディタ。
+
+設計方針:
+- メモ欄を画面全体に広げ、スマホでも隠れない大きな書き込み面にする
+- Markdown 対応（見出し・太字・箇条書き・引用・リンクを下部ツールバーから挿入）。
+  保存内容は reason に格納され、詳細ページで Markdown としてレンダリングされる
+- 銘柄名（任意）＋ 銘柄コードのサジェスト機能は維持（id: stock_name_quick / suggestions_quick）
+
+bottom-sheet.js には依存しない独立オーバーレイ（.bottom-sheet クラスを付けない）。
+openQuickRecordSheet() を上書きして全画面エディタを開く。
 {% endcomment %}
 
-<div class="bottom-sheet" id="quickRecordSheet" aria-hidden="true">
-  <div class="bottom-sheet-backdrop"></div>
+<div id="quickRecordSheet" class="qr-overlay" aria-hidden="true" role="dialog"
+     aria-modal="true" aria-label="クイック記録">
 
-  <div class="bottom-sheet-content">
-    <!-- ドラッグハンドル -->
-    <div class="bottom-sheet-handle" aria-label="シートを閉じるにはドラッグしてください"></div>
+  <form id="quickRecordForm" class="qr-shell" method="post"
+        action="{% url 'stockdiary:quick_create' %}">
+    {% csrf_token %}
 
-    <!-- ヘッダー -->
-    <div class="bottom-sheet-header">
-      <h3>
-        <i class="bi bi-lightning-charge-fill" style="color: var(--warning-color, #f59e0b);"></i>
-        クイック記録
-      </h3>
-      <button type="button" class="btn-close" aria-label="閉じる">
+    <!-- 上部バー -->
+    <div class="qr-topbar">
+      <button type="button" class="qr-close" onclick="closeQuickRecord()" aria-label="閉じる">
         <i class="bi bi-x-lg"></i>
       </button>
+      <div class="qr-topbar-right">
+        <span class="qr-saving" id="qrSaving" hidden>
+          <span class="spinner-border spinner-border-sm"></span> 保存中…
+        </span>
+        <button type="submit" class="qr-save" id="qrSubmitBtn">保存</button>
+      </div>
     </div>
 
-    <!-- ボディ -->
-    <div class="bottom-sheet-body">
-      <form id="quickRecordForm" method="post" action="{% url 'stockdiary:quick_create' %}">
-        {% csrf_token %}
-
-        <!-- 銘柄名 -->
-        <div class="mb-3">
-          <label for="stock_name_quick">
-            銘柄名（任意）
-          </label>
-          <div class="input-with-suggestions">
-            <input
-              type="text"
-              name="stock_name"
-              id="stock_name_quick"
-              class="form-control form-control-lg"
-              placeholder="例: トヨタ自動車 または 7203"
-              autocomplete="off"
-              aria-describedby="stock_name_help">
-
-            <div class="form-text small text-muted mt-2" id="stock_name_help">
-              💡 銘柄コードまたは会社名を入力（空欄でメモのみ記録も可能）
-            </div>
-
-            <!-- オートコンプリート候補 -->
-            <div class="suggestions-inline" id="suggestions_quick" role="listbox">
-              <div class="suggestions-list"></div>
-            </div>
-          </div>
+    <!-- 執筆キャンバス -->
+    <div class="qr-canvas">
+      <!-- 銘柄名（任意）＋ サジェスト -->
+      <div class="qr-stock">
+        <input type="text" name="stock_name" id="stock_name_quick" class="qr-stock-input"
+               placeholder="銘柄名（任意）" autocomplete="off" aria-label="銘柄名（任意）">
+        <div class="qr-stock-hint">
+          <i class="bi bi-search"></i> 銘柄コードを入力すると候補から名前を補完できます
         </div>
-
-        <!-- メモ -->
-        <div class="mb-3">
-          <label for="reason_quick">メモ（任意）</label>
-          <textarea
-            name="reason"
-            id="reason_quick"
-            class="form-control"
-            rows="5"
-            placeholder="気になるポイントや考察を自由に記録..."
-            maxlength="2000"></textarea>
-          <div class="form-text small text-muted mt-1">
-            <i class="bi bi-info-circle me-1"></i>
-            2000文字まで入力可能
-          </div>
+        <div class="suggestions-inline qr-suggest" id="suggestions_quick" role="listbox">
+          <div class="suggestions-list"></div>
         </div>
+      </div>
 
-        <!-- 送信ボタン -->
-        <div class="d-grid">
-          <button type="submit" class="btn btn-success btn-lg" id="submitBtn">
-            <i class="bi bi-check-lg me-1"></i>
-            保存
-          </button>
-        </div>
-      </form>
+      <!-- 本文（Markdown 可・大きな書き込み面） -->
+      <textarea name="reason" id="reason_quick" class="qr-body"
+                placeholder="無理しなくて大丈夫。あなたのペースで書いてみましょう。"
+                maxlength="2000" aria-label="本文"></textarea>
     </div>
-  </div>
+
+    <!-- 下部 Markdown ツールバー -->
+    <div class="qr-toolbar">
+      <div class="qr-tools" role="toolbar" aria-label="書式">
+        <button type="button" class="qr-tool" data-md="heading" title="見出し" aria-label="見出し"><i class="bi bi-type-h2"></i></button>
+        <button type="button" class="qr-tool" data-md="bold" title="太字" aria-label="太字"><i class="bi bi-type-bold"></i></button>
+        <button type="button" class="qr-tool" data-md="ul" title="箇条書き" aria-label="箇条書き"><i class="bi bi-list-ul"></i></button>
+        <button type="button" class="qr-tool" data-md="quote" title="引用" aria-label="引用"><i class="bi bi-quote"></i></button>
+        <button type="button" class="qr-tool" data-md="link" title="リンク" aria-label="リンク"><i class="bi bi-link-45deg"></i></button>
+      </div>
+      <span class="qr-count"><span id="qrCount">0</span> 文字</span>
+    </div>
+  </form>
 </div>
 
+<style>
+/* ===== クイック記録：フルスクリーン執筆エディタ ===== */
+.qr-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: var(--paper, #fcfbf8);
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(12px);
+  transition: opacity .22s ease, transform .22s ease, visibility .22s;
+}
+.qr-overlay.is-open { opacity: 1; visibility: visible; transform: none; }
+
+.qr-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* 上部バー */
+.qr-topbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--hairline, #e7e4dc);
+  background: var(--paper, #fcfbf8);
+}
+.qr-close {
+  width: 40px; height: 40px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: none; background: transparent;
+  color: var(--ink, #20201d);
+  font-size: 1.15rem; border-radius: 10px; cursor: pointer;
+}
+.qr-close:hover { background: var(--paper-sunken, #f4f2ec); }
+.qr-topbar-right { display: flex; align-items: center; gap: 12px; }
+.qr-saving { font-size: .85rem; color: var(--muted-ink, #6b6a64); display: inline-flex; align-items: center; gap: 6px; }
+.qr-save {
+  border: 1px solid var(--ink, #20201d);
+  background: var(--ink, #20201d);
+  color: var(--paper, #fcfbf8);
+  font-size: .92rem; font-weight: 600;
+  padding: 8px 20px; border-radius: 999px; cursor: pointer;
+  transition: opacity .15s ease;
+}
+.qr-save:hover { opacity: .85; }
+.qr-save:disabled { opacity: .5; cursor: default; }
+
+/* 執筆キャンバス */
+.qr-canvas {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 22px 20px 80px;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+/* 銘柄名 */
+.qr-stock { position: relative; margin-bottom: 6px; }
+.qr-stock-input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--ink, #20201d);
+  font-size: 1.05rem;
+  font-weight: 600;
+  padding: 6px 2px;
+  outline: none;
+  border-bottom: 1px solid transparent;
+}
+.qr-stock-input::placeholder { color: var(--faint-ink, #97968f); font-weight: 500; }
+.qr-stock-input:focus { border-bottom-color: var(--hairline, #e7e4dc); }
+.qr-stock-hint {
+  font-size: .76rem;
+  color: var(--faint-ink, #97968f);
+  margin: 4px 2px 0;
+  display: flex; align-items: center; gap: 5px;
+}
+.qr-suggest { position: relative; z-index: 5; }
+
+/* 本文 */
+.qr-body {
+  width: 100%;
+  min-height: 52vh;
+  border: none;
+  background: transparent;
+  resize: none;
+  outline: none;
+  margin-top: 18px;
+  color: var(--ink, #20201d);
+  font-family: var(--font-family-serif, serif);
+  font-size: 1.08rem;
+  line-height: 1.95;
+}
+.qr-body::placeholder { color: var(--faint-ink, #97968f); }
+
+/* 下部ツールバー */
+.qr-toolbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px;
+  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--hairline, #e7e4dc);
+  background: var(--paper, #fcfbf8);
+}
+.qr-tools { display: flex; align-items: center; gap: 2px; }
+.qr-tool {
+  width: 42px; height: 42px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: none; background: transparent;
+  color: var(--ink-soft, #3a3a36);
+  font-size: 1.1rem; border-radius: 9px; cursor: pointer;
+}
+.qr-tool:hover { background: var(--paper-sunken, #f4f2ec); }
+.qr-tool:active { background: var(--hairline, #e7e4dc); }
+.qr-count { font-size: .8rem; color: var(--faint-ink, #97968f); white-space: nowrap; }
+
+@media (min-width: 768px) {
+  .qr-canvas { padding-top: 40px; }
+  .qr-body { font-size: 1.12rem; }
+}
+</style>
+
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  // フォーム送信時の処理
-  const form = document.getElementById('quickRecordForm');
-  form.addEventListener('submit', function(e) {
+(function () {
+  var overlay = document.getElementById('quickRecordSheet');
+  if (!overlay || overlay.dataset.init) { return; }
+  overlay.dataset.init = '1';
+
+  var form = document.getElementById('quickRecordForm');
+  var body = document.getElementById('reason_quick');
+  var counter = document.getElementById('qrCount');
+  var submitBtn = document.getElementById('qrSubmitBtn');
+  var saving = document.getElementById('qrSaving');
+
+  // ---- 開閉 ----
+  function open() {
+    overlay.classList.add('is-open');
+    overlay.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    setTimeout(function () { if (body) body.focus(); }, 220);
+  }
+  function close() {
+    overlay.classList.remove('is-open');
+    overlay.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  }
+  // speed-dial / onboarding から呼ばれる入口を上書き
+  window.openQuickRecordSheet = open;
+  window.closeQuickRecord = close;
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && overlay.classList.contains('is-open')) { close(); }
+  });
+
+  // ---- 文字数カウント ----
+  function updateCount() { if (counter) counter.textContent = body.value.length; }
+  if (body) { body.addEventListener('input', updateCount); }
+
+  // ---- Markdown 挿入 ----
+  function applyMd(kind) {
+    if (!body) return;
+    var s = body.selectionStart, e = body.selectionEnd;
+    var val = body.value;
+    var sel = val.slice(s, e);
+
+    function wrap(mark, ph) {
+      var text = sel || ph;
+      var out = mark + text + mark;
+      body.value = val.slice(0, s) + out + val.slice(e);
+      var caret = s + mark.length;
+      body.setSelectionRange(caret, caret + text.length);
+    }
+    function linePrefix(prefix, ph) {
+      // 選択範囲の各行頭に prefix を付ける（行頭まで戻して処理）
+      var lineStart = val.lastIndexOf('\n', s - 1) + 1;
+      var block = val.slice(lineStart, e) || ph;
+      var prefixed = block.split('\n').map(function (l) { return prefix + l; }).join('\n');
+      body.value = val.slice(0, lineStart) + prefixed + val.slice(e);
+      var caret = lineStart + prefixed.length;
+      body.setSelectionRange(caret, caret);
+    }
+
+    switch (kind) {
+      case 'bold':    wrap('**', '強調するテキスト'); break;
+      case 'heading': linePrefix('## ', '見出し'); break;
+      case 'ul':      linePrefix('- ', 'リスト項目'); break;
+      case 'quote':   linePrefix('> ', '引用'); break;
+      case 'link': {
+        var text = sel || 'リンクテキスト';
+        var out = '[' + text + '](https://)';
+        body.value = val.slice(0, s) + out + val.slice(e);
+        var pos = s + out.length - 1; // 末尾の ) の前
+        body.setSelectionRange(pos, pos);
+        break;
+      }
+    }
+    body.focus();
+    updateCount();
+  }
+  overlay.querySelectorAll('.qr-tool').forEach(function (btn) {
+    btn.addEventListener('click', function () { applyMd(btn.dataset.md); });
+  });
+
+  // ---- 送信（Ajax） ----
+  form.addEventListener('submit', function (e) {
     e.preventDefault();
-
-    const submitBtn = document.getElementById('submitBtn');
     submitBtn.disabled = true;
-    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>保存中...';
-
-    const formData = new FormData(form);
+    if (saving) saving.hidden = false;
 
     fetch(form.action, {
       method: 'POST',
-      body: formData,
-      headers: {
-        'X-Requested-With': 'XMLHttpRequest'
-      }
+      body: new FormData(form),
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
     })
-    .then(response => response.json())
-    .then(data => {
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
       if (data.success) {
-        if (navigator.vibrate) {
-          navigator.vibrate([10, 5, 10]);
+        if (navigator.vibrate) navigator.vibrate([10, 5, 10]);
+        if (typeof window.showNotification === 'function') {
+          window.showNotification('クイック記録を作成しました', 'success');
         }
-
-        closeBottomSheet('quickRecordSheet');
-        showToast('success', 'クイック記録を作成しました');
-
         if (data.redirect_url) {
-          setTimeout(() => {
-            window.location.href = data.redirect_url;
-          }, 500);
+          setTimeout(function () { window.location.href = data.redirect_url; }, 400);
         } else {
-          setTimeout(() => {
-            window.location.reload();
-          }, 500);
+          setTimeout(function () { window.location.reload(); }, 400);
         }
       } else {
-        showToast('error', data.message || '保存に失敗しました');
+        if (typeof window.showNotification === 'function') {
+          window.showNotification(data.message || '保存に失敗しました', 'error');
+        } else { alert(data.message || '保存に失敗しました'); }
         submitBtn.disabled = false;
-        submitBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i> 保存';
+        if (saving) saving.hidden = true;
       }
     })
-    .catch(error => {
-      console.error('Error:', error);
-      showToast('error', 'エラーが発生しました');
+    .catch(function () {
+      if (typeof window.showNotification === 'function') {
+        window.showNotification('エラーが発生しました', 'error');
+      } else { alert('エラーが発生しました'); }
       submitBtn.disabled = false;
-      submitBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i> 保存';
+      if (saving) saving.hidden = true;
     });
   });
-});
-
-function showToast(type, message) {
-  if (typeof window.showNotification === 'function') {
-    window.showNotification(message, type);
-  } else {
-    alert(message);
-  }
-}
+})();
 </script>
