@@ -68,14 +68,16 @@
     {% endif %}
 
   {% else %}
-    {% if not diary.is_memo %}
     <button type="button" class="karte-add-thesis"
             hx-get="{% url 'stockdiary:thesis_edit' diary.id %}"
             hx-target="#karte-block" hx-swap="outerHTML">
       <i class="bi bi-lightbulb"></i>
       <span class="karte-add-main">当時の仮説を記録する</span>
+      {% if diary.is_memo %}
+      <span class="karte-add-hint">買う前の「こうなるはず」という見立ても、一文で残せば後で答え合わせ（検証）できます</span>
+      {% else %}
       <span class="karte-add-hint">この投資の「主張」を一文で残すと、後で答え合わせ（検証）できます</span>
+      {% endif %}
     </button>
-    {% endif %}
   {% endif %}
 </div>

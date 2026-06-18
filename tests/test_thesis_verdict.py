@@ -2,6 +2,7 @@
 import pytest
 from datetime import date
 
+from django.template.loader import render_to_string
 from django.urls import reverse
 
 from stockdiary.models import Thesis, Verdict
@@ -115,6 +116,44 @@ class TestThesisVerifyViews:
         url = reverse('stockdiary:thesis_edit', args=[other.id])
         r = authenticated_client.post(url, {'claim': 'x', 'horizon': '6m'}, HTTP_HX_REQUEST='true')
         assert r.status_code == 404
+
+
+class TestMemoDiaryThesis:
+    """買っていない監視メモの日記でも仮説を記録できる（学びの土台）。"""
+
+    def test_add_thesis_button_shown_for_memo_diary(self, sample_memo_diary):
+        # 取引のないメモ日記でも「当時の仮説を記録する」導線が出る
+        assert sample_memo_diary.is_memo is True
+        rendered = render_to_string('stockdiary/partials/_karte_block.html',
+                                    {'diary': sample_memo_diary, 'thesis': None, 'verdict': None})
+        assert '当時の仮説を記録する' in rendered
+
+    def test_create_thesis_on_memo_diary(self, authenticated_client, sample_memo_diary):
+        url = reverse('stockdiary:thesis_edit', args=[sample_memo_diary.id])
+        r = authenticated_client.post(url, {
+            'claim': '次の決算が良ければ買う。需要回復が本物か見極める',
+            'horizon': '3m',
+        }, HTTP_HX_REQUEST='true')
+        assert r.status_code == 200
+        thesis = Thesis.objects.get(diary=sample_memo_diary)
+        assert thesis.claim.startswith('次の決算が良ければ')
+        # 取引が無くても検証予定日は補完される（基準は今日）
+        assert thesis.review_due_date is not None
+
+    def test_verify_memo_diary_thesis(self, authenticated_client, sample_memo_diary):
+        # 買わなかったが「仮説は当たっていた」= 機会損失という学びを残せる
+        Thesis.objects.create(diary=sample_memo_diary, claim='需要回復が本物')
+        url = reverse('stockdiary:thesis_verify', args=[sample_memo_diary.id])
+        r = authenticated_client.post(url, {
+            'hypothesis_result': Verdict.HYP_HIT,
+            'pnl_result': Verdict.PNL_FLAT,
+            'decision_quality': 2,
+            'learning': '確信があるなら、監視で終わらせず打診買いする',
+        }, HTTP_HX_REQUEST='true')
+        assert r.status_code == 200
+        verdict = Thesis.objects.get(diary=sample_memo_diary).verdict
+        assert verdict.hypothesis_result == Verdict.HYP_HIT
+        assert verdict.learning.startswith('確信があるなら')
 
 
 class TestRecallDueTheses:
