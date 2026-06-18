@@ -70,14 +70,14 @@ class ExportService:
         """DB から中間dict（payload）を構築する。"""
         diaries_qs = (
             StockDiary.objects.filter(user=self.user)
-            .select_related('thesis__verdict')
             .prefetch_related(
+                'theses__verdict',
+                'theses__basis_tags',
                 'tags',
                 'transactions',
                 'stock_splits',
                 'notes',
                 'tag_directions__tag',
-                'thesis__basis_tags',
             )
             .order_by('id')
         )
@@ -183,10 +183,11 @@ class ExportService:
 
     @staticmethod
     def _thesis_payload(diary):
-        """diary に紐づく仮説（と検証）を dict 化する。無ければ None。"""
-        thesis = getattr(diary, 'thesis', None)
-        if thesis is None:
+        """diary に紐づく仮説（と検証）を dict 化する。無ければ None。最新の1件を返す。"""
+        theses = list(diary.theses.all())  # prefetch キャッシュを使用
+        if not theses:
             return None
+        thesis = theses[0]
         verdict = getattr(thesis, 'verdict', None)
         verdict_payload = None
         if verdict is not None:
