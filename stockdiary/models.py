@@ -623,7 +623,7 @@ class Thesis(models.Model):
     構造で持つ。review_due_date がホーム想起と継続のトリガーになる。
     成長OSの検証ループ（予想→結果→検証→学び）の起点。
     """
-    diary = models.OneToOneField(StockDiary, on_delete=models.CASCADE, related_name='thesis')
+    diary = models.ForeignKey(StockDiary, on_delete=models.CASCADE, related_name='theses')
     claim = models.CharField('主張', max_length=200,
                              help_text='この投資の主張を一文で（例: 円安継続で輸出採算が改善する）')
     basis_tags = models.ManyToManyField(Tag, blank=True, related_name='theses',
@@ -657,6 +657,7 @@ class Thesis(models.Model):
     class Meta:
         verbose_name = '仮説'
         verbose_name_plural = '仮説'
+        ordering = ['-created_at']
 
     def __str__(self):
         return f'{self.diary.stock_name}: {self.claim[:30]}'

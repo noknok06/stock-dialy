@@ -1,7 +1,7 @@
 {# 仮説の作成・編集フォーム（HTMX）。root に id を保持して outerHTML 置換に追随 #}
 <div id="karte-block" class="karte-block">
   <form class="karte-form"
-        hx-post="{% url 'stockdiary:thesis_edit' diary.id %}"
+        hx-post="{% if thesis %}{% url 'stockdiary:thesis_edit' diary.id thesis.id %}{% else %}{% url 'stockdiary:thesis_create' diary.id %}{% endif %}"
         hx-target="#karte-block" hx-swap="outerHTML">
     {% csrf_token %}
     <div class="karte-form-title"><i class="bi bi-lightbulb"></i> 当時の仮説</div>

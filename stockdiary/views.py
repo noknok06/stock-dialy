@@ -570,18 +570,11 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         context['notes'] = notes
 
         # 検証ループ（Phase 8a）: 仮説（Thesis）と検証（Verdict）
-        try:
-            thesis = self.object.thesis
-        except Thesis.DoesNotExist:
-            thesis = None
-        verdict = None
-        if thesis:
-            try:
-                verdict = thesis.verdict
-            except Verdict.DoesNotExist:
-                verdict = None
-        context['thesis'] = thesis
-        context['verdict'] = verdict
+        context['theses'] = (
+            self.object.theses
+            .select_related('verdict')
+            .prefetch_related('basis_tags')
+        )
 
         # 時系列タブ: 取引・分割・継続記録を1本の時系列に統合
         # （売買の前後に何を考えていたかを日付の隣接で読み取れるようにする）
@@ -4200,18 +4193,13 @@ def _default_review_due_date(diary, horizon):
 
 def _render_karte_block(request, diary):
     """検証ループのブロック（仮説→結果→検証→学び）を再描画する。"""
-    try:
-        thesis = diary.thesis
-    except Thesis.DoesNotExist:
-        thesis = None
-    verdict = None
-    if thesis:
-        try:
-            verdict = thesis.verdict
-        except Verdict.DoesNotExist:
-            verdict = None
+    theses = (
+        diary.theses
+        .select_related('verdict')
+        .prefetch_related('basis_tags')
+    )
     return render(request, 'stockdiary/partials/_karte_block.html', {
-        'diary': diary, 'thesis': thesis, 'verdict': verdict,
+        'diary': diary, 'theses': theses,
     })
 
 
@@ -4223,13 +4211,12 @@ def karte_block(request, diary_id):
 
 
 @login_required
-def thesis_edit(request, diary_id):
-    """仮説（Thesis）の作成・編集（HTMX）。"""
+def thesis_edit(request, diary_id, thesis_id=None):
+    """仮説（Thesis）の作成・編集（HTMX）。thesis_id なしで新規作成、あれば既存編集。"""
     diary = get_object_or_404(StockDiary, pk=diary_id, user=request.user)
-    try:
-        instance = diary.thesis
-    except Thesis.DoesNotExist:
-        instance = None
+    instance = None
+    if thesis_id:
+        instance = get_object_or_404(Thesis, pk=thesis_id, diary=diary)
 
     if request.method == 'POST':
         form = ThesisForm(request.POST, instance=instance, user=request.user)
@@ -4254,14 +4241,10 @@ def thesis_edit(request, diary_id):
 
 
 @login_required
-def thesis_verify(request, diary_id):
+def thesis_verify(request, diary_id, thesis_id):
     """検証（Verdict）の記録（HTMX）。仮説の当否を損益と分離して残す。"""
     diary = get_object_or_404(StockDiary, pk=diary_id, user=request.user)
-    try:
-        thesis = diary.thesis
-    except Thesis.DoesNotExist:
-        # 仮説が無ければ検証できない
-        return _render_karte_block(request, diary)
+    thesis = get_object_or_404(Thesis, pk=thesis_id, diary=diary)
     try:
         instance = thesis.verdict
     except Verdict.DoesNotExist:

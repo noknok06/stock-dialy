@@ -1,7 +1,7 @@
 {# 検証フォーム（HTMX）。仮説の当否と損益を分けて記録する #}
 <div id="karte-block" class="karte-block">
   <form class="karte-form"
-        hx-post="{% url 'stockdiary:thesis_verify' diary.id %}"
+        hx-post="{% url 'stockdiary:thesis_verify' diary.id thesis.id %}"
         hx-target="#karte-block" hx-swap="outerHTML">
     {% csrf_token %}
     <div class="karte-form-title"><i class="bi bi-check2-circle"></i> 検証（答え合わせ）</div>
