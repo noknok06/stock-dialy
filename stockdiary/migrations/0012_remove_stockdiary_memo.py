@@ -43,7 +43,7 @@ def add_memo_if_missing(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('stockdiary', '0012_merge_0011_merge_memo_into_reason_0011_thesis_verdict'),
+        ('stockdiary', '0011_thesis_verdict'),
     ]
 
     operations = [
