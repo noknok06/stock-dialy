@@ -332,7 +332,7 @@ class TestThesisVerdictRoundTrip:
         assert result['theses'] == 1
         assert result['verdicts'] == 1
         imported = StockDiary.objects.get(user=another_user, stock_symbol='7203')
-        thesis = imported.thesis
+        thesis = imported.theses.first()
         assert thesis.claim == '円安継続で輸出採算が改善する'
         assert thesis.status == 'verified'
         assert thesis.review_due_date == date(2025, 1, 1)
@@ -355,7 +355,7 @@ class TestThesisVerdictRoundTrip:
         assert result['theses'] == 1
         assert result['verdicts'] == 1
         imported = StockDiary.objects.get(user=another_user, stock_symbol='7203')
-        assert imported.thesis.verdict.learning == 'テーマが効くなら握り続ける'
+        assert imported.theses.first().verdict.learning == 'テーマが効くなら握り続ける'
 
     def test_open_thesis_without_verdict(self, sample_diary, another_user):
         from stockdiary.models import Thesis
@@ -370,9 +370,10 @@ class TestThesisVerdictRoundTrip:
         assert result['theses'] == 1
         assert result['verdicts'] == 0
         imported = StockDiary.objects.get(user=another_user, stock_symbol='7203')
-        assert imported.thesis.status == 'open'
+        thesis = imported.theses.first()
+        assert thesis.status == 'open'
         from stockdiary.models import Verdict
-        assert not Verdict.objects.filter(thesis=imported.thesis).exists()
+        assert not Verdict.objects.filter(thesis=thesis).exists()
 
     def test_legacy_v1_payload_without_thesis(self, another_user):
         # 旧 v1 ファイル（thesis キー無し）でも落ちない
