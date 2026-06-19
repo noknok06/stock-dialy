@@ -20,7 +20,8 @@
         data-detail-tmpl="{% url 'stockdiary:detail' 0 %}"
         data-search-url="{% url 'stockdiary:api_search_my_diaries' %}"
         data-tpl-list="{% url 'diary_templates:api_list' %}"
-        data-tpl-detail="{% url 'diary_templates:api_detail' 0 %}">
+        data-tpl-detail="{% url 'diary_templates:api_detail' 0 %}"
+        data-hashtags-url="{% url 'stockdiary:api_hashtags' %}">
     {% csrf_token %}
 
     <!-- 上部バー -->
@@ -323,10 +324,83 @@
   var tplListUrl = form.dataset.tplList;
   var tplDetailTmpl = form.dataset.tplDetail; // /diary-templates/api/0/
 
+  var hashtagsUrl = form.dataset.hashtagsUrl;
   var searchTimer = null;
   var tplLoaded = false;
+  var hashtagInited = false;
 
   function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+  // ---- @タグ サジェスト（textarea を CodeMirror 風に見せて既存クラスを再利用）----
+  // hashtag-autocomplete.js は EasyMDE(CodeMirror)前提のため、textarea 用の薄いアダプタを噛ませる。
+  function TextareaCM(ta) {
+    this.ta = ta;
+    this._handlers = {};
+    var self = this;
+    ta.addEventListener('keyup', function (e) { (self._handlers.keyup || []).forEach(function (fn) { fn(self, e); }); });
+    ta.addEventListener('keydown', function (e) { (self._handlers.keydown || []).forEach(function (fn) { fn(self, e); }); });
+    ta.addEventListener('input', function () { (self._handlers.change || []).forEach(function (fn) { fn(self); }); });
+    ta.addEventListener('blur', function () { (self._handlers.blur || []).forEach(function (fn) { fn(self); }); });
+  }
+  TextareaCM.prototype.on = function (type, fn) { (this._handlers[type] = this._handlers[type] || []).push(fn); };
+  TextareaCM.prototype.getInputField = function () { return this.ta; };
+  TextareaCM.prototype.focus = function () { this.ta.focus(); };
+  TextareaCM.prototype._lines = function () { return this.ta.value.split('\n'); };
+  TextareaCM.prototype.getCursor = function () {
+    var pos = this.ta.selectionStart || 0;
+    var before = this.ta.value.slice(0, pos);
+    var line = (before.match(/\n/g) || []).length;
+    var ch = pos - (before.lastIndexOf('\n') + 1);
+    return { line: line, ch: ch };
+  };
+  TextareaCM.prototype.getLine = function (line) { return this._lines()[line] || ''; };
+  TextareaCM.prototype._toOffset = function (p) {
+    var lines = this._lines(); var off = 0;
+    for (var i = 0; i < p.line; i++) { off += lines[i].length + 1; }
+    return off + p.ch;
+  };
+  TextareaCM.prototype.replaceRange = function (text, start, end) {
+    var s = this._toOffset(start), e = this._toOffset(end);
+    var v = this.ta.value;
+    this.ta.value = v.slice(0, s) + text + v.slice(e);
+    var caret = s + text.length;
+    this.ta.setSelectionRange(caret, caret);
+    this.ta.dispatchEvent(new Event('input'));
+  };
+  TextareaCM.prototype.cursorCoords = function () {
+    // ミラーDIVでキャレットのビューポート座標を測る
+    var ta = this.ta, pos = ta.selectionStart || 0;
+    var rect = ta.getBoundingClientRect();
+    var style = window.getComputedStyle(ta);
+    var mirror = document.createElement('div');
+    var props = ['boxSizing','width','paddingTop','paddingRight','paddingBottom','paddingLeft',
+                 'borderWidth','fontFamily','fontSize','fontWeight','lineHeight','letterSpacing',
+                 'textTransform','whiteSpace','wordWrap'];
+    props.forEach(function (p) { mirror.style[p] = style[p]; });
+    mirror.style.position = 'absolute';
+    mirror.style.visibility = 'hidden';
+    mirror.style.whiteSpace = 'pre-wrap';
+    mirror.style.wordWrap = 'break-word';
+    mirror.style.top = '0'; mirror.style.left = '-9999px';
+    mirror.style.height = 'auto';
+    mirror.textContent = ta.value.slice(0, pos);
+    var marker = document.createElement('span');
+    marker.textContent = '​';
+    mirror.appendChild(marker);
+    document.body.appendChild(mirror);
+    var mLeft = marker.offsetLeft, mTop = marker.offsetTop, mh = marker.offsetHeight || parseInt(style.lineHeight, 10) || 18;
+    document.body.removeChild(mirror);
+    var left = rect.left + mLeft - ta.scrollLeft;
+    var top = rect.top + mTop - ta.scrollTop;
+    return { left: left, top: top, bottom: top + mh };
+  };
+
+  function initHashtagAutocomplete() {
+    if (hashtagInited || !body || !hashtagsUrl) { return; }
+    if (typeof HashtagMentionAutocomplete === 'undefined') { return; }
+    hashtagInited = true;
+    new HashtagMentionAutocomplete(new TextareaCM(body), hashtagsUrl);
+  }
 
   // ---- 開閉 ----
   function open() {
@@ -334,6 +408,7 @@
     overlay.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
     loadTemplates();
+    initHashtagAutocomplete();
     setTimeout(function () { if (body) body.focus(); }, 220);
   }
   function close() {

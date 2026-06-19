@@ -74,3 +74,10 @@ class TestQuickRecordSheetRendered:
         assert 'qrAppendBanner' in html     # 追記モードのバナー
         assert 'qrTopicSection' in html     # テーマ選択
         assert 'qrTemplate' in html         # テンプレート選択
+
+    def test_hashtag_autocomplete_wired(self, authenticated_client, sample_diary):
+        # クイック記録の本文(textarea)で @タグ サジェストが使えるよう配線されている
+        resp = authenticated_client.get(reverse('stockdiary:home'))
+        html = resp.content.decode()
+        assert 'hashtag-autocomplete.js' in html   # スクリプト読み込み
+        assert 'data-hashtags-url' in html          # API URL を form に保持
