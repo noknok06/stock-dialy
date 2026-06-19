@@ -81,3 +81,22 @@ class TestQuickRecordSheetRendered:
         html = resp.content.decode()
         assert 'hashtag-autocomplete.js' in html   # スクリプト読み込み
         assert 'data-hashtags-url' in html          # API URL を form に保持
+
+
+@pytest.mark.django_db
+class TestDiaryMentionAutocompleteWired:
+    """[[ 日記メンションのサジェストが reason/ノート/クイック記録に配線されている。"""
+
+    def test_quick_record_has_diary_mention(self, authenticated_client, sample_diary):
+        html = authenticated_client.get(reverse('stockdiary:home')).content.decode()
+        assert 'DiaryMentionAutocomplete' in html
+
+    def test_detail_note_has_diary_mention(self, authenticated_client, sample_diary):
+        html = authenticated_client.get(
+            reverse('stockdiary:detail', kwargs={'pk': sample_diary.pk})
+        ).content.decode()
+        assert 'DiaryMentionAutocomplete' in html
+
+    def test_create_form_has_diary_mention(self, authenticated_client):
+        html = authenticated_client.get(reverse('stockdiary:create')).content.decode()
+        assert 'DiaryMentionAutocomplete' in html

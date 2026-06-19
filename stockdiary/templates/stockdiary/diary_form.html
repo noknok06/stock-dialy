@@ -2208,11 +2208,15 @@ window.initReasonEasyMDE = function initReasonEasyMDE() {
     refresh();
   })();
 
-  // @ハッシュタグ オートコンプリート（投資仮説フィールド）
+  // @ハッシュタグ／[[日記メンション オートコンプリート（投資仮説フィールド）
   try {
     new HashtagMentionAutocomplete(
       window.easyMDE.codemirror,
       "{% url 'stockdiary:api_hashtags' %}"
+    );
+    new DiaryMentionAutocomplete(
+      window.easyMDE.codemirror,
+      "{% url 'stockdiary:api_search_my_diaries' %}"
     );
   } catch (e) {
     console.error('[HashtagAC] 初期化に失敗:', e);

@@ -396,10 +396,14 @@
   };
 
   function initHashtagAutocomplete() {
-    if (hashtagInited || !body || !hashtagsUrl) { return; }
+    if (hashtagInited || !body) { return; }
     if (typeof HashtagMentionAutocomplete === 'undefined') { return; }
     hashtagInited = true;
-    new HashtagMentionAutocomplete(new TextareaCM(body), hashtagsUrl);
+    var adapter = new TextareaCM(body);   // 1つのアダプタに両補完を載せる
+    if (hashtagsUrl) { new HashtagMentionAutocomplete(adapter, hashtagsUrl); }
+    if (searchUrl && typeof DiaryMentionAutocomplete !== 'undefined') {
+      new DiaryMentionAutocomplete(adapter, searchUrl);   // [[ で日記メンション
+    }
   }
 
   // ---- 開閉 ----

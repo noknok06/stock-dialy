@@ -2471,10 +2471,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // 初期値を反映
     updateNoteCharCount(noteEasyMDE.value());
 
-    // @ハッシュタグ オートコンプリート（継続ノートフィールド）
+    // @ハッシュタグ／[[日記メンション オートコンプリート（継続ノートフィールド）
     new HashtagMentionAutocomplete(
       noteEasyMDE.codemirror,
       "{% url 'stockdiary:api_hashtags' %}"
+    );
+    new DiaryMentionAutocomplete(
+      noteEasyMDE.codemirror,
+      "{% url 'stockdiary:api_search_my_diaries' %}"
     );
   }
 
