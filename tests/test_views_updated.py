@@ -247,32 +247,30 @@ class TestStockDiaryCreateView:
         assert diary.user == self.user
         assert diary.is_memo is True
     
-    def test_create_diary_with_initial_purchase(self, client):
-        """初回購入情報付きで日記を作成"""
+    def test_create_diary_ignores_legacy_purchase_fields(self, client):
+        """初回取引は作成フローから除去済み：旧フィールドを送っても取引は作られない"""
         client.login(username='testuser', password='testpass123')
-        
+
         data = {
             'stock_name': 'テスト株式会社2',
             'stock_symbol': '9998',
             'reason': 'テスト理由2',
+            # 旧・初回購入フィールド（現在は無視される）
             'add_initial_purchase': True,
             'initial_purchase_date': date.today().strftime('%Y-%m-%d'),
             'initial_purchase_price': '3000.00',
             'initial_purchase_quantity': '200'
         }
-        
+
         response = client.post(reverse('stockdiary:create'), data)
-        
+
         assert response.status_code in [200, 302]
-        
-        # 日記と取引が作成されたことを確認
+
+        # 日記は作成されるが、取引は作られない（取引は詳細ページで追加する方針）
         diary = StockDiary.objects.filter(stock_name='テスト株式会社2').first()
         assert diary is not None
-        assert diary.transactions.count() == 1
-        
-        transaction = diary.transactions.first()
-        assert transaction.quantity == Decimal('200')
-        assert transaction.price == Decimal('3000.00')
+        assert diary.transactions.count() == 0
+        assert diary.is_memo is True
 
 
 @pytest.mark.django_db(transaction=True)

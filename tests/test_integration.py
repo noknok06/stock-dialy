@@ -34,27 +34,36 @@ class TestUserJourney:
         # 1. ログイン
         client.login(username='journeyuser', password='journeypass123')
         
-        # 2. 日記を作成
+        # 2. 日記を作成（初回取引は作成フローに含めない）
         diary_data = {
             'stock_name': 'トヨタ自動車',
             'stock_symbol': '7203',
             'reason': '自動車業界のリーダー企業',
             'sector': '輸送用機器',
-            'add_initial_purchase': True,
-            'initial_purchase_date': date.today().strftime('%Y-%m-%d'),
-            'initial_purchase_price': '2000.00',
-            'initial_purchase_quantity': '100'
         }
-        
+
         response = client.post(reverse('stockdiary:create'), diary_data)
         assert response.status_code in [200, 302]
-        
-        # 日記が作成されたことを確認
+
+        # 日記が作成されたことを確認（取引はまだ無い）
         diary = StockDiary.objects.get(stock_symbol='7203', user=self.user)
         assert diary.stock_name == 'トヨタ自動車'
+        assert diary.transaction_count == 0
+
+        # 2-b. 初回取引は詳細ページの取引追加で記録する
+        url = reverse('stockdiary:add_transaction', kwargs={'diary_id': diary.pk})
+        response = client.post(url, {
+            'transaction_type': 'buy',
+            'transaction_date': date.today().strftime('%Y-%m-%d'),
+            'price': '2000.00',
+            'quantity': '100',
+            'memo': '初回購入',
+        })
+        assert response.status_code == 302
+        diary.refresh_from_db()
         assert diary.current_quantity == Decimal('100')
         assert diary.transaction_count == 1
-        
+
         # 3. 追加購入
         transaction_data = {
             'transaction_type': 'buy',
@@ -158,16 +167,25 @@ class TestMultipleStocksManagement:
                 'stock_name': stock['name'],
                 'stock_symbol': stock['symbol'],
                 'reason': f'{stock["name"]}への投資',
-                'add_initial_purchase': True,
-                'initial_purchase_date': date.today().strftime('%Y-%m-%d'),
-                'initial_purchase_price': stock['price'],
-                'initial_purchase_quantity': stock['quantity']
             }
-            
+
             response = client.post(reverse('stockdiary:create'), diary_data)
             assert response.status_code in [200, 302]
-            
+
             diary = StockDiary.objects.get(stock_symbol=stock['symbol'], user=self.user)
+
+            # 初回取引は取引追加で記録（作成フローからは除去済み）
+            client.post(
+                reverse('stockdiary:add_transaction', kwargs={'diary_id': diary.pk}),
+                {
+                    'transaction_type': 'buy',
+                    'transaction_date': date.today().strftime('%Y-%m-%d'),
+                    'price': stock['price'],
+                    'quantity': stock['quantity'],
+                    'memo': '初回購入',
+                },
+            )
+            diary.refresh_from_db()
             diaries.append(diary)
         
         # 2. ホーム画面で全ての銘柄が表示されることを確認

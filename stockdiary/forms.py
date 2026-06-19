@@ -21,48 +21,8 @@ class StockDiaryForm(forms.ModelForm):
         help_text="日記に関連する画像（チャート、スクリーンショット等）"
     )
         
-    # 初回購入情報（オプション）
-    add_initial_purchase = forms.BooleanField(
-        required=False,
-        initial=False,
-        label="初回購入情報を入力する",
-        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
-    )
-    
-    initial_purchase_date = forms.DateField(
-        required=False,
-        widget=forms.DateInput(attrs={
-            'type': 'date',
-            'class': 'form-control'
-        }),
-        label="購入日"
-    )
-    
-    initial_purchase_price = forms.DecimalField(
-        required=False,
-        max_digits=10,
-        decimal_places=2,
-        widget=forms.NumberInput(attrs={
-            'class': 'form-control',
-            'step': '0.01',
-            'min': '0.01',
-            'placeholder': '例: 1000.00'
-        }),
-        label="購入単価"
-    )
-    
-    initial_purchase_quantity = forms.DecimalField(
-        required=False,
-        max_digits=15,
-        decimal_places=2,
-        widget=forms.NumberInput(attrs={
-            'class': 'form-control',
-            'step': '1',
-            'min': '1',
-            'placeholder': '例: 100'
-        }),
-        label="購入数量（株）"
-    )
+    # 初回取引は作成フローから除去（取引は詳細ページで追加する）。
+    # docs/diary_recording_redesign.md の方針に基づく。
 
     # 同一銘柄の日記が既にある場合の重複作成許可フラグ
     # （通常は既存日記への追記を促し、ユーザーが明示した場合のみ重複を許可する）
@@ -124,11 +84,6 @@ class StockDiaryForm(forms.ModelForm):
         self.fields['reason'].label = "投資理由 / 分析内容"
         self.fields['reason'].help_text = "Markdown対応。タグは @タグ名 の形式で記述すると検索可能になります（例: @成長株 @配当）"
 
-        # 初期値設定（新規作成時）
-        if not self.instance.pk:
-            from django.utils import timezone
-            self.fields['initial_purchase_date'].initial = timezone.now().date()
-
     def clean_stock_name(self):
         """銘柄名のバリデーション"""
         stock_name = self.cleaned_data.get('stock_name')
@@ -158,7 +113,7 @@ class StockDiaryForm(forms.ModelForm):
         return sector
 
     def clean(self):
-        """初回購入情報の整合性チェック・重複日記チェック"""
+        """重複日記チェック（初回取引は作成フローから除去済み）"""
         cleaned_data = super().clean()
 
         # 新規作成時のみ: 同一銘柄の既存日記があれば追記を促す
@@ -182,27 +137,6 @@ class StockDiaryForm(forms.ModelForm):
                     'この銘柄の日記が既にあります。考えの変化は既存日記の「継続記録」への追記がおすすめです。'
                     'それでも別の日記として作成する場合は、下の案内から「新しい日記として作成」を選んでください。'
                 )
-
-        add_initial_purchase = cleaned_data.get('add_initial_purchase')
-        
-        if add_initial_purchase:
-            # 初回購入を追加する場合、必須項目をチェック
-            initial_date = cleaned_data.get('initial_purchase_date')
-            initial_price = cleaned_data.get('initial_purchase_price')
-            initial_quantity = cleaned_data.get('initial_purchase_quantity')
-            
-            if not initial_date:
-                self.add_error('initial_purchase_date', '購入日を入力してください')
-            
-            if not initial_price:
-                self.add_error('initial_purchase_price', '購入単価を入力してください')
-            elif initial_price <= 0:
-                self.add_error('initial_purchase_price', '購入単価は正の数を入力してください')
-            
-            if not initial_quantity:
-                self.add_error('initial_purchase_quantity', '購入数量を入力してください')
-            elif initial_quantity <= 0:
-                self.add_error('initial_purchase_quantity', '購入数量は正の数を入力してください')
 
         return cleaned_data
 

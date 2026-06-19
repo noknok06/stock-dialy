@@ -800,32 +800,8 @@ class StockDiaryCreateView(LoginRequiredMixin, CreateView):
             if not success:
                 messages.warning(self.request, '日記は作成されましたが、画像の処理に失敗しました。')
                 
-        # 初回購入情報の処理
-        if form.cleaned_data.get('add_initial_purchase'):
-            try:
-                initial_transaction = Transaction(
-                    diary=self.object,
-                    transaction_type='buy',
-                    transaction_date=form.cleaned_data['initial_purchase_date'],
-                    price=form.cleaned_data['initial_purchase_price'],
-                    quantity=form.cleaned_data['initial_purchase_quantity'],
-                    memo='初回購入'
-                )
-                initial_transaction.save()
-                
-                # 取引後の状態を記録
-                initial_transaction.quantity_after = self.object.current_quantity
-                initial_transaction.average_price_after = self.object.average_purchase_price
-                initial_transaction.save(update_fields=['quantity_after', 'average_price_after'])
-                
-                messages.success(self.request, '日記を作成し、初回購入取引を記録しました')
-            except Exception as e:
-                messages.warning(
-                    self.request,
-                    f'日記は作成されましたが、初回購入取引の記録に失敗しました: {str(e)}'
-                )
-        else:
-            messages.success(self.request, '日記を作成しました')
+        # 初回取引は作成フローから除去（取引は詳細ページで追加する）。
+        messages.success(self.request, '日記を作成しました')
 
         _sync_hashtag_tags(self.object, self.request.user)
         cache.delete(f'mention_map_u{self.request.user.id}')
