@@ -258,7 +258,8 @@ def apply_diary_search(queryset, query: str):
     """日記の全文検索を適用する。
 
     銘柄名・銘柄コード・投資理由・メモ・業種に加え、
-    継続記録（DiaryNote.content / topic）も横断して検索する。
+    継続記録（DiaryNote.content / topic）と「見立ての変遷」（ReasonVersion.content）も
+    横断して検索する。
     空白区切りの複数語は AND 検索（全ての語をいずれかのフィールドに含む日記）。
     `@タグ` のみが入力された場合は search_diaries_by_hashtag に委譲する。
 
@@ -290,6 +291,7 @@ def apply_diary_search(queryset, query: str):
             Q(sector__icontains=term) |
             Q(notes__content__icontains=term) |
             Q(notes__topic__icontains=term) |
+            Q(reason_versions__content__icontains=term) |
             Q(transactions__memo__icontains=term)
         )
     return queryset.distinct()

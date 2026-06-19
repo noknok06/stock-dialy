@@ -9,6 +9,7 @@ from django.urls import reverse
 from django.db.models import Sum, F, Q, Count
 from django.utils import timezone
 from decimal import Decimal, ROUND_HALF_UP
+from datetime import timedelta
 import os
 import re
 import uuid
@@ -370,7 +371,7 @@ class DiaryNote(models.Model):
 
     diary = models.ForeignKey(StockDiary, on_delete=models.CASCADE, related_name='notes')
     date = models.DateField()
-    content = models.TextField(verbose_name='記録内容', blank=True, max_length=3000)
+    content = models.TextField(verbose_name='記録内容', blank=True, max_length=5000)
     current_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, 
                                        verbose_name='記録時点の価格')
     
@@ -414,8 +415,8 @@ class DiaryNote(models.Model):
     def clean(self):
         super().clean()
         self.content = sanitize_text_content(self.content)
-        if self.content and len(self.content) > 3000:
-            raise ValidationError({'content': '記録内容は3000文字以内で入力してください'})
+        if self.content and len(self.content) > 5000:
+            raise ValidationError({'content': '記録内容は5000文字以内で入力してください'})
         # 振り返りはテーマ未指定なら固定テーマでスレッド集約（明示指定は上書きしない）
         if self.note_type == 'retrospective' and not (self.topic or '').strip():
             self.topic = self.RETROSPECTIVE_TOPIC
@@ -752,3 +753,59 @@ class Verdict(models.Model):
     def stars(self):
         q = max(1, min(5, self.decision_quality or 0))
         return '★' * q + '☆' * (5 - q)
+
+
+class ReasonVersion(models.Model):
+    """「現在の見立て」(StockDiary.reason) の来歴（過去版）。
+
+    reason はユーザーが上書き編集する単一スロット。保存時に内容差分があれば、
+    上書き前の版をここへ自動スナップショットして残す（明示操作不要）。
+    - 「判断の記録(Thesis/Verdict/retrospective)」ではなく **来歴(provenance)** であり、
+      時系列(DiaryNote)とは別レイヤ。メインの継続記録一覧には混ぜず、
+      専用「見立ての変遷」ビューと全文検索でのみ辿れる（汚さない×失わない）。
+    - coalesce: 近接編集（同一セッション）の途中版を乱造しないよう、
+      直近版が COALESCE_WINDOW 内なら新規版を作らない。
+    詳細は docs/diary_recording_redesign.md。
+    """
+    # 近接編集をまとめる時間窓（この窓内の連続編集は版を増やさない）
+    COALESCE_WINDOW = timedelta(minutes=30)
+
+    diary = models.ForeignKey(
+        StockDiary, on_delete=models.CASCADE, related_name='reason_versions',
+        verbose_name='日記',
+    )
+    content = models.TextField('内容', blank=True, max_length=5000)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = '見立ての版'
+        verbose_name_plural = '見立ての版'
+        indexes = [
+            models.Index(fields=['diary', '-created_at']),
+        ]
+
+    def __str__(self):
+        return f'{self.diary.stock_name} 見立て版 @ {self.created_at:%Y-%m-%d %H:%M}'
+
+    @classmethod
+    def snapshot_on_change(cls, diary, previous_content):
+        """reason 上書き保存の直後に呼ぶ。前版(previous_content)を必要なら退避する。
+
+        作らない条件：
+          - 差分なし（previous == current）
+          - previous が実質空（残す価値のある前版が無い）
+          - 直近版が COALESCE_WINDOW 内（同一編集セッションの途中版を増やさない）
+
+        Returns: 作成した ReasonVersion または None。
+        """
+        previous = (previous_content or '').strip()
+        current = (diary.reason or '').strip()
+        if not previous or previous == current:
+            return None
+
+        latest = cls.objects.filter(diary=diary).order_by('-created_at').first()
+        if latest and (timezone.now() - latest.created_at) < cls.COALESCE_WINDOW:
+            return None
+
+        return cls.objects.create(diary=diary, content=previous_content or '')

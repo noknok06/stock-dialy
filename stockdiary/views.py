@@ -28,7 +28,7 @@ from django.core.cache import cache
 
 from utils.mixins import ObjectNotFoundRedirectMixin
 from .models import StockDiary, DiaryNote, DiaryNotification
-from .models import Transaction, StockSplit, Thesis, Verdict
+from .models import Transaction, StockSplit, Thesis, Verdict, ReasonVersion
 from .forms import TransactionForm, StockSplitForm, TradeUploadForm
 from .forms import StockDiaryForm, DiaryNoteForm, ThesisForm, VerdictForm
 from .utils import compute_related_strength, extract_lead, build_theme_recall, find_backlinks
@@ -906,7 +906,18 @@ class StockDiaryUpdateView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Upda
         return super().post(request, *args, **kwargs)
     
     def form_valid(self, form):
+        # 上書き保存の前に、DBの旧 reason を取得しておく（「見立て」の来歴退避用）。
+        old_reason = (
+            StockDiary.objects
+            .filter(pk=self.object.pk)
+            .values_list('reason', flat=True)
+            .first()
+        ) or ''
+
         response = super().form_valid(form)
+
+        # reason に差分があれば旧版を自動スナップショット（明示操作不要・coalesce 付き）。
+        ReasonVersion.snapshot_on_change(self.object, old_reason)
 
         image_file = form.cleaned_data.get('image')
         if image_file:

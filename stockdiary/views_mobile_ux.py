@@ -64,10 +64,10 @@ def quick_create_diary(request):
 
         # メモ（投資理由フィールドを使用）
         reason = request.POST.get('reason', '').strip()
-        if reason and len(reason) > 2000:
+        if reason and len(reason) > 5000:
             return JsonResponse({
                 'success': False,
-                'message': 'メモは2000文字以内で入力してください'
+                'message': 'メモは5000文字以内で入力してください'
             }, status=400)
 
         # 日記作成
@@ -131,10 +131,10 @@ def quick_add_note(request, diary_id):
                 'message': '記録内容を入力してください'
             }, status=400)
 
-        if len(content) > 3000:
+        if len(content) > 5000:
             return JsonResponse({
                 'success': False,
-                'message': '記録内容は3000文字以内で入力してください'
+                'message': '記録内容は5000文字以内で入力してください'
             }, status=400)
 
         # 継続記録作成

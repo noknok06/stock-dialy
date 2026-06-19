@@ -408,7 +408,7 @@ class DiaryNoteForm(forms.ModelForm):
             'content': forms.Textarea(attrs={
                 'rows': 5,
                 'class': 'form-control',
-                'maxlength': '3000',
+                'maxlength': '5000',
             }),
             'current_price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
         }
@@ -426,8 +426,8 @@ class DiaryNoteForm(forms.ModelForm):
     def clean_content(self):
         """記録内容のバリデーション"""
         content = sanitize_text_content(self.cleaned_data.get('content'))
-        if content and len(content) > 3000:
-            raise ValidationError('記録内容は3000文字以内で入力してください。')
+        if content and len(content) > 5000:
+            raise ValidationError('記録内容は5000文字以内で入力してください。')
         return content
 
 class TradeUploadForm(forms.Form):
