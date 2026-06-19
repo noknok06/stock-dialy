@@ -588,6 +588,30 @@ def search_related_diaries(request, diary_id):
 
 
 @login_required
+@require_http_methods(["GET"])
+def search_my_diaries(request):
+    """統一玄関(「書く」FAB)用：ログインユーザー自身の日記を検索する。
+
+    diary_id を取らないため新規作成フローでも使える（既存への追記 or 新規作成の
+    振り分けを人間が選ぶための候補提示）。docs/diary_recording_redesign.md 段階9b。
+    """
+    query = request.GET.get('q', '').strip()
+    if not query:
+        return JsonResponse({'diaries': []})
+
+    from django.db.models import Q
+    results = StockDiary.objects.filter(user=request.user).filter(
+        Q(stock_name__icontains=query) | Q(stock_symbol__icontains=query)
+    ).order_by('-updated_at')[:8]
+
+    diaries = [
+        {'id': d.id, 'stock_name': d.stock_name, 'stock_symbol': d.stock_symbol}
+        for d in results
+    ]
+    return JsonResponse({'diaries': diaries})
+
+
+@login_required
 @require_http_methods(["POST"])
 def add_related_diary(request, diary_id):
     """関連日記を追加する（双方向）"""

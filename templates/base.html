@@ -1084,7 +1084,204 @@
           <i class="bi bi-grid"></i>
       </button>
   </div>
-  
+
+  <!-- 統一玄関「書く」FAB（docs/diary_recording_redesign.md 段階9b） -->
+  <button type="button" id="composeFab" class="compose-fab" aria-label="書く" title="書く">
+    <i class="bi bi-pencil-square"></i>
+  </button>
+  <div id="composeModal" class="compose-modal" aria-hidden="true">
+    <div class="compose-sheet" role="dialog" aria-modal="true" aria-label="記録を書く">
+      <div class="compose-head">
+        <span class="compose-title"><i class="bi bi-pencil-square me-1"></i>書く</span>
+        <button type="button" id="composeClose" class="compose-close" aria-label="閉じる"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="compose-body">
+        <label class="compose-label">銘柄</label>
+        <input type="text" id="composeStock" class="form-control" autocomplete="off"
+               placeholder="銘柄名・コードで検索（既存に追記）／新規も可">
+        <div id="composeSuggest" class="compose-suggest" style="display:none;"></div>
+        <div id="composeSelected" class="compose-selected" style="display:none;"></div>
+
+        <label class="compose-label mt-2">本文</label>
+        <textarea id="composeContent" class="form-control" rows="5"
+                  placeholder="いま考えていることを書く（Markdown可）"></textarea>
+
+        <div class="compose-actions">
+          <button type="button" id="composeSubmit" class="btn btn-primary w-100">
+            <i class="bi bi-check2 me-1"></i>保存
+          </button>
+        </div>
+        <p class="compose-hint">既存の銘柄を選ぶと継続記録として追記、選ばなければ新しい日記を作成します。</p>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .compose-fab {
+      position: fixed; right: 20px; bottom: 24px; z-index: 1045;
+      width: 56px; height: 56px; border-radius: 50%; border: none;
+      background: #6366f1; color: #fff; font-size: 1.4rem;
+      box-shadow: 0 6px 18px rgba(99,102,241,0.45); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: transform .12s ease, box-shadow .12s ease;
+    }
+    .compose-fab:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(99,102,241,0.5); }
+    .compose-fab:active { transform: scale(0.96); }
+    .compose-modal {
+      position: fixed; inset: 0; z-index: 2100; display: none;
+      background: rgba(0,0,0,0.45); align-items: flex-end; justify-content: center;
+    }
+    .compose-modal.open { display: flex; }
+    .compose-sheet {
+      background: #fff; width: 100%; max-width: 560px;
+      border-radius: 16px 16px 0 0; padding: 0; max-height: 88vh; overflow: hidden;
+      display: flex; flex-direction: column; animation: composeUp .2s ease-out;
+    }
+    @keyframes composeUp { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+    @media (min-width: 600px) { .compose-modal { align-items: center; } .compose-sheet { border-radius: 16px; } }
+    .compose-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.85rem 1rem; border-bottom: 1px solid #eee;
+    }
+    .compose-title { font-weight: 700; }
+    .compose-close { background: none; border: none; font-size: 1.1rem; color: #888; cursor: pointer; }
+    .compose-body { padding: 1rem; overflow-y: auto; }
+    .compose-label { font-size: 0.8rem; font-weight: 600; color: #555; display: block; margin-bottom: 0.3rem; }
+    .compose-suggest {
+      border: 1px solid #e5e7eb; border-radius: 8px; margin-top: 0.3rem;
+      max-height: 220px; overflow-y: auto; background: #fff;
+    }
+    .compose-suggest-item {
+      display: flex; align-items: center; gap: 0.4rem; width: 100%; text-align: left;
+      padding: 0.55rem 0.7rem; border: none; background: none; cursor: pointer; font-size: 0.9rem;
+      border-bottom: 1px solid #f1f1f1;
+    }
+    .compose-suggest-item:hover { background: rgba(99,102,241,0.08); }
+    .compose-suggest-item:last-child { border-bottom: none; }
+    .compose-suggest-new { color: #5457e6; font-weight: 600; }
+    .compose-suggest-tag {
+      margin-left: auto; font-size: 0.7rem; background: rgba(16,185,129,0.16); color: #0f9d6b;
+      border-radius: 999px; padding: 0.05rem 0.45rem;
+    }
+    .compose-selected {
+      margin-top: 0.4rem; font-size: 0.82rem; font-weight: 600; color: #5457e6;
+      background: rgba(99,102,241,0.08); border-radius: 8px; padding: 0.4rem 0.6rem;
+    }
+    .compose-actions { margin-top: 0.9rem; }
+    .compose-hint { font-size: 0.74rem; color: #999; margin: 0.55rem 0 0; }
+    .dark-mode .compose-sheet, [data-theme="dark"] .compose-sheet { background: #1f2330; color: #e6e6e6; }
+    .dark-mode .compose-head, [data-theme="dark"] .compose-head { border-bottom-color: #333a4d; }
+    .dark-mode .compose-suggest-item, [data-theme="dark"] .compose-suggest-item { color: #e6e6e6; border-bottom-color: #333a4d; }
+  </style>
+
+  <script>
+  (function() {
+    function ready(fn){ if(document.readyState!=='loading'){fn();} else {document.addEventListener('DOMContentLoaded', fn);} }
+    function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    ready(function(){
+      var fab = document.getElementById('composeFab');
+      var modal = document.getElementById('composeModal');
+      if(!fab || !modal) return;
+      var stockInput = document.getElementById('composeStock');
+      var suggestBox = document.getElementById('composeSuggest');
+      var selectedBox = document.getElementById('composeSelected');
+      var contentInput = document.getElementById('composeContent');
+      var submitBtn = document.getElementById('composeSubmit');
+      var csrf = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
+      var searchUrl = "{% url 'stockdiary:api_search_my_diaries' %}";
+      var createUrl = "{% url 'stockdiary:quick_create' %}";
+      var noteTmpl = "{% url 'stockdiary:quick_add_note' 0 %}";
+      var detailTmpl = "{% url 'stockdiary:detail' 0 %}";
+      var selectedId = null;   // null => 新規作成
+      var timer = null;
+
+      function open(){ modal.classList.add('open'); modal.setAttribute('aria-hidden','false'); setTimeout(function(){ stockInput.focus(); }, 60); }
+      function close(){ modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); }
+      fab.addEventListener('click', open);
+      document.getElementById('composeClose').addEventListener('click', close);
+      modal.addEventListener('click', function(e){ if(e.target === modal) close(); });
+      document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && modal.classList.contains('open')) close(); });
+
+      function select(id, label){
+        selectedId = id;
+        selectedBox.style.display = 'block';
+        selectedBox.textContent = id ? ('追記先: ' + label) : ('新規作成: ' + label);
+      }
+
+      function render(q, diaries){
+        var html = '';
+        diaries.forEach(function(d){
+          var code = d.stock_symbol ? ' (' + d.stock_symbol + ')' : '';
+          html += '<button type="button" class="compose-suggest-item" data-id="' + d.id + '" data-label="' + esc(d.stock_name) + '">' +
+                  '<i class="bi bi-journal-text"></i> ' + esc(d.stock_name) + esc(code) +
+                  '<span class="compose-suggest-tag">追記</span></button>';
+        });
+        if(q){
+          html += '<button type="button" class="compose-suggest-item compose-suggest-new" data-id="" data-label="' + esc(q) + '">' +
+                  '<i class="bi bi-plus-circle"></i> 新しい銘柄として作成:「' + esc(q) + '」</button>';
+        }
+        suggestBox.innerHTML = html;
+        suggestBox.style.display = html ? 'block' : 'none';
+        Array.prototype.forEach.call(suggestBox.querySelectorAll('.compose-suggest-item'), function(it){
+          it.addEventListener('click', function(){
+            var id = this.getAttribute('data-id');
+            var label = this.getAttribute('data-label');
+            stockInput.value = label;
+            select(id ? parseInt(id, 10) : null, label);
+            suggestBox.style.display = 'none';
+          });
+        });
+      }
+
+      stockInput.addEventListener('input', function(){
+        var q = this.value.trim();
+        selectedId = null; selectedBox.style.display = 'none';
+        clearTimeout(timer);
+        if(!q){ suggestBox.style.display = 'none'; return; }
+        timer = setTimeout(function(){
+          fetch(searchUrl + '?q=' + encodeURIComponent(q), { credentials: 'same-origin' })
+            .then(function(r){ return r.json(); })
+            .then(function(data){ render(q, (data && data.diaries) || []); })
+            .catch(function(){ render(q, []); });
+        }, 200);
+      });
+
+      submitBtn.addEventListener('click', function(){
+        var content = contentInput.value.trim();
+        var stock = stockInput.value.trim();
+        if(!content){ alert('本文を入力してください'); return; }
+        if(!stock){ alert('銘柄を入力または選択してください'); return; }
+        submitBtn.disabled = true;
+
+        var url, fd = new FormData();
+        if(selectedId){
+          url = noteTmpl.replace('/0/', '/' + selectedId + '/');
+          fd.append('content', content);
+          fd.append('note_type', 'analysis');
+          fd.append('importance', 'medium');
+        } else {
+          url = createUrl;
+          fd.append('stock_name', stock);
+          fd.append('reason', content);
+        }
+        fetch(url, { method: 'POST', headers: { 'X-CSRFToken': csrf }, body: fd, credentials: 'same-origin' })
+          .then(function(r){ return r.json(); })
+          .then(function(data){
+            if(data && data.success){
+              if(data.redirect_url){ window.location.href = data.redirect_url; }
+              else if(selectedId){ window.location.href = detailTmpl.replace('/0/', '/' + selectedId + '/'); }
+              else { window.location.reload(); }
+            } else {
+              alert((data && data.message) || '保存に失敗しました');
+              submitBtn.disabled = false;
+            }
+          })
+          .catch(function(){ alert('通信エラーが発生しました'); submitBtn.disabled = false; });
+      });
+    });
+  })();
+  </script>
+
   <!-- フルスクリーンモーダルメニュー -->
   <div class="fullscreen-menu" id="fullscreenMenu">
     <div class="menu-header">
