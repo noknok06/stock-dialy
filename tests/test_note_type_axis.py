@@ -1,8 +1,8 @@
-"""note_type を「追える軸」にする（段階9a-E）テスト。
+"""note_type の保存に関するテスト。
 
-docs/diary_recording_redesign.md 段階9a-E:
-- 継続記録に note_type 絞り込みチップを追加（決算分析・ニュース等を時系列で追える）
-- 入力フォームで note_type を選択可能化（hidden 固定 analysis からの脱却）
+入力での note_type 強制選択UI（フィルタチップ／選択ピル）はユーザー判断で撤回
+（topic 単一入力に統一）。note_type 自体は add_note フォーム・EDINET 連携・
+振り返りフローで設定され得るため、保存経路のみ検証する。
 """
 import datetime
 
@@ -10,26 +10,6 @@ import pytest
 from django.urls import reverse
 
 from stockdiary.models import DiaryNote
-
-
-@pytest.mark.django_db
-class TestNoteTypeFilterUI:
-    def test_detail_renders_note_type_filter_chips(self, authenticated_client, diary_with_notes):
-        url = reverse('stockdiary:detail', kwargs={'pk': diary_with_notes.pk})
-        resp = authenticated_client.get(url)
-        assert resp.status_code == 200
-        html = resp.content.decode()
-        assert 'noteTypeFilter' in html          # 種類フィルタのコンテナ
-        assert 'filterNotesByType' in html        # フィルタ関数の結線
-        assert '決算情報' in html                  # 種類チップのラベル
-
-    def test_detail_renders_note_type_selection_pills(self, authenticated_client, diary_with_notes):
-        url = reverse('stockdiary:detail', kwargs={'pk': diary_with_notes.pk})
-        resp = authenticated_client.get(url)
-        html = resp.content.decode()
-        # 入力フォームの note_type 選択ピル（data-target で隠しinputに結線される）
-        assert 'data-target="note_type"' in html
-        assert 'data-value="earnings"' in html
 
 
 @pytest.mark.django_db

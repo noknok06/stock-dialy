@@ -1,6 +1,7 @@
 {% load humanize %}
 {% load stockdiary_filters %}
-{# 見立ての変遷（ReasonVersion）。reason 上書き前の来歴を既定非表示の折りたたみで表示する。 #}
+{# 見立ての変遷（ReasonVersion）。reason 上書き前の来歴。
+   外側=既定非表示、各版も折りたたみ（要約のみ表示）で縦伸びを抑える。 #}
 {% if reason_versions %}
 <style>
   .reason-versions-block { padding: 0; }
@@ -17,13 +18,23 @@
     border-radius: 999px; padding: 0.05rem 0.5rem;
   }
   .reason-versions-summary small { font-weight: 400; }
-  .reason-versions-list { padding: 0 1rem 0.5rem; }
-  .reason-version-item {
-    border-top: 1px solid var(--border-color, #eee); padding: 0.75rem 0;
+  .reason-versions-list { padding: 0 0.75rem 0.6rem; }
+  /* 各版：要約だけ見せ、開いたときだけ本文。本文も高さ上限で縦伸びを抑える */
+  .reason-version-item { border-top: 1px solid var(--border-color, #eee); }
+  .reason-version-summary {
+    list-style: none; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.6rem 0.25rem; font-size: 0.82rem; color: var(--text-secondary, #777);
   }
-  .reason-version-meta {
-    display: flex; align-items: center; gap: 0.35rem;
-    font-size: 0.78rem; color: var(--text-secondary, #888); margin-bottom: 0.35rem;
+  .reason-version-summary::-webkit-details-marker { display: none; }
+  .reason-version-summary time { flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+  .reason-version-snippet {
+    flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    color: var(--text-primary, #333);
+  }
+  .reason-version-summary .bi-chevron-down { flex: 0 0 auto; transition: transform 0.15s ease; }
+  details.reason-version-item[open] > .reason-version-summary .bi-chevron-down { transform: rotate(180deg); }
+  .reason-version-body {
+    padding: 0.25rem 0.25rem 0.7rem; max-height: 320px; overflow-y: auto;
   }
   .dark-mode .reason-versions-count,
   [data-theme="dark"] .reason-versions-count { background: rgba(99,102,241,0.22); color: #aab0ff; }
@@ -38,15 +49,17 @@
   </summary>
   <div class="reason-versions-list">
     {% for v in reason_versions %}
-    <article class="reason-version-item">
-      <header class="reason-version-meta">
+    <details class="reason-version-item">
+      <summary class="reason-version-summary">
         <i class="bi bi-clock"></i>
-        <time datetime="{{ v.created_at|date:'c' }}">{{ v.created_at|date:"Y年m月d日 H:i" }}</time>
-      </header>
+        <time datetime="{{ v.created_at|date:'c' }}">{{ v.created_at|date:"Y/m/d H:i" }}</time>
+        <span class="reason-version-snippet">{{ v.content|truncatechars:60 }}</span>
+        <i class="bi bi-chevron-down"></i>
+      </summary>
       <div class="reason-version-body markdown-content rp-prose">
         {{ v.content|render_markdown_with_mentions:mention_map }}
       </div>
-    </article>
+    </details>
     {% endfor %}
   </div>
 </details>

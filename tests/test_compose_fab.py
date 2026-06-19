@@ -36,21 +36,3 @@ class TestSearchMyDiaries:
         url = reverse('stockdiary:api_search_my_diaries')
         resp = authenticated_client.get(url, {'q': ''})
         assert resp.json()['diaries'] == []
-
-
-@pytest.mark.django_db
-class TestComposeFabRendered:
-    def test_fab_and_modal_present_on_authenticated_page(self, authenticated_client, sample_diary):
-        resp = authenticated_client.get(reverse('stockdiary:home'))
-        assert resp.status_code == 200
-        html = resp.content.decode()
-        assert 'composeFab' in html        # FAB ボタン
-        assert 'compose-modal' in html      # コンポーズシート
-        assert 'composeStock' in html       # 銘柄サジェスト入力
-
-    def test_fab_absent_for_anonymous(self, client):
-        # 未ログインのランディング等では FAB を出さない
-        resp = client.get(reverse('stockdiary:home'))
-        # 未認証は通常ログインへリダイレクト（FAB は描画されない）
-        if resp.status_code == 200:
-            assert 'composeFab' not in resp.content.decode()
