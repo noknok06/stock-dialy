@@ -604,10 +604,18 @@ def search_my_diaries(request):
         Q(stock_name__icontains=query) | Q(stock_symbol__icontains=query)
     ).order_by('-updated_at')[:8]
 
-    diaries = [
-        {'id': d.id, 'stock_name': d.stock_name, 'stock_symbol': d.stock_symbol}
-        for d in results
-    ]
+    diaries = []
+    for d in results:
+        topics = list(
+            d.notes.exclude(topic='').order_by('-date')
+            .values_list('topic', flat=True).distinct()
+        )[:8]
+        diaries.append({
+            'id': d.id,
+            'stock_name': d.stock_name,
+            'stock_symbol': d.stock_symbol,
+            'topics': topics,
+        })
     return JsonResponse({'diaries': diaries})
 
 

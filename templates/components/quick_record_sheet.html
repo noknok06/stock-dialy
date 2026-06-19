@@ -1,21 +1,26 @@
 {% comment %}
-クイック記録：note.com 風のフルスクリーン執筆エディタ。
+クイック記録：note.com 風のフルスクリーン執筆エディタ（統一玄関）。
 
 設計方針:
 - メモ欄を画面全体に広げ、スマホでも隠れない大きな書き込み面にする
-- Markdown 対応（見出し・太字・箇条書き・引用・リンクを下部ツールバーから挿入）。
-  保存内容は reason に格納され、詳細ページで Markdown としてレンダリングされる
-- 銘柄名（任意）＋ 銘柄コードのサジェスト機能は維持（id: stock_name_quick / suggestions_quick）
-
-bottom-sheet.js には依存しない独立オーバーレイ（.bottom-sheet クラスを付けない）。
-openQuickRecordSheet() を上書きして全画面エディタを開く。
+- Markdown 対応（下部ツールバー）。保存内容は新規=reason / 既存追記=DiaryNote.content
+- 銘柄名（任意）＋ 銘柄コードのサジェスト（id: stock_name_quick / suggestions_quick）は維持
+- 既存日記サジェスト（search_my_diaries）で「既存に追記（テーマ選択つき）／新規作成」を
+  人間が選ぶ（docs/diary_recording_redesign.md 段階9b）
+- テンプレート選択で本文の雛形を挿入（diary_templates）
+- 通貨はコードから自動判定（quick_create_diary 側）。初回取引はこの画面では扱わない
 {% endcomment %}
 
 <div id="quickRecordSheet" class="qr-overlay" aria-hidden="true" role="dialog"
      aria-modal="true" aria-label="クイック記録">
 
   <form id="quickRecordForm" class="qr-shell" method="post"
-        action="{% url 'stockdiary:quick_create' %}">
+        action="{% url 'stockdiary:quick_create' %}"
+        data-note-tmpl="{% url 'stockdiary:quick_add_note' 0 %}"
+        data-detail-tmpl="{% url 'stockdiary:detail' 0 %}"
+        data-search-url="{% url 'stockdiary:api_search_my_diaries' %}"
+        data-tpl-list="{% url 'diary_templates:api_list' %}"
+        data-tpl-detail="{% url 'diary_templates:api_detail' 0 %}">
     {% csrf_token %}
 
     <!-- 上部バー -->
@@ -45,10 +50,37 @@ openQuickRecordSheet() を上書きして全画面エディタを開く。
         </div>
       </div>
 
+      <!-- 既存日記サジェスト（追記候補） -->
+      <div class="qr-mydiaries" id="qrMyDiaries" role="listbox" hidden></div>
+
+      <!-- 追記モードのバナー -->
+      <div class="qr-append-banner" id="qrAppendBanner" hidden>
+        <i class="bi bi-reply-fill"></i>
+        <span id="qrAppendLabel"></span>
+        <button type="button" class="qr-append-exit" id="qrAppendExit">新規作成に戻る</button>
+      </div>
+
+      <!-- テーマ（追記モードのみ表示） -->
+      <div class="qr-topic-section" id="qrTopicSection" hidden>
+        <div class="qr-topic-chips" id="qrTopicChips"></div>
+        <input type="text" id="qrTopic" class="qr-topic-input" maxlength="50"
+               placeholder="テーマ（任意）：同じ話題を束ねます" autocomplete="off">
+      </div>
+
+      <input type="hidden" id="qrAppendDiaryId" value="">
+
+      <!-- テンプレート（本文の雛形を挿入） -->
+      <div class="qr-template-row">
+        <label for="qrTemplate"><i class="bi bi-card-text"></i> テンプレート</label>
+        <select id="qrTemplate" class="qr-template-select">
+          <option value="">テンプレートを選択…</option>
+        </select>
+      </div>
+
       <!-- 本文（Markdown 可・大きな書き込み面） -->
       <textarea name="reason" id="reason_quick" class="qr-body"
                 placeholder="無理しなくて大丈夫。あなたのペースで書いてみましょう。"
-                maxlength="2000" aria-label="本文"></textarea>
+                maxlength="5000" aria-label="本文"></textarea>
     </div>
 
     <!-- 下部 Markdown ツールバー -->
@@ -154,6 +186,64 @@ openQuickRecordSheet() を上書きして全画面エディタを開く。
 }
 .qr-suggest { position: relative; z-index: 5; }
 
+/* 既存日記サジェスト（追記候補） */
+.qr-mydiaries {
+  margin: 6px 0 0;
+  border: 1px solid var(--hairline, #e7e4dc);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.qr-mydiaries-head {
+  font-size: .72rem; color: var(--faint-ink, #97968f);
+  padding: 6px 10px; background: var(--paper-sunken, #f4f2ec);
+}
+.qr-mydiary-item {
+  display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
+  padding: 9px 10px; border: none; background: none; cursor: pointer;
+  border-top: 1px solid var(--hairline, #f0eee7); font-size: .9rem;
+  color: var(--ink, #20201d);
+}
+.qr-mydiary-item:hover { background: rgba(99,102,241,0.08); }
+.qr-mydiary-code { font-size: .76rem; color: var(--faint-ink, #97968f); }
+.qr-mydiary-tag {
+  margin-left: auto; font-size: .7rem; background: rgba(16,185,129,0.16); color: #0f9d6b;
+  border-radius: 999px; padding: .05rem .5rem; flex: 0 0 auto;
+}
+
+/* 追記バナー */
+.qr-append-banner {
+  display: flex; align-items: center; gap: 8px;
+  margin: 8px 0; padding: 8px 12px; border-radius: 10px;
+  background: rgba(99,102,241,0.10); color: #4f46e5; font-size: .9rem; font-weight: 600;
+}
+.qr-append-exit {
+  margin-left: auto; border: none; background: none; cursor: pointer;
+  color: #6b6a64; font-size: .8rem; text-decoration: underline;
+}
+
+/* テーマ */
+.qr-topic-section { margin: 6px 0 2px; }
+.qr-topic-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.qr-topic-chip {
+  border: 1px solid var(--hairline, #e7e4dc); background: var(--paper, #fff);
+  border-radius: 999px; padding: 3px 10px; font-size: .8rem; cursor: pointer;
+  color: var(--ink-soft, #3a3a36);
+}
+.qr-topic-chip.active { background: #4f46e5; color: #fff; border-color: #4f46e5; }
+.qr-topic-input {
+  width: 100%; border: none; border-bottom: 1px solid var(--hairline, #e7e4dc);
+  background: transparent; padding: 5px 2px; font-size: .92rem; outline: none;
+  color: var(--ink, #20201d);
+}
+
+/* テンプレート選択 */
+.qr-template-row { display: flex; align-items: center; gap: 8px; margin: 14px 0 0; }
+.qr-template-row label { font-size: .8rem; color: var(--muted-ink, #6b6a64); white-space: nowrap; }
+.qr-template-select {
+  flex: 1 1 auto; border: 1px solid var(--hairline, #e7e4dc); border-radius: 8px;
+  padding: 5px 8px; font-size: .85rem; background: var(--paper, #fff); color: var(--ink, #20201d);
+}
+
 /* 本文 */
 .qr-body {
   width: 100%;
@@ -162,7 +252,7 @@ openQuickRecordSheet() を上書きして全画面エディタを開く。
   background: transparent;
   resize: none;
   outline: none;
-  margin-top: 18px;
+  margin-top: 14px;
   color: var(--ink, #20201d);
   font-family: var(--font-family-serif, serif);
   font-size: 1.08rem;
@@ -198,6 +288,9 @@ openQuickRecordSheet() を上書きして全画面エディタを開く。
   .qr-canvas { padding-top: 40px; }
   .qr-body { font-size: 1.12rem; }
 }
+
+.dark-mode .qr-mydiary-item, [data-theme="dark"] .qr-mydiary-item { color: #e6e6e6; }
+.dark-mode .qr-template-select, [data-theme="dark"] .qr-template-select { background: #1f2330; color: #e6e6e6; }
 </style>
 
 <script>
@@ -211,12 +304,36 @@ openQuickRecordSheet() を上書きして全画面エディタを開く。
   var counter = document.getElementById('qrCount');
   var submitBtn = document.getElementById('qrSubmitBtn');
   var saving = document.getElementById('qrSaving');
+  var stockInput = document.getElementById('stock_name_quick');
+  var myDiaries = document.getElementById('qrMyDiaries');
+  var appendBanner = document.getElementById('qrAppendBanner');
+  var appendLabel = document.getElementById('qrAppendLabel');
+  var appendExit = document.getElementById('qrAppendExit');
+  var appendIdInput = document.getElementById('qrAppendDiaryId');
+  var topicSection = document.getElementById('qrTopicSection');
+  var topicChips = document.getElementById('qrTopicChips');
+  var topicInput = document.getElementById('qrTopic');
+  var tplSelect = document.getElementById('qrTemplate');
+  var csrf = (document.querySelector('meta[name="csrf-token"]') || {}).content
+           || (form.querySelector('[name=csrfmiddlewaretoken]') || {}).value || '';
+
+  var searchUrl = form.dataset.searchUrl;
+  var noteTmpl = form.dataset.noteTmpl;       // /stockdiary/quick/0/note/
+  var detailTmpl = form.dataset.detailTmpl;   // /stockdiary/0/
+  var tplListUrl = form.dataset.tplList;
+  var tplDetailTmpl = form.dataset.tplDetail; // /diary-templates/api/0/
+
+  var searchTimer = null;
+  var tplLoaded = false;
+
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
   // ---- 開閉 ----
   function open() {
     overlay.classList.add('is-open');
     overlay.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
+    loadTemplates();
     setTimeout(function () { if (body) body.focus(); }, 220);
   }
   function close() {
@@ -224,7 +341,6 @@ openQuickRecordSheet() を上書きして全画面エディタを開く。
     overlay.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
   }
-  // speed-dial / onboarding から呼ばれる入口を上書き
   window.openQuickRecordSheet = open;
   window.closeQuickRecord = close;
 
@@ -236,13 +352,112 @@ openQuickRecordSheet() を上書きして全画面エディタを開く。
   function updateCount() { if (counter) counter.textContent = body.value.length; }
   if (body) { body.addEventListener('input', updateCount); }
 
+  // ---- テンプレート読み込み・適用 ----
+  function loadTemplates() {
+    if (tplLoaded || !tplSelect || !tplListUrl) { return; }
+    tplLoaded = true;
+    fetch(tplListUrl, { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        (data.templates || []).forEach(function (t) {
+          var opt = document.createElement('option');
+          opt.value = t.id; opt.textContent = t.title;
+          tplSelect.appendChild(opt);
+        });
+      })
+      .catch(function () { tplLoaded = false; });
+  }
+  if (tplSelect) {
+    tplSelect.addEventListener('change', function () {
+      var id = this.value;
+      if (!id) { return; }
+      if (body.value.trim() && !confirm('本文をテンプレートで置き換えますか？')) {
+        this.value = ''; return;
+      }
+      fetch(tplDetailTmpl.replace('/0/', '/' + id + '/'), { credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data.success && data.template) { body.value = data.template.body || ''; updateCount(); body.focus(); }
+        })
+        .catch(function () {});
+    });
+  }
+
+  // ---- 既存日記サジェスト（追記候補） ----
+  function renderMyDiaries(list) {
+    if (!list.length) { myDiaries.hidden = true; myDiaries.innerHTML = ''; return; }
+    var html = '<div class="qr-mydiaries-head">既存の日記に追記</div>';
+    list.forEach(function (d) {
+      var code = d.stock_symbol ? '<span class="qr-mydiary-code">(' + esc(d.stock_symbol) + ')</span>' : '';
+      html += '<button type="button" class="qr-mydiary-item" data-id="' + d.id +
+              '" data-name="' + esc(d.stock_name) + '" data-topics="' + esc(JSON.stringify(d.topics || [])) + '">' +
+              '<i class="bi bi-journal-text"></i> ' + esc(d.stock_name) + ' ' + code +
+              '<span class="qr-mydiary-tag">追記</span></button>';
+    });
+    myDiaries.innerHTML = html;
+    myDiaries.hidden = false;
+    myDiaries.querySelectorAll('.qr-mydiary-item').forEach(function (it) {
+      it.addEventListener('click', function () {
+        var topics = [];
+        try { topics = JSON.parse(this.getAttribute('data-topics') || '[]'); } catch (e) {}
+        enterAppendMode(parseInt(this.getAttribute('data-id'), 10), this.getAttribute('data-name'), topics);
+      });
+    });
+  }
+
+  function enterAppendMode(id, name, topics) {
+    appendIdInput.value = id;
+    appendLabel.textContent = '「' + name + '」に追記';
+    appendBanner.hidden = false;
+    myDiaries.hidden = true;
+    // テーマチップ
+    topicChips.innerHTML = '';
+    (topics || []).forEach(function (t) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'qr-topic-chip'; b.textContent = '# ' + t; b.dataset.topic = t;
+      b.addEventListener('click', function () {
+        var on = b.classList.toggle('active');
+        topicChips.querySelectorAll('.qr-topic-chip').forEach(function (o) { if (o !== b) o.classList.remove('active'); });
+        topicInput.value = on ? t : '';
+      });
+      topicChips.appendChild(b);
+    });
+    topicSection.hidden = false;
+    stockInput.value = name;
+  }
+
+  function exitAppendMode() {
+    appendIdInput.value = '';
+    appendBanner.hidden = true;
+    topicSection.hidden = true;
+    topicChips.innerHTML = '';
+    topicInput.value = '';
+    stockInput.value = '';
+    stockInput.focus();
+  }
+  if (appendExit) { appendExit.addEventListener('click', exitAppendMode); }
+
+  if (stockInput) {
+    stockInput.addEventListener('input', function () {
+      if (appendIdInput.value) { return; }   // 追記モード中は再検索しない
+      var q = this.value.trim();
+      clearTimeout(searchTimer);
+      if (!q || !searchUrl) { myDiaries.hidden = true; return; }
+      searchTimer = setTimeout(function () {
+        fetch(searchUrl + '?q=' + encodeURIComponent(q), { credentials: 'same-origin' })
+          .then(function (r) { return r.json(); })
+          .then(function (data) { renderMyDiaries((data && data.diaries) || []); })
+          .catch(function () { myDiaries.hidden = true; });
+      }, 220);
+    });
+  }
+
   // ---- Markdown 挿入 ----
   function applyMd(kind) {
     if (!body) return;
     var s = body.selectionStart, e = body.selectionEnd;
     var val = body.value;
     var sel = val.slice(s, e);
-
     function wrap(mark, ph) {
       var text = sel || ph;
       var out = mark + text + mark;
@@ -251,7 +466,6 @@ openQuickRecordSheet() を上書きして全画面エディタを開く。
       body.setSelectionRange(caret, caret + text.length);
     }
     function linePrefix(prefix, ph) {
-      // 選択範囲の各行頭に prefix を付ける（行頭まで戻して処理）
       var lineStart = val.lastIndexOf('\n', s - 1) + 1;
       var block = val.slice(lineStart, e) || ph;
       var prefixed = block.split('\n').map(function (l) { return prefix + l; }).join('\n');
@@ -259,7 +473,6 @@ openQuickRecordSheet() を上書きして全画面エディタを開く。
       var caret = lineStart + prefixed.length;
       body.setSelectionRange(caret, caret);
     }
-
     switch (kind) {
       case 'bold':    wrap('**', '強調するテキスト'); break;
       case 'heading': linePrefix('## ', '見出し'); break;
@@ -269,7 +482,7 @@ openQuickRecordSheet() を上書きして全画面エディタを開く。
         var text = sel || 'リンクテキスト';
         var out = '[' + text + '](https://)';
         body.value = val.slice(0, s) + out + val.slice(e);
-        var pos = s + out.length - 1; // 末尾の ) の前
+        var pos = s + out.length - 1;
         body.setSelectionRange(pos, pos);
         break;
       }
@@ -281,44 +494,54 @@ openQuickRecordSheet() を上書きして全画面エディタを開く。
     btn.addEventListener('click', function () { applyMd(btn.dataset.md); });
   });
 
-  // ---- 送信（Ajax） ----
+  // ---- 送信（Ajax・新規/追記で分岐） ----
+  function done(data) {
+    if (data && data.success) {
+      if (navigator.vibrate) navigator.vibrate([10, 5, 10]);
+      if (typeof window.showNotification === 'function') {
+        window.showNotification(appendIdInput.value ? '継続記録を追加しました' : 'クイック記録を作成しました', 'success');
+      }
+      var url = data.redirect_url;
+      if (!url && appendIdInput.value) { url = detailTmpl.replace('/0/', '/' + appendIdInput.value + '/'); }
+      if (url) { setTimeout(function () { window.location.href = url; }, 400); }
+      else { setTimeout(function () { window.location.reload(); }, 400); }
+    } else {
+      if (typeof window.showNotification === 'function') {
+        window.showNotification((data && data.message) || '保存に失敗しました', 'error');
+      } else { alert((data && data.message) || '保存に失敗しました'); }
+      submitBtn.disabled = false;
+      if (saving) saving.hidden = true;
+    }
+  }
+
   form.addEventListener('submit', function (e) {
     e.preventDefault();
     submitBtn.disabled = true;
     if (saving) saving.hidden = false;
 
-    fetch(form.action, {
-      method: 'POST',
-      body: new FormData(form),
-      headers: { 'X-Requested-With': 'XMLHttpRequest' }
-    })
-    .then(function (r) { return r.json(); })
-    .then(function (data) {
-      if (data.success) {
-        if (navigator.vibrate) navigator.vibrate([10, 5, 10]);
-        if (typeof window.showNotification === 'function') {
-          window.showNotification('クイック記録を作成しました', 'success');
-        }
-        if (data.redirect_url) {
-          setTimeout(function () { window.location.href = data.redirect_url; }, 400);
-        } else {
-          setTimeout(function () { window.location.reload(); }, 400);
-        }
-      } else {
-        if (typeof window.showNotification === 'function') {
-          window.showNotification(data.message || '保存に失敗しました', 'error');
-        } else { alert(data.message || '保存に失敗しました'); }
+    var appendId = appendIdInput.value;
+    var url, fd = new FormData();
+    fd.append('csrfmiddlewaretoken', csrf);
+    if (appendId) {
+      url = noteTmpl.replace('/0/', '/' + appendId + '/');
+      fd.append('content', body.value);
+      fd.append('topic', topicInput.value || '');
+      fd.append('note_type', 'analysis');
+      fd.append('importance', 'medium');
+    } else {
+      url = form.action;
+      fd.append('stock_name', stockInput.value);
+      fd.append('reason', body.value);
+    }
+    fetch(url, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': csrf }, credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(done)
+      .catch(function () {
+        if (typeof window.showNotification === 'function') { window.showNotification('エラーが発生しました', 'error'); }
+        else { alert('エラーが発生しました'); }
         submitBtn.disabled = false;
         if (saving) saving.hidden = true;
-      }
-    })
-    .catch(function () {
-      if (typeof window.showNotification === 'function') {
-        window.showNotification('エラーが発生しました', 'error');
-      } else { alert('エラーが発生しました'); }
-      submitBtn.disabled = false;
-      if (saving) saving.hidden = true;
-    });
+      });
   });
 })();
 </script>

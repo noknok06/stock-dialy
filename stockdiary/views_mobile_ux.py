@@ -77,6 +77,12 @@ def quick_create_diary(request):
             stock_symbol=stock_code if stock_code else '',
         )
 
+        # 通貨はコードから自動判定（数字始まり=日本株→円／それ以外→ドル）。
+        # 詳細フォームの自動判定と揃える。空コード時は既定(JPY)のまま。
+        import re as _re
+        if stock_code:
+            diary.currency = 'JPY' if _re.match(r'^\d', stock_code) else 'USD'
+
         # 業種・市場情報を設定（オートコンプリート経由の場合）
         industry = request.POST.get('industry', '').strip()
         market = request.POST.get('market', '').strip()
