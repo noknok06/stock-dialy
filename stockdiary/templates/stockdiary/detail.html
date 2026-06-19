@@ -1860,10 +1860,53 @@
               </button>
               {% endif %}
             </div>
-            <div class="reason-content mobile-optimized markdown-content rp-prose">
+            <div class="reason-content mobile-optimized markdown-content rp-prose" id="reasonContent">
               {{ diary.reason|render_markdown_with_mentions:mention_map }}
             </div>
+            {% if diary.reason %}
+            <button type="button" class="reason-more-btn" id="reasonMoreBtn" hidden
+                    onclick="toggleReasonCollapse(this)">続きを読む ▾</button>
+            {% endif %}
           </div>
+
+          <style>
+            /* 長い概要は折りたたみ、下に仮説まで届きやすくする */
+            #section-reason.is-collapsible #reasonContent {
+              max-height: 320px; overflow: hidden; position: relative;
+            }
+            #section-reason.is-collapsible #reasonContent::after {
+              content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 56px;
+              background: linear-gradient(to bottom, rgba(255,255,255,0), var(--paper, #fff));
+              pointer-events: none;
+            }
+            #section-reason.is-expanded #reasonContent { max-height: none; overflow: visible; }
+            #section-reason.is-expanded #reasonContent::after { display: none; }
+            .reason-more-btn {
+              margin-top: 0.5rem; border: none; background: none; cursor: pointer;
+              color: var(--primary-color, #5457e6); font-size: 0.85rem; font-weight: 600; padding: 0;
+            }
+            .dark-mode #section-reason.is-collapsible #reasonContent::after,
+            [data-theme="dark"] #section-reason.is-collapsible #reasonContent::after {
+              background: linear-gradient(to bottom, rgba(31,35,48,0), var(--paper, #1f2330));
+            }
+          </style>
+          <script>
+          (function () {
+            var sec = document.getElementById('section-reason');
+            var content = document.getElementById('reasonContent');
+            var btn = document.getElementById('reasonMoreBtn');
+            if (!sec || !content || !btn) { return; }
+            // 一定以上の高さなら折りたたみ対象にする
+            if (content.scrollHeight > 360) {
+              sec.classList.add('is-collapsible');
+              btn.hidden = false;
+            }
+            window.toggleReasonCollapse = function (b) {
+              var expanded = sec.classList.toggle('is-expanded');
+              b.textContent = expanded ? '閉じる ▴' : '続きを読む ▾';
+            };
+          })();
+          </script>
 
           <!-- 見立ての変遷（ReasonVersion: reason 上書き前の来歴・既定非表示） -->
           {% include "stockdiary/partials/_reason_versions.html" %}

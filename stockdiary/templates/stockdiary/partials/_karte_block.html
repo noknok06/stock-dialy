@@ -13,7 +13,8 @@
                 hx-get="{% url 'stockdiary:thesis_edit' diary.id thesis.id %}"
                 hx-target="#karte-block" hx-swap="outerHTML">編集</button>
       </div>
-      <p class="karte-claim">{{ thesis.claim }}</p>
+      <p class="karte-claim">{{ thesis.claim|linebreaksbr }}</p>
+      {% if thesis.basis %}<p class="karte-basis">{{ thesis.basis|linebreaksbr }}</p>{% endif %}
       <div class="karte-thesis-meta">
         {% for tag in thesis.basis_tags.all %}<span class="chip-quiet">{{ tag.name }}</span>{% endfor %}
         {% if thesis.review_due_date and thesis.status == 'open' %}

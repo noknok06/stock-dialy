@@ -448,13 +448,17 @@ class ThesisForm(forms.ModelForm):
 
     class Meta:
         model = Thesis
-        fields = ['claim', 'basis_tags', 'horizon', 'worst_case', 'review_due_date']
+        fields = ['claim', 'basis_tags', 'basis', 'horizon', 'worst_case', 'review_due_date']
         widgets = {
-            'claim': forms.TextInput(attrs={
-                'class': 'form-control', 'maxlength': 200,
+            'claim': forms.Textarea(attrs={
+                'class': 'form-control', 'maxlength': 500, 'rows': 3,
                 'placeholder': '例: 円安が続き、輸出採算の改善が利益を押し上げる',
             }),
             'basis_tags': forms.SelectMultiple(attrs={'class': 'form-select'}),
+            'basis': forms.Textarea(attrs={
+                'class': 'form-control', 'maxlength': 1000, 'rows': 4,
+                'placeholder': 'なぜそう考えるか（根拠・理由）を文章で。例: 受注残が積み上がり、来期も二桁増益が見込める',
+            }),
             'horizon': forms.Select(attrs={'class': 'form-select'}),
             'worst_case': forms.TextInput(attrs={
                 'class': 'form-control', 'maxlength': 300,
@@ -469,6 +473,7 @@ class ThesisForm(forms.ModelForm):
             from tags.models import Tag
             self.fields['basis_tags'].queryset = Tag.objects.filter(user=user)
         self.fields['basis_tags'].required = False
+        self.fields['basis'].required = False
         self.fields['worst_case'].required = False
         self.fields['review_due_date'].required = False
 

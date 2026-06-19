@@ -625,10 +625,12 @@ class Thesis(models.Model):
     成長OSの検証ループ（予想→結果→検証→学び）の起点。
     """
     diary = models.ForeignKey(StockDiary, on_delete=models.CASCADE, related_name='theses')
-    claim = models.CharField('主張', max_length=200,
-                             help_text='この投資の主張を一文で（例: 円安継続で輸出採算が改善する）')
+    claim = models.CharField('主張', max_length=500,
+                             help_text='この投資の主張（複数行可）。例: 円安継続で輸出採算が改善する')
     basis_tags = models.ManyToManyField(Tag, blank=True, related_name='theses',
                                         verbose_name='根拠の軸')
+    basis = models.TextField('根拠・理由', blank=True, max_length=1000,
+                             help_text='なぜこの主張が成り立つと考えるか（文章）')
 
     HORIZON_CHOICES = [
         ('next_earnings', '次の決算まで'),
