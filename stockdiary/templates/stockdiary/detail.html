@@ -2384,6 +2384,19 @@
 </div>
 
 {% include 'speed_dial.html' with actions=diary_actions %}
+
+<script>
+  // スピードダイヤルの「新しい仮説を追加」から、基本タブの仮説フォーム(HTMX)を起動する。
+  // 入力動線はスピードダイヤルに統一しつつ、フォーム実体は既存の karte ブロックを再利用。
+  window.openThesisForm = function () {
+    var tabBtn = document.getElementById('basic-tab');
+    if (tabBtn && !tabBtn.classList.contains('active')) { tabBtn.click(); }
+    setTimeout(function () {
+      var b = document.querySelector('.karte-add-thesis');
+      if (b) { b.click(); b.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+    }, 80);
+  };
+</script>
 {% endblock %}
 
 {% block scripts %}

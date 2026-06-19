@@ -735,6 +735,24 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
                 'condition': True
             },
             {
+                'id': 'add-split',
+                'type': 'bottom-sheet',
+                'sheet_id': 'addSplitSheet',
+                'icon': 'bi-scissors',
+                'label': '株式分割を追加',
+                'aria_label': '株式分割を追加',
+                'condition': True
+            },
+            {
+                'id': 'add-thesis',
+                'type': 'action',
+                'onclick': 'openThesisForm();',
+                'icon': 'bi-lightbulb',
+                'label': '新しい仮説を追加',
+                'aria_label': '新しい仮説を追加',
+                'condition': True
+            },
+            {
                 'id': 'back-to-home',
                 'type': 'back',
                 'url': reverse_lazy('stockdiary:home'),
