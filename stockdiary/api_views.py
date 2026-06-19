@@ -593,16 +593,18 @@ def search_my_diaries(request):
     """統一玄関(「書く」FAB)用：ログインユーザー自身の日記を検索する。
 
     diary_id を取らないため新規作成フローでも使える（既存への追記 or 新規作成の
-    振り分けを人間が選ぶための候補提示）。docs/diary_recording_redesign.md 段階9b。
+    振り分け、本文の [[ 日記メンション候補）。docs/diary_recording_redesign.md 段階9b。
+
+    クエリが空のときは最近更新した日記を返す（[[ 直後に即候補を出すため。
+    @タグ補完が空クエリで全候補を返すのと挙動を揃える）。
     """
     query = request.GET.get('q', '').strip()
-    if not query:
-        return JsonResponse({'diaries': []})
 
     from django.db.models import Q
-    results = StockDiary.objects.filter(user=request.user).filter(
-        Q(stock_name__icontains=query) | Q(stock_symbol__icontains=query)
-    ).order_by('-updated_at')[:8]
+    qs = StockDiary.objects.filter(user=request.user)
+    if query:
+        qs = qs.filter(Q(stock_name__icontains=query) | Q(stock_symbol__icontains=query))
+    results = qs.order_by('-updated_at')[:8]
 
     diaries = []
     for d in results:

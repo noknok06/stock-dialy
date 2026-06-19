@@ -32,7 +32,14 @@ class TestSearchMyDiaries:
         resp = authenticated_client.get(url, {'q': '他人'})
         assert resp.json()['diaries'] == []
 
-    def test_empty_query_returns_empty(self, authenticated_client):
+    def test_empty_query_returns_recent(self, authenticated_client, sample_diary):
+        # [[ 直後（空クエリ）でも最近の日記を候補に出す（@タグ補完と挙動を揃える）
+        url = reverse('stockdiary:api_search_my_diaries')
+        resp = authenticated_client.get(url, {'q': ''})
+        ids = [d['id'] for d in resp.json()['diaries']]
+        assert sample_diary.id in ids
+
+    def test_empty_query_no_diaries_is_empty(self, authenticated_client):
         url = reverse('stockdiary:api_search_my_diaries')
         resp = authenticated_client.get(url, {'q': ''})
         assert resp.json()['diaries'] == []
