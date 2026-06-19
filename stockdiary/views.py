@@ -573,6 +573,14 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         # メイン時系列には混ぜず、専用の折りたたみブロックで既定非表示にして見せる。
         context['reason_versions'] = self.object.reason_versions.all()
 
+        # テーマ × 感応（銘柄のまとめ）: 付与タグ＋この銘柄への影響方向(DiaryTagDirection)。
+        # タグ＝方向を持つ事象（例: 金利上昇 / ナフサ高）、↑↓＝この銘柄への +/-。
+        _dir_map = {td.tag_id: td.direction for td in self.object.tag_directions.all()}
+        context['theme_tags'] = [
+            {'tag': t, 'direction': _dir_map.get(t.id, '')}
+            for t in self.object.tags.all()
+        ]
+
         # 検証ループ（Phase 8a）: 仮説（Thesis）と検証（Verdict）
         context['theses'] = (
             self.object.theses

@@ -1,0 +1,89 @@
+{% comment %}
+テーマ × 感応（銘柄のまとめ #3）。
+付与タグ（=方向を持つ事象。例: 金利上昇 / ナフサ高）に、この銘柄への影響方向
+(DiaryTagDirection: 追い風↑ / 中立→ / 向かい風↓) をチップで表示・ワンタップ編集する。
+編集は既存の tags:set_direction を fetch で叩く（同一銘柄の全日記へ反映）。
+コンテキスト: theme_tags = [{tag, direction}], diary
+{% endcomment %}
+{% if theme_tags %}
+<div class="info-card mobile-optimized fade-in theme-sensitivity" id="section-theme-sensitivity"
+     style="margin-bottom: 1rem;"
+     data-diary-id="{{ diary.id }}"
+     data-set-direction-url="{% url 'tags:set_direction' 0 %}">
+  <div class="info-card-title"><i class="bi bi-wind"></i> テーマ × 感応</div>
+  <p class="ts-hint">事象タグへのこの銘柄の反応（追い風↑／向かい風↓）。例: <b>金利上昇↑</b>・<b>ナフサ高↓</b></p>
+  <div class="ts-chips">
+    {% for item in theme_tags %}
+    <div class="ts-chip ts-dir-{{ item.direction|default:'none' }}" data-tag-id="{{ item.tag.id }}">
+      <span class="ts-name">{{ item.tag.name }}</span>
+      <span class="ts-toggle" role="group" aria-label="この銘柄への影響">
+        <button type="button" class="ts-btn ts-up{% if item.direction == 'up' %} on{% endif %}" data-dir="up" title="追い風" aria-label="追い風">↑</button>
+        <button type="button" class="ts-btn ts-flat{% if item.direction == 'neutral' %} on{% endif %}" data-dir="neutral" title="中立" aria-label="中立">→</button>
+        <button type="button" class="ts-btn ts-down{% if item.direction == 'down' %} on{% endif %}" data-dir="down" title="向かい風" aria-label="向かい風">↓</button>
+      </span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<style>
+  .theme-sensitivity .ts-hint { font-size: 0.78rem; color: var(--text-secondary, #888); margin: 0 0 0.6rem; }
+  .theme-sensitivity .ts-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .ts-chip {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    border: 1px solid var(--border-color, #e5e7eb); border-radius: 999px;
+    padding: 0.25rem 0.3rem 0.25rem 0.7rem; background: var(--bg-secondary, #f8f9fa);
+  }
+  .ts-chip .ts-name { font-size: 0.85rem; font-weight: 600; color: var(--text-primary, #333); }
+  .ts-toggle { display: inline-flex; gap: 2px; }
+  .ts-btn {
+    width: 26px; height: 26px; border: none; border-radius: 50%;
+    background: transparent; color: var(--text-secondary, #999);
+    font-size: 0.95rem; line-height: 1; cursor: pointer; padding: 0;
+    transition: background .12s, color .12s;
+  }
+  .ts-btn:hover { background: rgba(0,0,0,0.06); }
+  .ts-btn.ts-up.on   { background: rgba(16,185,129,0.16); color: #0f9d6b; }
+  .ts-btn.ts-down.on { background: rgba(220,38,38,0.14);  color: #dc2626; }
+  .ts-btn.ts-flat.on { background: rgba(107,114,128,0.16); color: #6b7280; }
+  /* 方向確定済みチップは枠を方向色に */
+  .ts-chip.ts-dir-up   { border-color: rgba(16,185,129,0.45); }
+  .ts-chip.ts-dir-down { border-color: rgba(220,38,38,0.4); }
+  .dark-mode .ts-chip, [data-theme="dark"] .ts-chip { background: rgba(255,255,255,0.04); }
+  .dark-mode .ts-chip .ts-name, [data-theme="dark"] .ts-chip .ts-name { color: #e6e6e6; }
+</style>
+
+<script>
+(function () {
+  var box = document.getElementById('section-theme-sensitivity');
+  if (!box || box.dataset.init) { return; }
+  box.dataset.init = '1';
+  var diaryId = box.dataset.diaryId;
+  var urlTmpl = box.dataset.setDirectionUrl;   // /tags/0/direction/
+  var csrf = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
+
+  box.querySelectorAll('.ts-chip .ts-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var chip = btn.closest('.ts-chip');
+      var tagId = chip.dataset.tagId;
+      var dir = btn.dataset.dir;
+      var url = urlTmpl.replace('/0/', '/' + tagId + '/');
+      btn.disabled = true;
+      fetch(url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrf, 'Content-Type': 'application/x-www-form-urlencoded' },
+        credentials: 'same-origin',
+        body: 'diary_id=' + encodeURIComponent(diaryId) + '&direction=' + encodeURIComponent(dir),
+      }).then(function (r) {
+        btn.disabled = false;
+        if (!r.ok) { return; }
+        chip.querySelectorAll('.ts-btn').forEach(function (b) { b.classList.remove('on'); });
+        btn.classList.add('on');
+        chip.classList.remove('ts-dir-up', 'ts-dir-down', 'ts-dir-neutral', 'ts-dir-none');
+        chip.classList.add('ts-dir-' + dir);
+      }).catch(function () { btn.disabled = false; });
+    });
+  });
+})();
+</script>
+{% endif %}
