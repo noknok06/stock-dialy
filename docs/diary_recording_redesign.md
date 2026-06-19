@@ -5,6 +5,12 @@
 本メモは「日記の記録設計」を 1 論点ずつ検討した結果の **合意（ロック状態）と段階的実装計画**。
 プロダクトの判断軸は `docs/product_context.md`、検証ループの全体像は `docs/growth_os_redesign.md` に従う。
 
+> **改訂（2026-06 / 独立レビュー反映）**：当初「明示ボタンで旧版を退避」としたが、
+> 独立レビューの指摘（①押し忘れで形骸化＝Thesis 1.8%と同じ失敗の再演／②サイレント上書きで
+> 重要な変化が永久喪失＝North Star と最も相性が悪い）を受け、**保存時に差分があれば前版を
+> 自動スナップショットする方式へ変更**。あわせて退避先を「専用の軽量な版モデル（来歴）」に分離し、
+> 「判断の器（retrospective/Thesis）」とは概念を分ける。詳細は §3・§5・§9。
+
 ---
 
 ## 1. 背景・課題
@@ -34,11 +40,12 @@
 | 観点 | 実測 | 含意 |
 |---|---|---|
 | 多ラウンド（保有が0に戻り再エントリー）日記 | **57 / 168 取引あり日記（34%）** | 単一 reason 破綻は例外でなく常態 |
-| そのうち Thesis を持つ日記 | **1 / 57** | 多ラウンドを捌く構造（Thesis 複数可）はあるが未活用 |
-| `topic` の中身 | 決算分析×39・振り返り×15・株価分析×4・決算×3（=note_type 相当）＋ 単発テーマ×1多数 | topic は note_type の代用に流用されている。単発テーマ（ナフサ等）は**これからスレッド化する前提** |
+| そのうち Thesis を持つ日記 | **1 / 57（1.8%）** | 多ラウンドを捌く構造（Thesis 複数可）はあるが未活用 |
+| `topic` の中身 | 決算分析×39・振り返り×15・株価分析×4・決算×3（=note_type 相当）＋ 単発テーマ×1多数 | topic は note_type の代用に流用。単発テーマ（ナフサ等）は**これからスレッド化する前提** |
 | note_type 分布 | analysis 88 / news 20 / earnings 19 / retrospective 16 / insight 15 / risk 4 | note_type は機能しているが**絞り込み軸が無い** |
 
-結論：構造の不足ではなく **「フロー（入力玄関と軸の使われ方）の設計不足」** が課題。
+**重要な行動シグナル**：Thesis 1.8%・topic の note_type 代用は「構造が足りない」のではなく
+**「人は記入時に分類・追加アクションをしたがらない」**を示す。よって処方は**アクションを増やすより減らす**方向に倒す（→ §3 の自動スナップショット採用根拠）。
 
 ---
 
@@ -49,8 +56,10 @@
 
 ```
 [ 入力アクション ]      ← 玄関は1つ「書く」。銘柄はエントリの属性
-        │ routes to
+        │ routes to（既存判定は人間が確認。自動マージしない）
 [ 記録の実体 ]          ← 既存: StockDiary(reason=現在の見立て) / DiaryNote(時系列エントリ)
+        │ 保存差分で自動スナップショット
+[ 見立ての来歴 ]        ← 新規(最小): ReasonVersion（既定非表示・専用「見立ての変遷」ビュー）
         │
 [ 損益の計算 ]          ← 既存: AggregateService（不変）
 ```
@@ -58,21 +67,24 @@
 | 層 | 確定内容 |
 |---|---|
 | **軸** | 銘柄（StockDiary）。取引・損益・EDINET・時系列の土台。**維持**。 |
-| **入力** | 玄関を1つ（「書く」）に統一。銘柄はサジェストで選択／無ければその場で軽量作成。実体は既存 `quick_create_diary` / `quick_add_note` に振り分け（§5-C）。 |
-| **ナラティブ** | `reason` ＝「**現在の見立て**」スロット（可変・1つ表示・第一の玄関）。**明示ボタン**で旧版を専用 note_type（`stance`）で timeline に退避。reason と継続記録は「エントリ」として**同列・地続き**。 |
+| **入力** | 玄関を1つ（「書く」）に統一。銘柄はサジェストで選択／無ければその場で軽量作成。実体は既存 `quick_create_diary` / `quick_add_note` に振り分け。**既存日記への追記か新規作成かは人間が確認**（自動マージ禁止・§5-C）。 |
+| **ナラティブ** | `reason` ＝「**現在の見立て**」スロット（可変・1つ表示・第一の玄関）。**保存時に内容差分があれば前版を自動スナップショット**（来歴として保存）。履歴は**既定非表示**、専用「見立ての変遷」ビューで閲覧・全文検索可。 |
 | **分類/テーマ** | `note_type` ＝種類スレッド（決算分析・ニュース…／**絞り込み軸へ昇格**）。`topic` ＝銘柄内ストーリーライン（任意・サジェスト付き・**維持**）。`@タグ` ＝銘柄横断テーマ（`DiaryTagDirection` で順連動/逆相関）。 |
-| **関係（注釈つきエッジ）** | 銘柄×テーマ＝`DiaryTagDirection`（方向は既存／rationale テキスト追加は段階2）。銘柄×銘柄＝同業は `sector` 自動、手動 `linked_diaries` の種別+note 化は段階2。検証＝`Thesis`/`Verdict` を任意で深掘り。 |
+| **関係（注釈つきエッジ）** | 銘柄×テーマ＝`DiaryTagDirection`（方向は既存／rationale テキスト追加は段階2）。銘柄×銘柄＝同業は `sector` 自動、手動 `linked_diaries` の種別+note 化は段階2（**ただし看板例 INPEX↔三菱重工 は異業種横断で sector では充足しない＝優先度は要再考・§5-m5**）。検証＝`Thesis`/`Verdict` を任意で深掘り。 |
 | **関連付け UX** | すべてサジェスト（最初の必須要件）。インライン `(コード)` 言及・`@タグ`。 |
 
-### 「現在の見立て」＋明示退避ボタンの挙動（確定）
+### 「現在の見立て」＋自動スナップショットの挙動（確定）
 
 - **現在の見立て**（`reason`）：常に1つ表示・編集可。購入検討理由の第一玄関。
-- **通常の編集・保存**：その場で更新。**履歴を作らない**（誤字・微修正で timeline を汚さない）。
-- **「新しい見立てに更新」ボタン**押下時：
-  1. その時点の `reason` 内容を `DiaryNote(note_type='stance')` として **固定退避**（日付つき・前の見立てと同列）。
-  2. スロットは内容を保持したまま編集状態へ（＝前回をたたき台に**引き継ぎ**）。
-  3. 次に同ボタンを押すまでは「現在の見立て」の更新扱い。
-- 再エントリー時は**自動退避しない**。「前回から見立ては動きましたか？」とボタンを**そっと提示するだけ**（採用＝手動トリガー）。
+- **保存時**：直前に保存された版と**内容差分があれば**、保存前の内容を `ReasonVersion` として自動退避（日付つき）。
+  - **誤字往復の抑制（coalesce）**：近接編集（同一セッション/短時間 or 同日）は1版にまとめ、版を乱造しない。
+  - 差分が無い保存は何もしない。**ユーザーの追加アクションはゼロ**（押し忘れ・分類選択を要求しない）。
+- **履歴の見え方**：版はメイン時系列（ニュース/決算等）を**汚さない＝既定非表示**。専用「**見立ての変遷**」ビューで時系列に並べ、全文検索の対象にする（**汚さない**と**失わない**を両立）。
+- 再エントリー時の自動退避や手動ボタンは設けない（自動スナップショットに一本化）。
+
+> この方式は「サイレント上書きで重要な変化を失う」リスクを原理的に消す（North Star と整合）。
+> 版は **来歴(provenance)** であって「判断の記録(retrospective/Thesis)」ではないため、
+> §5-K の器の境界問題とも干渉しない（むしろ概念が1つ減る）。
 
 ### 純 Obsidian にはしない（意図的）
 
@@ -82,55 +94,62 @@
 
 ## 4. 検索・findability（退避先の妥当性確認）
 
-退避先を timeline（DiaryNote）にする根拠：**既存の全文検索がノートを対象に含む**。
+退避先を「見立ての変遷」（`ReasonVersion`）にしても**後から検索で辿れる**ことを担保する。
 
-- `apply_diary_search`（`stockdiary/utils.py`）は `notes__content` / `notes__topic` を検索対象に含む。
-- `annotate_search_matches` がヒットしたノートの抜粋・件数を返す。
-- → 「現在の見立て(reason)」も「退避した旧見立て(stance note)」も**両方とも後から検索で辿れる**。
+- 現状の全文検索 `apply_diary_search`（`stockdiary/utils.py`）は **`reason`（:289）／`notes__content`・`notes__topic`（:291-292）を対象に含む**。
+  → **現在の見立て(reason) は既に検索対象**。退避した版（`ReasonVersion.content`）も検索に含める実装が必要（段階1で追加）。
+- `annotate_search_matches` がヒット箇所の抜粋・件数を返す。版のヒットも抜粋表示できるようにする。
 
 付帯条件（段階1で担保）：
-1. 退避は**専用 note_type `stance`**（ニュース等と区別、埋もれさせない）。
-2. 「**見立ての変遷**」だけを並べる note_type 絞り込み／ビューを用意。
-3. 文字数の不整合を先に解消（§5-N）。
+1. 版は「見立ての変遷」ビューに集約し、ニュース等の時系列に混ぜない（埋もれさせない）。
+2. 版の全文検索を `apply_diary_search` に追加する。
+3. 文字数の不整合・経路差を先に解消（§5-N）。
 
 ---
 
-## 5. シニアレビューで確定した論点
+## 5. レビューで確定・更新した論点
 
-### 段階1で潰す（順序：N → B → C → E）
+### 段階1で潰す（順序：K → N → C → E）
 
-**N. 文字数制限の不整合（実害）— 解決方針確定**
-`StockDiary.reason` は max 5000 字、`DiaryNote.content` は max 3000 字＋`clean()` で超過例外。
-長い見立てを退避すると保存例外になる。→ **退避先 note の上限を 5000 字へ引き上げる**。
-- `DiaryNote.content` `max_length=3000 → 5000`（`stockdiary/models.py`）
-- `DiaryNote.clean()` の超過チェック `> 3000 → > 5000`（同上）
-- クイック記録フォームの `MAX_NOTE_LENGTH = 3000 → 5000`（`detail.html`）＋ `DiaryNoteForm` / `quick_add_note` の長さ検証
-- `AlterField` マイグレーション 1 本（本番 PostgreSQL への適用は別途 `migrate`）
+> 順序変更：独立レビュー C3 を受け、**器の責務を決める K を、実装変更の前**に置く。
+> ただし自動スナップショット採用で版は「来歴」に分離されたため、K の論点は「retrospective/Thesis の整理」に縮小した。
 
-**B. note_type 命名の衝突回避**
-退避ノートは **専用 note_type `stance`（「見立て」）** を新設し、構造化モデル `Thesis`（claim 200字＋Verdict）とは
-明確に分離する。`Thesis.claim` は 200 字で reason 全文は入らない＝両者は別レイヤと確定。
-- `DiaryNote.TYPE_CHOICES` に `('stance', '見立て')` を追加。
+**K. 判断の器の境界（前提整理・段階1の入口）**
+判断・振り返りを表現しうる器：① reason（現在の見立て）② ReasonVersion（見立ての来歴＝新設・非判断）③ retrospective note（軽い答え合わせ）④ Thesis ⑤ Verdict ⑥ insight note。
+- **②は来歴で、③〜⑤の判断の器とは別レイヤ**と明確化（自動化の副産物）。
+- **多ラウンドの担当を確定**：見立ての変遷＝②（自動・軽量）、ラウンドごとの構造化された賭け＝④Thesis（任意・複数可）。`retrospective`(③) は「売却後の答え合わせ」に役割限定。
+- これにより「単一 reason 破綻」は②で、構造化検証は④⑤で、答え合わせは③で、と棲み分く。
 
-**C. 統一玄関の振り分けキー**
-`StockDiary` に `(user, stock_symbol)` のユニーク制約は**無い**（規約であり DB 保証ではない）。統一玄関の振り分けで仕様化する：
-- 既存判定キー＝ `user` × `stock_symbol`（非空）。一致が複数あれば**最新更新日記**に追記、なければ新規作成。
-- **symbol 空のメモ日記**は symbol 照合不可 → 明示選択（サジェスト）必須、または常に新規。
-- 通貨（USD）・業種は作成時に補完（既存の株式情報 API）。
+**N. 文字数・経路差の不整合（実害）— 棚卸しまで拡張**
+当初は「`DiaryNote.content` 3000→5000」だったが、レビューで経路差が判明。**reason 最大長を経路横断で統一**する：
+- `StockDiary.reason` max 5000（`models.py:66`）／`DiaryNote.content` max 3000＋`clean()` 超過例外（`:373,:417`）／`save()` は無条件 `full_clean()`（`:423-424`）。
+- **`quick_create_diary` の reason は 2000 字上限**（`views_mobile_ux.py:67`）＝統一玄関で見立てを書く入口が頭打ち。
+- **`quick_add_note` にハード 3000 チェック**（`:134`、文言も「3000文字以内」）。
+- → reason 系の上限を 5000 に統一し、`ReasonVersion.content` も 5000。上記すべての検証箇所を同時に直す＋ `AlterField` マイグレーション（本番 PostgreSQL 適用は別途 `migrate`）。
+
+**C. 統一玄関の振り分け＝人間確認（自動マージ禁止）**
+`StockDiary` に `(user, stock_symbol)` ユニーク制約は**無い**。現 `quick_create_diary`（`views_mobile_ux.py:28-109`）は既存検索せず**常に新規作成**＝Cは net-new 挙動。「最新日記へ自動追記」は危険（同一銘柄を短期/長期で別日記管理するユーザーを壊す）。
+- → **サジェストで既存候補を提示し、追記先 or 新規作成は人間が選ぶ**。自動マージはしない。
+- symbol 空メモ日記は symbol 照合不可 → 明示選択必須。
 
 **E. note_type を「使える軸」にする（前提整備）**
-現状 note_type はクイックフォームで hidden 固定 `analysis`、絞り込み UI も無い。段階1の前提として：
-- 入力 UI で note_type を選択可能化（`stance` はボタンからは選ばせず、退避アクション専用にする）。
+現状 note_type は経路で既定が割れる（標準フォーム=`analysis`／`quick_add_note`=`other`：`views_mobile_ux.py:146`）、絞り込み UI も無い。段階1で：
+- 入力 UI で note_type を選択可能化（既定の不一致も解消）。
 - 継続記録に **note_type 絞り込みチップ**を追加（重要度チップと同方式）。
+- ⚠ 留意（レビュー m1）：topic が note_type 代用に流用される＝**人は分類を選びたがらない**。チップ追加だけでは使われない恐れ → 「自由欄から note_type を後付け推定/サジェスト」も併せて検討。
 
-### 段階2以降（破壊度・コストが高い／未定義）
+### 段階2以降
 
 | 論点 | 内容 | 扱い |
 |---|---|---|
 | **F** | `DiaryTagDirection` に `rationale`（理由テキスト）追加＋方向トグル UI 拡張＋「まとめ」表示 | 段階2（マイグレーション） |
-| **G** | `linked_diaries` を `relation_type`+`note` 付き through モデル化（既存リンク移行・グラフ参照 `linked_diaries.through` 改修） | 段階2（大きめ移行）。同業は `sector` 自動で当面充足 |
-| **H** | 「銘柄のまとめ」＝何を合成表示するか（現在の見立て＋タグ方向＋関連銘柄＋Verdict 傾向／編集可否） | 要設計 |
-| **K** | 「振り返り」系の役割整理：①退避見立て（前向きの判断履歴）／②retrospective ノート（軽い答え合わせ）／③Verdict（構造化）。重複させない線引きを確定 | 要設計 |
+| **G / m5** | `linked_diaries` を `relation_type`+`note` 付き through 化。**看板例 INPEX↔三菱重工 は異業種横断**で sector 自動では充足しない＝「同業は sector で当面充足」という後送り根拠は弱い。**優先度を再評価**（段階2の中で前倒し候補） | 段階2（移行あり）。優先度要再考 |
+| **H** | 「銘柄のまとめ」＝何を合成表示するか（現在の見立て＋見立ての変遷＋タグ方向＋関連銘柄＋Verdict 傾向／編集可否） | 要設計 |
+
+### 兄弟ドキュメントとの整合（レビュー M3）
+
+`growth_os_redesign.md:45` は「`Thesis`（1:1 StockDiary）」と記すが、実装は `ForeignKey(related_name='theses')`＝**複数可**（`models.py:626`）。
+- 本メモの多ラウンド担当の決定（変遷＝ReasonVersion、構造化＝Thesis 任意・複数可）に合わせ、**growth_os_redesign.md の 1:1 表記を修正**する（ホーム想起 `is_due`・2×2 の集計単位が「日記単位か仮説単位か」も併せて確認）。※別 doc の修正は本メモ反映後に実施。
 
 ---
 
@@ -138,65 +157,66 @@
 
 | Phase | 内容 | 依存 |
 |---|---|---|
-| **9a** | N（文字数）→ B（`stance` 追加）→ C（振り分けキー）→ E（type 選択＋絞り込み） | 新モデルなし・破壊的移行なし |
-| **9b** | 統一玄関 UI（「書く」1ボタン → 既存 `quick_create_diary`/`quick_add_note` 振り分け）＋「現在の見立て」スロット＋明示退避ボタン＋「見立ての変遷」ビュー | 9a |
+| **9a** | K（器の境界確定）→ N（reason 最大長の経路横断統一）→ C（人間確認の振り分け）→ E（note_type 選択＋絞り込み） | 既存データの破壊的移行なし（ReasonVersion は追加のみ） |
+| **9b** | 統一玄関 UI（「書く」1ボタン → 既存 `quick_create_diary`/`quick_add_note`、追記先は人間確認）＋「現在の見立て」スロット＋**保存差分の自動スナップショット**（coalesce 付き）＋「見立ての変遷」ビュー＋版の全文検索 | 9a |
 | **9c** | F（タグ方向 rationale）／H（銘柄のまとめ） | 9b |
-| **9d** | G（linked_diaries through 化）／K の整理反映 | 9c |
+| **9d** | G（linked_diaries through 化・優先度再評価） | 9c |
 
 `AggregateService`（FIFO 損益）には一切触れない。統一玄関で取引も作る場合は **作成・更新・削除後に必ず `AggregateService.recalculate(diary)` を呼ぶ**（CLAUDE.md 規約）。
 
 ---
 
-## 7. pytest 方針（テスト考慮）
+## 7. 成功条件・計測（レビュー m3）
 
-テスト基盤は `pytest-django` + `config.test_settings`（`--nomigrations` / `--reuse-db`）。
-**`--nomigrations` のためモデルの `max_length` 変更はテストに自動反映される**が、本番用 `AlterField`
-マイグレーションは別途作成・適用が必要（テストの合否だけで「移行済み」と判断しない）。
+形骸化・ノイズ過多を早期検知するため、段階1リリース時に計測を仕込む。
+
+- **多ラウンド救済率**：多ラウンド日記で「見立ての変遷」版が 2 件以上になる割合（目標：多ラウンド問題が実際に救われているか）。
+- **自動スナップショットの健全性**：1 銘柄あたり版数の分布（coalesce 後）。版が誤字で乱造されていないか（ノイズ反証指標）。
+- **変遷ビュー閲覧率**：見立ての変遷が「読まれる」か（来歴の価値検証）。
+- **統一玄関の振り分け**：既存追記 vs 新規作成の比率と、人間確認での訂正率（自動マージ禁止の妥当性）。
+- **note_type 軸の利用**：絞り込みチップの利用率／自由欄からの後付け推定の採用率。
+
+> 自動方式のため「押下率」リスク（旧・明示ボタン案）は消えるが、代わりに**ノイズ過多**が新リスク。
+> coalesce 閾値はこの計測でチューニングする。
+
+---
+
+## 8. pytest 方針（テスト考慮）
+
+`pytest-django` + `config.test_settings`（`--nomigrations` / `--reuse-db`）。
+**`--nomigrations` のためモデルの `max_length` 変更はテストに自動反映**されるが、本番用 `AlterField` /
+新規モデル `ReasonVersion` のマイグレーションは別途作成・適用が必要（テスト合否だけで「移行済み」と判断しない）。
 
 ### 既存テスト（壊さない／回帰確認）
 
 | ファイル | 注意点 |
 |---|---|
-| `tests/test_diary_note_topic.py` | `topic` UI は**維持**する決定。`name="topic"` / `switchNotesView` / `notes-view-topic` の assert を壊さないこと。 |
-| `tests/test_thesis_verdict.py` / `test_demo_verification_loop.py` | `stance` note_type 追加が `Thesis`/`Verdict` に干渉しないこと。 |
-| `tests/test_retrospective_topic.py` | `retrospective` の `RETROSPECTIVE_TOPIC` 自動付与ロジックは不変。 |
-| `tests/test_migration.py` | エクスポート/インポートの往復で **新 note_type `stance` と 5000 字 content** が保持されること。 |
-| `tests/test_backlinks.py` / `test_relation_graph.py` | 退避見立て（= note）内の `(コード)` 言及が関連エッジ・バックリンクに反映されること。 |
-| `tests/test_event_timeline.py` / `test_timeline.py` | timeline に `stance` エントリが正しく並ぶこと。 |
+| `tests/test_diary_note_topic.py` | `topic` UI は**維持**。`name="topic"` / `switchNotesView` / `notes-view-topic` の assert を壊さない。 |
+| `tests/test_thesis_verdict.py` / `test_demo_verification_loop.py` | ReasonVersion 追加が `Thesis`/`Verdict` に干渉しないこと。 |
+| `tests/test_retrospective_topic.py` | `retrospective` の自動 topic 付与は不変。K の役割限定後も回帰しないこと。 |
+| `tests/test_migration.py` | エクスポート/インポートの往復で **ReasonVersion と 5000 字 reason/content** が保持されること。 |
+| `tests/test_backlinks.py` / `test_relation_graph.py` | 退避版・ノート内の `(コード)` 言及が関連エッジ・バックリンクに反映されること。 |
 
 ### 追加テスト（段階9a–9b）
 
-`@pytest.mark.django_db`、`authenticated_client` / `sample_diary` / `diary_with_notes` / `another_user`
-等の既存フィクスチャ（`tests/conftest.py`）を再利用する。
+`@pytest.mark.django_db`、`authenticated_client` / `sample_diary` / `diary_with_notes` / `another_user`（`tests/conftest.py`）を再利用。
 
-1. **文字数（N）** — `DiaryNote.content` が 5000 字を受理し、5001 字で `ValidationError`。
-   `clean()` の境界（5000/5001）を直接検証。
-2. **退避アクション（明示退避）** — 「新しい見立てに更新」POST で
-   `DiaryNote(note_type='stance')` が当日付で作られ、内容＝退避前 `reason`。
-   通常編集（微修正 POST）では stance ノートが**作られない**ことも検証。
-3. **`stance` と Thesis の分離（B）** — stance ノート作成が `Thesis` レコードを生成しないこと。
-4. **検索 findability（§4）** — 退避した stance ノート内の語が `apply_diary_search` でヒットし、
-   `annotate_search_matches` の `match_note` / `match_note_snippet` に出ること。
-5. **note_type 絞り込み（E）** — type 指定で対象ノートのみ返ること。
-6. **統一玄関の振り分け（C）** — 既存 symbol に「書く」と既存日記へ note 追記、未知 symbol で新規日記＋reason、
-   symbol 空（メモ）の経路、他ユーザー資産の 404（`test_diary_note_topic.py::test_edit_note_rejects_other_users_note` に倣う）。
+1. **文字数・経路差（N）** — reason / DiaryNote.content / ReasonVersion.content が 5000 受理・5001 で `ValidationError`。`quick_create_diary`（旧2000）・`quick_add_note`（旧ハード3000）の経路でも統一上限になっていること。
+2. **自動スナップショット** — reason を差分ありで保存すると `ReasonVersion` が前版内容で1件作られる。**差分なし保存では作られない**。近接編集が coalesce され版が乱造されないこと。
+3. **来歴と判断の器の分離（K）** — ReasonVersion 生成が `Thesis`/`DiaryNote(retrospective)` を作らないこと。
+4. **検索 findability（§4）** — 退避版内の語が `apply_diary_search` でヒットし、抜粋に出ること（reason 本体・ノートに加え版も対象）。
+5. **既定非表示** — 「見立ての変遷」ビューには版が出るが、メイン時系列（ニュース/決算）には混ざらないこと。
+6. **note_type 絞り込み（E）** — type 指定で対象ノートのみ返ること。
+7. **統一玄関の人間確認振り分け（C）** — 既存 symbol は候補提示され、追記先選択で既存日記へ note 追記／新規選択で新規日記＋reason／symbol 空は明示選択／他ユーザー資産は 404（`test_diary_note_topic.py::test_edit_note_rejects_other_users_note` に倣う）。**自動マージが起きないこと**を明示的に検証。
 
-### マーカー / 実行
-
-```bash
-pytest tests/test_diary_note_topic.py tests/test_migration.py   # 影響範囲の重点
-pytest -m django_db
-pytest                                                          # 全体（CI: .github/workflows/django-tests.yml）
-```
-
-カバレッジ対象は `stockdiary` / `analysis_template` / `tags`。新規ロジックは `stockdiary` 配下に最小増設し、
-再利用可能部分は `services/` / `utils.py` に切り出す（新規アプリは作らない）。
+> テストの限界（レビュー m4）：上記は機能テスト。「変遷が読まれるか」「振り分け訂正率」等の形骸化指標は
+> §7 の行動計測で見る（テスト合否は設計の成功を保証しない）。
 
 ---
 
-## 8. 技術メモ
+## 9. 技術メモ
 
-- Django + Templates + Bootstrap + HTMX。新規アプリは作らず `stockdiary` 内に最小増設。
-- サジェスト UI は既存 `static/js/hashtag-autocomplete.js`（CodeMirror 連携）を基底化して再利用する。
-- 退避・統一玄関は既存 HTMX パターン（部分テンプレート応答）に合わせる。
+- Django + Templates + Bootstrap + HTMX。新規アプリは作らず `stockdiary` 内に最小増設（`ReasonVersion` も同 app）。
+- サジェスト UI は既存 `static/js/hashtag-autocomplete.js`（CodeMirror 連携）を基底化して再利用。
+- 自動スナップショット・統一玄関は既存 HTMX パターン（部分テンプレート応答）に合わせる。保存ハンドラで「直前版との差分判定＋coalesce」を行う。
 - `AggregateService`（FIFO 損益）は不変＝意思決定の質と損益を疎結合に保つ。
