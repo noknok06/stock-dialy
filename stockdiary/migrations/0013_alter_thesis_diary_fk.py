@@ -18,7 +18,6 @@ class Migration(migrations.Migration):
                 on_delete=django.db.models.deletion.CASCADE,
                 related_name="theses",
                 to="stockdiary.stockdiary",
-                verbose_name="日記",
             ),
         ),
         migrations.AlterModelOptions(

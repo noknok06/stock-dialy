@@ -48,4 +48,12 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RunPython(drop_memo_if_exists, add_memo_if_missing),
+        # RunPython は migration state を変えないため SeparateDatabaseAndState で
+        # state 側だけ RemoveField を適用する。DB 操作は上の RunPython に任せる。
+        migrations.SeparateDatabaseAndState(
+            state_operations=[
+                migrations.RemoveField(model_name='stockdiary', name='memo'),
+            ],
+            database_operations=[],
+        ),
     ]
