@@ -2221,6 +2221,16 @@
                 低
               </button>
             </div>
+            <div id="noteTypeFilter" style="display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 0.75rem;">
+              <span class="filter-label">種類:</span>
+              <button type="button" class="filter-chip active" data-filter="all" onclick="filterNotesByType('all')">すべて</button>
+              <button type="button" class="filter-chip" data-filter="earnings" onclick="filterNotesByType('earnings')">決算情報</button>
+              <button type="button" class="filter-chip" data-filter="news" onclick="filterNotesByType('news')">ニュース</button>
+              <button type="button" class="filter-chip" data-filter="analysis" onclick="filterNotesByType('analysis')">分析更新</button>
+              <button type="button" class="filter-chip" data-filter="insight" onclick="filterNotesByType('insight')">気づき</button>
+              <button type="button" class="filter-chip" data-filter="risk" onclick="filterNotesByType('risk')">リスク</button>
+              <button type="button" class="filter-chip" data-filter="retrospective" onclick="filterNotesByType('retrospective')">振り返り</button>
+            </div>
             <input type="text" class="form-control form-control-sm" id="noteSearchInput" placeholder="記録を検索..." onkeyup="filterNotesByText(this.value)">
           </div>
 
@@ -3693,6 +3703,20 @@ window.showReportModal = function(el) {
 
         <div class="form-section mobile-optimized">
           <div class="section-title">
+            <i class="bi bi-tag"></i>
+            種類
+          </div>
+          <div class="option-pills mobile-optimized">
+            <div class="option-pill note-type-pill active" data-value="analysis" data-target="note_type">分析更新</div>
+            <div class="option-pill note-type-pill" data-value="earnings" data-target="note_type">決算情報</div>
+            <div class="option-pill note-type-pill" data-value="news" data-target="note_type">ニュース</div>
+            <div class="option-pill note-type-pill" data-value="insight" data-target="note_type">気づき</div>
+            <div class="option-pill note-type-pill" data-value="risk" data-target="note_type">リスク</div>
+          </div>
+        </div>
+
+        <div class="form-section mobile-optimized">
+          <div class="section-title">
             <i class="bi bi-exclamation-circle"></i>
             重要度
           </div>
@@ -4162,12 +4186,20 @@ window.showReportModal = function(el) {
 // ============================================
 let currentImportanceFilter = 'all';
 let currentTextFilter = '';
+let currentTypeFilter = 'all';
 
 window.filterNotesByImportance = function(importance) {
   currentImportanceFilter = importance;
   applyNoteFilters();
   updateFilterChips('noteImportanceFilter', importance);
   localStorage.setItem('noteImportanceFilter', importance);
+};
+
+window.filterNotesByType = function(noteType) {
+  currentTypeFilter = noteType;
+  applyNoteFilters();
+  updateFilterChips('noteTypeFilter', noteType);
+  localStorage.setItem('noteTypeFilter', noteType);
 };
 
 window.filterNotesByText = function(text) {
@@ -4194,13 +4226,15 @@ function applyNoteFilters() {
 
   noteCards.forEach(card => {
     const importance = card.dataset.noteImportance || 'medium';
+    const noteType = card.dataset.noteType || '';
     const content = (card.textContent || '').toLowerCase();
     const topic = card.dataset.noteTopic || '';
 
     const importanceMatch = currentImportanceFilter === 'all' || importance === currentImportanceFilter;
+    const typeMatch = currentTypeFilter === 'all' || noteType === currentTypeFilter;
     const textMatch = !currentTextFilter || content.includes(currentTextFilter);
 
-    const shouldShow = importanceMatch && textMatch;
+    const shouldShow = importanceMatch && typeMatch && textMatch;
     card.style.display = shouldShow ? '' : 'none';
 
     if (shouldShow) {
@@ -4219,7 +4253,7 @@ function applyNoteFilters() {
     countSpan.dataset.matchCount = matchCount;
 
     // フィルター（テキスト検索または重要度）が適用されている場合、マッチ数を表示
-    const hasFilter = currentTextFilter || currentImportanceFilter !== 'all';
+    const hasFilter = currentTextFilter || currentImportanceFilter !== 'all' || currentTypeFilter !== 'all';
     countSpan.textContent = hasFilter ? `${matchCount}/${totalCount}件` : `${totalCount}件`;
 
     // ヒット数が0の場合は薄くするとともに、クリック不可にする
@@ -4244,11 +4278,14 @@ function applyNoteFilters() {
 (function restoreNoteFilters() {
   const savedImportanceFilter = localStorage.getItem('noteImportanceFilter') || 'all';
   const savedTextFilter = localStorage.getItem('noteTextFilter') || '';
+  const savedTypeFilter = localStorage.getItem('noteTypeFilter') || 'all';
 
   currentImportanceFilter = savedImportanceFilter;
   currentTextFilter = savedTextFilter;
+  currentTypeFilter = savedTypeFilter;
 
   updateFilterChips('noteImportanceFilter', savedImportanceFilter);
+  updateFilterChips('noteTypeFilter', savedTypeFilter);
 
   const searchInput = document.getElementById('noteSearchInput');
   if (searchInput) {
