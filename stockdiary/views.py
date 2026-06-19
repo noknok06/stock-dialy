@@ -569,6 +569,10 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         notes = self.object.notes.all().order_by('-date')
         context['notes'] = notes
 
+        # 見立ての変遷（ReasonVersion: reason 上書き前の来歴）。
+        # メイン時系列には混ぜず、専用の折りたたみブロックで既定非表示にして見せる。
+        context['reason_versions'] = self.object.reason_versions.all()
+
         # 検証ループ（Phase 8a）: 仮説（Thesis）と検証（Verdict）
         context['theses'] = (
             self.object.theses

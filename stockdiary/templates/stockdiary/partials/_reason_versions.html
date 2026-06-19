@@ -1,0 +1,53 @@
+{% load humanize %}
+{% load stockdiary_filters %}
+{# 見立ての変遷（ReasonVersion）。reason 上書き前の来歴を既定非表示の折りたたみで表示する。 #}
+{% if reason_versions %}
+<style>
+  .reason-versions-block { padding: 0; }
+  .reason-versions-summary {
+    list-style: none; cursor: pointer; padding: 0.85rem 1rem;
+    display: flex; align-items: center; gap: 0.5rem; font-weight: 600;
+    color: var(--text-secondary, #555);
+  }
+  .reason-versions-summary::-webkit-details-marker { display: none; }
+  .reason-versions-summary .bi-chevron-right { transition: transform 0.15s ease; margin-left: auto; }
+  details[open] > .reason-versions-summary .bi-chevron-right { transform: rotate(90deg); }
+  .reason-versions-count {
+    font-size: 0.78rem; background: rgba(99,102,241,0.14); color: #5457e6;
+    border-radius: 999px; padding: 0.05rem 0.5rem;
+  }
+  .reason-versions-summary small { font-weight: 400; }
+  .reason-versions-list { padding: 0 1rem 0.5rem; }
+  .reason-version-item {
+    border-top: 1px solid var(--border-color, #eee); padding: 0.75rem 0;
+  }
+  .reason-version-meta {
+    display: flex; align-items: center; gap: 0.35rem;
+    font-size: 0.78rem; color: var(--text-secondary, #888); margin-bottom: 0.35rem;
+  }
+  .dark-mode .reason-versions-count,
+  [data-theme="dark"] .reason-versions-count { background: rgba(99,102,241,0.22); color: #aab0ff; }
+</style>
+<details class="info-card mobile-optimized fade-in reason-versions-block" id="section-reason-versions" style="margin-bottom: 1rem;">
+  <summary class="reason-versions-summary">
+    <i class="bi bi-clock-history"></i>
+    見立ての変遷
+    <span class="reason-versions-count">{{ reason_versions|length }}</span>
+    <small class="text-muted">過去の見立て（上書き前の版）</small>
+    <i class="bi bi-chevron-right"></i>
+  </summary>
+  <div class="reason-versions-list">
+    {% for v in reason_versions %}
+    <article class="reason-version-item">
+      <header class="reason-version-meta">
+        <i class="bi bi-clock"></i>
+        <time datetime="{{ v.created_at|date:'c' }}">{{ v.created_at|date:"Y年m月d日 H:i" }}</time>
+      </header>
+      <div class="reason-version-body markdown-content rp-prose">
+        {{ v.content|render_markdown_with_mentions:mention_map }}
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</details>
+{% endif %}

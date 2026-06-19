@@ -138,3 +138,26 @@ class TestUpdateViewAutoSnapshot:
         assert resp.status_code == 302
         sample_diary.refresh_from_db()
         assert sample_diary.reason_versions.count() == 0
+
+
+@pytest.mark.django_db
+class TestReasonVersionsDetailView:
+    """詳細ページに「見立ての変遷」が表示される（既定は折りたたみ）。"""
+
+    def test_detail_shows_versions_when_present(self, authenticated_client, sample_diary):
+        ReasonVersion.objects.create(diary=sample_diary, content='昔の見立て：割安と判断')
+        url = reverse('stockdiary:detail', kwargs={'pk': sample_diary.pk})
+        resp = authenticated_client.get(url)
+        assert resp.status_code == 200
+        html = resp.content.decode()
+        assert '見立ての変遷' in html
+        assert '昔の見立て：割安と判断' in html
+        assert 'section-reason-versions' in html
+
+    def test_detail_hides_block_when_no_versions(self, authenticated_client, sample_diary):
+        assert sample_diary.reason_versions.count() == 0
+        url = reverse('stockdiary:detail', kwargs={'pk': sample_diary.pk})
+        resp = authenticated_client.get(url)
+        assert resp.status_code == 200
+        html = resp.content.decode()
+        assert 'section-reason-versions' not in html  # 版が無ければブロックごと出さない
