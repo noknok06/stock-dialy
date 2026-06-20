@@ -65,3 +65,38 @@ def test_thesis_add_button_only_in_empty_state(authenticated_client, sample_diar
     assert 'data-thesis-create-url=' in html2
     # テンプレートコメントが本文へ漏れていないこと（複数行 {# #} 事故の回帰防止）
     assert 'openThesisForm() が data-thesis-create-url' not in html2
+
+
+@pytest.mark.django_db
+def test_overview_tag_dedup_and_verification_loop_order(authenticated_client, sample_diary, user):
+    """① 概要タブのタグ重複を解消し、④ 検証ループを投資理由の直後に固める。"""
+    from tags.models import Tag
+    sample_diary.tags.add(Tag.objects.create(user=user, name='長期投資'))
+
+    html = authenticated_client.get(
+        reverse('stockdiary:detail', kwargs={'pk': sample_diary.pk})
+    ).content.decode()
+
+    # ① タグ表示は「テーマ×感応」に一本化。素のサイドバー用チップ(sidebar-tags)は重複出力しない
+    assert 'id="section-theme-sensitivity"' in html
+    assert 'class="sidebar-tags"' not in html
+    # サイドバー目次からテーマ×感応へジャンプできる（重複の代わりの導線）
+    assert 'data-target="section-theme-sensitivity"' in html
+
+    # ④ 検証ループ(karte-block)がテーマ×感応より前＝投資理由の直後に並ぶ
+    assert html.index('id="karte-block"') < html.index('id="section-theme-sensitivity"')
+
+
+@pytest.mark.django_db
+def test_timeline_tab_removed_from_top_level(authenticated_client, sample_diary):
+    """② タブ数削減: 旧「時系列(活動履歴)」トップレベルタブを撤去（6→5タブ）。"""
+    html = authenticated_client.get(
+        reverse('stockdiary:detail', kwargs={'pk': sample_diary.pk})
+    ).content.decode()
+    assert 'data-bs-target="#events-content"' not in html
+    # 既存の主要タブは維持
+    for target in ('#basic-content', '#notes-content', '#transactions-content', '#related-content'):
+        assert f'data-bs-target="{target}"' in html
+    # テンプレートコメントが本文へ漏れていないこと（複数行 {# #} 事故の回帰防止）
+    assert 'event_timeline でも出す' not in html
+    assert 'フィルタの参照元として DOM に常設' not in html

@@ -42,13 +42,19 @@ class TestEventTimeline:
         dates = [e['date'] for e in timeline]
         assert dates == sorted(dates, reverse=True)
 
-    def test_timeline_tab_rendered(self, authenticated_client, sample_diary):
+    def test_activity_view_relocated_into_notes_tab(self, authenticated_client, sample_diary_with_transaction):
+        """旧「時系列」トップレベルタブは廃止し、統合タイムラインは
+        継続記録タブの「活動」ビュー(#notes-view-activity)へ移設した。"""
         response = authenticated_client.get(
-            reverse('stockdiary:detail', kwargs={'pk': sample_diary.pk})
+            reverse('stockdiary:detail', kwargs={'pk': sample_diary_with_transaction.pk})
         )
         html = response.content.decode()
-        assert 'id="events-tab"' in html
-        assert '時系列' in html
+        # トップレベルの時系列タブ（events-tab / events-content）は撤去済み
+        assert 'id="events-tab"' not in html
+        assert 'id="events-content"' not in html
+        # 継続記録タブ内に「活動」ビューと切替ボタンが存在する
+        assert 'id="notes-view-activity"' in html
+        assert "switchNotesView('activity')" in html
 
 
 class TestRetroSummary:

@@ -10,6 +10,16 @@
       <i class="bi bi-journal-text"></i>
       <span>{% if diary.is_memo %}メモ内容{% else %}投資理由{% endif %}</span>
     </a></li>
+    <li><a href="#karte-block" class="toc-link" data-target="karte-block">
+      <i class="bi bi-lightbulb"></i>
+      <span>仮説と検証</span>
+    </a></li>
+    {% if theme_tags %}
+    <li><a href="#section-theme-sensitivity" class="toc-link" data-target="section-theme-sensitivity">
+      <i class="bi bi-tags"></i>
+      <span>タグ（テーマ×感応）</span>
+    </a></li>
+    {% endif %}
     <li><a href="#section-graph" class="toc-link" data-target="section-graph">
       <i class="bi bi-diagram-3"></i>
       <span>関連グラフ</span>
@@ -70,7 +80,8 @@
 </div>
 {% endif %}
 
-{% if diary.tags.all %}
+{# タグは概要本文の「テーマ×感応」に一本化。サイドバーは上部の目次からジャンプする（重複表示を撤去） #}
+{% if not theme_tags and diary.tags.all %}
 <div class="detail-sidebar-card">
   <div class="detail-sidebar-card-title">
     <i class="bi bi-tags"></i> タグ
