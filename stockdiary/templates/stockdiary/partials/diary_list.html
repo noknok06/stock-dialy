@@ -7,7 +7,7 @@
 {% if request.htmx.target == "diary-container" and not request.GET.page %}
   <!-- 検索結果情報を更新 -->
   <div hx-swap-oob="true" id="search-result-info">
-    {% if request.GET.query or request.GET.tag or request.GET.hashtag or (request.GET.status and request.GET.status != 'all') or request.GET.sector or request.GET.transaction_date_range or request.GET.date_range or request.GET.disclosure %}
+    {% if request.GET.query or request.GET.tag or request.GET.hashtag or request.GET.status and request.GET.status != 'all' or request.GET.sector or request.GET.transaction_date_range or request.GET.date_range or request.GET.disclosure %}
       <div class="alert alert-info d-flex justify-content-between align-items-center">
         <div>
           <i class="bi bi-info-circle me-2"></i>
@@ -88,7 +88,7 @@
   {% endif %}
 
 {% else %}
-  {% if request.GET.query or request.GET.tag or request.GET.hashtag or (request.GET.status and request.GET.status != 'all') or request.GET.sector or request.GET.transaction_date_range or request.GET.date_range or request.GET.disclosure %}
+  {% if request.GET.query or request.GET.tag or request.GET.hashtag or request.GET.status and request.GET.status != 'all' or request.GET.sector or request.GET.transaction_date_range or request.GET.date_range or request.GET.disclosure %}
     <!-- 検索条件あり・結果なしの場合 -->
     <div class="alert alert-warning grid-column-span">
       <i class="bi bi-exclamation-triangle me-2"></i>
