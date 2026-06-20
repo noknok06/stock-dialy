@@ -16,7 +16,7 @@ class DiaryTemplateForm(forms.ModelForm):
             'body': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 20,
-                'placeholder': '## ひとこと要約\n\n## この会社をどう理解しているか\n- ...',
+                'placeholder': '## ひとこと要約\n\n## ビジネスモデル\n- ...',
             }),
         }
         labels = {
