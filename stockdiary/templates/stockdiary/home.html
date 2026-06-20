@@ -1598,7 +1598,7 @@
       <div class="sidebar-details-body">
         <div>
           <label class="filter-group-label" for="sidebarTagFilter">タグ</label>
-          <select class="form-select form-select-sm sidebar-filter" id="sidebarTagFilter" name="tag">
+          <select class="form-select form-select-sm sidebar-filter" id="sidebarTagFilter" name="tag" data-target="tagFilter">
             <option value="">すべてのタグ</option>
             {% for tag in tags %}
               <option value="{{ tag.id }}"
@@ -1610,7 +1610,7 @@
         </div>
         <div class="mt-2">
           <label class="filter-group-label" for="sidebarSectorFilter">業種</label>
-          <select class="form-select form-select-sm sidebar-filter" id="sidebarSectorFilter" name="sector">
+          <select class="form-select form-select-sm sidebar-filter" id="sidebarSectorFilter" name="sector" data-target="sectorFilter">
             <option value="">すべての業種</option>
             {% for sector in sectors %}
               <option value="{{ sector }}" {% if request.GET.sector == sector %}selected{% endif %}>{{ sector }}</option>
@@ -1619,7 +1619,7 @@
         </div>
         <div class="mt-2">
           <label class="filter-group-label" for="sidebarTransactionDateRangeFilter">売買があった時期</label>
-          <select class="form-select form-select-sm sidebar-filter" id="sidebarTransactionDateRangeFilter" name="transaction_date_range">
+          <select class="form-select form-select-sm sidebar-filter" id="sidebarTransactionDateRangeFilter" name="transaction_date_range" data-target="transactionDateRangeFilter">
             <option value="">指定なし</option>
             <option value="1w" {% if request.GET.transaction_date_range == '1w' %}selected{% endif %}>1週間以内</option>
             <option value="1m" {% if request.GET.transaction_date_range == '1m' %}selected{% endif %}>1ヶ月以内</option>
@@ -1630,7 +1630,7 @@
         </div>
         <div class="mt-2">
           <label class="filter-group-label" for="sidebarDisclosureFilter">開示書類の更新</label>
-          <select class="form-select form-select-sm sidebar-filter" id="sidebarDisclosureFilter" name="disclosure">
+          <select class="form-select form-select-sm sidebar-filter" id="sidebarDisclosureFilter" name="disclosure" data-target="disclosureFilter">
             <option value="">指定なし</option>
             <option value="new" {% if request.GET.disclosure == 'new' %}selected{% endif %}>直近1週間</option>
             <option value="recent" {% if request.GET.disclosure == 'recent' %}selected{% endif %}>直近1ヶ月</option>
@@ -1638,7 +1638,7 @@
         </div>
         <div class="mt-2">
           <label class="filter-group-label" for="sidebarDateRangeFilter">初回購入の時期</label>
-          <select class="form-select form-select-sm sidebar-filter" id="sidebarDateRangeFilter" name="date_range">
+          <select class="form-select form-select-sm sidebar-filter" id="sidebarDateRangeFilter" name="date_range" data-target="dateRangeFilter">
             <option value="">指定なし</option>
             <option value="1w" {% if request.GET.date_range == '1w' %}selected{% endif %}>直近1週間</option>
             <option value="1m" {% if request.GET.date_range == '1m' %}selected{% endif %}>直近1ヶ月</option>
@@ -1656,7 +1656,7 @@
         <i class="bi bi-sort-down"></i> ソート
       </summary>
       <div class="sidebar-details-body">
-        <select class="form-select form-select-sm sidebar-filter" id="sidebarSortFilter" name="sort">
+        <select class="form-select form-select-sm sidebar-filter" id="sidebarSortFilter" name="sort" data-target="sortFilter">
           <option value="" {% if not request.GET.sort %}selected{% endif %}>デフォルト</option>
           <option value="date_desc" {% if request.GET.sort == 'date_desc' %}selected{% endif %}>更新日（新しい順）</option>
           <option value="date_asc" {% if request.GET.sort == 'date_asc' %}selected{% endif %}>更新日（古い順）</option>
@@ -1837,18 +1837,18 @@
           <button type="button" class="status-dropdown-btn dropdown-toggle" id="statusDropdownBtn"
                   data-bs-toggle="dropdown" aria-expanded="false"
                   aria-label="表示するステータスを選択">
-            <span id="statusDropdownLabel">{% if request.GET.status == 'all' %}すべて{% elif request.GET.status == 'sold' %}売却済み{% elif request.GET.status == 'memo' %}メモ{% elif request.GET.status == 'excluded' %}除外済み{% else %}保有中{% endif %}</span>
-            <span class="status-tab-count" id="statusDropdownCount">{% if request.GET.status == 'all' %}{{ total_diary_count }}{% elif request.GET.status == 'sold' %}{{ sold_count }}{% elif request.GET.status == 'memo' %}{{ memo_count }}{% elif request.GET.status == 'excluded' %}{{ excluded_count }}{% else %}{{ active_holdings_count }}{% endif %}</span>
+            <span id="statusDropdownLabel">{% if request.GET.status == 'active' %}保有中{% elif request.GET.status == 'sold' %}売却済み{% elif request.GET.status == 'memo' %}メモ{% elif request.GET.status == 'excluded' %}除外済み{% else %}すべて{% endif %}</span>
+            <span class="status-tab-count" id="statusDropdownCount">{% if request.GET.status == 'active' %}{{ active_holdings_count }}{% elif request.GET.status == 'sold' %}{{ sold_count }}{% elif request.GET.status == 'memo' %}{{ memo_count }}{% elif request.GET.status == 'excluded' %}{{ excluded_count }}{% else %}{{ total_diary_count }}{% endif %}</span>
           </button>
           <ul class="dropdown-menu status-dropdown-menu">
             <li>
-              <button type="button" class="dropdown-item status-tab{% if not request.GET.status or request.GET.status == 'active' %} active{% endif %}" data-status="active">
+              <button type="button" class="dropdown-item status-tab{% if request.GET.status == 'active' %} active{% endif %}" data-status="active">
                 <span class="status-tab-name">保有中</span>
                 <span class="status-tab-count">{{ active_holdings_count }}</span>
               </button>
             </li>
             <li>
-              <button type="button" class="dropdown-item status-tab{% if request.GET.status == 'all' %} active{% endif %}" data-status="all">
+              <button type="button" class="dropdown-item status-tab{% if not request.GET.status or request.GET.status == 'all' %} active{% endif %}" data-status="all">
                 <span class="status-tab-name">すべて</span>
                 <span class="status-tab-count">{{ total_diary_count }}</span>
               </button>
@@ -1874,7 +1874,7 @@
           </ul>
         </div>
         <input type="hidden" name="status" id="statusFilter"
-               value="{{ request.GET.status|default:'active' }}">
+               value="{{ request.GET.status|default:'all' }}">
       {% if recent_hashtags %}
       <button type="button" id="hashtagChipsToggle"
               class="btn btn-sm btn-outline-secondary flex-shrink-0 d-lg-none"
