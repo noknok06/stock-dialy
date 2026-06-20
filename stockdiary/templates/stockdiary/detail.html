@@ -2237,17 +2237,7 @@
 
         <!-- 継続記録タブ -->
         <div class="tab-pane fade" id="notes-content" role="tabpanel" aria-labelledby="notes-tab">
-          <!-- フォーム表示ボタン（取引タブと同じ共通アクション行スタイル） -->
-          <div class="tab-action-row mb-3">
-            <button
-              type="button"
-              class="btn btn-primary"
-              id="toggleNoteForm"
-              onclick="resetNoteFormToAdd();openBottomSheet('addNoteSheet')">
-              <i class="bi bi-plus-circle me-2"></i>
-              <span class="toggle-text">記録を追加</span>
-            </button>
-          </div>
+          {# 追加導線はスピードダイヤル（右下＋）に一本化。編集・削除は各記録のインラインのまま。 #}
 
           {% if notes %}
           <!-- フィルタバー: importance / 検索 -->
@@ -2298,7 +2288,12 @@
               </div>
             </button>
             {% empty %}
-            {% include "stockdiary/components/_empty_state.html" with icon="bi-journal-text" title="継続記録はまだありません" description="上のボタンから最初の記録を追加しましょう" %}
+            {% include "stockdiary/components/_empty_state.html" with icon="bi-journal-text" title="継続記録はまだありません" description="決算・ニュース・株価変動など、保有中の気づきを記録しましょう" %}
+            <div class="text-center" style="margin-top:-0.5rem;">
+              <button type="button" class="btn btn-primary" onclick="resetNoteFormToAdd();openBottomSheet('addNoteSheet')">
+                <i class="bi bi-plus-circle me-1"></i>記録を追加
+              </button>
+            </div>
             {% endfor %}
           </div>
 
@@ -2308,7 +2303,7 @@
               {% for note in notes %}
               {% include "stockdiary/partials/_note_card.html" %}
               {% empty %}
-              {% include "stockdiary/components/_empty_state.html" with icon="bi-journal-text" title="継続記録はまだありません" description="上のボタンから最初の記録を追加しましょう" %}
+              {% include "stockdiary/components/_empty_state.html" with icon="bi-journal-text" title="継続記録はまだありません" description="右下の＋ボタンから記録を追加できます" %}
               {% endfor %}
             </div>
           </div>

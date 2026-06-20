@@ -20,3 +20,21 @@ def test_speed_dial_contains_all_add_actions(authenticated_client, sample_diary)
     assert "openBottomSheet('addSplitSheet')" in html
     assert 'openThesisForm();' in html
     assert 'window.openThesisForm' in html
+
+
+@pytest.mark.django_db
+def test_persistent_inline_add_rows_removed(authenticated_client, sample_diary_with_transaction):
+    """追加導線はスピードダイヤルに一本化：各タブ上部の常設「追加」ボタン行(.tab-action-row)を撤去。
+
+    編集・削除は取引カードのインラインに残す（showEditForm / deleteTransaction）。
+    """
+    resp = authenticated_client.get(
+        reverse('stockdiary:detail', kwargs={'pk': sample_diary_with_transaction.pk})
+    )
+    assert resp.status_code == 200
+    html = resp.content.decode()
+    # 常設のインライン追加ボタン行は撤去済み（CSSコメントは class= を含まないため誤検知しない）
+    assert 'class="tab-action-row"' not in html
+    # 編集・削除のインライン導線は維持
+    assert 'showEditForm(' in html
+    assert 'deleteTransaction(' in html
