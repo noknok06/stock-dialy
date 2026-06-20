@@ -116,9 +116,9 @@
   {% if diary.reason %}
   <div class="diary-excerpt panel-text markdown-content panel-text--clamp">
     {% if request.GET.query %}
-      {{ diary.reason|render_markdown|highlight:request.GET.query }}
+      {{ diary.reason|linebreaks|highlight:request.GET.query }}
     {% else %}
-      {{ diary.reason|render_markdown }}
+      {{ diary.reason|linebreaks }}
     {% endif %}
   </div>
   {% endif %}
