@@ -95,6 +95,12 @@ def quick_create_diary(request):
 
         diary.save()
 
+        # メモ（reason）本文の @タグ を日記のタグへ同期。
+        # 編集フロー（StockDiaryUpdateView）と挙動を揃え、クイック登録でも
+        # @タグがタグとして登録されるようにする。
+        from .views import _sync_hashtag_tags
+        _sync_hashtag_tags(diary, request.user)
+
         logger.info(
             f"[quick_create_diary] Created diary: code={stock_code}, name={stock_name}"
         )
