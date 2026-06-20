@@ -235,6 +235,11 @@ def quick_add_transaction(request, diary_id):
             quantity=quantity_decimal
         )
 
+        # 取引作成後は集計（保有数・損益等）を再計算する。
+        # ※ recalculate() 内で diary.save() まで実行される。
+        from .services.aggregate_service import AggregateService
+        AggregateService.recalculate(diary)
+
         return JsonResponse({
             'success': True,
             'message': '取引を記録しました',
