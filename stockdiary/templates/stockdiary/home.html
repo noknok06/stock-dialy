@@ -3015,15 +3015,23 @@ document.addEventListener('click', function(e) {
   document.getElementById('sidebarResetBtn').addEventListener('click', function(e) {
     e.preventDefault();
 
-    // 全フィルターをリセット
-    form.querySelector('[name="query"]').value = '';
-    form.querySelector('[name="sort"]').value = '';
-    form.querySelector('[name="tag"]').value = '';
-    form.querySelector('[name="sector"]').value = '';
-    form.querySelector('[name="transaction_date_range"]').value = '';
-    form.querySelector('[name="disclosure"]').value = '';
-    form.querySelector('[name="date_range"]').value = '';
-    form.querySelector('[name="no_notes"]').value = '';
+    // optimizedSearchForm 内のフィールドをリセット
+    var queryEl = form.querySelector('[name="query"]');
+    var sortEl = form.querySelector('[name="sort"]');
+    var noNotesEl = form.querySelector('[name="no_notes"]');
+    if (queryEl) queryEl.value = '';
+    if (sortEl) sortEl.value = '';
+    if (noNotesEl) noNotesEl.value = '';
+
+    // filterPanel 内のフィールドをリセット（tag/sector 等は filterPanel に存在）
+    ['tagFilter', 'sectorFilter', 'transactionDateRangeFilter', 'disclosureFilter', 'dateRangeFilter'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+
+    // サイドバー検索入力もリセット
+    var sidebarQuery = document.getElementById('sidebarSearchInput');
+    if (sidebarQuery) sidebarQuery.value = '';
 
     // フォーム送信
     htmx.trigger(form, 'submit');
