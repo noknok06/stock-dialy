@@ -42,7 +42,6 @@ class TestRetrospectiveTopicAutoSet:
             {
                 'date': date.today().isoformat(),
                 'note_type': 'retrospective',
-                'importance': 'medium',
                 'topic': '',
                 'content': 'フォーム経由の振り返り',
             },

@@ -213,28 +213,7 @@ document.addEventListener('DOMContentLoaded', function() {
       hideSwipeHint();
     }, 8000);
   }
-  
-  // オプションピルのイベントリスナー
-  document.querySelectorAll('.option-pill').forEach(pill => {
-    pill.addEventListener('click', function() {
-      const target = this.getAttribute('data-target');
-      const value = this.getAttribute('data-value');
-      const targetInput = document.getElementById(target);
-      
-      if (targetInput) {
-        // 同じグループの他のピルからactiveクラスを削除
-        const group = this.closest('.option-pills');
-        group.querySelectorAll('.option-pill').forEach(p => p.classList.remove('active'));
-        
-        // このピルにactiveクラスを追加
-        this.classList.add('active');
-        
-        // 隠しフィールドに値を設定
-        targetInput.value = value;
-      }
-    });
-  });
-  
+
   // 株価取得ボタンの処理
   const fetchPriceBtn = document.getElementById('fetch-note-price');
   if (fetchPriceBtn) {
@@ -295,15 +274,9 @@ document.addEventListener('DOMContentLoaded', function() {
       const form = document.getElementById('quickNoteForm');
       if (form) {
         form.reset();
-        // オプションピルのアクティブ状態をリセット
-        document.querySelectorAll('.option-pill').forEach(pill => pill.classList.remove('active'));
-        document.querySelector('.option-pill[data-value="analysis"]')?.classList.add('active');
-        document.querySelector('.option-pill[data-value="medium"]')?.classList.add('active');
         // 隠しフィールドもリセット
         const noteTypeInput = document.getElementById('note_type');
-        const noteImportanceInput = document.getElementById('note_importance');
         if (noteTypeInput) noteTypeInput.value = 'analysis';
-        if (noteImportanceInput) noteImportanceInput.value = 'medium';
       }
     });
   }

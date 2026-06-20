@@ -387,13 +387,6 @@ class DiaryNote(models.Model):
         ('other', 'その他')
     ]
     note_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='analysis')
-    
-    IMPORTANCE_CHOICES = [
-        ('high', '高'),
-        ('medium', '中'),
-        ('low', '低')
-    ]
-    importance = models.CharField(max_length=10, choices=IMPORTANCE_CHOICES, default='medium')
 
     topic = models.CharField('トピック', max_length=50, blank=True, default='', db_index=True,
                              help_text='分析テーマ（例: ナフサの影響）。空欄可')

@@ -166,16 +166,14 @@ def diary_with_notes(sample_diary_with_transaction):
         content='四半期決算が好調',
         current_price=Decimal('2100.00'),
         note_type='earnings',
-        importance='high'
     )
-    
+
     DiaryNote.objects.create(
         diary=sample_diary_with_transaction,
         date=date.today() - timedelta(days=2),
         content='新製品発表のニュース',
         current_price=Decimal('2150.00'),
         note_type='news',
-        importance='medium'
     )
     
     return sample_diary_with_transaction

@@ -42,7 +42,7 @@ User = get_user_model()
 #   reason       : Markdown。本文中の @テーマ / (銘柄コード) が関連グラフの素になる
 #   tag_dirs     : {タグ名: 'up'|'down'|'neutral'} … テーマの順相関/逆相関
 #   transactions : (type, 相対日, price, qty, is_margin, memo)
-#   notes        : (相対日, content, price, note_type, importance, topic)
+#   notes        : (相対日, content, price, note_type, _未使用, topic)  # 旧importance枠は無視
 #   splits       : (相対日, ratio, memo, applied)
 #   links        : linked_diaries に張る相手の銘柄コード
 #   thesis       : 検証ループ（仮説・検証）。投資家カルテ／知識ライブラリ／
@@ -363,14 +363,13 @@ class Command(BaseCommand):
                 if applied:
                     split.apply_split()
 
-            for days, content, price, ntype, imp, topic in spec['notes']:
+            for days, content, price, ntype, _imp, topic in spec['notes']:
                 DiaryNote.objects.create(
                     diary=diary,
                     date=today + timedelta(days=days),
                     content=content,
                     current_price=Decimal(str(price)),
                     note_type=ntype,
-                    importance=imp,
                     topic=topic,
                 )
                 note_count += 1

@@ -40,7 +40,7 @@ class DiaryNoteInline(admin.StackedInline):
     model = DiaryNote
     extra = 0
     fields = (
-        'date', 'note_type', 'importance', 'content', 
+        'date', 'note_type', 'content',
         'current_price', 'image'
     )
     ordering = ['-date']
@@ -444,12 +444,12 @@ class DiaryNoteAdmin(admin.ModelAdmin):
     
     list_display = (
         'id', 'diary_link', 'date', 'note_type_badge',
-        'importance_badge', 'content_preview', 'current_price_display',
+        'content_preview', 'current_price_display',
         'created_at'
     )
-    
+
     list_filter = (
-        'note_type', 'importance', 'date', 'diary__user'
+        'note_type', 'date', 'diary__user'
     )
     
     search_fields = (
@@ -462,7 +462,7 @@ class DiaryNoteAdmin(admin.ModelAdmin):
     fieldsets = (
         ('基本情報', {
             'fields': (
-                'diary', 'date', 'note_type', 'importance',
+                'diary', 'date', 'note_type',
                 'content', 'current_price'
             )
         }),
@@ -511,24 +511,6 @@ class DiaryNoteAdmin(admin.ModelAdmin):
         )
     note_type_badge.short_description = 'タイプ'
     note_type_badge.admin_order_field = 'note_type'
-    
-    def importance_badge(self, obj):
-        """重要度をバッジで表示"""
-        colors = {
-            'high': '#dc3545',
-            'medium': '#ffc107',
-            'low': '#28a745'
-        }
-        
-        return format_html(
-            '<span style="background-color: {}; color: white; '
-            'padding: 3px 8px; border-radius: 3px; font-size: 11px;">'
-            '{}</span>',
-            colors.get(obj.importance, '#6c757d'),
-            obj.get_importance_display()
-        )
-    importance_badge.short_description = '重要度'
-    importance_badge.admin_order_field = 'importance'
     
     def content_preview(self, obj):
         """内容のプレビュー"""

@@ -531,63 +531,6 @@
   font-size: 1.125rem;
 }
 
-/* オプションピル（重要度の3択。シートの縦空間を取らないよう1行のコンパクト型） */
-.option-pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.option-pill {
-  flex: 1;
-  min-width: 0;
-  padding: 0.5rem 0.75rem;
-  border: 2px solid var(--border-color);
-  border-radius: var(--radius-md);
-  background: var(--bg-secondary);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  gap: 0.375rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--text-secondary);
-}
-
-.option-pill i {
-  font-size: 1rem;
-}
-
-.option-pill:hover {
-  border-color: var(--primary-color);
-  background: var(--primary-light);
-  color: var(--primary-color);
-}
-
-.option-pill.active {
-  border-color: var(--primary-color);
-  background: var(--primary-color);
-  color: white;
-}
-
-.importance-pill.low.active {
-  background: var(--info-color);
-  border-color: var(--info-color);
-}
-
-.importance-pill.medium.active {
-  background: var(--warning-color);
-  border-color: var(--warning-color);
-}
-
-.importance-pill.high.active {
-  background: var(--danger-color);
-  border-color: var(--danger-color);
-}
-
 /* 画像アップロードエリア */
 .image-upload-area-note {
   border: 2px dashed var(--border-color);
@@ -775,21 +718,7 @@
   .simplified-note-form {
     padding: 1.5rem;
   }
-  
-  .option-pills {
-    gap: 0.375rem;
-  }
 
-  .option-pill {
-    min-width: 0;
-    padding: 0.45rem 0.5rem;
-    font-size: 0.8125rem;
-  }
-
-  .option-pill i {
-    font-size: 0.9rem;
-  }
-  
   .note-card-header {
     padding: 1.25rem;
     flex-direction: column;
@@ -1032,20 +961,6 @@
 
 .dark-mode .section-title i,
 [data-theme="dark"] .section-title i {
-  color: var(--dm-primary);
-}
-
-.dark-mode .option-pill,
-[data-theme="dark"] .option-pill {
-  border-color: var(--dm-border);
-  background: rgba(71, 85, 105, 0.3);
-  color: var(--dm-muted-foreground);
-}
-
-.dark-mode .option-pill:hover,
-[data-theme="dark"] .option-pill:hover {
-  border-color: var(--dm-primary);
-  background: rgba(59, 130, 246, 0.2);
   color: var(--dm-primary);
 }
 
@@ -2164,23 +2079,8 @@
           {# 追加導線はスピードダイヤル（右下＋）に一本化。編集・削除は各記録のインラインのまま。 #}
 
           {% if notes %}
-          <!-- フィルタバー: importance / 検索 -->
+          <!-- フィルタバー: 検索 -->
           <div class="notes-filter-bar mb-3">
-            <div id="noteImportanceFilter" style="display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 0.75rem;">
-              <span class="filter-label">重要度:</span>
-              <button type="button" class="filter-chip active" data-filter="all" onclick="filterNotesByImportance('all')">
-                すべて
-              </button>
-              <button type="button" class="filter-chip" data-filter="high" onclick="filterNotesByImportance('high')">
-                <i class="bi bi-exclamation-circle-fill me-1" style="color:#dc3545;"></i>高
-              </button>
-              <button type="button" class="filter-chip" data-filter="medium" onclick="filterNotesByImportance('medium')">
-                中
-              </button>
-              <button type="button" class="filter-chip" data-filter="low" onclick="filterNotesByImportance('low')">
-                低
-              </button>
-            </div>
             <input type="text" class="form-control form-control-sm" id="noteSearchInput" placeholder="記録を検索..." onkeyup="filterNotesByText(this.value)">
           </div>
           {% endif %}
@@ -2228,7 +2128,7 @@
 
           {% comment %}
             記録カードの時系列リスト。トグルボタンは持たないが、テーマ別モーダルの表示判定・
-            重要度/検索フィルタの参照元として DOM に常設する（hidden・編集はテーマ別モーダルから）。
+            検索フィルタの参照元として DOM に常設する（hidden・編集はテーマ別モーダルから）。
           {% endcomment %}
           <div class="notes-timeline-wrap" id="notes-view-timeline" hidden>
             <div class="notes-list mobile-optimized" id="timelineCards">
@@ -2290,11 +2190,6 @@
                             <i class="bi bi-journal-richtext"></i>
                             {% if event.data.note_type %}{{ event.data.get_note_type_display }}{% else %}メモ{% endif %}
                           </span>
-                          {% if event.data.importance %}
-                            <span class="badge {% if event.data.importance == 'high' %}bg-danger{% elif event.data.importance == 'medium' %}bg-warning{% else %}bg-secondary{% endif %}">
-                              {% if event.data.importance == 'high' %}重要{% elif event.data.importance == 'medium' %}中{% else %}低{% endif %}
-                            </span>
-                          {% endif %}
                           {% if event.data.topic %}<span class="badge bg-light text-dark">#{{ event.data.topic }}</span>{% endif %}
                         </div>
                         <div class="note-content small">
@@ -2608,12 +2503,6 @@ document.addEventListener('DOMContentLoaded', function() {
   // ============================================
   // 継続記録: 新規/編集モード切替・テーマUI
   // ============================================
-  function setPillActive(target, value) {
-    document.querySelectorAll('[data-target="' + target + '"]').forEach(function(p) {
-      p.classList.toggle('active', p.dataset.value === value);
-    });
-  }
-
   window.setNoteFormAddMode = function() {
     if (!quickNoteForm) return;
     quickNoteForm.action = quickNoteForm.dataset.addAction;
@@ -2627,8 +2516,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (dateEl) dateEl.value = new Date().toISOString().slice(0, 10);
     var typeEl = document.getElementById('note_type');
     if (typeEl) { typeEl.value = 'analysis'; }
-    var impEl = document.getElementById('note_importance');
-    if (impEl) { impEl.value = 'medium'; setPillActive('note_importance', 'medium'); }
     var topicEl = document.getElementById('note_topic');
     if (topicEl) topicEl.value = '';
     document.querySelectorAll('.topic-chip.active').forEach(function(c) { c.classList.remove('active'); });
@@ -2687,8 +2574,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (dateEl) dateEl.value = card.dataset.noteDate || '';
     var typeEl = document.getElementById('note_type');
     if (typeEl) { typeEl.value = card.dataset.noteType; }
-    var impEl = document.getElementById('note_importance');
-    if (impEl) { impEl.value = card.dataset.noteImportance; setPillActive('note_importance', card.dataset.noteImportance); }
     var topicEl = document.getElementById('note_topic');
     if (topicEl) topicEl.value = card.dataset.noteTopic || '';
     var priceEl = document.getElementById('note_current_price');
@@ -2986,20 +2871,6 @@ document.addEventListener('DOMContentLoaded', function() {
             icon.className = 'push-status-icon push-status-disabled';
             valueDiv.textContent = '無効';
         }
-    });
-
-    // 継続記録フォームのオプションピル機能
-    document.querySelectorAll('.option-pill').forEach(pill => {
-        pill.addEventListener('click', function() {
-            const targetInputId = this.dataset.target;
-            const targetInput = document.getElementById(targetInputId);
-            targetInput.value = this.dataset.value;
-
-            this.parentNode.querySelectorAll('.option-pill').forEach(sibling => {
-                sibling.classList.remove('active');
-            });
-            this.classList.add('active');
-        });
     });
 
     // 画像プレビュー表示
@@ -3764,26 +3635,7 @@ window.showReportModal = function(el) {
         {% include "stockdiary/components/_form_field.html" with type="date" name="date" label="日付" icon="bi-calendar-date" required=True value=today %}
 
         <input type="hidden" id="note_type" name="note_type" value="analysis">
-
-        <div class="form-section mobile-optimized">
-          <div class="section-title">
-            <i class="bi bi-exclamation-circle"></i>
-            重要度
-          </div>
-          <div class="option-pills mobile-optimized">
-            <div class="option-pill importance-pill low" data-value="low" data-target="note_importance">
-              <i class="bi bi-arrow-down-circle"></i>低
-            </div>
-            <div class="option-pill importance-pill medium active" data-value="medium" data-target="note_importance">
-              <i class="bi bi-dash-circle"></i>中
-            </div>
-            <div class="option-pill importance-pill high" data-value="high" data-target="note_importance">
-              <i class="bi bi-arrow-up-circle"></i>高
-            </div>
-          </div>
-          <input type="hidden" id="note_importance" name="importance" value="medium">
-          <input type="hidden" id="note_source_doc_id" name="source_doc_id" value="">
-        </div>
+        <input type="hidden" id="note_source_doc_id" name="source_doc_id" value="">
 
         <div class="form-section mobile-optimized">
           <label for="note_topic" class="section-title">
@@ -3961,16 +3813,6 @@ window.showReportModal = function(el) {
     });
   }
 
-  /* ④ option-pill スプリングアニメーション */
-  function initOptionPillAnimation() {
-    document.querySelectorAll('.option-pill').forEach(function (pill) {
-      pill.addEventListener('click', function () {
-        this.classList.add('active');
-        /* 同グループ内の他ピルを非アクティブに（既存ロジックに任せる） */
-      });
-    });
-  }
-
   /* ⑤ 価格詳細カード ホバー時パーティクル（ライト版） */
   function initPriceCardShine() {
     if (window.matchMedia('(hover: none)').matches) return;
@@ -4079,7 +3921,6 @@ window.showReportModal = function(el) {
     initActionBarScroll();
     initProfitHeroCounter();
     initTabContentAnimation();
-    initOptionPillAnimation();
     initPriceCardShine();
     initNotifDeleteAnimation();
     initSidebarToc();
@@ -4232,17 +4073,9 @@ window.showReportModal = function(el) {
 })();
 
 // ============================================
-// 継続記録フィルタ機能
+// 継続記録フィルタ機能（テキスト検索）
 // ============================================
-let currentImportanceFilter = 'all';
 let currentTextFilter = '';
-
-window.filterNotesByImportance = function(importance) {
-  currentImportanceFilter = importance;
-  applyNoteFilters();
-  updateFilterChips('noteImportanceFilter', importance);
-  localStorage.setItem('noteImportanceFilter', importance);
-};
 
 window.filterNotesByText = function(text) {
   currentTextFilter = text.toLowerCase();
@@ -4250,31 +4083,20 @@ window.filterNotesByText = function(text) {
   localStorage.setItem('noteTextFilter', text);
 };
 
-function updateFilterChips(filterId, active) {
-  const chips = document.querySelectorAll('#' + filterId + ' .filter-chip');
-  chips.forEach(chip => {
-    chip.classList.toggle('active', chip.dataset.filter === active);
-  });
-}
-
 function applyNoteFilters() {
   // note-card-store を除外して、現在表示中のビュー内の note cards のみを対象
   const cardStore = document.getElementById('note-card-store');
-  const noteCards = Array.from(document.querySelectorAll('.notes-list [data-note-type][data-note-importance], #notes-view-topic [data-note-type][data-note-importance]'))
+  const noteCards = Array.from(document.querySelectorAll('.notes-list [data-note-type], #notes-view-topic [data-note-type]'))
     .filter(card => !cardStore || !cardStore.contains(card));
 
   let visibleCount = 0;
   const topicMatches = {};
 
   noteCards.forEach(card => {
-    const importance = card.dataset.noteImportance || 'medium';
     const content = (card.textContent || '').toLowerCase();
     const topic = card.dataset.noteTopic || '';
 
-    const importanceMatch = currentImportanceFilter === 'all' || importance === currentImportanceFilter;
-    const textMatch = !currentTextFilter || content.includes(currentTextFilter);
-
-    const shouldShow = importanceMatch && textMatch;
+    const shouldShow = !currentTextFilter || content.includes(currentTextFilter);
     card.style.display = shouldShow ? '' : 'none';
 
     if (shouldShow) {
@@ -4292,8 +4114,8 @@ function applyNoteFilters() {
 
     countSpan.dataset.matchCount = matchCount;
 
-    // フィルター（テキスト検索または重要度）が適用されている場合、マッチ数を表示
-    const hasFilter = currentTextFilter || currentImportanceFilter !== 'all';
+    // テキスト検索が適用されている場合のみマッチ数を表示
+    const hasFilter = !!currentTextFilter;
     countSpan.textContent = hasFilter ? `${matchCount}/${totalCount}件` : `${totalCount}件`;
 
     // ヒット数が0の場合は薄くするとともに、クリック不可にする
@@ -4316,13 +4138,8 @@ function applyNoteFilters() {
 
 // ページ読込時にフィルタ状態を復元
 (function restoreNoteFilters() {
-  const savedImportanceFilter = localStorage.getItem('noteImportanceFilter') || 'all';
   const savedTextFilter = localStorage.getItem('noteTextFilter') || '';
-
-  currentImportanceFilter = savedImportanceFilter;
   currentTextFilter = savedTextFilter;
-
-  updateFilterChips('noteImportanceFilter', savedImportanceFilter);
 
   const searchInput = document.getElementById('noteSearchInput');
   if (searchInput) {

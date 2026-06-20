@@ -368,7 +368,6 @@ class TestDiaryNoteManagement:
             'content': '四半期決算が好調だった',
             'current_price': '5500.00',
             'note_type': 'earnings',
-            'importance': 'high'
         }
         
         response = client.post(url, data)
