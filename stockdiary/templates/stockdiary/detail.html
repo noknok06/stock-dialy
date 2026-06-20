@@ -2387,8 +2387,17 @@
     var tabBtn = document.getElementById('basic-tab');
     if (tabBtn && !tabBtn.classList.contains('active')) { tabBtn.click(); }
     setTimeout(function () {
+      var block = document.getElementById('karte-block');
       var b = document.querySelector('.karte-add-thesis');
-      if (b) { b.click(); b.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+      if (b) {
+        // 空状態：常設CTAをそのまま起動
+        b.click();
+        b.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else if (block && window.htmx && block.dataset.thesisCreateUrl) {
+        // 既に仮説がある場合：常設ボタンは撤去済みのため HTMX で直接フォームを開く
+        window.htmx.ajax('GET', block.dataset.thesisCreateUrl, { target: '#karte-block', swap: 'outerHTML' });
+        block.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
     }, 80);
   };
 </script>
