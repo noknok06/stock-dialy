@@ -323,9 +323,8 @@ class TestDiaryNoteModel:
             content='四半期決算が好調',
             current_price=Decimal('5500.00'),
             note_type='earnings',
-            importance='high'
         )
-        
+
         assert note.id is not None
         assert note.diary == self.diary
         assert note.content == '四半期決算が好調'

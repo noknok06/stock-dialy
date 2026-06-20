@@ -453,7 +453,7 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
 
     @staticmethod
     def _pick_resurfaced_note(user):
-        """過去の学び（高重要 or 振り返りノート）を当日基準で1件選んで返す。
+        """過去の学び（振り返り・気づき・リスクのノート）を当日基準で1件選んで返す。
 
         2週間以上前のノートを対象に、その日の通日番号で安定的に1件を選ぶ
         （リロードしても変わらず、日が変わると別の学びが浮上する）。
@@ -462,7 +462,7 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
         cutoff = timezone.localdate() - timedelta(days=14)
         candidate_ids = list(
             DiaryNote.objects.filter(diary__user=user)
-            .filter(Q(importance='high') | Q(note_type='retrospective'))
+            .filter(note_type__in=['retrospective', 'insight', 'risk'])
             .filter(date__lte=cutoff)
             .order_by('id')
             .values_list('id', flat=True)
@@ -1130,7 +1130,7 @@ class DiaryTabContentView(LoginRequiredMixin, View):
                 badge_text = get_note_type_display(note.note_type)
                 
                 html += f'''
-                <div class="note-item mb-3" data-importance="{note.importance}">
+                <div class="note-item mb-3">
                   <div class="d-flex justify-content-between align-items-start mb-1">
                     <div class="note-date">
                       <i class="bi bi-calendar-date text-muted"></i>
@@ -3963,7 +3963,6 @@ def edinet_note_prefill(request, diary_id):
             'content': prefill_content,
             'doc_id': doc.doc_id,
             'note_type': 'earnings',
-            'importance': 'medium',
         })
 
     except Exception as e:
@@ -4066,10 +4065,10 @@ class AnnualReviewView(LoginRequiredMixin, TemplateView):
         notes_written_count = notes_qs.count()
         retrospectives_count = notes_qs.filter(note_type='retrospective').count()
 
-        # 今年の学び（高重要 or 振り返り）。スニペットは RecallService と同じ方針で抽出
+        # 今年の学び（振り返り・気づき・リスク）。スニペットは RecallService と同じ方針で抽出
         learnings = []
         for note in (
-            notes_qs.filter(Q(importance='high') | Q(note_type='retrospective'))
+            notes_qs.filter(note_type__in=['retrospective', 'insight', 'risk'])
             .select_related('diary')
             .order_by('-date')[:12]
         ):

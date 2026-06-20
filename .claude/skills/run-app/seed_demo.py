@@ -49,16 +49,16 @@ for t_type, t_date, price, qty, is_margin, memo in txs:
 AggregateService.recalculate(diary)
 
 notes = [
-    (90, '四半期決算は営業利益が市場予想を上回った。北米の値引き抑制が効いている。', '2550.00', 'earnings', 'high', '決算'),
-    (45, '新型EVプラットフォーム発表。投資判断の前提は変わらず。', '2700.00', 'news', 'medium', '新製品'),
-    (10, '為替が円高方向へ。輸出採算の前提を見直す必要があるか要確認。', '2580.00', 'analysis', 'high', '為替'),
-    (3, '月次販売データは前年同月比プラスを維持。', '2620.00', 'other', 'low', '月次'),
+    (90, '四半期決算は営業利益が市場予想を上回った。北米の値引き抑制が効いている。', '2550.00', 'earnings', '決算'),
+    (45, '新型EVプラットフォーム発表。投資判断の前提は変わらず。', '2700.00', 'news', '新製品'),
+    (10, '為替が円高方向へ。輸出採算の前提を見直す必要があるか要確認。', '2580.00', 'analysis', '為替'),
+    (3, '月次販売データは前年同月比プラスを維持。', '2620.00', 'other', '月次'),
 ]
-for days, content, price, ntype, imp, topic in notes:
+for days, content, price, ntype, topic in notes:
     DiaryNote.objects.create(
         diary=diary, date=date.today() - timedelta(days=days),
         content=content, current_price=Decimal(price),
-        note_type=ntype, importance=imp, topic=topic,
+        note_type=ntype, topic=topic,
     )
 
 for name in ['長期投資', '高配当']:

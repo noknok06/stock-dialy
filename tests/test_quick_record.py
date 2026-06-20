@@ -56,7 +56,6 @@ class TestQuickAppendWithTopic:
             'content': '決算は増益。テーマつきで追記。',
             'topic': '決算',
             'note_type': 'analysis',
-            'importance': 'medium',
         })
         assert resp.status_code == 200
         note = DiaryNote.objects.filter(diary=sample_diary, topic='決算').first()

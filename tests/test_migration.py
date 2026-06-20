@@ -99,7 +99,7 @@ class TestJsonRoundTrip:
         assert result['notes'] == 2
         imported = StockDiary.objects.get(user=another_user, stock_symbol='7203')
         assert imported.notes.count() == 2
-        assert imported.notes.filter(note_type='earnings', importance='high').exists()
+        assert imported.notes.filter(note_type='earnings').exists()
 
     def test_image_not_imported(self, sample_diary_with_transaction, another_user):
         upload = _export_json_upload(sample_diary_with_transaction.user)

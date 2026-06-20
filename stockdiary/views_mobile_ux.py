@@ -127,9 +127,8 @@ def quick_add_note(request, diary_id):
 
         content = sanitize_text_content(request.POST.get('content', '')).strip()
         topic = request.POST.get('topic', '').strip()
-        importance = request.POST.get('importance', 'medium')
 
-        logger.info(f'[quick_add_note] Received - content: {bool(content)}, topic: {repr(topic)}, importance: {importance}')
+        logger.info(f'[quick_add_note] Received - content: {bool(content)}, topic: {repr(topic)}')
 
         if not content:
             return JsonResponse({
@@ -150,7 +149,6 @@ def quick_add_note(request, diary_id):
             content=content,
             topic=topic,
             note_type=request.POST.get('note_type', 'other'),
-            importance=importance
         )
         logger.info(f'[quick_add_note] Created note - id: {note.id}, topic: {repr(note.topic)}')
 

@@ -92,7 +92,6 @@ class TestUserJourney:
             'content': '四半期決算が好調。売上高・利益ともに増加',
             'current_price': '2300.00',
             'note_type': 'earnings',
-            'importance': 'high'
         }
         
         url = reverse('stockdiary:add_note', kwargs={'pk': diary.pk})

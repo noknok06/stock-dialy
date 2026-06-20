@@ -4,7 +4,6 @@
      data-note-id="{{ note.id }}"
      data-note-date="{{ note.date|date:'Y-m-d' }}"
      data-note-type="{{ note.note_type }}"
-     data-note-importance="{{ note.importance }}"
      data-note-topic="{{ note.topic }}"
      data-note-price="{{ note.current_price|default_if_none:'' }}">
   <textarea class="note-raw-content d-none" data-for-note="{{ note.id }}">{{ note.content }}</textarea>
@@ -31,7 +30,6 @@
       </div>
 
       <div class="note-meta-badges">
-        {% include "stockdiary/components/_importance_badge.html" with importance=note.importance %}
         {% if note.topic %}<span class="topic-tag"># {{ note.topic }}</span>{% endif %}
       </div>
     </div>

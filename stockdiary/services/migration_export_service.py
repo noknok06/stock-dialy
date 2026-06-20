@@ -145,7 +145,6 @@ class ExportService:
                         'content': note.content,
                         'current_price': _dec(note.current_price),
                         'note_type': note.note_type,
-                        'importance': note.importance,
                         'topic': note.topic,
                         'source_doc_id': note.source_doc_id,
                         'image_filename': note.image.name if note.image else None,
@@ -291,7 +290,7 @@ class ExportService:
                 notes_rows.append([
                     key, note['date'], note['content'],
                     note['current_price'] if note['current_price'] is not None else '',
-                    note['note_type'], note['importance'], note['topic'],
+                    note['note_type'], note['topic'],
                     note['source_doc_id'] or '',
                 ])
             for td in d['tag_directions']:
@@ -336,7 +335,7 @@ class ExportService:
             'notes': {
                 'header': [
                     'diary_export_key', 'date', 'content', 'current_price',
-                    'note_type', 'importance', 'topic', 'source_doc_id',
+                    'note_type', 'topic', 'source_doc_id',
                 ],
                 'rows': notes_rows,
             },

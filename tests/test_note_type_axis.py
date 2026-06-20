@@ -19,7 +19,6 @@ class TestNoteTypePersisted:
         resp = authenticated_client.post(url, {
             'date': datetime.date.today().isoformat(),
             'note_type': 'earnings',
-            'importance': 'medium',
             'topic': '',
             'content': '今期は増収増益。ガイダンスも上方修正。',
         })

@@ -29,7 +29,6 @@ def test_add_note_with_topic(authenticated_client, sample_diary):
     resp = authenticated_client.post(url, {
         'date': datetime.date.today().isoformat(),
         'note_type': 'analysis',
-        'importance': 'medium',
         'topic': '半導体サイクル',
         'content': '受注が底打ちした可能性。',
     })
@@ -47,7 +46,6 @@ def test_edit_note_updates_topic_and_content(authenticated_client, diary_with_no
     resp = authenticated_client.post(url, {
         'date': note.date.isoformat(),
         'note_type': note.note_type,
-        'importance': note.importance,
         'topic': '更新後テーマ',
         'content': '内容を編集しました。',
     })
@@ -66,7 +64,6 @@ def test_edit_note_rejects_other_users_note(authenticated_client, another_user, 
     resp = authenticated_client.post(url, {
         'date': other_note.date.isoformat(),
         'note_type': 'analysis',
-        'importance': 'medium',
         'topic': 'hack',
         'content': 'hacked',
     })

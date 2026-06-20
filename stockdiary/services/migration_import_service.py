@@ -53,7 +53,6 @@ def _merge_reason_memo(reason: str, memo: str) -> str:
 VALID_CURRENCY = {'JPY', 'USD'}
 VALID_TRANSACTION_TYPE = {'buy', 'sell'}
 VALID_NOTE_TYPE = {'analysis', 'news', 'earnings', 'insight', 'risk', 'retrospective', 'other'}
-VALID_IMPORTANCE = {'high', 'medium', 'low'}
 VALID_DIRECTION = {'up', 'down', 'neutral'}
 VALID_HORIZON = {'next_earnings', '3m', '6m', '1y', 'long'}
 VALID_THESIS_STATUS = {'open', 'verified', 'abandoned'}
@@ -220,7 +219,6 @@ class ImportService:
             'content': r.get('content', ''),
             'current_price': r.get('current_price', '') or None,
             'note_type': r.get('note_type', 'analysis'),
-            'importance': r.get('importance', 'medium'),
             'topic': r.get('topic', ''),
             'source_doc_id': r.get('source_doc_id', '') or None,
             'image_filename': None,
@@ -515,7 +513,6 @@ class ImportService:
             if not note.get('date'):
                 continue
             note_type = note.get('note_type') if note.get('note_type') in VALID_NOTE_TYPE else 'other'
-            importance = note.get('importance') if note.get('importance') in VALID_IMPORTANCE else 'medium'
             try:
                 DiaryNote.objects.create(
                     diary=diary,
@@ -523,7 +520,6 @@ class ImportService:
                     content=note.get('content', '') or '',
                     current_price=_to_decimal(note.get('current_price')),
                     note_type=note_type,
-                    importance=importance,
                     topic=note.get('topic', '') or '',
                     source_doc_id=note.get('source_doc_id') or None,
                 )

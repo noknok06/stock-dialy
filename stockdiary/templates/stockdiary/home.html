@@ -875,8 +875,7 @@
 }
 
 /* クイックノート pill ボタン */
-.qn-type-btn,
-.qn-importance-btn {
+.qn-type-btn {
   padding: 4px 12px;
   border: 1.5px solid var(--bg-300);
   border-radius: 20px;
@@ -887,14 +886,12 @@
   transition: all 0.15s;
   white-space: nowrap;
 }
-.qn-type-btn.active,
-.qn-importance-btn.active {
+.qn-type-btn.active {
   border-color: var(--primary-color, #4a6da7);
   background: var(--primary-color, #4a6da7);
   color: white;
 }
-.qn-type-btn:hover:not(.active),
-.qn-importance-btn:hover:not(.active) {
+.qn-type-btn:hover:not(.active) {
   border-color: var(--primary-color, #4a6da7);
   color: var(--primary-color, #4a6da7);
 }
@@ -2096,16 +2093,6 @@
         </div>
       </div>
 
-      <!-- 重要度 -->
-      <div class="mb-3">
-        <label class="form-label small fw-semibold text-muted">重要度</label>
-        <div class="d-flex gap-2">
-          <button type="button" class="qn-importance-btn" data-value="low">低</button>
-          <button type="button" class="qn-importance-btn active" data-value="medium">中</button>
-          <button type="button" class="qn-importance-btn" data-value="high">高</button>
-        </div>
-      </div>
-
       <!-- 送信 -->
       <div class="d-grid">
         <button type="button" id="qnSubmitBtn" class="btn btn-success btn-lg" onclick="qnSubmitNote()">
@@ -2575,12 +2562,10 @@ window.qnSubmitNote = function() {
   var noteUrl = document.getElementById('qnNoteUrl').value;
   var content = document.getElementById('qnContent').value.trim();
   var topic = document.getElementById('qnTopic').value.trim();
-  var importance = document.querySelector('.qn-importance-btn.active')?.dataset.value || 'medium';
 
   console.log('[qnSubmitNote] noteUrl:', noteUrl);
   console.log('[qnSubmitNote] content:', content);
   console.log('[qnSubmitNote] topic:', topic);
-  console.log('[qnSubmitNote] importance:', importance);
 
   if (!content) {
     alert('記録内容を入力してください');
@@ -2591,7 +2576,6 @@ window.qnSubmitNote = function() {
   var formData = new FormData();
   formData.append('content', content);
   formData.append('topic', topic);
-  formData.append('importance', importance);
   var csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]')?.value || '';
   formData.append('csrfmiddlewaretoken', csrfToken);
 
@@ -2599,7 +2583,6 @@ window.qnSubmitNote = function() {
   console.log('[qnSubmitNote] FormData entries:');
   console.log('  - content:', content);
   console.log('  - topic:', topic);
-  console.log('  - importance:', importance);
   console.log('  - csrftoken:', csrfToken ? 'present' : 'MISSING');
 
   fetch(noteUrl, {
@@ -2618,8 +2601,6 @@ window.qnSubmitNote = function() {
       // フォームをリセット
       document.getElementById('qnTopic').value = '';
       document.getElementById('qnContent').value = '';
-      document.querySelector('.qn-importance-btn.active').classList.remove('active');
-      document.querySelector('.qn-importance-btn[data-value="medium"]').classList.add('active');
       // ページをリロード（日記一覧を更新）
       location.reload();
     } else {
@@ -2951,10 +2932,6 @@ document.body.addEventListener('htmx:afterSwap', function(event) {
 document.addEventListener('click', function(e) {
   if (e.target.matches('.qn-type-btn')) {
     document.querySelectorAll('.qn-type-btn').forEach(function(b) { b.classList.remove('active'); });
-    e.target.classList.add('active');
-  }
-  if (e.target.matches('.qn-importance-btn')) {
-    document.querySelectorAll('.qn-importance-btn').forEach(function(b) { b.classList.remove('active'); });
     e.target.classList.add('active');
   }
 });

@@ -103,7 +103,7 @@ class TestNoteViewSync:
         return client.post(
             reverse('stockdiary:add_note', kwargs={'pk': diary.pk}),
             {'date': '2025-01-01', 'note_type': 'analysis',
-             'importance': 'medium', 'topic': '', 'content': content},
+             'topic': '', 'content': content},
         )
 
     def test_add_note_syncs_tags(self, authenticated_client, sample_diary):
@@ -120,7 +120,7 @@ class TestNoteViewSync:
         authenticated_client.post(
             reverse('stockdiary:edit_note', kwargs={'diary_pk': sample_diary.pk, 'pk': note.pk}),
             {'date': '2025-01-01', 'note_type': 'analysis',
-             'importance': 'medium', 'topic': '', 'content': 'タグ無しに編集'},
+             'topic': '', 'content': 'タグ無しに編集'},
         )
         assert not sample_diary.tags.filter(name='決算good').exists()
 
@@ -136,7 +136,7 @@ class TestNoteViewSync:
     def test_quick_add_note_syncs_tags(self, authenticated_client, sample_diary):
         authenticated_client.post(
             reverse('stockdiary:quick_add_note', kwargs={'diary_id': sample_diary.pk}),
-            {'content': 'クイック @急騰', 'importance': 'medium'},
+            {'content': 'クイック @急騰'},
         )
         assert set(sample_diary.tags.values_list('name', flat=True)) == {'急騰'}
 
