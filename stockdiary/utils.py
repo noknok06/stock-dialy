@@ -49,6 +49,39 @@ def extract_hashtags(text: str) -> List[str]:
     return unique_tags
 
 
+# @タグ直後の方向矢印 → DiaryTagDirection.direction
+_TAG_DIRECTION_ARROWS = {'↑': 'up', '↓': 'down', '→': 'neutral'}
+
+
+def extract_hashtags_with_direction(text: str):
+    """@タグと、直後に付く方向矢印(↑/↓/→)を分離して抽出する。
+
+    タグ名は無方向で返す（例: "@円安↑" → ("円安", "up")）。これにより
+    関連付けの語彙（@円安）を割らずに、向きだけを別レイヤ（DiaryTagDirection）へ
+    渡せる。矢印が無い場合は direction=None を返し、呼び出し側で既存の手動方向を
+    温存できるようにする。
+
+    Returns:
+        (タグ名, 'up'|'down'|'neutral'|None) の重複なしリスト（出現順）
+    """
+    if not text:
+        return []
+
+    # extract_hashtags と同じ語彙クラス＋直後の任意の方向矢印を捕捉する
+    pattern = (
+        r'@([぀-ゟ゠-ヿ一-鿿ｦ-ﾟa-zA-Z0-9_&]+)'
+        r'([↑↓→]?)'
+    )
+    results = []
+    seen = set()
+    for name, arrow in re.findall(pattern, text):
+        if name in seen:
+            continue
+        seen.add(name)
+        results.append((name, _TAG_DIRECTION_ARROWS.get(arrow)))
+    return results
+
+
 def is_japanese_stock(code: str) -> bool:
     """日本株コードか判定（例: 7203, 262A, 1234D など数字+任意1文字）"""
     if not code:

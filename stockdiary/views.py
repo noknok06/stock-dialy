@@ -772,13 +772,30 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         return context
 
 def _sync_hashtag_tags(diary, user):
-    from stockdiary.utils import extract_hashtags
+    from stockdiary.utils import extract_hashtags_with_direction
     from stockdiary.tag_axis_config import get_master_axis_map
     from tags.models import Tag
+    from .models import DiaryTagDirection
 
-    texts = [diary.reason or '']
-    texts += list(diary.notes.values_list('content', flat=True))
-    found = {h for t in texts for h in extract_hashtags(t)}
+    # @タグ直後の矢印(↑/↓/→)から方向を確定する。reason を最優先とし、
+    # reason に出たタグはノートで方向を上書きしない（reason 優先）。
+    # direction=None は「矢印なし」＝既存の手動方向を温存する意味で使う。
+    name_directions = {}   # name -> 'up'/'down'/'neutral' or None
+    reason_names = set()
+    for name, direction in extract_hashtags_with_direction(diary.reason or ''):
+        reason_names.add(name)
+        if name not in name_directions:
+            name_directions[name] = direction
+    for content in diary.notes.values_list('content', flat=True):
+        for name, direction in extract_hashtags_with_direction(content or ''):
+            if name in reason_names:
+                continue  # reason 優先
+            if name not in name_directions:
+                name_directions[name] = direction
+            elif name_directions[name] is None and direction is not None:
+                name_directions[name] = direction
+
+    found = set(name_directions.keys())
 
     # df 再計算は「追加されたタグ」と「解除されたタグ」両方を対象にする
     affected_names = set(diary.tags.values_list('name', flat=True)) | found
@@ -797,6 +814,12 @@ def _sync_hashtag_tags(diary, user):
             defaults={'axis': master_axis_map.get(name, 'custom')},
         )
         diary.tags.add(tag)
+        # 矢印付きタグのみ方向を反映する。矢印なし（None）は手動設定を温存。
+        direction = name_directions.get(name)
+        if direction is not None:
+            DiaryTagDirection.objects.update_or_create(
+                diary=diary, tag=tag, defaults={'direction': direction},
+            )
 
     # df（出現銘柄数）を追加・解除の両影響を反映して再計算
     if affected_names:

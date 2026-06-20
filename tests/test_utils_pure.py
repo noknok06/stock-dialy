@@ -24,6 +24,32 @@ class TestExtractHashtags:
         # # 見出しは @ ではないのでハッシュタグにならない
         assert u.extract_hashtags('# 見出し\n@成長株') == ['成長株']
 
+    def test_arrow_excluded_from_plain_name(self):
+        # @円安↑ は無方向の '円安' として拾う（矢印で名前を割らない）
+        assert u.extract_hashtags('輸出 @円安↑ @金利上昇↓') == ['円安', '金利上昇']
+
+
+class TestExtractHashtagsWithDirection:
+    def test_arrows_map_to_direction(self):
+        assert u.extract_hashtags_with_direction('@円安↑ @金利上昇↓ @ディフェンシブ→') == [
+            ('円安', 'up'), ('金利上昇', 'down'), ('ディフェンシブ', 'neutral'),
+        ]
+
+    def test_no_arrow_is_none(self):
+        # 矢印なしは direction=None（呼び出し側で手動方向を温存できる）
+        assert u.extract_hashtags_with_direction('@AI のみ') == [('AI', None)]
+
+    def test_ampersand_with_arrow(self):
+        assert u.extract_hashtags_with_direction('@M&A成長↑') == [('M&A成長', 'up')]
+
+    def test_dedup_first_wins(self):
+        # 同一タグが複数回出たら最初の出現（矢印）を採用
+        assert u.extract_hashtags_with_direction('@円安↑ … @円安↓') == [('円安', 'up')]
+
+    def test_empty(self):
+        assert u.extract_hashtags_with_direction('') == []
+        assert u.extract_hashtags_with_direction(None) == []
+
 
 class TestStockCodeDetection:
     def test_is_japanese_4digit(self):

@@ -96,6 +96,62 @@ class TestHashtagSync:
 
 
 @pytest.mark.django_db
+class TestHashtagArrowDirection:
+    """@タグ直後の矢印(↑/↓/→)を DiaryTagDirection に自動反映する配線。"""
+
+    def _make_diary(self, user, reason):
+        return StockDiary.objects.create(
+            user=user, stock_symbol='7203', stock_name='トヨタ自動車', reason=reason
+        )
+
+    def _dirs(self, diary):
+        return {td.tag.name: td.direction for td in diary.tag_directions.all()}
+
+    def test_arrow_sets_direction_and_neutral_tag(self, user):
+        diary = self._make_diary(user, '輸出 @円安↑ @金利上昇↓ @AI')
+        _sync_hashtag_tags(diary, user)
+        # タグ名は無方向（矢印は名前に含めない）
+        assert set(diary.tags.values_list('name', flat=True)) == {'円安', '金利上昇', 'AI'}
+        # 矢印は方向属性へ。矢印なし(@AI)は方向行を作らない
+        assert self._dirs(diary) == {'円安': 'up', '金利上昇': 'down'}
+
+    def test_no_arrow_preserves_manual_direction(self, user):
+        diary = self._make_diary(user, '理由 @AI')
+        _sync_hashtag_tags(diary, user)
+        tag = diary.tags.get(name='AI')
+        DiaryTagDirection.objects.create(
+            diary=diary, tag=tag, direction=DiaryTagDirection.DIRECTION_UP
+        )
+        # 矢印なしで再同期しても手動方向は温存される
+        _sync_hashtag_tags(diary, user)
+        assert self._dirs(diary) == {'AI': 'up'}
+
+    def test_arrow_overwrites_existing_direction(self, user):
+        diary = self._make_diary(user, '理由 @円安')
+        _sync_hashtag_tags(diary, user)
+        tag = diary.tags.get(name='円安')
+        DiaryTagDirection.objects.create(
+            diary=diary, tag=tag, direction=DiaryTagDirection.DIRECTION_DOWN
+        )
+        # 本文に矢印が付いたらテキストが権威（down → up へ更新）
+        diary.reason = '理由 @円安↑'
+        diary.save(update_fields=['reason'])
+        _sync_hashtag_tags(diary, user)
+        assert self._dirs(diary) == {'円安': 'up'}
+
+    def test_reason_direction_wins_over_note(self, user):
+        diary = self._make_diary(user, '本文 @円安↑')
+        DiaryNote.objects.create(
+            diary=diary, date=datetime.date(2025, 1, 1), content='調整 @円安↓ @規制リスク↓'
+        )
+        _sync_hashtag_tags(diary, user)
+        dirs = self._dirs(diary)
+        # reason 優先：@円安 は up。ノート専用の @規制リスク は down が入る
+        assert dirs['円安'] == 'up'
+        assert dirs['規制リスク'] == 'down'
+
+
+@pytest.mark.django_db
 class TestNoteViewSync:
     """継続記録ビュー経由でタグ同期が走ることを検証（不整合バグ修正）。"""
 
