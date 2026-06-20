@@ -1,6 +1,6 @@
 {% load stockdiary_filters %}
 {# Phase 8a: 検証ループ（予想→結果→検証→学び）。HTMX で outerHTML 置換するため root に id を保持 #}
-<div id="karte-block" class="karte-block">
+<div id="karte-block" class="karte-block" data-thesis-create-url="{% url 'stockdiary:thesis_create' diary.id %}">
 
   {% for thesis in theses %}
   <div class="karte-thesis-item">
@@ -73,19 +73,23 @@
   </div>
   {% endfor %}
 
-  {# 仮説追加ボタン（常に表示） #}
+  {% comment %}
+    仮説追加ボタンは空状態のみ常設（初回記録のCTA）。
+    theses が既にある場合の追加導線はスピードダイヤル(FAB)に一本化して撤去。
+    FAB からは openThesisForm() が data-thesis-create-url を使って同じフォームを開く。
+  {% endcomment %}
+  {% if not theses %}
   <button type="button" class="karte-add-thesis"
           hx-get="{% url 'stockdiary:thesis_create' diary.id %}"
           hx-target="#karte-block" hx-swap="outerHTML">
     <i class="bi bi-lightbulb"></i>
-    <span class="karte-add-main">{% if theses %}新しい仮説を追加{% else %}当時の仮説を記録する{% endif %}</span>
-    {% if not theses %}
-      {% if diary.is_memo %}
-      <span class="karte-add-hint">買う前の「こうなるはず」という見立ても、一文で残せば後で答え合わせ（検証）できます</span>
-      {% else %}
-      <span class="karte-add-hint">この投資の「主張」を一文で残すと、後で答え合わせ（検証）できます</span>
-      {% endif %}
+    <span class="karte-add-main">当時の仮説を記録する</span>
+    {% if diary.is_memo %}
+    <span class="karte-add-hint">買う前の「こうなるはず」という見立ても、一文で残せば後で答え合わせ（検証）できます</span>
+    {% else %}
+    <span class="karte-add-hint">この投資の「主張」を一文で残すと、後で答え合わせ（検証）できます</span>
     {% endif %}
   </button>
+  {% endif %}
 
 </div>

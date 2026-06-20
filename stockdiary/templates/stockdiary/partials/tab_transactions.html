@@ -203,15 +203,7 @@
     </div>
   </div>
 
-  <!-- アクションボタン（共通スタイル .tab-action-row は diary-detail.css で定義） -->
-  <div class="tab-action-row mb-3">
-    <button type="button" class="btn btn-primary" onclick="openBottomSheet('addTransactionSheet')">
-      <i class="bi bi-cart-plus me-1"></i>取引を追加
-    </button>
-    <button type="button" class="btn btn-info" onclick="openBottomSheet('addSplitSheet')">
-      <i class="bi bi-scissors me-1"></i>株式分割を追加
-    </button>
-  </div>
+  {# 追加導線はスピードダイヤル（右下＋）に一本化。編集・削除は各カードのインラインのまま。 #}
 
   <!-- 取引履歴 -->
   {% if transactions or stock_splits %}
@@ -406,7 +398,10 @@
       <i class="bi bi-cart-x"></i>
     </div>
     <h6 class="empty-title-improved">取引記録はまだありません</h6>
-    <p class="empty-text-improved">「取引を追加」ボタンから最初の取引を記録しましょう</p>
+    <p class="empty-text-improved">最初の取引を記録しましょう</p>
+    <button type="button" class="btn btn-primary mt-3" onclick="openBottomSheet('addTransactionSheet')">
+      <i class="bi bi-cart-plus me-1"></i>取引を追加
+    </button>
   </div>
   {% endif %}
 </div>
