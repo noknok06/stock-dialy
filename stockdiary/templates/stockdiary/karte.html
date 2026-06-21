@@ -91,9 +91,9 @@
         <p class="rp-section-note">検証から残った、再現したい判断。</p>
         <div class="karte-kitems">
           {% for l in karte.philosophy %}
-          <a class="karte-kitem karte-kitem--skill" href="{% url 'stockdiary:detail' l.diary.id %}">
+          <a class="karte-kitem karte-kitem--{{ l.quadrant }}" href="{% url 'stockdiary:detail' l.diary.id %}">
             <div class="karte-kitem-top">
-              <span class="karte-kitem-tag">再現すべき勝ち</span>
+              <span class="karte-kitem-tag">{{ l.quadrant_label }}</span>
               <span class="karte-kitem-src">{{ l.diary.stock_name }}</span>
             </div>
             <div class="karte-kitem-body">{{ l.text }}</div>

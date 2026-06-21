@@ -305,13 +305,20 @@ body.dark-mode, html[data-theme="dark"] {
 }
 .reading-page .karte-kitem--lucky      { border-left-color: var(--verdict-lucky); }
 .reading-page .karte-kitem--skill      { border-left-color: var(--verdict-skill); }
+.reading-page .karte-kitem--unlucky    { border-left-color: var(--verdict-unlucky); }
 .reading-page .karte-kitem--discipline { border-left-color: var(--verdict-discipline); }
-.reading-page a.karte-kitem:hover { border-color: var(--muted-ink); }
-.reading-page a.karte-kitem--skill:hover { border-left-color: var(--verdict-skill); }
+/* ホバーは左罫（象限色）を残し、他の3辺だけ強調する */
+.reading-page a.karte-kitem:hover {
+  border-top-color: var(--muted-ink);
+  border-right-color: var(--muted-ink);
+  border-bottom-color: var(--muted-ink);
+}
 .reading-page .karte-kitem-top { display: flex; align-items: center; gap: 0.55rem; margin-bottom: 0.4rem; }
 .reading-page .karte-kitem-tag { font-size: 0.75rem; font-weight: var(--font-semibold); }
-.reading-page .karte-kitem--lucky .karte-kitem-tag { color: var(--verdict-lucky); }
-.reading-page .karte-kitem--skill .karte-kitem-tag { color: var(--verdict-skill); }
+.reading-page .karte-kitem--lucky .karte-kitem-tag      { color: var(--verdict-lucky); }
+.reading-page .karte-kitem--skill .karte-kitem-tag      { color: var(--verdict-skill); }
+.reading-page .karte-kitem--unlucky .karte-kitem-tag    { color: var(--verdict-unlucky); }
+.reading-page .karte-kitem--discipline .karte-kitem-tag { color: var(--verdict-discipline); }
 .reading-page .karte-kitem-count { font-family: var(--font-family-mono); font-size: 0.75rem; color: var(--muted-ink); }
 .reading-page .karte-kitem-src { font-size: 0.75rem; color: var(--faint-ink); margin-left: auto; }
 .reading-page a.karte-kitem:hover .karte-kitem-src { color: var(--muted-ink); }

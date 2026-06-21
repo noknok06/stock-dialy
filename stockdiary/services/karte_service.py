@@ -54,6 +54,8 @@ def build_investor_karte(user):
                 'diary': v.thesis.diary,
                 'repeatable': v.is_repeatable,
                 'date': v.created_at,
+                'quadrant': v.quadrant,
+                'quadrant_label': v.quadrant_label,
             })
         if v.missed_factor:
             missed.append(v.missed_factor)
