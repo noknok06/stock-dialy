@@ -18,13 +18,13 @@ def test_speed_dial_contains_all_add_actions(authenticated_client, sample_diary)
     assert 'data-action-id="add-transaction"' in html
     assert 'data-action-id="add-split"' in html
     assert 'data-action-id="add-thesis"' in html
-    # 分割はボトムシート、仮説は HTMX フォーム起動
+    # 分割・仮説ともボトムシート方式に統一（他の入力と同じくモーダルで確実に表示）
     assert "openBottomSheet('addSplitSheet')" in html
-    assert 'openThesisForm();' in html
-    assert 'window.openThesisForm' in html
-    # 仮説の追加先は記録タブの『仮説』ビュー。openThesisForm が notes-tab を開き、
-    # thesis ビューへ切り替えてからフォームを起動する（移設後の遷移先回帰防止）。
-    assert "document.getElementById('notes-tab')" in html
+    assert "openBottomSheet('addThesisSheet')" in html
+    # 仮説追加シートの実体がページに存在する
+    assert 'id="addThesisSheet"' in html
+    # 保存後は ?view=thesis で記録タブの『仮説』ビューへ着地する導線を持つ
+    assert "getElementById('notes-tab')" in html
     assert "switchNotesView('thesis')" in html
 
 
@@ -48,27 +48,68 @@ def test_persistent_inline_add_rows_removed(authenticated_client, sample_diary_w
 
 @pytest.mark.django_db
 def test_thesis_add_button_only_in_empty_state(authenticated_client, sample_diary):
-    """仮説追加も一本化：仮説ゼロ時のみ常設CTA(.karte-add-thesis)を出し、
-    既に仮説がある場合は撤去して FAB(openThesisForm)へ集約する。"""
+    """仮説追加導線：仮説ゼロ時のみ常設CTA(.karte-add-thesis)を出し、
+    既に仮説がある場合は撤去して FAB(スピードダイヤル)へ集約する。
+    追加フォームは FAB・空状態CTAとも仮説ボトムシート(#addThesisSheet)で開く。"""
     detail_url = reverse('stockdiary:detail', kwargs={'pk': sample_diary.pk})
 
     # 仮説ゼロ：空状態CTAボタンが出る（class= で判定。CSS セレクタ文字列は誤検知しない）
     html = authenticated_client.get(detail_url).content.decode()
     assert 'class="karte-add-thesis"' in html
     assert '当時の仮説を記録する' in html
-    # FAB からの起動に必要な作成URLが karte-block に付与されている
-    assert 'data-thesis-create-url=' in html
+    # 空状態CTAも仮説ボトムシートを開く（FABと同じ単一の追加導線）
+    assert "openBottomSheet('addThesisSheet')" in html
+    # 旧インライン作成導線(data-thesis-create-url)はシート化に伴い撤去
+    assert 'data-thesis-create-url=' not in html
 
-    # 仮説を1件追加すると、常設の追加ボタンは消える（FABに一本化）
+    # 仮説を1件追加すると、常設の追加ボタンは消える（FAB＝シートに一本化）
     Thesis.objects.create(diary=sample_diary, claim='主張', basis='根拠')
     html2 = authenticated_client.get(detail_url).content.decode()
     assert 'class="karte-add-thesis"' not in html2
     assert '当時の仮説を記録する' not in html2
-    # ただし FAB の add-thesis 導線と作成URLは維持
+    # FAB の add-thesis 導線とシート本体は維持
     assert 'data-action-id="add-thesis"' in html2
-    assert 'data-thesis-create-url=' in html2
+    assert 'id="addThesisSheet"' in html2
     # テンプレートコメントが本文へ漏れていないこと（複数行 {# #} 事故の回帰防止）
     assert 'openThesisForm() が data-thesis-create-url' not in html2
+
+
+@pytest.mark.django_db
+def test_thesis_sheet_plain_post_creates_and_redirects(authenticated_client, sample_diary):
+    """仮説ボトムシートは通常POST（HX-Requestなし）で送信される。
+
+    バグ: 旧実装ではFABからHTMXで仮説フォームを起動していたが、移設後に
+    タブ/ビュー切替との兼ね合いでフォームが表示されないことがあった。これを
+    他の入力（取引・株式分割シート）と同じ通常POST→リダイレクト方式に統一する。
+    通常POSTでは保存後に詳細(?view=thesis)へリダイレクトし、仮説ビューへ着地させる。
+    """
+    from stockdiary.models import Thesis
+    create_url = reverse('stockdiary:thesis_create', kwargs={'diary_id': sample_diary.id})
+
+    resp = authenticated_client.post(create_url, {
+        'claim': '円安継続で輸出採算が改善する',
+        'basis': '受注残が積み上がっている',
+        'horizon': '6m',
+    })
+    # 通常POSTはHTMX部分ではなく詳細ページへのリダイレクト（仮説ビュー着地）
+    assert resp.status_code == 302
+    assert '?view=thesis' in resp['Location']
+    assert Thesis.objects.filter(diary=sample_diary, claim='円安継続で輸出採算が改善する').exists()
+
+
+@pytest.mark.django_db
+def test_thesis_htmx_post_still_returns_partial(authenticated_client, sample_diary):
+    """インライン編集（HTMX）からのPOSTは従来どおり検証ループ部分テンプレートを返す
+    （リダイレクトしない）。シート化で通常POSTを足したことの回帰防止。"""
+    create_url = reverse('stockdiary:thesis_create', kwargs={'diary_id': sample_diary.id})
+    resp = authenticated_client.post(create_url, {
+        'claim': 'HTMX経由の主張',
+        'horizon': '6m',
+    }, HTTP_HX_REQUEST='true')
+    assert resp.status_code == 200
+    html = resp.content.decode()
+    assert 'id="karte-block"' in html
+    assert 'HTMX経由の主張' in html
 
 
 @pytest.mark.django_db

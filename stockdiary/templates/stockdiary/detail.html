@@ -2288,26 +2288,23 @@
 {% include 'speed_dial.html' with actions=diary_actions %}
 
 <script>
-  // スピードダイヤルの「新しい仮説を追加」から、記録タブの『仮説』ビューにある仮説フォーム(HTMX)を起動する。
-  // 検証ループは概要タブから記録タブ(#notes-view-thesis)へ移設したため、タブ＋ビューを切り替えてから開く。
-  window.openThesisForm = function () {
+  // 記録タブの『仮説』ビューへ移動する共通ヘルパー。
+  // 仮説追加はボトムシート(#addThesisSheet)に一本化したため、ここではビュー遷移のみを担う。
+  window.goToThesisView = function () {
     var tabBtn = document.getElementById('notes-tab');
     if (tabBtn && !tabBtn.classList.contains('active')) { tabBtn.click(); }
     if (window.switchNotesView) { window.switchNotesView('thesis'); }
-    setTimeout(function () {
-      var block = document.getElementById('karte-block');
-      var b = document.querySelector('.karte-add-thesis');
-      if (b) {
-        // 空状態：常設CTAをそのまま起動
-        b.click();
-        b.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      } else if (block && window.htmx && block.dataset.thesisCreateUrl) {
-        // 既に仮説がある場合：常設ボタンは撤去済みのため HTMX で直接フォームを開く
-        window.htmx.ajax('GET', block.dataset.thesisCreateUrl, { target: '#karte-block', swap: 'outerHTML' });
-        block.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }, 80);
   };
+  // 仮説シート保存後（?view=thesis）に仮説ビューへ着地させる。
+  // switchNotesView は DOMContentLoaded 内で定義されるため、定義後に確実に走る load で実行する。
+  (function () {
+    if (new URLSearchParams(window.location.search).get('view') !== 'thesis') { return; }
+    window.addEventListener('load', function () {
+      window.goToThesisView();
+      var block = document.getElementById('karte-block');
+      if (block) { block.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+    });
+  })();
 </script>
 {% endblock %}
 
@@ -2328,19 +2325,14 @@
   if (!vid) return;
   function openVerify() {
     // 検証ループは記録タブの『仮説』ビューに移設済み。タブ＋ビューを開いてから検証フォームを起動。
-    var tabBtn = document.getElementById('notes-tab');
-    if (tabBtn && !tabBtn.classList.contains('active')) { tabBtn.click(); }
-    if (window.switchNotesView) { window.switchNotesView('thesis'); }
+    if (window.goToThesisView) { window.goToThesisView(); }
     var block = document.getElementById('karte-block');
     if (block) block.scrollIntoView({ behavior: 'smooth', block: 'center' });
     var btn = document.querySelector('#karte-block [hx-get*="/thesis/' + vid + '/verify/"]');
     if (btn) setTimeout(function() { btn.click(); }, 300);
   }
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', openVerify);
-  } else {
-    openVerify();
-  }
+  // switchNotesView は DOMContentLoaded 内で定義されるため、定義後に確実に走る load で実行する。
+  window.addEventListener('load', openVerify);
 })();
 </script>
 <script src="{% static 'js/diary-detail-graph.js' %}"></script>
@@ -3648,6 +3640,101 @@ window.showReportModal = function(el) {
     </div>
   </div>
 </div>
+
+<!-- 仮説追加ボトムシート（記録タブ『仮説』ビューからの新規追加。他の入力と同じシート方式） -->
+<div class="bottom-sheet" id="addThesisSheet" aria-hidden="true">
+  <div class="bottom-sheet-backdrop"></div>
+  <div class="bottom-sheet-content">
+    <div class="bottom-sheet-handle" aria-label="シートを閉じるにはドラッグしてください"></div>
+    <div class="bottom-sheet-header">
+      <h3><i class="bi bi-lightbulb me-2"></i>新しい仮説を追加</h3>
+      <button type="button" class="btn-close" aria-label="閉じる">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="bottom-sheet-body">
+      <form method="post" action="{% url 'stockdiary:thesis_create' diary.id %}" class="karte-form">
+        {% csrf_token %}
+        <div class="alert-info-improved mb-3">
+          <i class="bi bi-info-circle me-2"></i>
+          この投資の「主張」を一文で残すと、後で答え合わせ（検証）できます。
+        </div>
+
+        <label class="karte-label">主張 <span class="karte-req">必須</span></label>
+        {{ thesis_form.claim }}
+
+        <label class="karte-label">根拠の軸（タグ）</label>
+        <div class="tag-suggest" id="sheetBasisTagSuggest">
+          <div class="tag-suggest-chips" id="sheetBasisTagChips"></div>
+          <input type="text" class="tag-suggest-input" id="sheetBasisTagInput" placeholder="タグ名で検索して追加…（複数可）" autocomplete="off">
+          <div class="tag-suggest-list" id="sheetBasisTagList" hidden></div>
+        </div>
+        {{ thesis_all_tags|json_script:"sheetBasisTagData" }}
+
+        <label class="karte-label">根拠・理由（文章）</label>
+        {{ thesis_form.basis }}
+
+        <div class="karte-form-2col">
+          <div>
+            <label class="karte-label">想定検証期間</label>
+            {{ thesis_form.horizon }}
+          </div>
+          <div>
+            <label class="karte-label">検証予定日（空欄で自動設定）</label>
+            {{ thesis_form.review_due_date }}
+          </div>
+        </div>
+
+        <label class="karte-label">最悪のケース</label>
+        {{ thesis_form.worst_case }}
+
+        <div class="form-actions-improved mt-3">
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-lightbulb me-1"></i>仮説を保存
+          </button>
+          <button type="button" class="btn btn-secondary" onclick="closeBottomSheet('addThesisSheet')">
+            キャンセル
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<script>
+// 仮説シートのタグ候補サジェスト（_thesis_form.html と同等。id 衝突回避のため sheet 専用 id）
+(function(){
+  var root=document.getElementById('sheetBasisTagSuggest');
+  if(!root||root.dataset.init){return;} root.dataset.init='1';
+  var dataEl=document.getElementById('sheetBasisTagData');
+  var data=dataEl?JSON.parse(dataEl.textContent):[];
+  var chips=document.getElementById('sheetBasisTagChips'),
+      input=document.getElementById('sheetBasisTagInput'),
+      list=document.getElementById('sheetBasisTagList');
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function selected(){return Array.prototype.map.call(chips.querySelectorAll('input[name=basis_tags]'),function(i){return i.value;});}
+  function addChip(id,name){
+    if(selected().indexOf(String(id))!==-1){return;}
+    var sp=document.createElement('span'); sp.className='tag-suggest-chip'; sp.dataset.id=id;
+    sp.innerHTML=esc(name)+'<button type="button" class="ts-x" aria-label="削除">×</button><input type="hidden" name="basis_tags" value="'+esc(id)+'">';
+    sp.querySelector('.ts-x').addEventListener('click',function(){sp.remove();});
+    chips.appendChild(sp);
+  }
+  function render(q){
+    var sel=selected(); q=(q||'').trim().toLowerCase();
+    var m=data.filter(function(t){return sel.indexOf(String(t.id))===-1 && (!q || t.name.toLowerCase().indexOf(q)!==-1);}).slice(0,8);
+    if(!m.length){list.hidden=true; list.innerHTML=''; return;}
+    list.innerHTML=m.map(function(t){return '<button type="button" class="ts-opt" data-id="'+esc(t.id)+'" data-name="'+esc(t.name)+'">'+esc(t.name)+'</button>';}).join('');
+    list.hidden=false;
+    Array.prototype.forEach.call(list.querySelectorAll('.ts-opt'),function(b){
+      b.addEventListener('click',function(){addChip(b.dataset.id,b.dataset.name); input.value=''; render(''); input.focus();});
+    });
+  }
+  input.addEventListener('input',function(){render(input.value);});
+  input.addEventListener('focus',function(){render(input.value);});
+  input.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();var f=list.querySelector('.ts-opt'); if(f){f.click();}}});
+  document.addEventListener('click',function(e){if(!root.contains(e.target)){list.hidden=true;}});
+})();
+</script>
 
 <!-- 記録追加ボトムシート -->
 <div class="bottom-sheet" id="addNoteSheet" aria-hidden="true">
