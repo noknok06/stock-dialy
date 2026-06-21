@@ -352,6 +352,29 @@ body.dark-mode, html[data-theme="dark"] {
 /* ============================================================
    9k-4. 知識ライブラリ（Phase 8c）
    ============================================================ */
+/* レンズ切替（学び / テーマ / 仮説 / 銘柄・時系列）— ZIP の LibraryZone の
+   レンズに倣い、ピル → 罫線のアンダーラインタブへ。選択＝墨。 */
+.reading-page .lib-lenses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 0.9rem 0 1.5rem;
+  border-bottom: 1px solid var(--hairline-soft);
+}
+.reading-page .lib-lens {
+  font-family: var(--font-family-base);
+  font-size: 0.875rem;
+  font-weight: var(--font-medium);
+  color: var(--muted-ink);
+  text-decoration: none;
+  padding: 0.5rem 0.7rem;
+  margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
+  transition: color var(--duration-150, 150ms) var(--ease-out, ease);
+}
+.reading-page .lib-lens:hover { color: var(--ink-soft); }
+.reading-page .lib-lens.is-active { color: var(--ink); border-bottom-color: var(--ink); }
+
 .reading-page .lib-search { display: flex; gap: 0.5rem; margin: 0 0 1rem; }
 .reading-page .lib-search-input {
   flex: 1; background: var(--paper); border: 1px solid var(--hairline);
@@ -391,6 +414,12 @@ body.dark-mode, html[data-theme="dark"] {
 .reading-page .lib-q-lucky      { color: var(--verdict-lucky); }
 .reading-page .lib-q-discipline { color: var(--verdict-discipline); }
 
+/* 学びの左罫を判断の質（検証2×2）の色に。状態でひと目で見分ける（LibraryZone） */
+.reading-page .lib-learning--q-skill      .lib-learning-quote { border-left-color: var(--verdict-skill); }
+.reading-page .lib-learning--q-unlucky    .lib-learning-quote { border-left-color: var(--verdict-unlucky); }
+.reading-page .lib-learning--q-lucky      .lib-learning-quote { border-left-color: var(--verdict-lucky); }
+.reading-page .lib-learning--q-discipline .lib-learning-quote { border-left-color: var(--verdict-discipline); }
+
 /* テーマのグリッド */
 .reading-page .lib-theme-grid {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.6rem;
@@ -415,6 +444,20 @@ body.dark-mode, html[data-theme="dark"] {
   padding: 0.6rem 0; border-bottom: 1px solid var(--hairline-soft);
 }
 .reading-page .lib-thesis-row:last-child { border-bottom: none; }
+/* 状態の左罫（検証待ち＝琥珀、的中/外れ＝検証2×2色）でひと目で見分ける */
+.reading-page .lib-thesis-row--due,
+.reading-page .lib-thesis-row--q-skill,
+.reading-page .lib-thesis-row--q-unlucky,
+.reading-page .lib-thesis-row--q-lucky,
+.reading-page .lib-thesis-row--q-discipline {
+  border-left: 2px solid var(--hairline);
+  padding-left: 0.75rem;
+}
+.reading-page .lib-thesis-row--due           { border-left-color: var(--verdict-unlucky); }
+.reading-page .lib-thesis-row--q-skill        { border-left-color: var(--verdict-skill); }
+.reading-page .lib-thesis-row--q-unlucky      { border-left-color: var(--verdict-unlucky); }
+.reading-page .lib-thesis-row--q-lucky        { border-left-color: var(--verdict-lucky); }
+.reading-page .lib-thesis-row--q-discipline   { border-left-color: var(--verdict-discipline); }
 .reading-page .lib-thesis-stock { font-weight: var(--font-semibold); color: var(--ink); }
 .reading-page .lib-thesis-claim { font-family: var(--font-family-serif); color: var(--ink-soft); font-size: 0.9375rem; }
 .reading-page .lib-thesis-due { font-size: 0.75rem; color: var(--muted-ink); margin-left: auto; white-space: nowrap; }
