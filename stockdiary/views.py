@@ -4138,12 +4138,34 @@ class LibraryView(LoginRequiredMixin, TemplateView):
 
         context = super().get_context_data(**kwargs)
         user = self.request.user
+        today = timezone.localdate()
         axis = self.request.GET.get('axis', 'learning')
         q = self.request.GET.get('q', '').strip()
         tag_id = self.request.GET.get('tag', '').strip()
-        context['axis'] = axis if axis in ('learning', 'theme', 'thesis') else 'learning'
+        context['axis'] = axis if axis in ('learning', 'theme', 'thesis', 'time') else 'learning'
         context['q'] = q
         context['active_tag'] = tag_id
+
+        # ── レンズ別の件数（4レンズのタブに常時表示）──
+        learning_total = (
+            Verdict.objects.filter(thesis__diary__user=user).exclude(learning='').count()
+        )
+        theme_total = (
+            Tag.objects.filter(user=user)
+            .annotate(n=Count('stockdiary', distinct=True)).filter(n__gt=0).count()
+        )
+        thesis_total = (
+            Thesis.objects.filter(diary__user=user, verdict__isnull=True).count()
+            + Verdict.objects.filter(thesis__diary__user=user).count()
+        )
+        time_total = DiaryNote.objects.filter(diary__user=user).count()
+        context['counts'] = {
+            'learning': learning_total, 'theme': theme_total,
+            'thesis': thesis_total, 'time': time_total,
+        }
+
+        # ── 今日の見直し（現在の出来事 × 過去の仮説）— 想起から実現可能な手掛かりだけ ──
+        context['today_cues'] = self._build_today_cues(user, today)
 
         if axis == 'theme':
             context['theme_rows'] = (
@@ -4154,16 +4176,56 @@ class LibraryView(LoginRequiredMixin, TemplateView):
             )
 
         elif axis == 'thesis':
-            context['open_theses'] = list(
+            # 答え合わせ待ち（検証予定日が来た）／ 生きている（未検証・期日前）に分ける
+            open_theses = list(
                 Thesis.objects.filter(diary__user=user, verdict__isnull=True)
                 .select_related('diary').order_by('review_due_date')
             )
+            due, live = [], []
+            for t in open_theses:
+                if t.review_due_date and t.review_due_date <= today:
+                    overdue_days = (today - t.review_due_date).days
+                    t.is_overdue = overdue_days > 0
+                    t.due_label = '今日' if overdue_days == 0 else f'{overdue_days}日超過'
+                    due.append(t)
+                else:
+                    if t.review_due_date:
+                        ahead = (t.review_due_date - today).days
+                        t.due_label = f'{ahead}日後'
+                    else:
+                        t.due_label = ''
+                    live.append(t)
+            context['due_theses'] = due
+            context['live_theses'] = live
+            # 後方互換（未検証の仮説全体）
+            context['open_theses'] = open_theses
             verdicts = list(
                 Verdict.objects.filter(thesis__diary__user=user)
                 .select_related('thesis', 'thesis__diary').order_by('-created_at')
             )
             context['hit_verdicts'] = [v for v in verdicts if v.hyp_ok]
             context['miss_verdicts'] = [v for v in verdicts if not v.hyp_ok]
+
+        elif axis == 'time':
+            # 時系列レンズ：銘柄をまたいだ継続記録の時間軸
+            from .utils import extract_lead
+            notes = (
+                DiaryNote.objects.filter(diary__user=user, diary__is_excluded=False)
+                .select_related('diary').order_by('-date')[:40]
+            )
+            timeline = []
+            for n in notes:
+                body = n.topic if (n.note_type != 'retrospective' and n.topic) else extract_lead(n.content or '', max_len=90)
+                timeline.append({
+                    'date': n.date,
+                    'stock': n.diary.stock_name,
+                    'code': n.diary.stock_symbol,
+                    'kind': n.get_note_type_display(),
+                    'body': body,
+                    'live': (n.diary.current_quantity or 0) > 0,
+                    'diary_id': n.diary.id,
+                })
+            context['timeline'] = timeline
 
         else:  # learning（既定）: 検証から残った学びの索引
             verdicts = (
@@ -4189,6 +4251,39 @@ class LibraryView(LoginRequiredMixin, TemplateView):
                 .distinct().order_by('name')
             )
         return context
+
+    @staticmethod
+    def _build_today_cues(user, today):
+        """今日の見直し（現在の出来事 × 過去の仮説）。
+
+        出来事検知（テーマの転換等）は本体未実装のため、想起から確実に作れる
+        手掛かり（検証予定日が来た仮説・1年前の今日）だけを並べる。
+        """
+        from django.urls import reverse
+        from .services.recall_service import RecallService
+
+        recall = RecallService.build(user, today)
+        cues = []
+        for t in recall.get('due_theses', [])[:2]:
+            cues.append({
+                'icon': 'calendar-check', 'tone': 'unlucky',
+                'head': f'{t.diary.stock_name} の検証予定日',
+                'body': f'「{t.claim}」— 答え合わせの頃合いです。',
+                'cta': '答え合わせをする',
+                'url': f"{reverse('stockdiary:detail', args=[t.diary.id])}?verify={t.id}#karte-block",
+            })
+        for item in recall.get('anniversary', [])[:1]:
+            d = item['diary']
+            snippet = (item.get('snippet') or '').strip()
+            cues.append({
+                'icon': 'stars', 'tone': 'skill',
+                'head': f'1年前の今日 — {d.stock_name}',
+                'body': (f'「{snippet}」当時の自分は、いまどう見えるか。' if snippet
+                         else '当時の自分は、いまどう見えるか。'),
+                'cta': '当時の記録を読む',
+                'url': reverse('stockdiary:detail', args=[d.id]),
+            })
+        return cues[:3]
 
 
 class InvestorKarteView(LoginRequiredMixin, TemplateView):

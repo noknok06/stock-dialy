@@ -352,116 +352,192 @@ body.dark-mode, html[data-theme="dark"] {
 /* ============================================================
    9k-4. 知識ライブラリ（Phase 8c）
    ============================================================ */
-/* レンズ切替（学び / テーマ / 仮説 / 銘柄・時系列）— ZIP の LibraryZone の
-   レンズに倣い、ピル → 罫線のアンダーラインタブへ。選択＝墨。 */
-.reading-page .lib-lenses {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-  margin: 0.9rem 0 1.5rem;
-  border-bottom: 1px solid var(--hairline-soft);
-}
-.reading-page .lib-lens {
-  font-family: var(--font-family-base);
-  font-size: 0.875rem;
-  font-weight: var(--font-medium);
-  color: var(--muted-ink);
-  text-decoration: none;
-  padding: 0.5rem 0.7rem;
-  margin-bottom: -1px;
-  border-bottom: 2px solid transparent;
-  transition: color var(--duration-150, 150ms) var(--ease-out, ease);
-}
-.reading-page .lib-lens:hover { color: var(--ink-soft); }
-.reading-page .lib-lens.is-active { color: var(--ink); border-bottom-color: var(--ink); }
+/* ============================================================
+   知識ライブラリ（library）— ZIP「知識ライブラリ」4レンズ再設計
+   学び（カード＋象限ドット）／テーマ（行）／仮説（4グループ）／時系列（時間軸）。
+   ============================================================ */
 
-.reading-page .lib-search { display: flex; gap: 0.5rem; margin: 0 0 1rem; }
-.reading-page .lib-search-input {
-  flex: 1; background: var(--paper); border: 1px solid var(--hairline);
-  border-radius: var(--radius-md, 10px); padding: 0.6rem 0.85rem;
-  color: var(--ink); font-size: 0.9375rem;
-}
-.reading-page .lib-tag-filter { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1.25rem; }
-.reading-page .lib-tagchip {
-  font-size: 0.75rem; color: var(--muted-ink);
-  background: var(--paper-sunken); border: 1px solid var(--hairline);
-  border-radius: var(--radius-full, 999px); padding: 0.25rem 0.7rem; text-decoration: none;
-}
-.reading-page .lib-tagchip.active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
-
-/* 学びの索引 */
-.reading-page .lib-learning {
-  display: block; text-decoration: none; color: inherit;
-  padding: var(--space-5, 1.25rem) 0; border-bottom: 1px solid var(--hairline-soft);
-}
-.reading-page .lib-learning:last-child { border-bottom: none; }
-.reading-page .lib-learning-quote {
-  font-family: var(--font-family-serif); font-size: 1.0625rem; line-height: 1.7;
-  color: var(--ink); margin: 0 0 0.4rem; padding-left: var(--space-4, 1rem);
-  border-left: 2px solid var(--ink); font-style: normal;
-}
-.reading-page .lib-learning-meta {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem;
-  padding-left: var(--space-4, 1rem);
-}
-.reading-page .lib-learning-src { font-weight: var(--font-semibold); color: var(--ink); font-size: 0.875rem; }
-.reading-page .lib-learning:hover .lib-learning-src { text-decoration: underline; text-underline-offset: 3px; }
-
-/* 象限ラベル（小） */
-.reading-page .lib-quad { font-size: 0.7rem; font-weight: var(--font-semibold); }
+/* 検証2×2の色（共通） */
+.reading-page .lib-tone-skill      { color: var(--verdict-skill); }
+.reading-page .lib-tone-unlucky    { color: var(--verdict-unlucky); }
+.reading-page .lib-tone-lucky      { color: var(--verdict-lucky); }
+.reading-page .lib-tone-discipline { color: var(--verdict-discipline); }
 .reading-page .lib-q-skill      { color: var(--verdict-skill); }
 .reading-page .lib-q-unlucky    { color: var(--verdict-unlucky); }
 .reading-page .lib-q-lucky      { color: var(--verdict-lucky); }
 .reading-page .lib-q-discipline { color: var(--verdict-discipline); }
 
-/* 学びの左罫を判断の質（検証2×2）の色に。状態でひと目で見分ける（LibraryZone） */
-.reading-page .lib-learning--q-skill      .lib-learning-quote { border-left-color: var(--verdict-skill); }
-.reading-page .lib-learning--q-unlucky    .lib-learning-quote { border-left-color: var(--verdict-unlucky); }
-.reading-page .lib-learning--q-lucky      .lib-learning-quote { border-left-color: var(--verdict-lucky); }
-.reading-page .lib-learning--q-discipline .lib-learning-quote { border-left-color: var(--verdict-discipline); }
+.reading-page .lib-head-row { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
 
-/* テーマのグリッド */
-.reading-page .lib-theme-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.6rem;
-}
-.reading-page .lib-theme-card {
-  display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem;
-  text-decoration: none; color: var(--ink);
+/* ── 今日の見直し band ── */
+.reading-page .lib-today {
   background: var(--paper-raised); border: 1px solid var(--hairline);
-  border-radius: var(--radius-md, 10px); padding: 0.85rem 1rem;
+  border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-sm);
+  margin: 0.5rem 0 1.25rem;
 }
-.reading-page .lib-theme-card:hover { border-color: var(--muted-ink); }
-.reading-page .lib-theme-name { font-weight: var(--font-medium); }
-.reading-page .lib-theme-count { font-size: 0.8125rem; color: var(--faint-ink); }
-
-/* 仮説の行 */
-.reading-page .lib-num {
-  font-size: 0.7rem; color: var(--faint-ink); font-weight: var(--font-regular); margin-left: 0.35rem;
+.reading-page .lib-today-head {
+  display: flex; align-items: center; gap: 0.4rem; padding: 0.7rem 1rem 0.55rem;
+  font-family: var(--font-family-base); font-size: 0.75rem; font-weight: var(--font-bold);
+  letter-spacing: 0.04em; color: var(--ink);
 }
-.reading-page .lib-thesis-row {
-  display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem;
+.reading-page .lib-today-head .bi { color: var(--muted-ink); }
+.reading-page .lib-today-sub {
+  margin-left: auto; font-family: var(--font-family-serif); font-weight: var(--font-regular);
+  font-size: 0.7rem; color: var(--faint-ink);
+}
+.reading-page .lib-cue {
+  display: flex; align-items: flex-start; gap: 0.7rem; width: 100%;
   text-decoration: none; color: inherit;
-  padding: 0.6rem 0; border-bottom: 1px solid var(--hairline-soft);
+  border-top: 1px solid var(--hairline-soft); padding: 0.8rem 1rem;
 }
-.reading-page .lib-thesis-row:last-child { border-bottom: none; }
-/* 状態の左罫（検証待ち＝琥珀、的中/外れ＝検証2×2色）でひと目で見分ける */
-.reading-page .lib-thesis-row--due,
-.reading-page .lib-thesis-row--q-skill,
-.reading-page .lib-thesis-row--q-unlucky,
-.reading-page .lib-thesis-row--q-lucky,
-.reading-page .lib-thesis-row--q-discipline {
-  border-left: 2px solid var(--hairline);
-  padding-left: 0.75rem;
+.reading-page .lib-cue:hover { background: var(--state-hover); }
+.reading-page .lib-cue-icon {
+  flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; border-radius: 50%; margin-top: 0.1rem;
+  background: var(--paper-sunken); border: 1px solid currentColor;
 }
-.reading-page .lib-thesis-row--due           { border-left-color: var(--verdict-unlucky); }
-.reading-page .lib-thesis-row--q-skill        { border-left-color: var(--verdict-skill); }
-.reading-page .lib-thesis-row--q-unlucky      { border-left-color: var(--verdict-unlucky); }
-.reading-page .lib-thesis-row--q-lucky        { border-left-color: var(--verdict-lucky); }
-.reading-page .lib-thesis-row--q-discipline   { border-left-color: var(--verdict-discipline); }
-.reading-page .lib-thesis-stock { font-weight: var(--font-semibold); color: var(--ink); }
-.reading-page .lib-thesis-claim { font-family: var(--font-family-serif); color: var(--ink-soft); font-size: 0.9375rem; }
-.reading-page .lib-thesis-due { font-size: 0.75rem; color: var(--muted-ink); margin-left: auto; white-space: nowrap; }
-.reading-page .lib-thesis-row:hover .lib-thesis-stock { text-decoration: underline; text-underline-offset: 3px; }
+.reading-page .lib-cue-icon .bi { font-size: 0.85em; }
+.reading-page .lib-cue-body { flex: 1; min-width: 0; }
+.reading-page .lib-cue-mainhead {
+  display: block; font-family: var(--font-family-base); font-size: 0.875rem;
+  font-weight: var(--font-semibold); color: var(--ink);
+}
+.reading-page .lib-cue-text {
+  display: block; font-family: var(--font-family-serif); font-size: 0.85rem;
+  line-height: 1.6; color: var(--muted-ink); margin-top: 0.15rem;
+}
+.reading-page .lib-cue-cta {
+  display: inline-flex; align-items: center; gap: 0.25rem; margin-top: 0.45rem;
+  font-family: var(--font-family-base); font-size: 0.75rem; font-weight: var(--font-semibold); color: var(--ink);
+}
+
+/* ── レンズタブ（4等分・ラベル＋件数）── */
+.reading-page .lib-lenses { display: flex; gap: 0.1rem; border-bottom: 1px solid var(--hairline); margin-bottom: 1.25rem; }
+.reading-page .lib-lens {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.15rem;
+  text-decoration: none; padding: 0.6rem 0 0.55rem; margin-bottom: -1px;
+  border-bottom: 2px solid transparent; color: var(--muted-ink);
+  transition: color var(--duration-150, 150ms) var(--ease-out, ease);
+}
+.reading-page .lib-lens:hover { color: var(--ink-soft); }
+.reading-page .lib-lens-label { font-family: var(--font-family-base); font-size: 0.875rem; font-weight: var(--font-medium); }
+.reading-page .lib-lens-count { font-family: var(--font-family-mono); font-size: 0.6rem; color: var(--faint-ink); }
+.reading-page .lib-lens.is-active { color: var(--ink); border-bottom-color: var(--ink); }
+.reading-page .lib-lens.is-active .lib-lens-label { font-weight: var(--font-bold); }
+.reading-page .lib-lens.is-active .lib-lens-count { color: var(--muted-ink); }
+
+/* ── 検索・タグチップ（学び）── */
+.reading-page .lib-search {
+  display: flex; align-items: center; gap: 0.5rem; height: 42px;
+  background: var(--paper-sunken); border: 1px solid var(--hairline);
+  border-radius: var(--radius-md, 10px); padding: 0 0.75rem; margin: 0 0 0.75rem;
+}
+.reading-page .lib-search-icon { color: var(--faint-ink); font-size: 0.9em; }
+.reading-page .lib-search-input {
+  flex: 1; border: none; background: transparent; outline: none;
+  font-family: var(--font-family-base); font-size: 0.875rem; color: var(--ink);
+}
+.reading-page .lib-search-go { border: none; background: transparent; color: var(--faint-ink); cursor: pointer; padding: 0; }
+.reading-page .lib-tag-filter { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 1rem; }
+.reading-page .lib-tagchip {
+  font-size: 0.75rem; color: var(--muted-ink); text-decoration: none;
+  background: var(--paper-raised); border: 1px solid var(--hairline);
+  border-radius: var(--radius-full, 999px); padding: 0.3rem 0.7rem; line-height: 1.4;
+}
+.reading-page .lib-tagchip.active { background: var(--ink); color: var(--paper); border-color: var(--ink); font-weight: var(--font-semibold); }
+
+/* ── 学び（カード）── */
+.reading-page .lib-learn-cards { display: flex; flex-direction: column; gap: 0.6rem; }
+.reading-page .lib-learn-card {
+  display: block; text-decoration: none; color: inherit;
+  background: var(--paper-raised); border: 1px solid var(--hairline);
+  border-radius: var(--radius-md, 10px); padding: 0.9rem 1rem; box-shadow: var(--shadow-xs);
+  transition: border-color var(--duration-150, 150ms) var(--ease-out, ease);
+}
+.reading-page .lib-learn-card:hover { border-color: var(--muted-ink); }
+.reading-page .lib-learn-quote {
+  margin: 0; font-family: var(--font-family-serif); font-size: 1rem; line-height: 1.7;
+  color: var(--ink); border-left: 2px solid var(--hairline); padding-left: 0.7rem; font-style: normal;
+}
+.reading-page .lib-learn-meta {
+  display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.7rem; padding-left: 0.7rem;
+}
+.reading-page .lib-learn-stock { font-family: var(--font-family-base); font-size: 0.875rem; font-weight: var(--font-semibold); color: var(--ink); }
+.reading-page .lib-learn-code { font-size: 0.65rem; color: var(--muted-ink); }
+.reading-page .lib-meta-sep { width: 1px; height: 11px; background: var(--hairline); }
+.reading-page .lib-meta-spacer { flex: 1; }
+
+/* 象限バッジ（ドット＋ラベル） */
+.reading-page .lib-vquad { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.7rem; font-weight: var(--font-semibold); line-height: 1.2; }
+.reading-page .lib-vquad-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: 0 0 auto; }
+.reading-page .lib-minitag {
+  font-family: var(--font-family-base); font-size: 0.65rem; color: var(--muted-ink);
+  background: var(--paper-sunken); border: 1px solid var(--hairline);
+  border-radius: var(--radius-full, 999px); padding: 0.1rem 0.5rem; line-height: 1.5;
+}
+
+/* ── テーマ（行）── */
+.reading-page .lib-theme-rows { display: flex; flex-direction: column; }
+.reading-page .lib-theme-row {
+  display: flex; align-items: center; gap: 0.75rem; text-decoration: none; color: inherit;
+  padding: 0.78rem 0; border-top: 1px solid var(--hairline-soft);
+}
+.reading-page .lib-theme-row:first-child { border-top: none; }
+.reading-page .lib-theme-icon {
+  flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px;
+  border-radius: var(--radius-sm); background: var(--paper-sunken); border: 1px solid var(--hairline); color: var(--muted-ink);
+}
+.reading-page .lib-theme-main { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 0.5rem; }
+.reading-page .lib-theme-name { font-family: var(--font-family-base); font-size: var(--text-base, 1rem); font-weight: var(--font-semibold); color: var(--ink); }
+.reading-page .lib-theme-count { font-family: var(--font-family-mono); font-size: 0.65rem; color: var(--muted-ink); }
+.reading-page .lib-theme-chev { color: var(--faint-ink); font-size: 0.8em; }
+.reading-page .lib-theme-row:hover .lib-theme-name { text-decoration: underline; text-underline-offset: 3px; }
+
+/* ── 仮説（4グループ）── */
+.reading-page .lib-thesis-group { margin-bottom: 0.5rem; }
+.reading-page .lib-group-head {
+  display: flex; align-items: center; gap: 0.5rem; font-family: var(--font-family-base);
+  font-size: 0.75rem; font-weight: var(--font-semibold); letter-spacing: 0.04em; color: var(--faint-ink);
+  margin: 1.5rem 0 0.6rem;
+}
+.reading-page .lib-group-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: 0 0 auto; }
+.reading-page .lib-group-count {
+  font-size: 0.65rem; color: var(--muted-ink); background: var(--paper-sunken);
+  border: 1px solid var(--hairline); border-radius: var(--radius-full, 999px); padding: 0.05rem 0.4rem;
+}
+.reading-page .lib-trow {
+  display: block; text-decoration: none; color: inherit;
+  border-top: 1px solid var(--hairline-soft); padding: 0.78rem 0;
+}
+.reading-page .lib-trow-head { display: flex; align-items: baseline; gap: 0.4rem; margin-bottom: 0.3rem; }
+.reading-page .lib-trow-stock { font-family: var(--font-family-base); font-size: 0.875rem; font-weight: var(--font-semibold); color: var(--ink); }
+.reading-page .lib-trow-code { font-size: 0.65rem; color: var(--muted-ink); }
+.reading-page .lib-trow-spacer { flex: 1; }
+.reading-page .lib-trow-due { font-size: 0.68rem; font-weight: var(--font-semibold); color: var(--muted-ink); white-space: nowrap; }
+.reading-page .lib-trow-due.is-overdue { color: var(--profit-down-quiet); }
+.reading-page .lib-trow-claim {
+  display: block; font-family: var(--font-family-serif); font-size: 0.95rem; line-height: 1.65;
+  color: var(--ink-soft); border-left: 2px solid var(--hairline); padding-left: 0.65rem;
+}
+.reading-page .lib-trow:hover .lib-trow-stock { text-decoration: underline; text-underline-offset: 3px; }
+
+/* ── 時系列（時間軸）── */
+.reading-page .lib-spine { position: relative; padding-left: 1.25rem; }
+.reading-page .lib-spine::before { content: ""; position: absolute; left: 5px; top: 6px; bottom: 6px; width: 1px; background: var(--hairline); }
+.reading-page .lib-spine-item { display: block; position: relative; text-decoration: none; color: inherit; padding: 0.78rem 0; }
+.reading-page .lib-spine-dot {
+  position: absolute; left: -19px; top: 1.15rem; width: 9px; height: 9px; border-radius: 50%;
+  background: var(--paper); border: 1.5px solid var(--muted-ink); box-sizing: border-box;
+}
+.reading-page .lib-spine-dot.is-live { background: var(--verdict-skill); border-color: var(--verdict-skill); }
+.reading-page .lib-spine-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.45rem; margin-bottom: 0.25rem; }
+.reading-page .lib-spine-date { font-size: 0.7rem; color: var(--muted-ink); }
+.reading-page .lib-spine-kind {
+  font-size: 0.62rem; font-weight: var(--font-semibold); color: var(--muted-ink);
+  background: var(--paper-sunken); border: 1px solid var(--hairline); border-radius: var(--radius-xs, 4px); padding: 0.05rem 0.35rem;
+}
+.reading-page .lib-spine-body { display: block; font-family: var(--font-family-serif); font-size: 0.95rem; line-height: 1.65; color: var(--ink-soft); }
+.reading-page .lib-spine-item:hover .lib-trow-stock { text-decoration: underline; text-underline-offset: 3px; }
 
 /* ============================================================
    9k-5. 詳細「関連」タブ・モーダルの静音化（ダーク整合）
