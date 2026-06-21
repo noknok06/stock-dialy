@@ -1818,10 +1818,7 @@
           <!-- 見立ての変遷（ReasonVersion: reason 上書き前の来歴・既定非表示） -->
           {% include "stockdiary/partials/_reason_versions.html" %}
 
-          <!-- Phase 8a: 検証ループ（仮説→結果→検証→学び）。振り返りの主役なので投資理由の直後に固める -->
-          {% include "stockdiary/partials/_karte_block.html" %}
-
-          <!-- テーマ × 感応（付与タグ＋この銘柄への影響方向）。補助情報なので検証ループの後に降ろす -->
+          <!-- テーマ × 感応（付与タグ＋この銘柄への影響方向）。補助情報として投資理由の後に降ろす -->
           {% include "stockdiary/partials/_theme_sensitivity.html" %}
 
           <!-- 同テーマの過去判断（補助情報のため投資理由の後に配置） -->
@@ -2086,19 +2083,21 @@
           {% endif %}
 
           {% comment %}
-            表示切替: テーマ別（デフォルト） / 活動（取引・分割・記録を時系列統合。旧「時系列」タブを統合）。
-            取引のみで記録ゼロの銘柄でも活動を辿れるよう event_timeline でも出す。
+            表示切替: テーマ別（デフォルト） / 仮説（検証ループ） / 活動（取引・分割・記録を時系列統合）。
+            仮説（検証ループ）は概要タブから移設し、テーマ別・活動と同じトグル並びに統一。
+            仮説ビューは銘柄に記録/取引が無くても常に意味を持つため、トグルは常設する。
           {% endcomment %}
-          {% if notes or event_timeline %}
           <div class="notes-view-toggle mb-3" role="tablist">
             <button type="button" class="notes-view-btn active" data-view="topic" onclick="switchNotesView('topic')">
               <i class="bi bi-collection me-1"></i>テーマ別
+            </button>
+            <button type="button" class="notes-view-btn" data-view="thesis" onclick="switchNotesView('thesis')">
+              <i class="bi bi-lightbulb me-1"></i>仮説
             </button>
             <button type="button" class="notes-view-btn" data-view="activity" onclick="switchNotesView('activity')">
               <i class="bi bi-clock-history me-1"></i>活動
             </button>
           </div>
-          {% endif %}
 
           <!-- テーマ別ビュー: トピックインデックス（デフォルト表示） -->
           <div class="notes-topic-index" id="notes-view-topic">
@@ -2138,6 +2137,11 @@
               {% include "stockdiary/components/_empty_state.html" with icon="bi-journal-text" title="継続記録はまだありません" description="右下の＋ボタンから記録を追加できます" %}
               {% endfor %}
             </div>
+          </div>
+
+          <!-- 仮説ビュー: 検証ループ（仮説→結果→検証→学び）。概要タブから移設 -->
+          <div class="notes-thesis-wrap" id="notes-view-thesis" hidden>
+            {% include "stockdiary/partials/_karte_block.html" %}
           </div>
 
           <!-- 活動ビュー: 取引・分割・継続記録を時系列で統合（旧「時系列」タブを移設） -->
@@ -2281,11 +2285,12 @@
 {% include 'speed_dial.html' with actions=diary_actions %}
 
 <script>
-  // スピードダイヤルの「新しい仮説を追加」から、基本タブの仮説フォーム(HTMX)を起動する。
-  // 入力動線はスピードダイヤルに統一しつつ、フォーム実体は既存の karte ブロックを再利用。
+  // スピードダイヤルの「新しい仮説を追加」から、記録タブの『仮説』ビューにある仮説フォーム(HTMX)を起動する。
+  // 検証ループは概要タブから記録タブ(#notes-view-thesis)へ移設したため、タブ＋ビューを切り替えてから開く。
   window.openThesisForm = function () {
-    var tabBtn = document.getElementById('basic-tab');
+    var tabBtn = document.getElementById('notes-tab');
     if (tabBtn && !tabBtn.classList.contains('active')) { tabBtn.click(); }
+    if (window.switchNotesView) { window.switchNotesView('thesis'); }
     setTimeout(function () {
       var block = document.getElementById('karte-block');
       var b = document.querySelector('.karte-add-thesis');
@@ -2319,6 +2324,10 @@
   var vid = new URLSearchParams(window.location.search).get('verify');
   if (!vid) return;
   function openVerify() {
+    // 検証ループは記録タブの『仮説』ビューに移設済み。タブ＋ビューを開いてから検証フォームを起動。
+    var tabBtn = document.getElementById('notes-tab');
+    if (tabBtn && !tabBtn.classList.contains('active')) { tabBtn.click(); }
+    if (window.switchNotesView) { window.switchNotesView('thesis'); }
     var block = document.getElementById('karte-block');
     if (block) block.scrollIntoView({ behavior: 'smooth', block: 'center' });
     var btn = document.querySelector('#karte-block [hx-get*="/thesis/' + vid + '/verify/"]');
@@ -2623,9 +2632,11 @@ document.addEventListener('DOMContentLoaded', function() {
   window.switchNotesView = function(view) {
     var timeline = document.getElementById('notes-view-timeline');
     var topic = document.getElementById('notes-view-topic');
+    var thesis = document.getElementById('notes-view-thesis');
     var activity = document.getElementById('notes-view-activity');
     if (timeline) timeline.hidden = (view !== 'timeline');
     if (topic) topic.hidden = (view !== 'topic');
+    if (thesis) thesis.hidden = (view !== 'thesis');
     if (activity) activity.hidden = (view !== 'activity');
     document.querySelectorAll('.notes-view-btn').forEach(function(b) {
       b.classList.toggle('active', b.dataset.view === view);
