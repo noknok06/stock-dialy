@@ -264,31 +264,85 @@ body.dark-mode, html[data-theme="dark"] {
 /* ============================================================
    9k-3. 投資家カルテ（Phase 8d）
    ============================================================ */
-/* 2×2 マトリクス */
+/* 自己診断（言葉で返す）— セリフ＋墨の左罫 */
+.reading-page .karte-diag {
+  font-family: var(--font-family-serif);
+  font-size: 1.3125rem;
+  line-height: 1.75;
+  color: var(--ink);
+  border-left: 3px solid var(--ink);
+  padding: 0.25rem 0 0.25rem 1.1rem;
+  margin: 1.75rem 0 0.5rem;
+}
+
+/* 得意・苦手テーマ（バー＋判断の質★） */
+.reading-page .karte-bar-row {
+  display: flex; align-items: center; gap: 1rem;
+  padding: 0.7rem 0; border-top: 1px solid var(--hairline-soft);
+}
+.reading-page .karte-bar-row:first-of-type { border-top: none; }
+.reading-page .karte-bar-name { flex: 0 0 116px; font-size: 1rem; font-weight: var(--font-medium); color: var(--ink); }
+.reading-page .karte-bar {
+  flex: 1; height: 8px; background: var(--paper-sunken);
+  border-radius: var(--radius-full, 999px); overflow: hidden;
+}
+.reading-page .karte-bar-fill { display: block; height: 100%; border-radius: var(--radius-full, 999px); }
+.reading-page .karte-fill-strong { background: var(--verdict-skill); }
+.reading-page .karte-fill-weak { background: var(--verdict-lucky); }
+.reading-page .karte-bar-val {
+  flex: 0 0 52px; text-align: right; font-family: var(--font-family-mono);
+  font-variant-numeric: tabular-nums; font-size: 0.8125rem; color: var(--muted-ink);
+}
+
+/* 繰り返す失敗 / 再現したい勝ち筋（kitem カード） */
+.reading-page .karte-kitems { display: flex; flex-direction: column; gap: 0.85rem; }
+.reading-page .karte-kitem {
+  display: block; text-decoration: none; color: inherit;
+  border: 1px solid var(--hairline); border-left-width: 3px;
+  border-radius: var(--radius-md, 10px); background: var(--paper-raised);
+  padding: 1rem 1.2rem;
+  transition: border-color var(--duration-150, 150ms) var(--ease-out, ease);
+}
+.reading-page .karte-kitem--lucky      { border-left-color: var(--verdict-lucky); }
+.reading-page .karte-kitem--skill      { border-left-color: var(--verdict-skill); }
+.reading-page .karte-kitem--discipline { border-left-color: var(--verdict-discipline); }
+.reading-page a.karte-kitem:hover { border-color: var(--muted-ink); }
+.reading-page a.karte-kitem--skill:hover { border-left-color: var(--verdict-skill); }
+.reading-page .karte-kitem-top { display: flex; align-items: center; gap: 0.55rem; margin-bottom: 0.4rem; }
+.reading-page .karte-kitem-tag { font-size: 0.75rem; font-weight: var(--font-semibold); }
+.reading-page .karte-kitem--lucky .karte-kitem-tag { color: var(--verdict-lucky); }
+.reading-page .karte-kitem--skill .karte-kitem-tag { color: var(--verdict-skill); }
+.reading-page .karte-kitem-count { font-family: var(--font-family-mono); font-size: 0.75rem; color: var(--muted-ink); }
+.reading-page .karte-kitem-src { font-size: 0.75rem; color: var(--faint-ink); margin-left: auto; }
+.reading-page a.karte-kitem:hover .karte-kitem-src { color: var(--muted-ink); }
+.reading-page .karte-kitem-body {
+  font-family: var(--font-family-serif); font-size: 1.0625rem; line-height: 1.7; color: var(--ink-soft);
+}
+
+/* 2×2 マトリクス（左罫の独立カード） */
 .reading-page .karte-matrix {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 1px;
-  background: var(--hairline); border: 1px solid var(--hairline);
-  border-radius: var(--radius-md, 10px); overflow: hidden;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;
 }
 .reading-page .karte-cell {
   background: var(--paper-raised);
-  padding: var(--space-5, 1.25rem);
-  border-left: 3px solid transparent;
+  border: 1px solid var(--hairline); border-left: 3px solid transparent;
+  border-radius: var(--radius-md, 10px);
+  padding: 0.85rem 1rem;
 }
 .reading-page .karte-cell.karte-q-skill      { border-left-color: var(--verdict-skill); }
 .reading-page .karte-cell.karte-q-unlucky    { border-left-color: var(--verdict-unlucky); }
 .reading-page .karte-cell.karte-q-lucky      { border-left-color: var(--verdict-lucky); }
 .reading-page .karte-cell.karte-q-discipline { border-left-color: var(--verdict-discipline); }
 .reading-page .karte-cell-count {
-  font-size: 1.75rem; font-weight: var(--font-bold); line-height: 1;
-  color: var(--ink); font-variant-numeric: tabular-nums;
+  font-family: var(--font-family-mono); font-size: 1.5rem; font-weight: var(--font-semibold);
+  line-height: 1; color: var(--ink); font-variant-numeric: tabular-nums;
 }
+.reading-page .karte-q-skill .karte-cell-count      { color: var(--verdict-skill); }
+.reading-page .karte-q-unlucky .karte-cell-count    { color: var(--verdict-unlucky); }
+.reading-page .karte-q-lucky .karte-cell-count      { color: var(--verdict-lucky); }
+.reading-page .karte-q-discipline .karte-cell-count { color: var(--verdict-discipline); }
 .reading-page .karte-cell-label { font-size: 0.875rem; font-weight: var(--font-semibold); color: var(--ink); margin-top: 0.35rem; }
-.reading-page .karte-q-skill .karte-cell-label      { color: var(--verdict-skill); }
-.reading-page .karte-q-unlucky .karte-cell-label    { color: var(--verdict-unlucky); }
-.reading-page .karte-q-lucky .karte-cell-label      { color: var(--verdict-lucky); }
-.reading-page .karte-q-discipline .karte-cell-label { color: var(--verdict-discipline); }
-.reading-page .karte-cell-axis { font-size: 0.7rem; color: var(--faint-ink); margin-top: 0.15rem; }
+.reading-page .karte-cell-axis { font-size: 0.7rem; color: var(--muted-ink); margin-top: 0.15rem; }
 
 .reading-page .karte-insight {
   font-size: 0.875rem; color: var(--ink-soft); margin: 1rem 0 0;

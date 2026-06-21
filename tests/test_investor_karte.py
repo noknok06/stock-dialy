@@ -50,6 +50,29 @@ class TestKarteService:
         k = build_investor_karte(user)
         assert any(p['text'] == 'テーマで持ち続ける' for p in k['philosophy'])
 
+    def test_theme_rows_have_stars_and_bar(self, user, sample_tags):
+        """参考デザインのテーマバー（★＝判断の質、bar_pct＝幅）用の集計が出ること。"""
+        d1 = StockDiary.objects.create(user=user, stock_name='A', stock_symbol='1')
+        d2 = StockDiary.objects.create(user=user, stock_name='B', stock_symbol='2')
+        for d in (d1, d2):
+            t = Thesis.objects.create(diary=d, claim='c')
+            t.basis_tags.add(sample_tags[0])
+            Verdict.objects.create(thesis=t, hypothesis_result=Verdict.HYP_HIT,
+                                   pnl_result=Verdict.PNL_PROFIT, decision_quality=4)
+        k = build_investor_karte(user)
+        strong = k['strong_themes']
+        assert strong, '的中率が高いタグは得意テーマに入る'
+        assert strong[0]['stars'] == 4.0
+        assert 6 <= strong[0]['bar_pct'] <= 100
+
+    def test_diagnosis_is_built(self, user):
+        """検証があれば、言葉で返す自己診断の一文が組み立てられること。"""
+        d1 = StockDiary.objects.create(user=user, stock_name='A', stock_symbol='1')
+        _verdict(d1, Verdict.HYP_HIT, Verdict.PNL_PROFIT, decision_quality=4)
+        k = build_investor_karte(user)
+        assert k['diagnosis']
+        assert isinstance(k['diagnosis'][0], str)
+
 
 class TestKarteView:
     def test_karte_renders(self, authenticated_client):

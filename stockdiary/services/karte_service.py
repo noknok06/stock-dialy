@@ -58,8 +58,9 @@ def build_investor_karte(user):
         if v.missed_factor:
             missed.append(v.missed_factor)
         for tag in v.thesis.basis_tags.all():
-            st = tag_stats.setdefault(tag.id, {'name': tag.name, 'total': 0, 'hit': 0})
+            st = tag_stats.setdefault(tag.id, {'name': tag.name, 'total': 0, 'hit': 0, 'q_sum': 0})
             st['total'] += 1
+            st['q_sum'] += (v.decision_quality or 0)
             if v.hyp_ok:
                 st['hit'] += 1
 
@@ -77,7 +78,11 @@ def build_investor_karte(user):
     for st in tag_stats.values():
         if st['total'] >= 2:
             rate = round(st['hit'] / st['total'] * 100)
-            theme_rows.append({'name': st['name'], 'total': st['total'], 'hit': st['hit'], 'rate': rate})
+            stars = round(st['q_sum'] / st['total'], 1)
+            # バー幅は判断の質（★/5）。得意・苦手が量だけでなく質で見えるように
+            bar_pct = max(6, round(stars / 5 * 100))
+            theme_rows.append({'name': st['name'], 'total': st['total'], 'hit': st['hit'],
+                               'rate': rate, 'stars': stars, 'bar_pct': bar_pct})
     theme_rows.sort(key=lambda x: (x['rate'], x['total']), reverse=True)
     strong_themes = [t for t in theme_rows if t['rate'] >= 60][:5]
     weak_themes = [t for t in theme_rows if t['rate'] < 40][:5]
@@ -93,9 +98,14 @@ def build_investor_karte(user):
     if not philosophy:
         philosophy = learnings[:8]
 
+    # 自己診断（言葉で返す一文）。集計から機械的に組み立てる
+    diagnosis = _build_diagnosis(total, hit_rate, lucky_share, quad_counts,
+                                 strong_themes, weak_themes)
+
     return {
         'total': total,
         'has_content': total > 0,
+        'diagnosis': diagnosis,
         'quadrants': quadrants,
         'hit_rate': hit_rate,
         'total_wins': total_wins,
@@ -107,3 +117,36 @@ def build_investor_karte(user):
         'recent_misses': missed[:5],
         'philosophy': philosophy,
     }
+
+
+def _build_diagnosis(total, hit_rate, lucky_share, quad_counts, strong_themes, weak_themes):
+    """検証の集計から、自己診断の短い2文を機械的に組み立てる（言葉で返す）。"""
+    if not total:
+        return []
+    lines = []
+
+    parts = []
+    if hit_rate is not None:
+        if hit_rate >= 60:
+            parts.append('あなたは仮説をよく当てる')
+        elif hit_rate <= 40:
+            parts.append('仮説はまだ外しがちだが')
+        else:
+            parts.append('仮説の的中は五分')
+    if lucky_share is not None and lucky_share >= 40:
+        parts.append('勝ちには「偶然」が混じる')
+    elif quad_counts.get('unlucky', 0) and quad_counts['unlucky'] >= quad_counts.get('skill', 0):
+        parts.append('正しくても報われないことが多い')
+    elif quad_counts.get('discipline', 0) and quad_counts['discipline'] >= quad_counts.get('skill', 0):
+        parts.append('読みが外れたときは規律を守れている')
+    if parts:
+        lines.append('、'.join(parts) + '。')
+
+    if strong_themes and weak_themes:
+        lines.append(f'得意は「{strong_themes[0]["name"]}」、苦手は「{weak_themes[0]["name"]}」。')
+    elif strong_themes:
+        lines.append(f'得意は「{strong_themes[0]["name"]}」。')
+    elif weak_themes:
+        lines.append(f'苦手は「{weak_themes[0]["name"]}」。')
+
+    return lines
