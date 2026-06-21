@@ -40,6 +40,19 @@ CSV_FILES = {
 # diaries.csv のタグ列で使う区切り文字
 TAG_SEPARATOR = '|'
 
+# 機能ごとのエクスポートで選択できる関連データのセクション。
+# 日記本体（銘柄・投資理由など）は常に含まれ、ここに挙げた項目を任意に取捨選択する。
+# 主に「エクスポートした JSON を LLM に渡して分析する」用途で、不要なデータを
+# 削ってファイルサイズを抑えるためのもの（Issue #356）。
+SECTION_CHOICES = (
+    ('transactions', '取引'),
+    ('notes', '継続記録'),
+    ('stock_splits', '株式分割'),
+    ('tags', 'タグ・タグ方向'),
+    ('thesis', '仮説・検証'),
+)
+ALL_SECTIONS = tuple(key for key, _ in SECTION_CHOICES)
+
 
 def _dec(value):
     """Decimal/数値を文字列に。None はそのまま None。"""
@@ -66,8 +79,20 @@ class ExportService:
     # ------------------------------------------------------------------
     # payload 構築
     # ------------------------------------------------------------------
-    def build_payload(self) -> dict:
-        """DB から中間dict（payload）を構築する。"""
+    def build_payload(self, sections=None) -> dict:
+        """DB から中間dict（payload）を構築する。
+
+        sections: 含める関連データセクションの iterable（ALL_SECTIONS の部分集合）。
+        None の場合は全セクションを含む（従来の完全エクスポート＝移行用と同一）。
+        部分集合を渡すと、日記本体は常に含めつつ、選択されなかった関連データ
+        （取引・継続記録・株式分割・タグ・仮説検証）を payload から省く。
+        これにより LLM 分析向けに不要なデータを落としてファイルを軽くできる（Issue #356）。
+        """
+        if sections is None:
+            sections = set(ALL_SECTIONS)
+        else:
+            sections = {s for s in sections if s in ALL_SECTIONS}
+
         diaries_qs = (
             StockDiary.objects.filter(user=self.user)
             .prefetch_related(
@@ -83,20 +108,23 @@ class ExportService:
         )
 
         # タグマスタ（このユーザーの全タグ）を収集。parent は名前で参照する。
-        from tags.models import Tag
+        # タグセクションが選択されていない場合は空（CSV/移行と整合）。
         tags_payload = []
-        for tag in Tag.objects.filter(user=self.user).select_related('parent').order_by('id'):
-            tags_payload.append({
-                'name': tag.name,
-                'axis': tag.axis,
-                'parent': tag.parent.name if tag.parent else None,
-                'df': tag.df,
-            })
+        if 'tags' in sections:
+            from tags.models import Tag
+            for tag in Tag.objects.filter(user=self.user).select_related('parent').order_by('id'):
+                tags_payload.append({
+                    'name': tag.name,
+                    'axis': tag.axis,
+                    'parent': tag.parent.name if tag.parent else None,
+                    'df': tag.df,
+                })
 
         diaries_payload = []
         for index, diary in enumerate(diaries_qs, start=1):
             export_key = f'd{index}'
-            diaries_payload.append({
+            # 日記本体は常に含める。関連データは sections で取捨選択する。
+            entry = {
                 'export_key': export_key,
                 'stock_symbol': diary.stock_symbol,
                 'stock_name': diary.stock_name,
@@ -107,12 +135,17 @@ class ExportService:
                 'latest_disclosure_date': _date(diary.latest_disclosure_date),
                 'latest_disclosure_doc_type_name': diary.latest_disclosure_doc_type_name,
                 'image_filename': diary.image.name if diary.image else None,
-                'tags': [t.name for t in diary.tags.all()],
-                'tag_directions': [
+            }
+
+            if 'tags' in sections:
+                entry['tags'] = [t.name for t in diary.tags.all()]
+                entry['tag_directions'] = [
                     {'tag': td.tag.name, 'direction': td.direction}
                     for td in diary.tag_directions.all()
-                ],
-                'transactions': [
+                ]
+
+            if 'transactions' in sections:
+                entry['transactions'] = [
                     {
                         'transaction_type': tx.transaction_type,
                         'transaction_date': _date(tx.transaction_date),
@@ -126,8 +159,10 @@ class ExportService:
                         diary.transactions.all(),
                         key=lambda t: (t.transaction_date, t.id),
                     )
-                ],
-                'stock_splits': [
+                ]
+
+            if 'stock_splits' in sections:
+                entry['stock_splits'] = [
                     {
                         'split_date': _date(sp.split_date),
                         'split_ratio': _dec(sp.split_ratio),
@@ -138,8 +173,10 @@ class ExportService:
                         diary.stock_splits.all(),
                         key=lambda s: (s.split_date, s.id),
                     )
-                ],
-                'notes': [
+                ]
+
+            if 'notes' in sections:
+                entry['notes'] = [
                     {
                         'date': _date(note.date),
                         'content': note.content,
@@ -153,10 +190,13 @@ class ExportService:
                         diary.notes.all(),
                         key=lambda n: (n.date, n.id),
                     )
-                ],
+                ]
+
+            if 'thesis' in sections:
                 # 仮説（Thesis）と検証（Verdict）。無ければ None。
-                'thesis': self._thesis_payload(diary),
-            })
+                entry['thesis'] = self._thesis_payload(diary)
+
+            diaries_payload.append(entry)
 
         return {
             'meta': {
@@ -165,15 +205,20 @@ class ExportService:
                 'exported_at': timezone.localtime(timezone.now()).isoformat(),
                 'source_username': self.user.get_username(),
                 'includes_images': False,
+                # この payload に含まれる関連データセクション（LLM/取り込み側の判断材料）
+                'sections': [s for s in ALL_SECTIONS if s in sections],
                 'counts': {
                     'diaries': len(diaries_payload),
                     'tags': len(tags_payload),
-                    'transactions': sum(len(d['transactions']) for d in diaries_payload),
-                    'stock_splits': sum(len(d['stock_splits']) for d in diaries_payload),
-                    'notes': sum(len(d['notes']) for d in diaries_payload),
-                    'tag_directions': sum(len(d['tag_directions']) for d in diaries_payload),
-                    'theses': sum(1 for d in diaries_payload if d['thesis']),
-                    'verdicts': sum(1 for d in diaries_payload if d['thesis'] and d['thesis']['verdict']),
+                    'transactions': sum(len(d.get('transactions', [])) for d in diaries_payload),
+                    'stock_splits': sum(len(d.get('stock_splits', [])) for d in diaries_payload),
+                    'notes': sum(len(d.get('notes', [])) for d in diaries_payload),
+                    'tag_directions': sum(len(d.get('tag_directions', [])) for d in diaries_payload),
+                    'theses': sum(1 for d in diaries_payload if d.get('thesis')),
+                    'verdicts': sum(
+                        1 for d in diaries_payload
+                        if d.get('thesis') and d['thesis'].get('verdict')
+                    ),
                 },
             },
             'tags': tags_payload,
@@ -211,9 +256,13 @@ class ExportService:
     # ------------------------------------------------------------------
     # JSON 出力
     # ------------------------------------------------------------------
-    def to_json(self):
-        """(filename, bytes) を返す。"""
-        payload = self.build_payload()
+    def to_json(self, sections=None):
+        """(filename, bytes) を返す。
+
+        sections に部分集合を渡すと「機能ごとのエクスポート」（選択した関連データのみ）
+        になる。None なら完全エクスポート（移行用）。
+        """
+        payload = self.build_payload(sections=sections)
         content = json.dumps(payload, ensure_ascii=False, indent=2)
         filename = f'stockdiary_migration_{datetime.now().strftime("%Y%m%d")}.json'
         return filename, content.encode('utf-8')

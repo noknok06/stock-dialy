@@ -416,6 +416,23 @@ class DataExportForm(forms.Form):
     )
 
 
+class SelectiveExportForm(forms.Form):
+    """機能ごとのエクスポートフォーム（含める関連データを選択）。
+
+    日記本体（銘柄・投資理由）は常に含め、ここで選んだ関連データのみを追加する。
+    LLM に渡して分析する用途で、不要なデータを削ってファイルを軽くするのが目的（Issue #356）。
+    """
+    from .services.migration_export_service import SECTION_CHOICES as _SECTION_CHOICES
+
+    sections = forms.MultipleChoiceField(
+        label='含める項目（日記本体は常に含まれます）',
+        choices=_SECTION_CHOICES,
+        initial=['notes'],
+        required=False,
+        widget=forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input'}),
+    )
+
+
 class DataImportForm(forms.Form):
     """日記データの移行インポートフォーム"""
     data_file = forms.FileField(

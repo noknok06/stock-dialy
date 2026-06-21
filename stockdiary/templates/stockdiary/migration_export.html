@@ -111,5 +111,43 @@
       </div>
     </form>
   </div>
+
+  {# ===== 機能ごとのエクスポート（AI分析向け・項目選択式） ===== #}
+  <div class="migration-card mt-3">
+    <div class="migration-header">
+      <h2><i class="bi bi-robot"></i> 機能ごとのエクスポート（AI分析向け）</h2>
+      <p class="text-muted">必要な項目だけを JSON で書き出します</p>
+    </div>
+
+    <div class="migration-instructions">
+      <h5><i class="bi bi-info-circle"></i> こんなときに</h5>
+      <ul class="mb-0">
+        <li>エクスポートした JSON を ChatGPT などの AI に渡して分析したいとき</li>
+        <li>「日記だけ」「日記＋継続記録だけ」のように、必要な項目に絞ってファイルを軽くしたいとき</li>
+      </ul>
+      <p class="mb-0 mt-2 text-muted">
+        ※ 銘柄・投資理由などの日記本体は常に含まれます。下のチェックで追加する項目を選んでください。
+      </p>
+    </div>
+
+    <form method="post" action="{% url 'stockdiary:migration_export_selective' %}">
+      {% csrf_token %}
+      <div class="mb-3">
+        <label class="form-label fw-bold">{{ selective_form.sections.label }}</label>
+        {% for checkbox in selective_form.sections %}
+          <div class="format-option">
+            <div>{{ checkbox.tag }}</div>
+            <label for="{{ checkbox.id_for_label }}" class="mb-0">{{ checkbox.choice_label }}</label>
+          </div>
+        {% endfor %}
+      </div>
+
+      <div class="d-grid gap-2">
+        <button type="submit" class="btn btn-success">
+          <i class="bi bi-filetype-json"></i> 選択した項目をダウンロード（JSON）
+        </button>
+      </div>
+    </form>
+  </div>
 </div>
 {% endblock %}

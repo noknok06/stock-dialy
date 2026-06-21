@@ -10,6 +10,7 @@ from datetime import date
 from decimal import Decimal
 
 import pytest
+from django.urls import reverse
 
 from stockdiary.models import StockDiary, DiaryTagDirection
 from stockdiary.services.migration_export_service import ExportService
@@ -61,6 +62,81 @@ class TestExportPayload:
         payload = ExportService(sample_diary.user).build_payload()
         for d in payload['diaries']:
             assert 'linked_diaries' not in d
+
+
+@pytest.mark.django_db
+class TestSelectiveExport:
+    """機能ごとのエクスポート（Issue #356）。
+
+    日記本体は常に含めつつ、選択した関連データセクションのみを payload に出力する。
+    LLM 分析向けに不要なデータを落としてファイルを軽くするのが目的。
+    従来の完全エクスポート（sections=None）は一切変更しない。
+    """
+
+    def test_default_includes_everything(self, complex_diary_with_multiple_transactions, sample_tags):
+        # sections 未指定（None）は従来通り全セクションを含む
+        user = complex_diary_with_multiple_transactions.user
+        payload = ExportService(user).build_payload()
+        diary = payload['diaries'][0]
+        for key in ('transactions', 'notes', 'stock_splits', 'tags', 'tag_directions', 'thesis'):
+            assert key in diary
+        assert set(payload['meta']['sections']) == {
+            'transactions', 'notes', 'stock_splits', 'tags', 'thesis',
+        }
+
+    def test_diary_only_omits_related_sections(self, complex_diary_with_multiple_transactions):
+        # 空セクション＝日記本体のみ。取引などのキー自体が出力されない（ファイル軽量化）
+        user = complex_diary_with_multiple_transactions.user
+        payload = ExportService(user).build_payload(sections=[])
+        diary = payload['diaries'][0]
+        # 日記本体は残る
+        assert diary['stock_name'] == '信越化学工業'
+        assert 'reason' in diary
+        # 関連データはキーごと省かれる
+        for key in ('transactions', 'notes', 'stock_splits', 'tags', 'tag_directions', 'thesis'):
+            assert key not in diary
+        assert payload['meta']['sections'] == []
+        assert payload['meta']['counts']['transactions'] == 0
+        assert payload['tags'] == []
+
+    def test_diary_and_notes_only(self, diary_with_notes):
+        # 「日記＋継続記録だけ」: notes のみ含み、取引・タグは含まない
+        payload = ExportService(diary_with_notes.user).build_payload(sections=['notes'])
+        diary = payload['diaries'][0]
+        assert 'notes' in diary
+        assert len(diary['notes']) == 2
+        assert 'transactions' not in diary
+        assert 'tags' not in diary
+        assert payload['meta']['sections'] == ['notes']
+        assert payload['meta']['counts']['notes'] == 2
+
+    def test_unknown_section_ignored(self, sample_diary):
+        # 不正なセクション名は無視される（日記本体のみになる）
+        payload = ExportService(sample_diary.user).build_payload(sections=['bogus'])
+        assert payload['meta']['sections'] == []
+        assert 'transactions' not in payload['diaries'][0]
+
+    def test_selective_export_still_importable(self, diary_with_notes, another_user):
+        # 部分エクスポートでも import 側は .get() で欠損キーを許容し、落ちない
+        _, content = ExportService(diary_with_notes.user).to_json(sections=['notes'])
+        upload = _FakeUpload('selective.json', content)
+        service = ImportService(another_user)
+        result = service.import_payload(service.parse(upload))
+        imported = StockDiary.objects.get(user=another_user, stock_symbol='7203')
+        assert imported.notes.count() == 2
+        # 取引は含めていないので 0 件
+        assert result['transactions'] == 0
+
+    def test_selective_export_view(self, authenticated_client, sample_diary_with_transaction):
+        # ビュー経由で JSON が選択項目のみで返る
+        url = reverse('stockdiary:migration_export_selective')
+        resp = authenticated_client.post(url, {'sections': ['transactions']})
+        assert resp.status_code == 200
+        assert resp['Content-Type'].startswith('application/json')
+        payload = json.loads(resp.content.decode('utf-8'))
+        assert payload['meta']['sections'] == ['transactions']
+        assert 'transactions' in payload['diaries'][0]
+        assert 'notes' not in payload['diaries'][0]
 
 
 @pytest.mark.django_db

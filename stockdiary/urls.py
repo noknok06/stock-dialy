@@ -125,6 +125,7 @@ path('api/create/', api.api_create_diary, name='api_create'),
     # 日記データ移行（インポート/エクスポート）
     path('migration/export/', views_migration.MigrationExportView.as_view(), name='migration_export'),
     path('migration/export/download/', views_migration.migration_export_download, name='migration_export_download'),
+    path('migration/export/selective/', views_migration.migration_export_selective, name='migration_export_selective'),
     path('migration/import/', views_migration.MigrationImportView.as_view(), name='migration_import'),
     path('migration/import/process/', views_migration.migration_import_process, name='migration_import_process'),
 

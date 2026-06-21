@@ -17,9 +17,10 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
+from django.views.decorators.http import require_POST
 from django.views.generic import FormView
 
-from .forms import DataExportForm, DataImportForm
+from .forms import DataExportForm, DataImportForm, SelectiveExportForm
 from .services.migration_export_service import ExportService
 from .services.migration_import_service import ImportService, ImportError as MigrationImportError
 
@@ -43,6 +44,8 @@ class MigrationExportView(LoginRequiredMixin, FormView):
                 'label': '戻る'
             }
         ]
+        # 機能ごとのエクスポート（AI分析向け・項目選択式）フォームも同ページに表示する
+        context['selective_form'] = SelectiveExportForm()
         return context
 
     def form_valid(self, form):
@@ -55,6 +58,29 @@ def migration_export_download(request):
     """GET でのダウンロード用エンドポイント（?format=json|csv）。"""
     export_format = request.GET.get('format', 'json')
     return _download_export(request.user, export_format)
+
+
+@login_required
+@require_POST
+def migration_export_selective(request):
+    """機能ごとのエクスポート。選択した関連データのみを JSON で出力する（Issue #356）。
+
+    日記本体は常に含め、チェックされたセクション（取引・継続記録・株式分割・
+    タグ・仮説検証）だけを payload に含めることで、LLM 分析向けに不要なデータを
+    削ってファイルを軽くする。完全エクスポート（移行用）とは別動線。
+    """
+    form = SelectiveExportForm(request.POST)
+    if form.is_valid():
+        sections = form.cleaned_data['sections']
+    else:
+        # 不正入力時は日記本体のみ（関連データなし）で出力する
+        sections = []
+
+    service = ExportService(request.user)
+    filename, content = service.to_json(sections=sections)
+    response = HttpResponse(content, content_type='application/json; charset=utf-8')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
 
 
 def _download_export(user, export_format):
