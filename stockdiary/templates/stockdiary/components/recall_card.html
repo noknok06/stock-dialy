@@ -5,74 +5,81 @@
 - その日1回閉じたら localStorage で当日中は非表示
 {% endcomment %}
 {% if recall and recall.has_content %}
-<div class="card mb-4 recall-card" id="recallCard" style="display:none">
-  <div class="card-body py-3">
-    <div class="d-flex justify-content-between align-items-center">
-      <h6 class="mb-0 fw-bold" style="cursor:pointer;" onclick="toggleRecallCard()">
-        <i class="bi bi-lightbulb me-1 text-warning"></i>今日の想起
-        <span class="badge bg-warning text-dark ms-1">{{ recall.total_count }}</span>
-        <i class="bi bi-chevron-down small ms-1" id="recallToggleIcon"></i>
-      </h6>
-      <button type="button" class="btn-close" aria-label="今日は閉じる"
-              onclick="dismissRecallCard()"></button>
-    </div>
+<div class="recall-card" id="recallCard" style="display:none">
+  <div class="recall-head">
+    <button type="button" class="recall-title" onclick="toggleRecallCard()" aria-expanded="true">
+      <i class="bi bi-arrow-counterclockwise"></i>
+      <span class="recall-title-text">今日の想起</span>
+      <span class="recall-count">{{ recall.total_count }}</span>
+      <i class="bi bi-chevron-down recall-toggle-icon" id="recallToggleIcon"></i>
+    </button>
+    <button type="button" class="recall-dismiss" aria-label="今日は閉じる"
+            onclick="dismissRecallCard()"><i class="bi bi-x-lg"></i></button>
+  </div>
 
-    {# モバイルでは折りたたみ(ファーストビュー確保)、PCは展開。toggleRecallCard が制御 #}
-    <div id="recallCardBody" class="mt-2">
+  {# モバイルでは折りたたみ(ファーストビュー確保)、PCは展開。toggleRecallCard が制御 #}
+  <div id="recallCardBody" class="recall-body">
+
+    {% if recall.disclosures %}
+    <div class="recall-item">
+      <span class="recall-reason recall-reason--due">
+        <i class="bi bi-file-earmark-text"></i>確定決算が出ています
+      </span>
+      <div class="recall-lines">
+        {% for diary in recall.disclosures %}
+        <a class="recall-line" href="{% url 'stockdiary:detail' diary.id %}">
+          <span class="recall-line-stock">{{ diary.stock_name }}</span>
+          {% if diary.latest_disclosure_doc_type_name %}
+          <span class="recall-line-note">{{ diary.latest_disclosure_doc_type_name }}</span>
+          {% endif %}
+          <span class="recall-line-date kbu-num">{{ diary.latest_disclosure_date|date:"n/j" }}</span>
+        </a>
+        {% endfor %}
+      </div>
+      <p class="recall-hint">仮説は生きているか、決算分析を残す。</p>
+    </div>
+    {% endif %}
 
     {% if recall.anniversary %}
-    <div class="recall-section mb-2">
-      <div class="small text-muted mb-1">
-        <i class="bi bi-clock-history me-1"></i>1年前の今日、こう考えていました
-      </div>
+    <div class="recall-item">
+      <span class="recall-reason recall-reason--anniversary">
+        <i class="bi bi-stars"></i>1年前の今日
+      </span>
       {% for item in recall.anniversary %}
-      <a href="{% url 'stockdiary:detail' item.diary.id %}" class="d-block text-decoration-none small mb-1">
-        <span class="badge bg-light text-dark border me-1">{{ item.date|date:"Y/m/d" }}</span>
-        <strong>{{ item.diary.stock_name }}</strong>
-        {% if item.snippet %}<span class="text-muted">— {{ item.snippet }}</span>{% endif %}
+      <a class="recall-line recall-line--quote" href="{% url 'stockdiary:detail' item.diary.id %}">
+        <span class="recall-line-head">
+          <span class="recall-line-stock">{{ item.diary.stock_name }}</span>
+          <span class="recall-line-date kbu-num">{{ item.date|date:"Y/n/j" }}</span>
+        </span>
+        {% if item.snippet %}<span class="recall-quote">{{ item.snippet }}</span>{% endif %}
       </a>
       {% endfor %}
     </div>
     {% endif %}
 
     {% if recall.unreviewed %}
-    <div class="recall-section mb-2">
-      <div class="small text-muted mb-1">
-        <i class="bi bi-arrow-counterclockwise me-1"></i>振り返り未記入の売却済み銘柄
-        {% if recall.unreviewed_count > 3 %}<span class="text-muted">（全{{ recall.unreviewed_count }}件）</span>{% endif %}
+    <div class="recall-item">
+      <span class="recall-reason recall-reason--review">
+        <i class="bi bi-check2-square"></i>答え合わせが未記入
+        {% if recall.unreviewed_count > 3 %}<span class="recall-reason-count">全{{ recall.unreviewed_count }}件</span>{% endif %}
+      </span>
+      <div class="recall-chips">
+        {% for diary in recall.unreviewed %}
+        <a class="recall-chip" href="{% url 'stockdiary:detail' diary.id %}">
+          <span class="recall-chip-name">{{ diary.stock_name }}</span>
+          {% if diary.realized_profit >= 0 %}
+          <span class="recall-chip-profit recall-up kbu-num">+{{ diary.realized_profit|floatformat:0 }}</span>
+          {% else %}
+          <span class="recall-chip-profit recall-down kbu-num">{{ diary.realized_profit|floatformat:0 }}</span>
+          {% endif %}
+        </a>
+        {% endfor %}
       </div>
-      {% for diary in recall.unreviewed %}
-      <a href="{% url 'stockdiary:detail' diary.id %}" class="badge rounded-pill bg-light text-dark border text-decoration-none me-1 mb-1">
-        {{ diary.stock_name }}
-        {% if diary.realized_profit >= 0 %}
-        <span class="text-success">+{{ diary.realized_profit|floatformat:0 }}</span>
-        {% else %}
-        <span class="text-danger">{{ diary.realized_profit|floatformat:0 }}</span>
-        {% endif %}
-      </a>
-      {% endfor %}
+      <p class="recall-hint">損益とは別に、判断の質を残す。</p>
     </div>
     {% endif %}
 
-    {% if recall.disclosures %}
-    <div class="recall-section">
-      <div class="small text-muted mb-1">
-        <i class="bi bi-file-earmark-text me-1"></i>確定決算が出ています — 仮説をレビューしませんか？（未記入）
-      </div>
-      {% for diary in recall.disclosures %}
-      <a href="{% url 'stockdiary:detail' diary.id %}" class="d-block text-decoration-none small mb-1">
-        <span class="badge bg-light text-dark border me-1">{{ diary.latest_disclosure_date|date:"m/d" }}</span>
-        <strong>{{ diary.stock_name }}</strong>
-        {% if diary.latest_disclosure_doc_type_name %}
-        <span class="text-muted">{{ diary.latest_disclosure_doc_type_name }}</span>
-        {% endif %}
-      </a>
-      {% endfor %}
-    </div>
-    {% endif %}
-
-    </div>{# /recallCardBody #}
-  </div>
+  </div>{# /recallCardBody #}
 </div>
 
 <script>

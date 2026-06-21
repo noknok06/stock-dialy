@@ -516,6 +516,17 @@ body.reading-app .app-footer .social-link:hover {
   letter-spacing: -0.01em;
 }
 
+/* 詳細ヘッダ：青のグラデ・グロー・境界線を紙×ヘアラインへ（no blue primary）。
+   既存の .diary-header-improved は薄青グラデ＋青系ボトムライン＋青いグローを持つため、
+   reading-page 内では静かな紙の面に整える（損益時も色面は出さない＝損益は数値で囁く）。 */
+.reading-page .diary-header-improved,
+.reading-page .diary-header-improved.loss {
+  background: var(--paper-raised) !important;
+  background-image: none !important;
+  border-bottom: 1px solid var(--hairline) !important;
+}
+.reading-page .diary-header-improved::before { display: none !important; }
+
 /* 情報カード・サイドバーを紙の面に統一（青みを除去） */
 .reading-page .info-card {
   background: var(--paper-raised) !important;
@@ -882,6 +893,167 @@ body.writing-focus .pc-only-header:hover { opacity: 1; }
   border-left: 2px solid var(--hairline);
 }
 .reading-page .rp-resurface-quote:hover { color: var(--ink); border-left-color: var(--muted-ink); }
+
+/* ============================================================
+   7b. 今日の想起カード（recall_card）
+   生の Bootstrap（警告色バッジ）→ Quiet Journal の静かな想起面へ。
+   役割は「損益ではなく“答え合わせ”が毎日連れ戻す」想起。理由ピル＋
+   セリフの引用＋墨×紙のチップで構成する（ZIP の RecallZone に倣う）。
+   ============================================================ */
+.reading-page .recall-card {
+  background: var(--paper-raised);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  padding: 1.1rem 1.25rem;
+  margin-bottom: var(--space-9, 2.25rem);
+}
+.reading-page .recall-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.reading-page .recall-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--font-family-base);
+  font-size: 0.75rem;
+  font-weight: var(--font-semibold);
+  letter-spacing: 0.04em;
+  color: var(--faint-ink);
+}
+.reading-page .recall-title .bi-arrow-counterclockwise { color: var(--muted-ink); }
+.reading-page .recall-count {
+  font-family: var(--font-family-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.6875rem;
+  color: var(--muted-ink);
+  background: var(--paper-sunken);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-full);
+  padding: 0.05rem 0.45rem;
+}
+.reading-page .recall-toggle-icon { color: var(--faint-ink); font-size: 0.75rem; }
+.reading-page .recall-dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px; height: 28px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--faint-ink);
+  cursor: pointer;
+  transition: color var(--duration-150, 150ms) var(--ease-out, ease),
+              background var(--duration-150, 150ms) var(--ease-out, ease);
+}
+.reading-page .recall-dismiss:hover { color: var(--ink); background: var(--state-hover); }
+
+.reading-page .recall-body { margin-top: 0.9rem; }
+.reading-page .recall-item { padding: 0; }
+.reading-page .recall-item + .recall-item {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--hairline-soft);
+}
+
+/* 理由ピル（なぜ今これが浮上したか）— 静かな色枠 */
+.reading-page .recall-reason {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--font-family-base);
+  font-size: 0.75rem;
+  font-weight: var(--font-semibold);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-full);
+  padding: 0.15rem 0.6rem;
+  margin-bottom: 0.6rem;
+  color: var(--muted-ink);
+}
+.reading-page .recall-reason--due {
+  color: var(--verdict-unlucky);
+  border-color: color-mix(in srgb, var(--verdict-unlucky) 40%, var(--hairline));
+}
+.reading-page .recall-reason--anniversary { color: var(--muted-ink); }
+.reading-page .recall-reason--review {
+  color: var(--verdict-skill);
+  border-color: color-mix(in srgb, var(--verdict-skill) 36%, var(--hairline));
+}
+.reading-page .recall-reason-count {
+  font-weight: var(--font-regular);
+  color: var(--faint-ink);
+  margin-left: 0.15rem;
+}
+
+/* 行（銘柄＋メタ）*/
+.reading-page .recall-lines { display: flex; flex-direction: column; gap: 0.35rem; }
+.reading-page .recall-line {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  text-decoration: none;
+  color: inherit;
+  min-width: 0;
+}
+.reading-page .recall-line-head { display: inline-flex; align-items: baseline; gap: 0.5rem; }
+.reading-page .recall-line-stock {
+  font-family: var(--font-family-base);
+  font-weight: var(--font-semibold);
+  color: var(--ink);
+}
+.reading-page .recall-line:hover .recall-line-stock { text-decoration: underline; text-underline-offset: 3px; }
+.reading-page .recall-line-note { font-size: 0.8125rem; color: var(--muted-ink); }
+.reading-page .recall-line-date {
+  font-size: 0.75rem;
+  color: var(--faint-ink);
+  margin-left: auto;
+  white-space: nowrap;
+}
+/* 1年前の引用は読書セリフで（過去の自分の声）*/
+.reading-page .recall-line--quote { flex-direction: column; gap: 0.2rem; }
+.reading-page .recall-line--quote .recall-line-date { margin-left: 0; }
+.reading-page .recall-quote {
+  font-family: var(--font-family-serif);
+  font-size: 1.0625rem;
+  line-height: 1.7;
+  color: var(--ink-soft);
+  border-left: 2px solid var(--hairline);
+  padding-left: 0.75rem;
+}
+.reading-page .recall-line--quote:hover .recall-quote { border-left-color: var(--muted-ink); color: var(--ink); }
+
+/* 未検証チップ（売却済み・答え合わせ待ち）*/
+.reading-page .recall-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.reading-page .recall-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  text-decoration: none;
+  font-size: 0.8125rem;
+  color: var(--ink);
+  background: var(--paper-sunken);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-full);
+  padding: 0.25rem 0.7rem;
+  transition: border-color var(--duration-150, 150ms) var(--ease-out, ease);
+}
+.reading-page .recall-chip:hover { border-color: var(--muted-ink); }
+.reading-page .recall-chip-name { font-weight: var(--font-medium); }
+.reading-page .recall-chip-profit { font-variant-numeric: tabular-nums; }
+.reading-page .recall-up { color: var(--profit-up-quiet); }
+.reading-page .recall-down { color: var(--profit-down-quiet); }
+
+.reading-page .recall-hint {
+  margin: 0.55rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--faint-ink);
+}
 
 /* ============================================================
    8. 空状態 / 導入：書きたくなる第一歩
