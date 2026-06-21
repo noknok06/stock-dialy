@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>カブログ — 投資判断を記録し、未来の自分が診察する「投資家の成長OS」</title>
-<meta name="description" content="証券口座は損益を記録する。カブログは「なぜ買い、なぜ売り、その判断は正しかったか」を記録する投資ノート。予想→結果→検証→学びのループで、意思決定の質を損益と分けて磨く。年間レビュー・投資家カルテ・知識ライブラリ。">
+<meta name="description" content="証券口座は損益を記録する。カブログは「なぜ買い、なぜ売り、その判断は正しかったか」を記録する投資ノート。予想→結果→検証→学びのループで、意思決定の質を損益と分けて磨く。見立ての変遷を自動で残し、年間レビュー・投資家カルテ・知識ライブラリで読み返す。">
 
 {# ── OGP / Twitter カード ── #}
 <meta property="og:type" content="website">
@@ -151,6 +151,24 @@ a{text-decoration:none;color:inherit}
 .rc-item .nm{font-weight:700;font-size:13.5px}
 .rc-item .sn{font-family:var(--serif);font-size:13px;color:var(--muted);line-height:1.6}
 .rc-cap{text-align:center;color:var(--faint);font-size:12px;margin-top:14px;display:flex;align-items:center;justify-content:center;gap:6px}
+
+/* thesis evolution (見立ての変遷) mockup */
+.ev{background:var(--raised);border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 24px 60px rgba(32,32,29,.07);max-width:430px;width:100%;margin:0 auto}
+.ev-name{font-weight:700;font-size:15px;letter-spacing:-.01em;margin-bottom:12px}
+.ev-name .code{font-family:var(--sans);font-size:10.5px;color:var(--muted);background:var(--paper2);border:1px solid var(--line);border-radius:6px;padding:.06rem .38rem;margin-left:7px;vertical-align:middle;letter-spacing:.04em;font-weight:600}
+.ev-now{border:1px solid var(--line);border-left:3px solid var(--skill);border-radius:12px;padding:14px 16px;background:var(--paper)}
+.ev-now .ev-lab{font-size:10.5px;font-weight:700;letter-spacing:.07em;color:var(--skill);margin-bottom:7px;display:flex;align-items:center;gap:6px}
+.ev-now .ev-claim{font-family:var(--serif);font-size:15px;line-height:1.7;color:var(--ink)}
+.ev-cap{font-size:10px;font-weight:700;letter-spacing:.09em;color:var(--faint);margin:18px 0 6px;padding-left:2px;text-transform:uppercase}
+.ev-track{position:relative;padding-left:20px}
+.ev-track::before{content:"";position:absolute;left:4px;top:8px;bottom:10px;width:1px;background:var(--line)}
+.ev-item{position:relative;padding:8px 0}
+.ev-item::before{content:"";position:absolute;left:-18px;top:13px;width:7px;height:7px;border-radius:50%;background:var(--faint);border:2px solid var(--raised)}
+.ev-date{font-family:var(--sans);font-size:11px;color:var(--faint);font-variant-numeric:tabular-nums;margin-bottom:3px}
+.ev-txt{font-family:var(--serif);font-size:13px;line-height:1.65;color:var(--muted)}
+.ev-foot{font-size:11.5px;color:var(--faint);margin-top:14px;display:flex;gap:7px;align-items:baseline;line-height:1.6}
+.ev-foot i,.ev-foot svg{color:var(--skill);flex:0 0 auto}
+.ev-foot strong{color:var(--ink2);font-weight:700}
 
 /* 実画像スロット（差し込み式）。画像が無ければCSSモックにフォールバック */
 .shot-fallback{display:none}
@@ -328,6 +346,7 @@ a{text-decoration:none;color:inherit}
     <a class="brand" href="#top"><span class="mk"><img src="{% static 'images/icon-192.svg' %}" alt="カブログ"></span>カブログ</a>
     <div class="nav-links">
       <a href="#loop">検証ループ</a>
+      <a href="#evolution">見立ての変遷</a>
       <a href="#quality">判断の質</a>
       <a href="#recall">想起</a>
       <a href="#karte">カルテ</a>
@@ -415,6 +434,34 @@ a{text-decoration:none;color:inherit}
       <div class="lstep rv"><div class="ln">02 — 結果</div><h3>時間が経つ</h3><p>決算や相場で結果が出る。損益は既存の取引記録から自動で集計。</p></div>
       <div class="lstep rv"><div class="ln">03 — 検証</div><h3>答え合わせ</h3><p>仮説は当たったか。損益とは別に、判断の質を評価する。</p></div>
       <div class="lstep rv"><div class="ln">04 — 学び</div><h3>次に活かす</h3><p>得た学びを一文で。それが積み上がり、投資哲学になる。</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- THESIS EVOLUTION (見立ての変遷) -->
+<section class="sec" id="evolution">
+  <div class="wrap split">
+    <div class="rv vis">
+      <div class="ev" aria-label="見立ての変遷の例">
+        <div class="ev-name">フジクラ<span class="code">5803</span></div>
+        <div class="ev-now">
+          <div class="ev-lab"><svg class="bi bi-feather" aria-hidden="true"><use href="#i-feather"></use></svg>現在の見立て</div>
+          <div class="ev-claim">データセンター向けで光部材の需要は本物。値上げが通り、利益率が一段上がるかを次の決算で見極める。</div>
+        </div>
+        <div class="ev-cap">見立ての変遷 — 自動保存</div>
+        <div class="ev-track">
+          <div class="ev-item"><div class="ev-date">2025 / 02 / 14</div><div class="ev-txt">決算で受注は確認。ただし競合の参入が増え、価格競争を少し警戒しはじめる。</div></div>
+          <div class="ev-item"><div class="ev-date">2024 / 06 / 03 ・ 購入時</div><div class="ev-txt">生成AI需要は10年続く。光関連の中核として強気でエントリー。</div></div>
+        </div>
+        <div class="ev-foot"><svg class="bi bi-clock" aria-hidden="true"><use href="#i-clock"></use></svg><span>上書きするたび、前の版が自動でここに残る。<strong>操作は不要。</strong></span></div>
+      </div>
+      <p class="rc-cap"><svg class="bi bi-clock" aria-hidden="true"><use href="#i-clock"></use></svg>見立ての変遷 — 上書き前の版が自動で残る</p>
+    </div>
+    <div class="rv">
+      <span class="stag">Evolving Thesis</span>
+      <h2>「なぜ買ったか」は、書き換わる。<br>その全部を、自動で残す。</h2>
+      <p class="p">投資の見立ては、一度書いて終わりではない。決算で確信が深まり、相場で揺らぎ、言葉は静かに書き換わっていく。ふつうのノートは<strong>上書きで前の言葉を失う</strong>。カブログは保存するたび、前の版を<strong>自動でスナップショット</strong>。あなたは何もしなくていい。</p>
+      <p class="p" style="margin-bottom:0">過去の版は「見立ての変遷」に時系列で並び、全文検索もできる。10年後のあなたが、今日の判断が<strong>どんな思考の積み重ねで生まれたか</strong>を、正確に辿れる。</p>
     </div>
   </div>
 </section>
@@ -577,6 +624,7 @@ a{text-decoration:none;color:inherit}
           <tr><td>損益・保有</td><td class="us-col"><svg class="bi bi-check-lg ok" aria-hidden="true"><use href="#i-check-lg"></use></svg></td><td><svg class="bi bi-check-lg ok" aria-hidden="true"><use href="#i-check-lg"></use></svg></td><td><svg class="bi bi-check-lg ok" aria-hidden="true"><use href="#i-check-lg"></use></svg></td></tr>
           <tr><td>なぜ買ったか（仮説）</td><td class="us-col"><svg class="bi bi-check-lg ok" aria-hidden="true"><use href="#i-check-lg"></use></svg></td><td><svg class="bi bi-x-lg no" aria-hidden="true"><use href="#i-x-lg"></use></svg></td><td><svg class="bi bi-x-lg no" aria-hidden="true"><use href="#i-x-lg"></use></svg></td></tr>
           <tr><td>仮説の検証（当否）</td><td class="us-col"><svg class="bi bi-check-lg ok" aria-hidden="true"><use href="#i-check-lg"></use></svg></td><td><svg class="bi bi-x-lg no" aria-hidden="true"><use href="#i-x-lg"></use></svg></td><td><svg class="bi bi-x-lg no" aria-hidden="true"><use href="#i-x-lg"></use></svg></td></tr>
+          <tr><td>見立ての変遷（自動保存）</td><td class="us-col"><svg class="bi bi-check-lg ok" aria-hidden="true"><use href="#i-check-lg"></use></svg></td><td><svg class="bi bi-x-lg no" aria-hidden="true"><use href="#i-x-lg"></use></svg></td><td><svg class="bi bi-x-lg no" aria-hidden="true"><use href="#i-x-lg"></use></svg></td></tr>
           <tr><td>意思決定の質 × 損益の分離</td><td class="us-col"><svg class="bi bi-check-lg ok" aria-hidden="true"><use href="#i-check-lg"></use></svg></td><td><svg class="bi bi-x-lg no" aria-hidden="true"><use href="#i-x-lg"></use></svg></td><td><svg class="bi bi-x-lg no" aria-hidden="true"><use href="#i-x-lg"></use></svg></td></tr>
           <tr><td>過去の自分の想起</td><td class="us-col"><svg class="bi bi-check-lg ok" aria-hidden="true"><use href="#i-check-lg"></use></svg></td><td><svg class="bi bi-x-lg no" aria-hidden="true"><use href="#i-x-lg"></use></svg></td><td><svg class="bi bi-dash dash" aria-hidden="true"><use href="#i-dash"></use></svg></td></tr>
           <tr><td>学びの蓄積・投資家カルテ</td><td class="us-col"><svg class="bi bi-check-lg ok" aria-hidden="true"><use href="#i-check-lg"></use></svg></td><td><svg class="bi bi-x-lg no" aria-hidden="true"><use href="#i-x-lg"></use></svg></td><td><svg class="bi bi-x-lg no" aria-hidden="true"><use href="#i-x-lg"></use></svg></td></tr>
@@ -619,7 +667,7 @@ a{text-decoration:none;color:inherit}
       </div>
       <div>
         <h4>機能</h4>
-        <ul><li><a href="#loop">検証ループ</a></li><li><a href="#quality">判断の質</a></li><li><a href="#recall">想起</a></li><li><a href="#karte">投資家カルテ</a></li></ul>
+        <ul><li><a href="#loop">検証ループ</a></li><li><a href="#evolution">見立ての変遷</a></li><li><a href="#quality">判断の質</a></li><li><a href="#recall">想起</a></li><li><a href="#karte">投資家カルテ</a></li></ul>
       </div>
       <div>
         <h4>サポート</h4>
