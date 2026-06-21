@@ -179,3 +179,33 @@ class TestRecallDueTheses:
         Thesis.objects.create(diary=sample_diary, claim='未来', review_due_date=date(2999, 1, 1))
         recall = RecallService.build(sample_diary.user)
         assert recall['due_theses'] == []
+
+
+class TestRecallQueue:
+    """想起をスワイプ式の単一フォーカスキューへ統合する（ZIP の RecallZone）。
+
+    「今日の想起」と「答え合わせを待つ仮説」を1つのキューにまとめる UI 改修に伴い、
+    RecallService.build に queue キーを追加した。検証予定日が来た仮説が
+    理由付き(kind='due', thesis_id 付き)で先頭に並ぶことを担保する。
+    """
+
+    def test_due_thesis_is_first_queue_item_with_reason(self, sample_diary):
+        from stockdiary.services.recall_service import RecallService
+        t = Thesis.objects.create(diary=sample_diary, claim='検証待ちの主張',
+                                  review_due_date=date(2000, 1, 1))
+        recall = RecallService.build(sample_diary.user)
+        assert recall['queue'], 'queue が空であってはならない'
+        head = recall['queue'][0]
+        assert head['kind'] == 'due'
+        assert head['reason'] == '検証予定日が来た'
+        assert head['thesis_id'] == t.id
+        assert head['diary_id'] == sample_diary.id
+        assert head['claim'] == '検証待ちの主張'
+        # テンプレートが参照するキーが揃っていること
+        for key in ('reason_icon', 'stock_name', 'code', 'meta'):
+            assert key in head
+
+    def test_queue_empty_without_content(self, sample_diary):
+        from stockdiary.services.recall_service import RecallService
+        recall = RecallService.build(sample_diary.user)
+        assert recall['queue'] == []

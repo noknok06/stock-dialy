@@ -24,6 +24,8 @@ ANNIVERSARY_WINDOW_DAYS = 3
 DISCLOSURE_RECENT_DAYS = 30
 # 各セクションの最大表示件数
 SECTION_LIMIT = 3
+# 想起キュー（スワイプ式の単一フォーカスカード）の最大件数
+QUEUE_LIMIT = 6
 
 
 class RecallService:
@@ -50,17 +52,119 @@ class RecallService:
         disclosures = cls._build_disclosures(user, today)
         due_theses = cls._build_due_theses(user, today)
 
+        # 4種の想起を「なぜ浮上したか（理由）」付きの単一キューへ統合する。
+        # ZIP デザイン（ui_kits/app の RecallZone）に倣ったスワイプ式カード用。
+        queue = cls._build_queue(due_theses, disclosures, unreviewed, anniversary, today)
+
         return {
             'anniversary': anniversary,
             'unreviewed': unreviewed,
             'unreviewed_count': unreviewed_count,
             'disclosures': disclosures,
             'due_theses': due_theses,
+            'queue': queue,
             'has_content': bool(anniversary or unreviewed or disclosures or due_theses),
             # 折りたたみ時の見出しバッジ用の総件数
             'total_count': (len(anniversary) + unreviewed_count
                             + len(disclosures) + len(due_theses)),
         }
+
+    @classmethod
+    def _build_queue(cls, due_theses, disclosures, unreviewed, anniversary, today):
+        """想起をスワイプ式の単一フォーカスキューへ統合する。
+
+        各カードは「なぜ今これが浮上したか」の理由を持つ。優先度の高い
+        「答え合わせ待ち」の仮説を先頭にし、決算 → 未検証 → 1年前と続ける。
+        URL の解決はテンプレート側（kind / diary_id / thesis_id を見て分岐）。
+        """
+        from ..utils import extract_lead
+
+        def code_of(diary):
+            return getattr(diary, 'stock_symbol', '') or ''
+
+        queue = []
+
+        # 1) 検証予定日が来た仮説（答え合わせ待ち）— 最優先
+        for t in due_theses:
+            days = (today - t.created_at.date()).days if t.created_at else None
+            if t.review_due_date == today:
+                due_str = '今日'
+            elif t.review_due_date and t.review_due_date < today:
+                due_str = f'{(today - t.review_due_date).days}日 超過'
+            elif t.review_due_date:
+                due_str = t.review_due_date.strftime('%-m/%-d')
+            else:
+                due_str = ''
+            meta = []
+            if days is not None:
+                meta.append(f'仮説を立てて {days}日')
+            if due_str:
+                meta.append(f'検証予定 {due_str}')
+            queue.append({
+                'kind': 'due',
+                'reason': '検証予定日が来た',
+                'reason_icon': 'calendar-check',
+                'stock_name': t.diary.stock_name,
+                'code': code_of(t.diary),
+                'diary_id': t.diary.id,
+                'thesis_id': t.id,
+                'claim': t.claim,
+                'meta': ' ・ '.join(meta),
+            })
+
+        # 2) 確定決算が出た（決算レビュー未記入）
+        for d in disclosures:
+            meta = []
+            if d.latest_disclosure_doc_type_name:
+                meta.append(d.latest_disclosure_doc_type_name)
+            if d.latest_disclosure_date:
+                meta.append(d.latest_disclosure_date.strftime('%-m/%-d'))
+            queue.append({
+                'kind': 'disclosure',
+                'reason': '確定決算が出た',
+                'reason_icon': 'file-earmark-text',
+                'stock_name': d.stock_name,
+                'code': code_of(d),
+                'diary_id': d.id,
+                'thesis_id': None,
+                'claim': extract_lead(d.reason or '', max_len=80)
+                         or '決算が出ました。前提は生きているか、確かめる。',
+                'meta': ' ・ '.join(meta) or '決算開示',
+            })
+
+        # 3) 売却済みで答え合わせ未記入
+        for d in unreviewed:
+            queue.append({
+                'kind': 'unreviewed',
+                'reason': '答え合わせが未記入',
+                'reason_icon': 'check2-square',
+                'stock_name': d.stock_name,
+                'code': code_of(d),
+                'diary_id': d.id,
+                'thesis_id': None,
+                'claim': extract_lead(d.reason or '', max_len=80)
+                         or '売却済み。仮説は当たったか、判断の質を残す。',
+                'meta': '売却済み ・ 答え合わせ未記入',
+            })
+
+        # 4) 1年前の今日
+        for item in anniversary:
+            d = item['diary']
+            date = item.get('date')
+            queue.append({
+                'kind': 'anniversary',
+                'reason': '1年前の今日',
+                'reason_icon': 'stars',
+                'stock_name': d.stock_name,
+                'code': code_of(d),
+                'diary_id': d.id,
+                'thesis_id': None,
+                'claim': item.get('snippet') or '1年前のあなたの記録。',
+                'meta': (f'{date.strftime("%Y/%-m/%-d")} のあなたの記録'
+                         if date else '1年前のあなたの記録'),
+            })
+
+        return queue[:QUEUE_LIMIT]
 
     @classmethod
     def _build_due_theses(cls, user, today):

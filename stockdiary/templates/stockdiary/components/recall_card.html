@@ -1,97 +1,77 @@
 {% comment %}
-今日の想起カード（ホーム上部）
-- 1年前の今日の記録 / 振り返り未記入 / 新着開示 をリクエスト時計算で表示
-- コンテキスト: recall（RecallService.build の戻り値）
-- その日1回閉じたら localStorage で当日中は非表示
+今日の想起（ホーム上部・スワイプ式の単一フォーカスカード）
+- ZIP デザイン（ui_kits/app の RecallZone）に倣う。
+- データ: recall.queue（RecallService._build_queue の戻り値・理由付きの想起キュー）
+  各 item: kind / reason / reason_icon / stock_name / code / diary_id / thesis_id / claim / meta
+- 「答え合わせを待つ仮説（検証予定日が来た）」もこのキューの先頭に統合される。
+- その日1回閉じたら localStorage で当日中は非表示。
 {% endcomment %}
-{% if recall and recall.has_content %}
-<div class="recall-card" id="recallCard" style="display:none">
-  <div class="recall-head">
-    <button type="button" class="recall-title" onclick="toggleRecallCard()" aria-expanded="true">
-      <i class="bi bi-arrow-counterclockwise"></i>
-      <span class="recall-title-text">今日の想起</span>
-      <span class="recall-count">{{ recall.total_count }}</span>
-      <i class="bi bi-chevron-down recall-toggle-icon" id="recallToggleIcon"></i>
-    </button>
-    <button type="button" class="recall-dismiss" aria-label="今日は閉じる"
-            onclick="dismissRecallCard()"><i class="bi bi-x-lg"></i></button>
+{% if recall and recall.queue %}
+<div class="recall-zone" id="recallCard" style="display:none">
+  <div class="recall-card">
+    <div class="recall-head">
+      <span class="recall-title">
+        <i class="bi bi-arrow-counterclockwise"></i>
+        <span class="recall-title-text">今日の想起</span>
+      </span>
+      <span class="recall-controls">
+        {% if recall.queue|length > 1 %}
+        <button type="button" class="recall-nav-btn" data-recall-prev aria-label="前へ"><i class="bi bi-chevron-left"></i></button>
+        <span class="recall-counter kbu-num"><span data-recall-index>1</span> / {{ recall.queue|length }}</span>
+        <button type="button" class="recall-nav-btn" data-recall-next aria-label="次へ"><i class="bi bi-chevron-right"></i></button>
+        {% endif %}
+        <button type="button" class="recall-dismiss" aria-label="今日は閉じる" onclick="dismissRecallCard()"><i class="bi bi-x-lg"></i></button>
+      </span>
+    </div>
+
+    <div class="recall-track">
+    {% for item in recall.queue %}
+      <article class="recall-slide{% if forloop.first %} is-active{% endif %}" data-recall-slide>
+        <span class="recall-reason recall-reason--{{ item.kind }}">
+          <i class="bi bi-{{ item.reason_icon }}"></i>{{ item.reason }}
+        </span>
+        <div class="recall-stock">
+          <span class="recall-stock-name">{{ item.stock_name }}</span>
+          {% if item.code %}<span class="recall-stock-code kbu-num">{{ item.code }}</span>{% endif %}
+        </div>
+        <p class="recall-claim">{{ item.claim }}</p>
+        {% if item.meta %}<p class="recall-meta">{{ item.meta }}</p>{% endif %}
+        <div class="recall-actions">
+          {% if item.kind == 'due' %}
+          <a class="btn-quiet btn-quiet--primary recall-action" href="{% url 'stockdiary:thesis_verify' item.diary_id item.thesis_id %}"><i class="bi bi-check2-square"></i>答え合わせをする</a>
+          <a class="btn-quiet recall-action recall-action--side" href="{% url 'stockdiary:detail' item.diary_id %}"><i class="bi bi-pencil"></i>追記</a>
+          {% elif item.kind == 'unreviewed' %}
+          <a class="btn-quiet btn-quiet--primary recall-action" href="{% url 'stockdiary:detail' item.diary_id %}"><i class="bi bi-check2-square"></i>答え合わせをする</a>
+          <a class="btn-quiet recall-action recall-action--side" href="{% url 'stockdiary:detail' item.diary_id %}"><i class="bi bi-book"></i>読む</a>
+          {% else %}
+          <a class="btn-quiet btn-quiet--primary recall-action" href="{% url 'stockdiary:detail' item.diary_id %}"><i class="bi bi-pencil"></i>いまの考えを残す</a>
+          <a class="btn-quiet recall-action recall-action--side" href="{% url 'stockdiary:detail' item.diary_id %}"><i class="bi bi-book"></i>読む</a>
+          {% endif %}
+        </div>
+      </article>
+    {% endfor %}
+    </div>
   </div>
 
-  {# モバイルでは折りたたみ(ファーストビュー確保)、PCは展開。toggleRecallCard が制御 #}
-  <div id="recallCardBody" class="recall-body">
-
-    {% if recall.disclosures %}
-    <div class="recall-item">
-      <span class="recall-reason recall-reason--due">
-        <i class="bi bi-file-earmark-text"></i>確定決算が出ています
-      </span>
-      <div class="recall-lines">
-        {% for diary in recall.disclosures %}
-        <a class="recall-line" href="{% url 'stockdiary:detail' diary.id %}">
-          <span class="recall-line-stock">{{ diary.stock_name }}</span>
-          {% if diary.latest_disclosure_doc_type_name %}
-          <span class="recall-line-note">{{ diary.latest_disclosure_doc_type_name }}</span>
-          {% endif %}
-          <span class="recall-line-date kbu-num">{{ diary.latest_disclosure_date|date:"n/j" }}</span>
-        </a>
-        {% endfor %}
-      </div>
-      <p class="recall-hint">仮説は生きているか、決算分析を残す。</p>
-    </div>
-    {% endif %}
-
-    {% if recall.anniversary %}
-    <div class="recall-item">
-      <span class="recall-reason recall-reason--anniversary">
-        <i class="bi bi-stars"></i>1年前の今日
-      </span>
-      {% for item in recall.anniversary %}
-      <a class="recall-line recall-line--quote" href="{% url 'stockdiary:detail' item.diary.id %}">
-        <span class="recall-line-head">
-          <span class="recall-line-stock">{{ item.diary.stock_name }}</span>
-          <span class="recall-line-date kbu-num">{{ item.date|date:"Y/n/j" }}</span>
-        </span>
-        {% if item.snippet %}<span class="recall-quote">{{ item.snippet }}</span>{% endif %}
-      </a>
-      {% endfor %}
-    </div>
-    {% endif %}
-
-    {% if recall.unreviewed %}
-    <div class="recall-item">
-      <span class="recall-reason recall-reason--review">
-        <i class="bi bi-check2-square"></i>答え合わせが未記入
-        {% if recall.unreviewed_count > 3 %}<span class="recall-reason-count">全{{ recall.unreviewed_count }}件</span>{% endif %}
-      </span>
-      <div class="recall-chips">
-        {% for diary in recall.unreviewed %}
-        <a class="recall-chip" href="{% url 'stockdiary:detail' diary.id %}">
-          <span class="recall-chip-name">{{ diary.stock_name }}</span>
-          {% if diary.realized_profit >= 0 %}
-          <span class="recall-chip-profit recall-up kbu-num">+{{ diary.realized_profit|floatformat:0 }}</span>
-          {% else %}
-          <span class="recall-chip-profit recall-down kbu-num">{{ diary.realized_profit|floatformat:0 }}</span>
-          {% endif %}
-        </a>
-        {% endfor %}
-      </div>
-      <p class="recall-hint">損益とは別に、判断の質を残す。</p>
-    </div>
-    {% endif %}
-
-  </div>{# /recallCardBody #}
+  {% if recall.queue|length > 1 %}
+  <div class="recall-dots">
+    {% for item in recall.queue %}
+    <button type="button" class="recall-dot{% if forloop.first %} is-active{% endif %}" data-recall-dot data-index="{{ forloop.counter0 }}" aria-label="{{ forloop.counter }}件目"></button>
+    {% endfor %}
+  </div>
+  {% endif %}
 </div>
 
 <script>
 (function() {
-  var KEY = 'recallCardDismissed';
-  var today = new Date().toISOString().slice(0, 10);
   var card = document.getElementById('recallCard');
   if (!card) return;
+
+  // その日1回閉じたら当日中は非表示
+  var KEY = 'recallCardDismissed';
+  var today = new Date().toISOString().slice(0, 10);
   try {
-    if (localStorage.getItem(KEY) !== today) {
-      card.style.display = '';
-    }
+    if (localStorage.getItem(KEY) !== today) card.style.display = '';
   } catch (e) {
     card.style.display = '';
   }
@@ -100,22 +80,36 @@
     try { localStorage.setItem(KEY, today); } catch (e) { /* private mode 等は無視 */ }
   };
 
-  // モバイルはデフォルト折りたたみ(ファーストビューに日記カードを残す)、PCは展開
-  var body = document.getElementById('recallCardBody');
-  var icon = document.getElementById('recallToggleIcon');
-  var collapsed = window.innerWidth < 992;
-  function applyState() {
-    if (!body) return;
-    body.style.display = collapsed ? 'none' : '';
-    if (icon) icon.className = collapsed
-      ? 'bi bi-chevron-down small ms-1'
-      : 'bi bi-chevron-up small ms-1';
+  // スワイプ式カルーセル
+  var slides = card.querySelectorAll('[data-recall-slide]');
+  var dots = card.querySelectorAll('[data-recall-dot]');
+  var idxEl = card.querySelector('[data-recall-index]');
+  var prev = card.querySelector('[data-recall-prev]');
+  var next = card.querySelector('[data-recall-next]');
+  var n = slides.length, i = 0;
+  function show(k) {
+    i = (k + n) % n;
+    slides.forEach(function(s, j) { s.classList.toggle('is-active', j === i); });
+    dots.forEach(function(d, j) { d.classList.toggle('is-active', j === i); });
+    if (idxEl) idxEl.textContent = i + 1;
   }
-  applyState();
-  window.toggleRecallCard = function() {
-    collapsed = !collapsed;
-    applyState();
-  };
+  if (prev) prev.addEventListener('click', function() { show(i - 1); });
+  if (next) next.addEventListener('click', function() { show(i + 1); });
+  dots.forEach(function(d) {
+    d.addEventListener('click', function() { show(parseInt(d.dataset.index, 10)); });
+  });
+
+  // タッチスワイプ
+  var track = card.querySelector('.recall-track'), x0 = null;
+  if (track && n > 1) {
+    track.addEventListener('touchstart', function(e) { x0 = e.touches[0].clientX; }, { passive: true });
+    track.addEventListener('touchend', function(e) {
+      if (x0 == null) return;
+      var dx = e.changedTouches[0].clientX - x0;
+      if (Math.abs(dx) > 40) show(i + (dx < 0 ? 1 : -1));
+      x0 = null;
+    });
+  }
 })();
 </script>
 {% endif %}
