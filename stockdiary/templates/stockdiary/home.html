@@ -1696,17 +1696,32 @@
         <span class="page-subtitle-count">{{ total_diary_count }}件の記録</span>
       </p>
       {% if not is_empty_state %}
-      <div class="rp-review-links">
-        <a href="{% url 'stockdiary:annual_review' %}" class="rp-review-link">
-          <i class="bi bi-book"></i>{% now "Y" %}年のふりかえりを読む
+      <nav class="rp-quicklinks" aria-label="読み返す">
+        <a href="{% url 'stockdiary:annual_review' %}" class="rp-quicklink">
+          <span class="rp-quicklink-icon"><i class="bi bi-book"></i></span>
+          <span class="rp-quicklink-body">
+            <span class="rp-quicklink-label">{% now "Y" %}年のふりかえり</span>
+            <span class="rp-quicklink-sub">一年を読み返す</span>
+          </span>
+          <i class="bi bi-chevron-right rp-quicklink-chev"></i>
         </a>
-        <a href="{% url 'stockdiary:investor_karte' %}" class="rp-review-link">
-          <i class="bi bi-clipboard-pulse"></i>投資家カルテを見る
+        <a href="{% url 'stockdiary:investor_karte' %}" class="rp-quicklink">
+          <span class="rp-quicklink-icon"><i class="bi bi-clipboard-pulse"></i></span>
+          <span class="rp-quicklink-body">
+            <span class="rp-quicklink-label">投資家カルテ</span>
+            <span class="rp-quicklink-sub">判断の傾向を知る</span>
+          </span>
+          <i class="bi bi-chevron-right rp-quicklink-chev"></i>
         </a>
-        <a href="{% url 'stockdiary:library' %}" class="rp-review-link">
-          <i class="bi bi-collection"></i>知識ライブラリ
+        <a href="{% url 'stockdiary:library' %}" class="rp-quicklink">
+          <span class="rp-quicklink-icon"><i class="bi bi-collection"></i></span>
+          <span class="rp-quicklink-body">
+            <span class="rp-quicklink-label">知識ライブラリ</span>
+            <span class="rp-quicklink-sub">学び・テーマで探す</span>
+          </span>
+          <i class="bi bi-chevron-right rp-quicklink-chev"></i>
         </a>
-      </div>
+      </nav>
       {% endif %}
     </div>
     <div class="page-header-actions">
