@@ -745,8 +745,8 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
             },
             {
                 'id': 'add-thesis',
-                'type': 'action',
-                'onclick': 'openThesisForm();',
+                'type': 'bottom-sheet',
+                'sheet_id': 'addThesisSheet',
                 'icon': 'bi-lightbulb',
                 'label': '新しい仮説を追加',
                 'aria_label': '新しい仮説を追加',
@@ -768,6 +768,14 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
 
         # テキスト内銘柄コードリンク用マッピング {stock_symbol: diary_pk}
         context['mention_map'] = get_mention_map(self.request.user)
+
+        # 仮説追加ボトムシート用フォーム（記録タブの『仮説』ビューから起動）。
+        # 他の入力（取引・株式分割）と同じくシート内に常設し、確実に表示されるようにする。
+        from tags.models import Tag as _Tag
+        context['thesis_form'] = ThesisForm(user=self.request.user)
+        context['thesis_all_tags'] = list(
+            _Tag.objects.filter(user=self.request.user).order_by('name').values('id', 'name')
+        )
 
         return context
 
@@ -4352,6 +4360,11 @@ def thesis_edit(request, diary_id, thesis_id=None):
     if thesis_id:
         instance = get_object_or_404(Thesis, pk=thesis_id, diary=diary)
 
+    # 記録タブの『仮説』ボトムシートからは通常POST（HX-Requestなし）で届く。
+    # その場合は他の入力（取引・株式分割シート）と同様に保存→詳細へリダイレクトし、
+    # 仮説ビューに着地させる。インライン編集（HTMX）は従来どおり部分テンプレートを返す。
+    is_htmx = request.headers.get('HX-Request') == 'true'
+
     if request.method == 'POST':
         form = ThesisForm(request.POST, instance=instance, user=request.user)
         if form.is_valid():
@@ -4361,7 +4374,18 @@ def thesis_edit(request, diary_id, thesis_id=None):
                 thesis.review_due_date = _default_review_due_date(diary, thesis.horizon)
             thesis.save()
             form.save_m2m()
-            return _render_karte_block(request, diary)
+            if is_htmx:
+                return _render_karte_block(request, diary)
+            messages.success(request, '仮説を記録しました')
+            url = reverse('stockdiary:detail', kwargs={'pk': diary.id})
+            return redirect(f'{url}?view=thesis')
+        elif not is_htmx:
+            # シート（通常POST）でのバリデーションエラーは他シートと同じくメッセージで通知し戻す
+            for field, errs in form.errors.items():
+                for err in errs:
+                    messages.error(request, f'{field}: {err}')
+            url = reverse('stockdiary:detail', kwargs={'pk': diary.id})
+            return redirect(f'{url}?view=thesis')
     else:
         form = ThesisForm(instance=instance, user=request.user)
 
