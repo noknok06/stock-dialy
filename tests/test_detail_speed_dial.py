@@ -22,6 +22,10 @@ def test_speed_dial_contains_all_add_actions(authenticated_client, sample_diary)
     assert "openBottomSheet('addSplitSheet')" in html
     assert 'openThesisForm();' in html
     assert 'window.openThesisForm' in html
+    # 仮説の追加先は記録タブの『仮説』ビュー。openThesisForm が notes-tab を開き、
+    # thesis ビューへ切り替えてからフォームを起動する（移設後の遷移先回帰防止）。
+    assert "document.getElementById('notes-tab')" in html
+    assert "switchNotesView('thesis')" in html
 
 
 @pytest.mark.django_db
@@ -68,8 +72,15 @@ def test_thesis_add_button_only_in_empty_state(authenticated_client, sample_diar
 
 
 @pytest.mark.django_db
-def test_overview_tag_dedup_and_verification_loop_order(authenticated_client, sample_diary, user):
-    """① 概要タブのタグ重複を解消し、④ 検証ループを投資理由の直後に固める。"""
+def test_overview_tag_dedup_and_thesis_relocated_to_notes_tab(authenticated_client, sample_diary, user):
+    """① 概要タブのタグ重複を解消する。
+    ④ 検証ループ(仮説)は概要タブから「記録」タブの『仮説』ビューへ移設し、
+       テーマ別/活動と同じトグル並びに統一する（UX の自然さ向上）。
+
+    旧仕様では検証ループを概要タブの投資理由直後に固めていたが、記録系の導線（テーマ別・活動）
+    と並べた方が自然なため記録タブへ移した。概要側の目次・本文に仮説ブロックが残っていると
+    「隠れたタブ内要素へジャンプする死にリンク」になるため、その回帰も防ぐ。
+    """
     from tags.models import Tag
     sample_diary.tags.add(Tag.objects.create(user=user, name='長期投資'))
 
@@ -83,8 +94,13 @@ def test_overview_tag_dedup_and_verification_loop_order(authenticated_client, sa
     # サイドバー目次からテーマ×感応へジャンプできる（重複の代わりの導線）
     assert 'data-target="section-theme-sensitivity"' in html
 
-    # ④ 検証ループ(karte-block)がテーマ×感応より前＝投資理由の直後に並ぶ
-    assert html.index('id="karte-block"') < html.index('id="section-theme-sensitivity"')
+    # ④ 検証ループ(karte-block)は記録タブの『仮説』ビュー(#notes-view-thesis)内へ移設
+    assert html.index('id="notes-content"') < html.index('id="karte-block"')
+    assert html.index('id="notes-view-thesis"') < html.index('id="karte-block"')
+    # トグルは テーマ別 → 仮説 → 活動 の並び（仮説は中央）
+    assert html.index('data-view="topic"') < html.index('data-view="thesis"') < html.index('data-view="activity"')
+    # 概要タブ目次に「仮説と検証」への死にリンクが残っていない
+    assert 'data-target="karte-block"' not in html
 
 
 @pytest.mark.django_db
