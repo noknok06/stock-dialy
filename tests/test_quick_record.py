@@ -99,3 +99,16 @@ class TestDiaryMentionAutocompleteWired:
     def test_create_form_has_diary_mention(self, authenticated_client):
         html = authenticated_client.get(reverse('stockdiary:create')).content.decode()
         assert 'DiaryMentionAutocomplete' in html
+
+
+@pytest.mark.django_db
+class TestHomeHorizontalPanLocked:
+    """スマホでトップ画面の何もない部分を左右ドラッグするとページ全体が横へ動く
+    挙動を抑止する（横方向パンの固定）。CSSが誤って外れていないことを回帰で守る。
+    カードの左右スワイプは .diary-header 内の transform で別処理のため影響しない。"""
+
+    def test_home_locks_horizontal_overflow_on_mobile(self, authenticated_client):
+        html = authenticated_client.get(reverse('stockdiary:home')).content.decode()
+        # モバイル用メディアクエリ内で html, body の横オーバーフローをクリップしている
+        assert 'overflow-x: clip;' in html
+        assert 'overscroll-behavior-x: none;' in html
