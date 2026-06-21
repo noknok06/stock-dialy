@@ -2311,6 +2311,26 @@
   window.DIARY_DETAIL_GRAPH_API = "{% url 'stockdiary:api_diary_detail_graph' diary.pk %}";
   window.DIARY_FOCAL_ID = {{ diary.pk }};
 </script>
+<script>
+// 想起カードの「答え合わせをする」(?verify=<thesis_id>) で着地したとき、
+// 検証ループ(#karte-block)の検証フォームを自動で開く。HTMX のボタンを
+// プログラム的にクリックし、カルテへスクロールする。
+(function() {
+  var vid = new URLSearchParams(window.location.search).get('verify');
+  if (!vid) return;
+  function openVerify() {
+    var block = document.getElementById('karte-block');
+    if (block) block.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    var btn = document.querySelector('#karte-block [hx-get*="/thesis/' + vid + '/verify/"]');
+    if (btn) setTimeout(function() { btn.click(); }, 300);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', openVerify);
+  } else {
+    openVerify();
+  }
+})();
+</script>
 <script src="{% static 'js/diary-detail-graph.js' %}"></script>
 <script src="{% static 'js/diary-detail.js' %}"></script>
 <script src="{% static 'js/diary-detail-tabs.js' %}"></script>

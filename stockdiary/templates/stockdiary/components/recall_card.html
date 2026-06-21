@@ -38,8 +38,8 @@
         {% if item.meta %}<p class="recall-meta">{{ item.meta }}</p>{% endif %}
         <div class="recall-actions">
           {% if item.kind == 'due' %}
-          <a class="btn-quiet btn-quiet--primary recall-action" href="{% url 'stockdiary:thesis_verify' item.diary_id item.thesis_id %}"><i class="bi bi-check2-square"></i>答え合わせをする</a>
-          <a class="btn-quiet recall-action recall-action--side" href="{% url 'stockdiary:detail' item.diary_id %}"><i class="bi bi-pencil"></i>追記</a>
+          <a class="btn-quiet btn-quiet--primary recall-action" href="{% url 'stockdiary:detail' item.diary_id %}?verify={{ item.thesis_id }}#karte-block"><i class="bi bi-check2-square"></i>答え合わせをする</a>
+          <a class="btn-quiet recall-action recall-action--side" href="{% url 'stockdiary:detail' item.diary_id %}#section-reason"><i class="bi bi-pencil"></i>追記</a>
           {% elif item.kind == 'unreviewed' %}
           <a class="btn-quiet btn-quiet--primary recall-action" href="{% url 'stockdiary:detail' item.diary_id %}"><i class="bi bi-check2-square"></i>答え合わせをする</a>
           <a class="btn-quiet recall-action recall-action--side" href="{% url 'stockdiary:detail' item.diary_id %}"><i class="bi bi-book"></i>読む</a>
