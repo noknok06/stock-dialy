@@ -222,6 +222,62 @@ body.dark-mode, html[data-theme="dark"] {
   .reading-page .karte-form-2col { grid-template-columns: 1fr; }
 }
 
+/* ------------------------------------------------------------------
+   仮説追加ボトムシート（#addThesisSheet）
+   karte-* / tag-suggest-* は本来 .reading-page 配下のみで装飾される。
+   このシートは .reading-page の外（body 直下のボトムシート）に置かれる
+   ため、同じ見た目を出すには専用スコープで再定義する必要がある。
+   （カード地色は付けず、他のボトムシートと揃えてフラットにする）
+   ------------------------------------------------------------------ */
+#addThesisSheet .karte-label {
+  display: block; font-size: 0.8125rem; color: var(--muted-ink);
+  margin: 0.75rem 0 0.3rem; font-weight: var(--font-medium);
+}
+#addThesisSheet .karte-req {
+  font-size: 0.7rem; color: var(--verdict-lucky); margin-left: 0.3rem;
+}
+#addThesisSheet .karte-form-2col {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;
+}
+#addThesisSheet .karte-field-err {
+  color: var(--verdict-lucky); font-size: 0.8125rem; margin-top: 0.3rem;
+}
+#addThesisSheet .tag-suggest { position: relative; }
+#addThesisSheet .tag-suggest-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+#addThesisSheet .tag-suggest-chips:not(:empty) { margin-bottom: 0.45rem; }
+#addThesisSheet .tag-suggest-chip {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  font-size: 0.8125rem; color: var(--ink);
+  background: var(--paper); border: 1px solid var(--hairline);
+  border-radius: var(--radius-full, 999px); padding: 0.18rem 0.3rem 0.18rem 0.6rem;
+}
+#addThesisSheet .tag-suggest-chip .ts-x {
+  border: none; background: none; color: var(--faint-ink);
+  cursor: pointer; font-size: 0.95rem; line-height: 1; padding: 0 0.15rem;
+}
+#addThesisSheet .tag-suggest-chip .ts-x:hover { color: var(--ink); }
+#addThesisSheet .tag-suggest-input {
+  width: 100%; background: var(--paper);
+  border: 1px solid var(--hairline); border-radius: var(--radius-sm, 6px);
+  color: var(--ink); padding: 0.5rem 0.65rem; font-size: 0.9375rem;
+}
+#addThesisSheet .tag-suggest-list {
+  position: absolute; left: 0; right: 0; top: 100%; z-index: 30;
+  background: var(--paper-raised); border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm, 8px); box-shadow: 0 10px 28px rgba(32,32,29,.12);
+  max-height: 220px; overflow-y: auto; margin-top: 4px; padding: 0.2rem;
+}
+#addThesisSheet .tag-suggest-list .ts-opt {
+  display: block; width: 100%; text-align: left; background: none; border: none;
+  padding: 0.5rem 0.6rem; font-size: 0.875rem; color: var(--ink);
+  cursor: pointer; border-radius: 6px;
+}
+#addThesisSheet .tag-suggest-list .ts-opt:hover { background: var(--paper-sunken); }
+
+@media (max-width: 640px) {
+  #addThesisSheet .karte-form-2col { grid-template-columns: 1fr; }
+}
+
 /* ============================================================
    9k-2. ホーム想起：答え合わせを待つ仮説（Phase 8b）
    ============================================================ */
