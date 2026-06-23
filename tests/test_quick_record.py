@@ -151,10 +151,22 @@ class TestQuickAddTransactionMargin:
 class TestHomeHorizontalPanLocked:
     """スマホでトップ画面の何もない部分を左右ドラッグするとページ全体が横へ動く
     挙動を抑止する（横方向パンの固定）。CSSが誤って外れていないことを回帰で守る。
-    カードの左右スワイプは .diary-header 内の transform で別処理のため影響しない。"""
+    カードの左右スワイプは .diary-header 内の transform で別処理のため影響しない。
 
-    def test_home_locks_horizontal_overflow_on_mobile(self, authenticated_client):
-        html = authenticated_client.get(reverse('stockdiary:home')).content.decode()
+    ページ専用CSSは home.html のインライン <style> から
+    static/css/2-layouts/home.css へ移設済みのため、移設先ファイルで担保を確認する。
+    また home.html がその CSS を読み込んでいることも併せて固定する。"""
+
+    def test_home_css_locks_horizontal_overflow_on_mobile(self):
+        from pathlib import Path
+        from django.conf import settings
+
+        css = Path(settings.BASE_DIR) / 'static' / 'css' / '2-layouts' / 'home.css'
+        text = css.read_text(encoding='utf-8')
         # モバイル用メディアクエリ内で html, body の横オーバーフローをクリップしている
-        assert 'overflow-x: clip;' in html
-        assert 'overscroll-behavior-x: none;' in html
+        assert 'overflow-x: clip;' in text
+        assert 'overscroll-behavior-x: none;' in text
+
+    def test_home_loads_layout_css(self, authenticated_client):
+        html = authenticated_client.get(reverse('stockdiary:home')).content.decode()
+        assert 'css/2-layouts/home.css' in html
