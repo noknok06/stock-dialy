@@ -152,6 +152,9 @@ path('api/create/', api.api_create_diary, name='api_create'),
     # ==========================================
     # EDINET連携（開示書類パネル）
     # ==========================================
+    # バックリンク（関連タブの遅延ロード）
+    path('<int:diary_id>/backlinks-panel/', views.backlinks_panel, name='backlinks_panel'),
+
     path('<int:diary_id>/edinet-panel/', views.edinet_panel, name='edinet_panel'),
     path('<int:diary_id>/edinet-note-prefill/', views.edinet_note_prefill, name='edinet_note_prefill'),
     path('<int:diary_id>/edinet-xbrl-analyze/', views.edinet_xbrl_analyze, name='edinet_xbrl_analyze'),

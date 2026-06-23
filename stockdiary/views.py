@@ -658,8 +658,8 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
             related_unified, self.object, self.request.user
         )
 
-        # バックリンク: この銘柄に言及している他の記録（関連タブに表示）
-        context['backlinks'] = find_backlinks(self.object, self.request.user)
+        # バックリンク（この銘柄に言及している他の記録）は重いため、ここでは計算せず
+        # 関連タブ表示時に backlinks_panel（HTMX）で遅延ロードする。
 
         # 振り返り（retrospective）関連: 売却完結済みの日記のみ
         context['needs_retrospective'] = False
@@ -3652,6 +3652,21 @@ def _sentiment_tone_trend(doc, current_score):
     delta = float(current_score) - float(prev.overall_score)
     label = '改善' if delta > 0.05 else ('悪化' if delta < -0.05 else '横ばい')
     return {'delta': delta, 'label': label, 'prev_score': float(prev.overall_score)}
+
+
+@login_required
+@require_GET
+def backlinks_panel(request, diary_id):
+    """バックリンク（この銘柄に言及している他の記録）を HTMX で遅延ロードする。
+
+    find_backlinks は本文・継続記録の全文走査で重いため、detail の初期表示では
+    計算せず、関連タブを開いたときだけこのエンドポイントで描画する。
+    """
+    diary = get_object_or_404(StockDiary, pk=diary_id, user=request.user)
+    backlinks = find_backlinks(diary, request.user)
+    return render(request, 'stockdiary/partials/_backlinks.html', {
+        'backlinks': backlinks,
+    })
 
 
 @login_required

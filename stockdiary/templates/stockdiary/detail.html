@@ -276,7 +276,11 @@
         </li>
         <li class="improved-tab-item" role="presentation">
           <button class="improved-tab-link" id="related-tab" data-bs-toggle="tab" data-bs-target="#related-content"
-            type="button" role="tab" aria-controls="related-content" aria-selected="false">
+            type="button" role="tab" aria-controls="related-content" aria-selected="false"
+            hx-get="{% url 'stockdiary:backlinks_panel' diary.id %}"
+            hx-target="#backlinks-panel-body"
+            hx-trigger="shown.bs.tab once"
+            hx-indicator="#backlinks-loading">
             <div class="tab-icon">
               <i class="bi bi-link-45deg"></i>
               {% if related_unified %}
@@ -602,37 +606,12 @@
             </div>
           </div>
 
-          <!-- バックリンク: この銘柄に触れている記録 -->
-          {% if backlinks %}
-          <div class="info-card mobile-optimized mt-3">
-            <div class="info-card-title">
-              <i class="bi bi-arrow-90deg-left"></i> この銘柄に触れている記録
-              <span class="related-unified-note">他の日記からの言及</span>
-            </div>
-            <div class="backlink-list">
-              {% for item in backlinks %}
-              <a href="{% url 'stockdiary:detail' item.diary.pk %}"
-                 class="d-block text-decoration-none small mb-2 pb-2 border-bottom">
-                <div class="mb-1">
-                  {% if item.diary.stock_symbol %}
-                  <span class="badge bg-secondary">{{ item.diary.stock_symbol }}</span>
-                  {% endif %}
-                  <strong>{{ item.diary.stock_name }}</strong>
-                  <span class="badge bg-light text-dark border">{{ item.date|date:"Y/m/d" }}</span>
-                  {% if item.source == 'note' %}
-                  <span class="badge bg-info">継続記録</span>
-                  {% elif item.source == 'link' %}
-                  <span class="badge bg-secondary">手動リンク</span>
-                  {% endif %}
-                </div>
-                {% if item.snippet %}
-                <div class="text-muted">{{ item.snippet }}</div>
-                {% endif %}
-              </a>
-              {% endfor %}
+          {# バックリンク（他の記録からの言及）は関連タブ表示時に HTMX で遅延ロード #}
+          <div id="backlinks-panel-body">
+            <div id="backlinks-loading" class="htmx-indicator text-center text-muted small py-3">
+              <span class="spinner-border spinner-border-sm me-1"></span>言及を読み込み中…
             </div>
           </div>
-          {% endif %}
         </div>
         <!-- /関連タブ -->
 
