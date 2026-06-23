@@ -345,21 +345,27 @@ class StockSplit(models.Model):
 
     def apply_split(self):
         # 対象取引（分割日より前）
-        transactions = self.diary.transactions.filter(
+        transactions = list(self.diary.transactions.filter(
             transaction_date__lt=self.split_date
-        )
+        ))
 
         for tx in transactions:
             tx.quantity = tx.quantity * self.split_ratio
             tx.price = tx.price / self.split_ratio
-            tx.save(update_fields=["quantity", "price"])
+
+        # bulk_update は Transaction.save() を経由しないため、ここでは集計が走らない。
+        # 旧実装は tx.save() ごとに diary.update_aggregates()（全取引ゼロから再計算）が
+        # 発火し、取引 N 件で N 回のフル再集計が走っていた。全件更新してから
+        # 末尾で一度だけ再集計することで、結果を保ったまま O(N) → O(1) にする。
+        if transactions:
+            Transaction.objects.bulk_update(transactions, ["quantity", "price"])
 
         # フラグ更新
         self.is_applied = True
         self.applied_at = timezone.now()
         self.save(update_fields=["is_applied", "applied_at"])
 
-        # 再集計
+        # 再集計（全件更新後に一度だけ）
         self.diary.update_aggregates()
 
 

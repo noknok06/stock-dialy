@@ -147,7 +147,9 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
         from .utils import apply_diary_search, search_diaries_by_hashtag
 
         queryset = StockDiary.objects.filter(user=self.request.user).order_by('-updated_at')
-        queryset = queryset.select_related('user').prefetch_related('tags', 'notes')
+        # tag_directions も prefetch（diary_card の tag_direction_map が
+        # カードごとに diary.tag_directions.all() を引く N+1 を防ぐ）
+        queryset = queryset.select_related('user').prefetch_related('tags', 'notes', 'tag_directions')
 
         # 検索クエリ（銘柄名・コード・投資理由・メモ・業種・継続記録を全文検索）
         query = self.request.GET.get('query', '').strip()
@@ -340,14 +342,11 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
         ).exclude(topic='').values_list('topic', flat=True).distinct().order_by('topic')
         context['note_topics'] = list(user_topics)
 
-        # 日記ごとの既存タイトル（topic）リストを取得し、各 diary オブジェクトに追加
+        # 日記ごとの既存トピックは prefetch 済みの notes から Python 側で導出する。
+        # （旧実装はカードごとに DiaryNote を再クエリする N+1 で、さらにループ内で
+        #  logger.info を毎回出力していた。一覧表示のホットパスなので両方を解消する。）
         for diary in context['diaries']:
-            topics = DiaryNote.objects.filter(
-                diary=diary,
-                topic__isnull=False
-            ).exclude(topic='').values_list('topic', flat=True).distinct().order_by('topic')
-            diary.note_topics = list(topics)
-            logger.info(f'[StockDiaryListView] diary_id={diary.id}, note_topics={diary.note_topics}')
+            diary.note_topics = sorted({n.topic for n in diary.notes.all() if n.topic})
 
         # 検索ヒット箇所（銘柄名／日記本文／継続記録）を各 diary に付与
         from .utils import annotate_search_matches
