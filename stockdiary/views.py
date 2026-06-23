@@ -301,11 +301,10 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
         ).exclude(sector='').values_list('sector', flat=True).distinct().order_by('sector')
         context['sectors'] = list(sectors)
         
-        # カレンダー表示用にすべての日記データを追加（統計も同一クエリで取得、除外日記は含めない）
+        # 統計・最近のハッシュタグ算出用（除外日記は含めない）。
+        # ※ 旧「カレンダー表示用」の context['all_diaries'] は、対応する
+        #   カレンダーUI（FullCalendar）ごと撤去済みのデッドデータのため削除。
         all_diaries_qs = StockDiary.objects.filter(user=self.request.user, is_excluded=False)
-        context['all_diaries'] = all_diaries_qs.defer(
-            'reason', 'created_at', 'updated_at',
-        )
 
         # 統計情報を1クエリにまとめて取得
         stats = all_diaries_qs.aggregate(
