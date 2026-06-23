@@ -364,3 +364,17 @@ class TestMarkdown:
 
     def test_mentions_empty(self):
         assert f.render_markdown_with_mentions('', {'7203': 1}) == ''
+
+
+def test_markdown_tables_have_mobile_min_width_css():
+    """長文ノートの Markdown 表がモバイルで「項目名が1文字ずつ縦折れ」する崩れを
+    防ぐCSS（セルの min-width）が components.css に存在することを固定する回帰。
+    決算分析など、項目×内容の縦長テーブルの可読性を守るため。"""
+    from pathlib import Path
+    from django.conf import settings
+    css = Path(settings.BASE_DIR) / 'static' / 'css' / '3-components' / 'components.css'
+    text = css.read_text(encoding='utf-8')
+    # markdown 表のセルに最低幅が設定されている
+    assert 'min-width: 6.5em;' in text
+    # 表本体は横スクロール可能（潰さず溢れさせる）
+    assert '.markdown-content table' in text and 'overflow-x: auto;' in text
