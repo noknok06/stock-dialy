@@ -391,6 +391,35 @@
           })();
           </script>
 
+          {# テーマ別の記録（索引）: 実運用の主役である継続記録スレッドへの入口を概要に出す。
+             各行は既存のテーマ別リーダー(openNoteDetailModal)をそのまま開く（新規クエリ・新規JSなし）。
+             先頭ノートの lead は内容非依存の汎用抽出（note_lead）。 #}
+          {% if notes_by_topic %}
+          <div class="info-card mobile-optimized fade-in" id="section-topic-index" style="margin-bottom:1rem;">
+            <div class="info-card-title">
+              <i class="bi bi-collection"></i> テーマ別の記録
+              <span class="related-unified-note">決算・ニュース等の分析スレッド</span>
+            </div>
+            <div class="ov-topic-index">
+              {% for topic, topic_notes in notes_by_topic.items %}
+              <button type="button" class="ov-topic-row"
+                      onclick="openNoteDetailModal('{{ topic|default:''|escapejs }}')">
+                <div class="ov-topic-head">
+                  {% if topic %}<span class="topic-tag"># {{ topic }}</span>
+                  {% else %}<span class="topic-tag topic-tag--muted">未分類</span>{% endif %}
+                  <span class="ov-topic-count">{{ topic_notes|length }}件</span>
+                  <span class="ov-topic-date">{{ topic_notes.0.date|date:"m/d" }}</span>
+                  <i class="bi bi-chevron-right ov-topic-chev"></i>
+                </div>
+                {% with lead=topic_notes.0.content|note_lead:70 %}
+                {% if lead %}<div class="ov-topic-lead">{{ lead }}</div>{% endif %}
+                {% endwith %}
+              </button>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+
           <!-- 見立ての変遷（ReasonVersion: reason 上書き前の来歴・既定非表示） -->
           {% include "stockdiary/partials/_reason_versions.html" %}
 

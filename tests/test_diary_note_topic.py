@@ -24,6 +24,25 @@ def test_detail_renders_topic_ui(authenticated_client, diary_with_notes):
 
 
 @pytest.mark.django_db
+def test_overview_shows_topic_index(authenticated_client, sample_diary):
+    """概要タブにテーマ別の記録（索引）が出て、各行が既存のテーマ別リーダー
+    (openNoteDetailModal) を開く。実運用の主役である継続記録スレッドへの入口を
+    概要に出すための回帰。先頭ノートの lead プレビュー（内容非依存）も出す。"""
+    DiaryNote.objects.create(
+        diary=sample_diary, date=datetime.date.today(),
+        topic='決算分析',
+        content='## 0. 決算基本情報\n増収増益。通期は上方修正の公算。',
+    )
+    url = reverse('stockdiary:detail', kwargs={'pk': sample_diary.pk})
+    html = authenticated_client.get(url).content.decode()
+    assert 'section-topic-index' in html                 # 概要の索引ブロック
+    assert '# 決算分析' in html                            # テーマ名
+    assert "openNoteDetailModal('決算分析')" in html       # 既存リーダーを開く配線（新規JSなし）
+    # 先頭ノートの lead プレビュー（Markdown見出しのノイズを除いた本文）
+    assert '増収増益' in html
+
+
+@pytest.mark.django_db
 def test_add_note_with_topic(authenticated_client, sample_diary):
     url = reverse('stockdiary:add_note', kwargs={'pk': sample_diary.pk})
     resp = authenticated_client.post(url, {
