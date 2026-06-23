@@ -7,11 +7,12 @@ docs/diary_recording_redesign.md 段階9b:
 - クイック記録シートに追記/テンプレートUIが描画される
 """
 import datetime
+from decimal import Decimal
 
 import pytest
 from django.urls import reverse
 
-from stockdiary.models import StockDiary, DiaryNote
+from stockdiary.models import StockDiary, DiaryNote, Transaction
 
 
 @pytest.mark.django_db
@@ -102,13 +103,70 @@ class TestDiaryMentionAutocompleteWired:
 
 
 @pytest.mark.django_db
+class TestQuickAddTransactionMargin:
+    """クイック取引の信用種別バグの回帰テスト。
+
+    なぜこのバグが起きたか:
+    quick_add_transaction は 'buy_margin'/'sell_margin' をバリデーションで受理しつつ、
+    その文字列を Transaction.transaction_type にそのまま保存していた。しかし
+    transaction_type の選択肢は 'buy'/'sell' のみで、信用フラグは別フィールド
+    is_margin が持つ。結果、モデルの選択肢に無い不正値が is_margin も立たないまま
+    永続化され、表示・集計が壊れる余地があった。種別を正規化し is_margin に
+    マッピングする挙動を固定する。
+    """
+
+    def _post(self, client, diary, ttype):
+        url = reverse('stockdiary:quick_add_transaction', kwargs={'diary_id': diary.pk})
+        return client.post(url, {
+            'transaction_type': ttype,
+            'price': '1000',
+            'quantity': '100',
+            'transaction_date': datetime.date.today().strftime('%Y-%m-%d'),
+        })
+
+    def test_buy_margin_normalizes_to_buy_with_is_margin(self, authenticated_client, sample_diary):
+        resp = self._post(authenticated_client, sample_diary, 'buy_margin')
+        assert resp.status_code == 200
+        tx = Transaction.objects.filter(diary=sample_diary).latest('id')
+        assert tx.transaction_type == 'buy'   # 不正値 'buy_margin' を保存しない
+        assert tx.is_margin is True
+        assert tx.quantity == Decimal('100')
+
+    def test_sell_margin_normalizes_to_sell_with_is_margin(self, authenticated_client, sample_diary):
+        resp = self._post(authenticated_client, sample_diary, 'sell_margin')
+        assert resp.status_code == 200
+        tx = Transaction.objects.filter(diary=sample_diary).latest('id')
+        assert tx.transaction_type == 'sell'
+        assert tx.is_margin is True
+
+    def test_plain_buy_stays_cash(self, authenticated_client, sample_diary):
+        resp = self._post(authenticated_client, sample_diary, 'buy')
+        assert resp.status_code == 200
+        tx = Transaction.objects.filter(diary=sample_diary).latest('id')
+        assert tx.transaction_type == 'buy'
+        assert tx.is_margin is False
+
+
+@pytest.mark.django_db
 class TestHomeHorizontalPanLocked:
     """スマホでトップ画面の何もない部分を左右ドラッグするとページ全体が横へ動く
     挙動を抑止する（横方向パンの固定）。CSSが誤って外れていないことを回帰で守る。
-    カードの左右スワイプは .diary-header 内の transform で別処理のため影響しない。"""
+    カードの左右スワイプは .diary-header 内の transform で別処理のため影響しない。
 
-    def test_home_locks_horizontal_overflow_on_mobile(self, authenticated_client):
-        html = authenticated_client.get(reverse('stockdiary:home')).content.decode()
+    ページ専用CSSは home.html のインライン <style> から
+    static/css/2-layouts/home.css へ移設済みのため、移設先ファイルで担保を確認する。
+    また home.html がその CSS を読み込んでいることも併せて固定する。"""
+
+    def test_home_css_locks_horizontal_overflow_on_mobile(self):
+        from pathlib import Path
+        from django.conf import settings
+
+        css = Path(settings.BASE_DIR) / 'static' / 'css' / '2-layouts' / 'home.css'
+        text = css.read_text(encoding='utf-8')
         # モバイル用メディアクエリ内で html, body の横オーバーフローをクリップしている
-        assert 'overflow-x: clip;' in html
-        assert 'overscroll-behavior-x: none;' in html
+        assert 'overflow-x: clip;' in text
+        assert 'overscroll-behavior-x: none;' in text
+
+    def test_home_loads_layout_css(self, authenticated_client):
+        html = authenticated_client.get(reverse('stockdiary:home')).content.decode()
+        assert 'css/2-layouts/home.css' in html

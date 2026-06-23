@@ -147,7 +147,9 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
         from .utils import apply_diary_search, search_diaries_by_hashtag
 
         queryset = StockDiary.objects.filter(user=self.request.user).order_by('-updated_at')
-        queryset = queryset.select_related('user').prefetch_related('tags', 'notes')
+        # tag_directions も prefetch（diary_card の tag_direction_map が
+        # カードごとに diary.tag_directions.all() を引く N+1 を防ぐ）
+        queryset = queryset.select_related('user').prefetch_related('tags', 'notes', 'tag_directions')
 
         # 検索クエリ（銘柄名・コード・投資理由・メモ・業種・継続記録を全文検索）
         query = self.request.GET.get('query', '').strip()
@@ -299,11 +301,10 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
         ).exclude(sector='').values_list('sector', flat=True).distinct().order_by('sector')
         context['sectors'] = list(sectors)
         
-        # カレンダー表示用にすべての日記データを追加（統計も同一クエリで取得、除外日記は含めない）
+        # 統計・最近のハッシュタグ算出用（除外日記は含めない）。
+        # ※ 旧「カレンダー表示用」の context['all_diaries'] は、対応する
+        #   カレンダーUI（FullCalendar）ごと撤去済みのデッドデータのため削除。
         all_diaries_qs = StockDiary.objects.filter(user=self.request.user, is_excluded=False)
-        context['all_diaries'] = all_diaries_qs.defer(
-            'reason', 'created_at', 'updated_at',
-        )
 
         # 統計情報を1クエリにまとめて取得
         stats = all_diaries_qs.aggregate(
@@ -340,14 +341,11 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
         ).exclude(topic='').values_list('topic', flat=True).distinct().order_by('topic')
         context['note_topics'] = list(user_topics)
 
-        # 日記ごとの既存タイトル（topic）リストを取得し、各 diary オブジェクトに追加
+        # 日記ごとの既存トピックは prefetch 済みの notes から Python 側で導出する。
+        # （旧実装はカードごとに DiaryNote を再クエリする N+1 で、さらにループ内で
+        #  logger.info を毎回出力していた。一覧表示のホットパスなので両方を解消する。）
         for diary in context['diaries']:
-            topics = DiaryNote.objects.filter(
-                diary=diary,
-                topic__isnull=False
-            ).exclude(topic='').values_list('topic', flat=True).distinct().order_by('topic')
-            diary.note_topics = list(topics)
-            logger.info(f'[StockDiaryListView] diary_id={diary.id}, note_topics={diary.note_topics}')
+            diary.note_topics = sorted({n.topic for n in diary.notes.all() if n.topic})
 
         # 検索ヒット箇所（銘柄名／日記本文／継続記録）を各 diary に付与
         from .utils import annotate_search_matches
@@ -660,8 +658,8 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
             related_unified, self.object, self.request.user
         )
 
-        # バックリンク: この銘柄に言及している他の記録（関連タブに表示）
-        context['backlinks'] = find_backlinks(self.object, self.request.user)
+        # バックリンク（この銘柄に言及している他の記録）は重いため、ここでは計算せず
+        # 関連タブ表示時に backlinks_panel（HTMX）で遅延ロードする。
 
         # 振り返り（retrospective）関連: 売却完結済みの日記のみ
         context['needs_retrospective'] = False
@@ -3654,6 +3652,21 @@ def _sentiment_tone_trend(doc, current_score):
     delta = float(current_score) - float(prev.overall_score)
     label = '改善' if delta > 0.05 else ('悪化' if delta < -0.05 else '横ばい')
     return {'delta': delta, 'label': label, 'prev_score': float(prev.overall_score)}
+
+
+@login_required
+@require_GET
+def backlinks_panel(request, diary_id):
+    """バックリンク（この銘柄に言及している他の記録）を HTMX で遅延ロードする。
+
+    find_backlinks は本文・継続記録の全文走査で重いため、detail の初期表示では
+    計算せず、関連タブを開いたときだけこのエンドポイントで描画する。
+    """
+    diary = get_object_or_404(StockDiary, pk=diary_id, user=request.user)
+    backlinks = find_backlinks(diary, request.user)
+    return render(request, 'stockdiary/partials/_backlinks.html', {
+        'backlinks': backlinks,
+    })
 
 
 @login_required

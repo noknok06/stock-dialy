@@ -800,12 +800,23 @@ def compute_related_strength(focal, user, limit: int = 12) -> List[dict]:
     effective_focal_tags = [t for t in focal_tags if getattr(t, 'axis', 'theme') not in ('event', 'custom')]
 
     if effective_focal_tags and themes_enabled:
-        # tag_id → 共有している他日記のset（ノイズ上限でフィルタ済み）
-        tag_diary_map: Dict[int, set] = {}
-        for tag in effective_focal_tags:
-            ids = set(others.filter(tags=tag).values_list('id', flat=True))
-            if ids and len(ids) <= RELATED_NOISE_MAX:
-                tag_diary_map[tag.id] = ids
+        # tag_id → 共有している他日記のset（ノイズ上限でフィルタ済み）。
+        # 旧実装は focal タグ1つにつき1クエリ（others.filter(tags=tag)）で、
+        # タグ数ぶんのクエリが detail ロード毎に走っていた（theme_recall が常設の
+        # ため遅延もできない）。(tag_id, diary_id) ペアを1クエリでまとめて取得し、
+        # Python 側でタグごとに集約する。
+        focal_tag_id_set = {t.id for t in effective_focal_tags}
+        tag_to_ids: Dict[int, set] = defaultdict(set)
+        for t_id, d_id in (
+            others.filter(tags__in=focal_tag_id_set).values_list('tags__id', 'id')
+        ):
+            # WHERE で focal タグに限定済みだが、念のため focal タグのみ採用する
+            if t_id in focal_tag_id_set:
+                tag_to_ids[t_id].add(d_id)
+        tag_diary_map: Dict[int, set] = {
+            t_id: ids for t_id, ids in tag_to_ids.items()
+            if ids and len(ids) <= RELATED_NOISE_MAX
+        }
 
         # diary_id → 共有タグリスト
         shared_tag_map: Dict[int, List] = defaultdict(list)

@@ -160,3 +160,37 @@ class TestComputeRelatedStrength:
         res = compute_related_strength(focal, user)
         order = [r['diary'].id for r in res]
         assert order.index(strong.id) < order.index(weak.id)
+
+
+@pytest.mark.django_db
+class TestRelatedStrengthQueryBudget:
+    """compute_related_strength のクエリ数が focal タグ数に比例しない回帰テスト。
+
+    なぜこのテストがあるか:
+    旧実装は focal タグ1つにつき1クエリ（others.filter(tags=tag)）を発行しており、
+    theme_recall が概要タブに常設＝遅延ロード不可の detail ページで、タグ数ぶんの
+    クエリが毎回走っていた。(tag_id, diary_id) を1クエリでまとめて取得する実装に
+    変更したため、focal のタグ数を増やしてもクエリ総数が一定であることを固定する。
+    """
+
+    def _measure(self, owner, n_tags):
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+
+        focal = _diary(owner, '0001', 'Focal')
+        for i in range(n_tags):
+            tag = Tag.objects.create(user=owner, name=f'テーマ{i}', axis='theme')
+            focal.tags.add(tag)
+            other = _diary(owner, f'1{i:03d}', f'Other{i}')
+            other.tags.add(tag)
+        focal.refresh_from_db()
+        with CaptureQueriesContext(connection) as ctx:
+            compute_related_strength(focal, owner)
+        return len(ctx.captured_queries)
+
+    def test_query_count_does_not_grow_with_tag_count(self, user, another_user):
+        # 別ユーザーで測ることで、片方の focal/other がもう片方のノイズにならないようにする
+        q_few = self._measure(user, 2)
+        q_many = self._measure(another_user, 12)
+        # 旧実装ではタグ数差(10)ぶんクエリが増える。一定であることを固定する。
+        assert q_many == q_few, f'tag数でクエリが増えている: few={q_few}, many={q_many}'

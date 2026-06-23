@@ -1,5 +1,5 @@
 # stockdiary/api.py
-import traceback
+import logging
 import requests
 from decimal import Decimal
 
@@ -15,6 +15,8 @@ from .utils import is_japanese_stock, detect_currency, extract_lead
 from tags.models import Tag
 
 from django.core.exceptions import ValidationError
+
+logger = logging.getLogger(__name__)
 
 # 銘柄リストをキャッシュするための変数
 STOCK_DATA_CACHE = None
@@ -57,8 +59,7 @@ def load_stock_data():
         STOCK_DATA_CACHE = stock_dict
         return stock_dict
     except Exception as e:
-        print(f"Error loading stock data: {str(e)}")
-        print(traceback.format_exc())
+        logger.error("Error loading stock data: %s", e, exc_info=True)
         return {}
 
 
@@ -185,8 +186,7 @@ def get_stock_info(request, stock_code):
                 raise Exception(f"株価情報の取得に失敗しました: {str(e)}")
             
     except Exception as e:
-        print(f"Exception occurred: {str(e)}")
-        print(traceback.format_exc())
+        logger.error("Exception occurred: %s", e, exc_info=True)
         return JsonResponse({
             'success': False,
             'error': str(e)
@@ -230,8 +230,7 @@ def get_stock_price(request, stock_code):
             }, status=404)
             
     except Exception as e:
-        print(f"Exception occurred: {str(e)}")
-        print(traceback.format_exc())
+        logger.error("Exception occurred: %s", e, exc_info=True)
         return JsonResponse({
             'success': False,
             'error': str(e)
@@ -588,7 +587,7 @@ def get_stock_historical(request, stock_code):
                 roe_list.append(roe_val)
 
         except Exception as e:
-            print(f"Historical data error for {stock_code}: {e}")
+            logger.error("Historical data error for %s: %s", stock_code, e, exc_info=True)
 
         # 年別配当利回り計算
         try:
@@ -756,7 +755,7 @@ def get_stock_historical(request, stock_code):
         })
 
     except Exception as e:
-        print(f"get_stock_historical error: {e}")
+        logger.error("get_stock_historical error: %s", e, exc_info=True)
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
@@ -801,8 +800,7 @@ def search_stock(request):
         })
 
     except Exception as e:
-        print(f"Search error: {str(e)}")
-        print(traceback.format_exc())
+        logger.error("Search error: %s", e, exc_info=True)
         return JsonResponse({
             'success': False,
             'error': str(e)
