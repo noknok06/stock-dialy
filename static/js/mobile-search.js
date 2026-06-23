@@ -147,33 +147,36 @@ document.addEventListener('DOMContentLoaded', function() {
   function handleTagClick(event) {
     event.preventDefault();
     event.stopPropagation(); // イベントの伝播を防ぐ（カードクリックを防ぐ）
-    
+
     const tagElement = event.currentTarget;
-    const tagId = tagElement.getAttribute('data-tag-id');
-    const tagName = tagElement.textContent.trim();
-    
-    if (!tagId) {
-      console.warn('タグIDが見つかりません');
+    // タグ名で「全文検索」する。tag-id 絞り込みは diary.tags にしか当たらず、
+    // タグ未付与でも reason / 継続記録の本文に記載がある場合を取りこぼす。
+    // 全文検索（query）なら本文も横断ヒットし、ハイライトも当たる。
+    const tagName = (tagElement.getAttribute('data-tag-name') || tagElement.textContent || '').trim();
+
+    if (!tagName) {
+      console.warn('タグ名が見つかりません');
       return;
     }
-    
-    // タグフィルターを適用
-    applyTagFilter(tagId, tagName);
-  }
-  
-  // タグフィルターを適用する関数
-  function applyTagFilter(tagId, tagName) {
-    const tagFilterSelect = document.getElementById('tagFilter');
-    if (tagFilterSelect) {
-      tagFilterSelect.value = tagId;
-    }
 
+    applyTextSearch(tagName);
+  }
+
+  // タグ名で全文検索を実行する（本文＋タグを横断、ハイライト付き）
+  function applyTextSearch(tagName) {
     const searchForm = document.getElementById('optimizedSearchForm');
-    if (searchForm) {
-      htmx.trigger(searchForm, 'submit');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      showFilterNotification(tagName);
-    }
+    if (!searchForm) { return; }
+
+    const queryInput = searchForm.querySelector('[name="query"]');
+    if (queryInput) { queryInput.value = tagName; }
+
+    // tag-id 絞り込みは併用しない（AND で本文ヒットを狭めてしまうため）
+    const tagFilterSelect = document.getElementById('tagFilter');
+    if (tagFilterSelect) { tagFilterSelect.value = ''; }
+
+    htmx.trigger(searchForm, 'submit');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    showFilterNotification(tagName);
   }
   
   // フィルター適用の通知を表示

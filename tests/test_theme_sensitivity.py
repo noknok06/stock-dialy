@@ -36,3 +36,36 @@ class TestThemeSensitivity:
         html = resp.content.decode()
         assert 'ナフサ高' in html
         assert 'section-theme-sensitivity' in html
+
+    def test_chip_links_to_fulltext_search_not_tag_filter(self, authenticated_client, user, sample_diary):
+        """テーマチップのタップ先を、タグ絞り込み(tag-id)ではなく全文検索(query)に張り替えた回帰。
+
+        なぜ: タグ未付与でも reason/継続記録の本文に同じ語が書かれている日記を
+        取りこぼさないため、発見の入口を本文横断＋ハイライト付きの全文検索に統一する。
+        """
+        tag = Tag.objects.create(user=user, name='半導体')
+        sample_diary.tags.add(tag)
+        resp = authenticated_client.get(reverse('stockdiary:detail', kwargs={'pk': sample_diary.pk}))
+        html = resp.content.decode()
+        # チップのリンク先がホームの全文検索(query=半導体)になっている
+        home = reverse('stockdiary:home')
+        assert f'{home}?query=%E5%8D%8A%E5%B0%8E%E4%BD%93' in html  # urlencode('半導体')
+
+
+@pytest.mark.django_db
+class TestFulltextFindsBodyMention:
+    """タグ未付与でも本文（reason/継続記録）に記載があれば全文検索でヒットし、
+    ハイライトされることを固定する。発見をタグ軸に限定しないための回帰。"""
+
+    def test_body_only_mention_found_and_highlighted(self, authenticated_client, user):
+        from stockdiary.models import StockDiary
+        # 「半導体」をタグにはせず reason 本文にだけ書く
+        d = StockDiary.objects.create(
+            user=user, stock_symbol='8035', stock_name='東京エレクトロン',
+            reason='半導体製造装置の世界的リーダー。',
+        )
+        resp = authenticated_client.get(reverse('stockdiary:home') + '?query=半導体')
+        assert resp.status_code == 200
+        ids = [x.id for x in resp.context['diaries']]
+        assert d.id in ids                               # タグ無しでも本文ヒット
+        assert 'search-highlight' in resp.content.decode()  # ハイライトが当たる
