@@ -11,6 +11,21 @@ import bleach
 register = template.Library()
 
 
+@register.filter(name='note_lead')
+def note_lead(text, max_len=70):
+    """継続記録/本文の先頭から「意味のある一文」を返す（テーマ索引のプレビュー用）。
+
+    どの見出し名が使われているか等の内容構造に依存せず、Markdownノイズを除いた
+    先頭文を切り出す（extract_lead に委譲）。記録の書式はユーザー依存のため、
+    特定の見出しを前提にしない汎用抽出にする。
+    """
+    try:
+        from stockdiary.utils import extract_lead
+        return extract_lead(text or '', max_len=int(max_len))
+    except Exception:
+        return ''
+
+
 @register.filter(name='extract_hashtags')
 def extract_hashtags_filter(text):
     """本文から @ハッシュタグ を抽出する（stockdiary.utils.extract_hashtags への委譲）"""

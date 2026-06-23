@@ -658,6 +658,17 @@ input[type="time"].form-input-improved {
   border: 1px solid var(--border-color, #cccbc8);
   padding: 0.5rem;
   text-align: left;
+  /* モバイルで列が潰れ、項目名が1文字ずつ縦折れするのを防ぐ。
+     最低幅を確保し、幅が足りなければ table の overflow-x:auto で横スクロールさせる
+     （決算基本情報のような縦長の項目×内容テーブル対策）。 */
+  min-width: 6.5em;
+  word-break: break-word;
+}
+
+/* 項目名（左端列）は折り返さず1行で読めるようにする */
+.markdown-content th:first-child,
+.markdown-content td:first-child {
+  white-space: nowrap;
 }
 
 .markdown-content th {

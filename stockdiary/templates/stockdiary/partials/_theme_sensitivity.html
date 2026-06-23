@@ -15,7 +15,7 @@
   <div class="ts-chips">
     {% for item in theme_tags %}
     <div class="ts-chip ts-dir-{{ item.direction|default:'none' }}" data-tag-id="{{ item.tag.id }}">
-      <a class="ts-name" href="{% url 'tags:detail' item.tag.id %}" title="「{{ item.tag.name }}」のタグページへ">{{ item.tag.name }}</a>
+      <a class="ts-name" href="{% url 'stockdiary:home' %}?query={{ item.tag.name|urlencode }}" title="「{{ item.tag.name }}」を本文も含めて検索">{{ item.tag.name }}</a>
       <span class="ts-toggle" role="group" aria-label="この銘柄への影響">
         <button type="button" class="ts-btn ts-up{% if item.direction == 'up' %} on{% endif %}" data-dir="up" title="追い風" aria-label="追い風">↑</button>
         <button type="button" class="ts-btn ts-flat{% if item.direction == 'neutral' %} on{% endif %}" data-dir="neutral" title="中立" aria-label="中立">→</button>
