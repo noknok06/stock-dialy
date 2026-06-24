@@ -18,5 +18,14 @@ SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
 MIDDLEWARE = [m for m in MIDDLEWARE if 'subscription' not in m.lower()]
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-# テスト環境ではManifestStaticFilesStorageを使用しない
-STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+# テスト環境では ManifestStaticFilesStorage を使用しない（collectstatic 不要に）。
+# 基底 settings は STORAGES dict を定義しているため、レガシーな STATICFILES_STORAGE は
+# 併用できない（Django が ImproperlyConfigured を投げる）。STORAGES を上書きする。
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
+    },
+}

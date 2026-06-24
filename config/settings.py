@@ -328,8 +328,9 @@ if USE_S3:
             'OPTIONS': {'location': 'media'},
         },
         'staticfiles': {
-            # 既存の ManifestStaticFilesStorage 相当（ハッシュ付きファイル名）を S3 上で維持
-            'BACKEND': 'storages.backends.s3.S3ManifestStaticStorage',
+            # 非ハッシュの静的配信（現行 VPS と同じ挙動）。manifest 化はマイグレーションとは
+            # 別途に行う（Django 5.2 では旧 STATICFILES_STORAGE は無視され実挙動は非 manifest）
+            'BACKEND': 'storages.backends.s3.S3StaticStorage',
             'OPTIONS': {'location': 'static'},
         },
     }
@@ -346,7 +347,8 @@ else:
             'BACKEND': 'django.core.files.storage.FileSystemStorage',
         },
         'staticfiles': {
-            'BACKEND': 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage',
+            # 現行 VPS の実挙動に合わせ非 manifest（Django 5.2 は旧 STATICFILES_STORAGE を無視）
+            'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
         },
     }
 
@@ -613,7 +615,7 @@ AXES_COOLOFF_TIME = 1  # ロックアウト期間（時間単位）
 AXES_LOCKOUT_PARAMETERS = ['username', 'ip_address'] 
 
 # 静的ファイルのストレージは上部「静的・メディアファイル設定」の STORAGES で定義
-# （USE_S3 フラグで S3ManifestStaticStorage / ManifestStaticFilesStorage を切替）
+# （USE_S3 フラグで S3StaticStorage / StaticFilesStorage を切替。非 manifest で現行挙動を踏襲）
 
 
 # スパム検出設定
