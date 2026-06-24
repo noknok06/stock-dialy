@@ -298,29 +298,80 @@ GOOGLE_OAUTH_ENABLED = bool(GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRE
 # 静的・メディアファイル設定
 # =============================================================================
 
-# 静的ファイル
-STATIC_URL = '/static/'
+# AWS S3 を使うか（本番でメディア・静的ファイルを S3/CloudFront 配信する場合 True）
+USE_S3 = os.getenv('USE_S3', 'False') == 'True'
+
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
 
-# メディアファイル
-MEDIA_URL = '/media/'
+# メディアファイル（ローカル保存時のルート）
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+if USE_S3:
+    # --- S3 / CloudFront 配信 ---
+    # 認証情報は EC2 の IAM インスタンスプロファイルから boto3 が自動取得するため、
+    # アクセスキーは設定しない（静的キーを置かない＝セキュリティ）
+    AWS_STORAGE_BUCKET_NAME = os.getenv('AWS_STORAGE_BUCKET_NAME', '')
+    AWS_S3_REGION_NAME = os.getenv('AWS_S3_REGION_NAME', 'ap-northeast-1')
+    # CloudFront 等のカスタムドメイン（任意）。未設定なら S3 標準ドメインで配信
+    AWS_S3_CUSTOM_DOMAIN = os.getenv('AWS_S3_CUSTOM_DOMAIN', '') or None
+    AWS_DEFAULT_ACL = None
+    AWS_QUERYSTRING_AUTH = False          # 公開オブジェクトとして署名なしURLで配信
+    AWS_S3_FILE_OVERWRITE = False         # 同名アップロードを上書きせずユニーク名に
+    AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
+
+    STORAGES = {
+        'default': {
+            'BACKEND': 'storages.backends.s3.S3Storage',
+            'OPTIONS': {'location': 'media'},
+        },
+        'staticfiles': {
+            # 既存の ManifestStaticFilesStorage 相当（ハッシュ付きファイル名）を S3 上で維持
+            'BACKEND': 'storages.backends.s3.S3ManifestStaticStorage',
+            'OPTIONS': {'location': 'static'},
+        },
+    }
+
+    _s3_domain = AWS_S3_CUSTOM_DOMAIN or f'{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com'
+    STATIC_URL = f'https://{_s3_domain}/static/'
+    MEDIA_URL = f'https://{_s3_domain}/media/'
+else:
+    # --- ローカル / VPS 保存（現状維持） ---
+    STATIC_URL = '/static/'
+    MEDIA_URL = '/media/'
+    STORAGES = {
+        'default': {
+            'BACKEND': 'django.core.files.storage.FileSystemStorage',
+        },
+        'staticfiles': {
+            'BACKEND': 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage',
+        },
+    }
 
 # =============================================================================
 # メール設定
 # =============================================================================
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'  # メールサーバー
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'kabulog.information@gmail.com'
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
-if not EMAIL_HOST_PASSWORD and not os.getenv('DJANGO_TESTING'):
-    raise ValueError("EMAIL_HOST_PASSWORD environment variable is required")
+# Amazon SES を使うか（本番でメール送信を SES へ移行する場合 True）
+USE_SES = os.getenv('USE_SES', 'False') == 'True'
+
+if USE_SES:
+    # Amazon SES 経由で送信。認証は EC2 の IAM インスタンスプロファイル（静的キー不使用）
+    EMAIL_BACKEND = 'django_ses.SESBackend'
+    AWS_SES_REGION_NAME = os.getenv('AWS_SES_REGION_NAME', 'ap-northeast-1')
+    AWS_SES_REGION_ENDPOINT = f'email.{AWS_SES_REGION_NAME}.amazonaws.com'
+else:
+    # Gmail SMTP（現状）
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = 'smtp.gmail.com'  # メールサーバー
+    EMAIL_PORT = 587
+    EMAIL_USE_TLS = True
+    EMAIL_HOST_USER = 'kabulog.information@gmail.com'
+    EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+    if not EMAIL_HOST_PASSWORD and not os.getenv('DJANGO_TESTING'):
+        raise ValueError("EMAIL_HOST_PASSWORD environment variable is required")
 # デフォルトの送信元メールアドレス
 DEFAULT_FROM_EMAIL = 'カブログ <kabulog.information@gmail.com>'
 # =============================================================================
@@ -561,8 +612,8 @@ AXES_FAILURE_LIMIT = 10  # 10回の失敗でロック
 AXES_COOLOFF_TIME = 1  # ロックアウト期間（時間単位）
 AXES_LOCKOUT_PARAMETERS = ['username', 'ip_address'] 
 
-# 静的ファイルのキャッシュ期間を設定（秒単位）
-STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
+# 静的ファイルのストレージは上部「静的・メディアファイル設定」の STORAGES で定義
+# （USE_S3 フラグで S3ManifestStaticStorage / ManifestStaticFilesStorage を切替）
 
 
 # スパム検出設定
