@@ -8,7 +8,8 @@ validate / summarize / import_payload は 1 実装で両形式に対応する。
 - すべてのレコードを import 実行ユーザー（self.user）に紐付ける。ファイル内の user は信用しない。
 - Tag は (self.user, name) で get_or_create して重複統合する。
 - 取引・分割は bulk_create で投入し、Transaction.save() の都度集計を避ける。
-  全取引投入後に AggregateService.recalculate(diary) を diary 単位で1回呼ぶ。
+  AggregateService.deferred(diary) ブロックで囲み、ブロック出口で diary 単位の
+  再集計を1回だけ確定する（手動 recalculate の呼び忘れを構造的に防ぐ）。
 - 株式分割は二重適用を避けるため is_applied=False で取り込み、apply_split() は呼ばない。
 - 仮説（Thesis）は diary×1、検証（Verdict）は thesis×1。claim が空なら取り込まない。
 """
@@ -463,50 +464,50 @@ class ImportService:
         if directions:
             DiaryTagDirection.objects.bulk_create(directions, ignore_conflicts=True)
 
-        # 取引（bulk_create で save() の自動集計を回避。行順＝挿入順を維持）
-        tx_objs = []
-        for tx in d.get('transactions', []):
-            if tx.get('transaction_type') not in VALID_TRANSACTION_TYPE:
-                continue
-            price = _to_decimal(tx.get('price'))
-            quantity = _to_decimal(tx.get('quantity'))
-            if price is None or quantity is None or price <= 0 or quantity <= 0:
-                continue
-            if not tx.get('transaction_date'):
-                continue
-            tx_objs.append(Transaction(
-                diary=diary,
-                transaction_type=tx['transaction_type'],
-                transaction_date=tx['transaction_date'],
-                price=price,
-                quantity=quantity,
-                memo=tx.get('memo', '') or '',
-                is_margin=_parse_bool(tx.get('is_margin')),
-            ))
-        if tx_objs:
-            Transaction.objects.bulk_create(tx_objs)
-            result['transactions'] += len(tx_objs)
+        # 取引・分割は bulk_create で save() の自動集計を回避（行順＝挿入順を維持）。
+        # deferred() で囲み、ブロック出口で diary 単位の再集計を1回だけ確定する
+        # （手動 recalculate の呼び忘れを構造的に防ぐ）。
+        with AggregateService.deferred(diary):
+            tx_objs = []
+            for tx in d.get('transactions', []):
+                if tx.get('transaction_type') not in VALID_TRANSACTION_TYPE:
+                    continue
+                price = _to_decimal(tx.get('price'))
+                quantity = _to_decimal(tx.get('quantity'))
+                if price is None or quantity is None or price <= 0 or quantity <= 0:
+                    continue
+                if not tx.get('transaction_date'):
+                    continue
+                tx_objs.append(Transaction(
+                    diary=diary,
+                    transaction_type=tx['transaction_type'],
+                    transaction_date=tx['transaction_date'],
+                    price=price,
+                    quantity=quantity,
+                    memo=tx.get('memo', '') or '',
+                    is_margin=_parse_bool(tx.get('is_margin')),
+                ))
+            if tx_objs:
+                Transaction.objects.bulk_create(tx_objs)
+                result['transactions'] += len(tx_objs)
 
-        # 株式分割（is_applied=False で取り込み、apply_split は呼ばない＝二重適用防止）
-        split_objs = []
-        for sp in d.get('stock_splits', []):
-            ratio = _to_decimal(sp.get('split_ratio'))
-            if ratio is None or ratio <= 0 or not sp.get('split_date'):
-                continue
-            split_objs.append(StockSplit(
-                diary=diary,
-                split_date=sp['split_date'],
-                split_ratio=ratio,
-                memo=sp.get('memo', '') or '',
-                is_applied=False,
-                applied_at=None,
-            ))
-        if split_objs:
-            StockSplit.objects.bulk_create(split_objs)
-            result['stock_splits'] += len(split_objs)
-
-        # 全取引投入後に集計を確定（diary 単位で1回）
-        AggregateService.recalculate(diary)
+            # 株式分割（is_applied=False で取り込み、apply_split は呼ばない＝二重適用防止）
+            split_objs = []
+            for sp in d.get('stock_splits', []):
+                ratio = _to_decimal(sp.get('split_ratio'))
+                if ratio is None or ratio <= 0 or not sp.get('split_date'):
+                    continue
+                split_objs.append(StockSplit(
+                    diary=diary,
+                    split_date=sp['split_date'],
+                    split_ratio=ratio,
+                    memo=sp.get('memo', '') or '',
+                    is_applied=False,
+                    applied_at=None,
+                ))
+            if split_objs:
+                StockSplit.objects.bulk_create(split_objs)
+                result['stock_splits'] += len(split_objs)
 
         # 継続記録（DiaryNote.save() は full_clean を呼ぶため個別 create）
         for note in d.get('notes', []):

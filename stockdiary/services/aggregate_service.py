@@ -2,6 +2,7 @@
 損益集計ロジックを StockDiary モデルから分離したサービス。
 """
 import logging
+from contextlib import contextmanager
 from decimal import Decimal, ROUND_HALF_UP
 
 logger = logging.getLogger(__name__)
@@ -20,6 +21,34 @@ class AggregateService:
         AggregateService._recalculate_all(diary)
         AggregateService._recalculate_cash_only(diary)
         diary.save()
+
+    @staticmethod
+    @contextmanager
+    def deferred(diary):
+        """一括操作のための「忘れても壊れない」再集計コンテキスト。
+
+        ``Transaction.save()`` / ``delete()`` は単体操作なら自動で再集計するが、
+        ``bulk_create`` / ``bulk_update`` / ``QuerySet.update`` / ``QuerySet.delete``
+        は save() を経由しないため自動再集計が走らない。従来はその都度
+        ``recalculate(diary)`` を手動で呼ぶ規約だったが、呼び忘れると集計値が
+        静かにずれる（＝メモリ任せの不変条件）。
+
+        このブロックを使うと、ブロックを抜けるときに **必ず1回だけ** 再集計が走る。
+        explicit な recalculate 呼び出しは不要になる::
+
+            with AggregateService.deferred(diary):
+                Transaction.objects.bulk_create([...])
+            # ここで diary の集計は確定済み
+
+        ブロック内で個別 ``save()`` を多数呼ぶ場合も、それらの自動再集計を抑制し
+        （``diary._defer_recalc`` フラグ）、出口で一度だけ走らせて O(N)→O(1) にする。
+        """
+        diary._defer_recalc = True
+        try:
+            yield diary
+        finally:
+            diary._defer_recalc = False
+            AggregateService.recalculate(diary)
 
     @staticmethod
     def _recalculate_all(diary):

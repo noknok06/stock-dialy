@@ -90,17 +90,31 @@ python manage.py collectstatic
 - `linked_diaries` は非対称 M2M（A→B ≠ B→A）
 - `StockDiary` には EDINET から定期更新される `latest_disclosure_date` / `latest_disclosure_doc_type_name` フィールドがある
 
-### ⚠️ AggregateService — 必須呼び出しルール
+### ⚠️ AggregateService — 集計の不変条件
 
-`Transaction` を作成・更新・削除した後は **必ず** 以下を呼ぶこと。
-呼び忘れると `StockDiary` の集計値（保有数・損益等）がずれる。
+`StockDiary` の集計値（保有数・損益等）は、取引の変更後に必ず再計算される必要がある。
+この不変条件は **構造で守られている**（規約として手動で覚える必要はない）。
+
+**単体操作 → 自動。** `Transaction.save()` / `delete()` が `diary.update_aggregates()`
+を内部で呼ぶ（`models.py`）。`views.py` のように1件ずつ操作するコードは、手動で
+`recalculate` を呼んではならない（二重再集計になる）。
+
+**一括操作 → `deferred()` で囲む。** `bulk_create` / `bulk_update` /
+`QuerySet.update` / `QuerySet.delete` は `save()` を経由せず自動再集計が走らない。
+これらは必ず `AggregateService.deferred(diary)` ブロック内で行う。ブロックを抜けると
+**必ず1回だけ** 再集計が走る（呼び忘れても集計がずれない）。
 
 ```python
 from stockdiary.services.aggregate_service import AggregateService
 
-AggregateService.recalculate(diary)
-# ※ recalculate() 内で diary.save() まで実行される
+# 一括操作はこの形に統一する（手動 recalculate は不要）
+with AggregateService.deferred(diary):
+    Transaction.objects.bulk_create([...])
+# ここで diary の集計は確定済み（recalculate() 内で diary.save() まで実行される）
 ```
+
+直接 `AggregateService.recalculate(diary)` を呼ぶのは、取引以外の理由で集計を
+作り直す管理コマンド・admin アクションなど、上記2経路に当てはまらない場合のみ。
 
 ### サービス層
 

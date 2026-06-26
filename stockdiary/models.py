@@ -173,7 +173,13 @@ class StockDiary(models.Model):
         return None
 
     def update_aggregates(self):
-        """集計フィールドを再計算して save() する。"""
+        """集計フィールドを再計算して save() する。
+
+        AggregateService.deferred() ブロック内では抑制され、ブロックを抜けるときに
+        一度だけ再集計が走る（個別 save() による N 回のフル再集計を防ぐ）。
+        """
+        if getattr(self, '_defer_recalc', False):
+            return
         from .services.aggregate_service import AggregateService
         AggregateService.recalculate(self)
 
@@ -344,6 +350,8 @@ class StockSplit(models.Model):
                 raise ValidationError('適用済みの分割情報は編集できません')
 
     def apply_split(self):
+        from .services.aggregate_service import AggregateService
+
         # 対象取引（分割日より前）
         transactions = list(self.diary.transactions.filter(
             transaction_date__lt=self.split_date
@@ -353,20 +361,17 @@ class StockSplit(models.Model):
             tx.quantity = tx.quantity * self.split_ratio
             tx.price = tx.price / self.split_ratio
 
-        # bulk_update は Transaction.save() を経由しないため、ここでは集計が走らない。
-        # 旧実装は tx.save() ごとに diary.update_aggregates()（全取引ゼロから再計算）が
-        # 発火し、取引 N 件で N 回のフル再集計が走っていた。全件更新してから
-        # 末尾で一度だけ再集計することで、結果を保ったまま O(N) → O(1) にする。
-        if transactions:
-            Transaction.objects.bulk_update(transactions, ["quantity", "price"])
+        # bulk_update は Transaction.save() を経由しないため自動再集計が走らない。
+        # deferred() で囲み、ブロック出口で一度だけ再集計する（O(N)→O(1)、かつ
+        # 再集計の呼び忘れを構造的に防ぐ）。
+        with AggregateService.deferred(self.diary):
+            if transactions:
+                Transaction.objects.bulk_update(transactions, ["quantity", "price"])
 
-        # フラグ更新
-        self.is_applied = True
-        self.applied_at = timezone.now()
-        self.save(update_fields=["is_applied", "applied_at"])
-
-        # 再集計（全件更新後に一度だけ）
-        self.diary.update_aggregates()
+            # フラグ更新
+            self.is_applied = True
+            self.applied_at = timezone.now()
+            self.save(update_fields=["is_applied", "applied_at"])
 
 
 class DiaryNote(models.Model):
