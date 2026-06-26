@@ -8,6 +8,7 @@ from . import views_comparison  # 銘柄比較機能
 from . import views_timeline  # 全銘柄横断タイムライン
 from . import views_migration  # 日記データ移行（インポート/エクスポート）
 from . import views_trade_import  # 証券CSV取込（楽天・SBI）
+from . import views_growth  # 成長OS（仮説・検証・カルテ・ライブラリ・年次レビュー）
 from django.contrib.auth.decorators import login_required
 from django.views.generic.base import RedirectView
 
@@ -132,14 +133,14 @@ path('api/create/', api.api_create_diary, name='api_create'),
 
 
     path('dashboard/', views.TradingDashboardView.as_view(), name='dashboard'),
-    path('review/', views.AnnualReviewView.as_view(), name='annual_review'),
-    path('karte/', views.InvestorKarteView.as_view(), name='investor_karte'),
-    path('library/', views.LibraryView.as_view(), name='library'),
+    path('review/', views_growth.AnnualReviewView.as_view(), name='annual_review'),
+    path('karte/', views_growth.InvestorKarteView.as_view(), name='investor_karte'),
+    path('library/', views_growth.LibraryView.as_view(), name='library'),
     # Phase 8a: 検証ループ（仮説・検証）
-    path('<int:diary_id>/karte/', views.karte_block, name='karte_block'),
-    path('<int:diary_id>/thesis/new/', views.thesis_edit, name='thesis_create'),
-    path('<int:diary_id>/thesis/<int:thesis_id>/edit/', views.thesis_edit, name='thesis_edit'),
-    path('<int:diary_id>/thesis/<int:thesis_id>/verify/', views.thesis_verify, name='thesis_verify'),
+    path('<int:diary_id>/karte/', views_growth.karte_block, name='karte_block'),
+    path('<int:diary_id>/thesis/new/', views_growth.thesis_edit, name='thesis_create'),
+    path('<int:diary_id>/thesis/<int:thesis_id>/edit/', views_growth.thesis_edit, name='thesis_edit'),
+    path('<int:diary_id>/thesis/<int:thesis_id>/verify/', views_growth.thesis_verify, name='thesis_verify'),
     path('compare/', views_comparison.StockComparisonView.as_view(), name='stock_comparison'),
     path('investment-hub/', views_comparison.InvestmentHubView.as_view(), name='investment_hub'),
     path('api/gemini-stock-analysis/', views_comparison.api_gemini_stock_analysis, name='api_gemini_stock_analysis'),
