@@ -7,11 +7,18 @@ name: CodeQL
 on:
   push:
     branches: [main, develop]
+    paths-ignore: ['**.md', 'docs/**']   # ドキュメントのみの変更ではスキャンしない
   pull_request:
     branches: [main, develop]
+    paths-ignore: ['**.md', 'docs/**']
   schedule:
     - cron: '23 5 * * 1'   # 毎週月曜 05:23 UTC に定期スキャン
   workflow_dispatch:        # 手動実行も可（このブランチで今すぐ試せる）
+
+# 連続 push 時は古いランをキャンセルし、無駄な実行を1本に絞る
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   analyze:

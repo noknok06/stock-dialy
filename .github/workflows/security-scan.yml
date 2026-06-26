@@ -8,12 +8,19 @@ name: Security Scan
 on:
   push:
     branches: [main, develop]
+    paths-ignore: ['**.md', 'docs/**']   # ドキュメントのみの変更ではスキャンしない
   pull_request:
     branches: [main, develop]
+    paths-ignore: ['**.md', 'docs/**']
   workflow_dispatch:
 
 permissions:
   contents: read
+
+# 連続 push 時は古いランをキャンセルし、無駄な実行を1本に絞る
+concurrency:
+  group: security-scan-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   bandit:
