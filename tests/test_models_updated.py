@@ -299,6 +299,27 @@ class TestStockSplitModel:
         assert transaction.price == Decimal('2500.00')    # apply_split()で更新
 
 @pytest.mark.django_db(transaction=True)
+class TestReasonIsBackground:
+    """reason は「投資理由（購入理由）」ではなく「背景」（会社/ニュース/テーマ）として扱う。
+
+    なぜこのテストがあるか:
+    docs/diary_recording_redesign.md 改訂2 で、reason に購入理由を持たせると多ラウンド
+    取引で破綻するため、reason＝背景（遅く変わる前提）へ役割を再定義した。購入理由・
+    決算・ニュースの都度の記録は継続日記の topic スレッドへ寄せる。この意味づけが
+    ラベルとして退行しないよう、モデルとフォームの表示名をコードで固定する。
+    """
+
+    def test_reason_verbose_name_is_background(self):
+        assert StockDiary._meta.get_field('reason').verbose_name == '背景'
+
+    def test_form_reason_label_is_background(self):
+        from stockdiary.forms import StockDiaryForm
+        form = StockDiaryForm()
+        assert form.fields['reason'].label == '背景'
+        assert '投資理由' not in (form.fields['reason'].label or '')
+
+
+@pytest.mark.django_db(transaction=True)
 class TestAggregateDeferred:
     """AggregateService.deferred() — 一括操作の不変条件テスト
 

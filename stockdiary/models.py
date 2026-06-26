@@ -64,7 +64,7 @@ class StockDiary(models.Model):
     currency = models.CharField(
         max_length=3, choices=CURRENCY_CHOICES, default='JPY', verbose_name='通貨'
     )
-    reason = models.TextField(verbose_name='投資理由', blank=True, max_length=5000)
+    reason = models.TextField(verbose_name='背景', blank=True, max_length=5000)
     tags = models.ManyToManyField(Tag, blank=True)
     sector = models.CharField(max_length=50, blank=True, verbose_name='業種')
     image = models.ImageField(upload_to=get_diary_image_path, null=True, blank=True, help_text="日記に関連する画像")
