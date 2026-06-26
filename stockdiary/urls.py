@@ -7,6 +7,7 @@ from . import views_mobile_ux  # 🆕 モバイルUX用ビュー
 from . import views_comparison  # 銘柄比較機能
 from . import views_timeline  # 全銘柄横断タイムライン
 from . import views_migration  # 日記データ移行（インポート/エクスポート）
+from . import views_trade_import  # 証券CSV取込（楽天・SBI）
 from django.contrib.auth.decorators import login_required
 from django.views.generic.base import RedirectView
 
@@ -119,8 +120,8 @@ path('api/create/', api.api_create_diary, name='api_create'),
     path('api/stock-diaries/<str:symbol>/', views.api_stock_diaries, name='api_stock_diaries'),
 
     # 取引履歴アップロード
-    path('trade-upload/', views.TradeUploadView.as_view(), name='trade_upload'),
-    path('trade-upload/process/', views.process_trade_upload, name='process_trade_upload'),
+    path('trade-upload/', views_trade_import.TradeUploadView.as_view(), name='trade_upload'),
+    path('trade-upload/process/', views_trade_import.process_trade_upload, name='process_trade_upload'),
 
     # 日記データ移行（インポート/エクスポート）
     path('migration/export/', views_migration.MigrationExportView.as_view(), name='migration_export'),
