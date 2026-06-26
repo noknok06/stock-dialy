@@ -69,7 +69,8 @@ import statistics
 
 from PIL import Image
 
-from .views import get_note_type_display, build_tag_performance
+from .views import get_note_type_display
+from .views_dashboard import build_tag_performance
 
 
 class AnnualReviewView(LoginRequiredMixin, TemplateView):

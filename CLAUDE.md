@@ -189,6 +189,7 @@ stockdiary/               ← 単一ファイル方式
   views_trade_import.py   # 証券CSV取込（楽天・SBI）— views.py から責務分割
   views_growth.py         # 成長OS（仮説・検証・カルテ・ライブラリ・年次レビュー）— views.py から責務分割
   views_panels.py         # 詳細ページの遅延ロードHTMXパネル（backlinks・EDINET）— views.py から責務分割
+  views_dashboard.py      # ダッシュボード・パフォーマンスグラフ・タグ別成績— views.py から責務分割
   api.py                  # 株式情報 API（yfinance）
   api_views.py            # 通知・関連日記・グラフ API
   models.py               # 全モデル（単一ファイル）
