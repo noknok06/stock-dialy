@@ -1,0 +1,44 @@
+# 無料の補助スキャン（CodeQL の補完）。すべて pip でインストールできる OSS で、
+# 従量課金・外部トークン不要。初期は advisory（continue-on-error）で運用し、
+# 所見を確認しながら段階的に厳格化する想定。
+#   - Bandit: Python 向け SAST（危険な関数・ハードコード秘密・弱い乱数 等）
+#   - pip-audit: requirements.txt の既知脆弱性(CVE)を監査（Dependabot の即時版）
+name: Security Scan
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bandit:
+    name: Bandit (Python SAST)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install bandit
+      - name: Run Bandit (medium+ severity / confidence, advisory)
+        run: bandit -r . -ll -ii -x ./venv,./tests
+        continue-on-error: true
+
+  pip-audit:
+    name: pip-audit (dependency CVEs)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install pip-audit
+      # --no-deps: 完全ピン留め済みの requirements.txt をそのまま監査（解決失敗で落ちない）
+      - name: Audit pinned dependencies (advisory)
+        run: pip-audit -r requirements.txt --no-deps
+        continue-on-error: true

@@ -363,6 +363,11 @@ JSON を返す View → `api.py` / `api_views.py` に集約する。
 
 `.github/workflows/django-tests.yml` で push / PR 時に `pytest` が自動実行される。
 
+セキュリティ検知（従量課金なし・公開リポジトリの無料枠＋定額）も常設：
+`codeql.yml`（セマンティックSAST）・`security-scan.yml`（Bandit / pip-audit）・
+`dependabot.yml`（依存CVE）。文脈依存の検知は Claude Code `/security-review`（定額）で補う。
+詳細とリポジトリ側の有効化手順は `docs/security_scanning.md`。
+
 ---
 
 ## 開発規約
