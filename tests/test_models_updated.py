@@ -299,6 +299,134 @@ class TestStockSplitModel:
         assert transaction.price == Decimal('2500.00')    # apply_split()で更新
 
 @pytest.mark.django_db(transaction=True)
+class TestReasonIsBackground:
+    """reason は「投資理由（購入理由）」ではなく「背景」（会社/ニュース/テーマ）として扱う。
+
+    なぜこのテストがあるか:
+    docs/diary_recording_redesign.md 改訂2 で、reason に購入理由を持たせると多ラウンド
+    取引で破綻するため、reason＝背景（遅く変わる前提）へ役割を再定義した。購入理由・
+    決算・ニュースの都度の記録は継続日記の topic スレッドへ寄せる。この意味づけが
+    ラベルとして退行しないよう、モデルとフォームの表示名をコードで固定する。
+    """
+
+    def test_reason_verbose_name_is_background(self):
+        assert StockDiary._meta.get_field('reason').verbose_name == '背景'
+
+    def test_form_reason_label_is_background(self):
+        from stockdiary.forms import StockDiaryForm
+        form = StockDiaryForm()
+        assert form.fields['reason'].label == '背景'
+        assert '投資理由' not in (form.fields['reason'].label or '')
+
+
+@pytest.mark.django_db(transaction=True)
+class TestAggregateDeferred:
+    """AggregateService.deferred() — 一括操作の不変条件テスト
+
+    なぜこのテストがあるか:
+    bulk_create / bulk_update / QuerySet.delete は Transaction.save()/delete() を
+    経由しないため、従来は手動で recalculate を呼ぶ規約だった。呼び忘れると
+    集計値が静かにずれる（メモリ任せの不変条件）。deferred() ブロックは
+    「囲めばブロック出口で必ず1回だけ再集計が走る」ことを構造的に保証する。
+    その保証が効いていることを固定する。
+    """
+
+    def setup_method(self):
+        self.user = User.objects.create_user(
+            username='testuser',
+            email='test@example.com',
+            password='testpass123'
+        )
+        self.diary = StockDiary.objects.create(
+            user=self.user,
+            stock_symbol='7203',
+            stock_name='トヨタ自動車',
+            reason='テスト用'
+        )
+
+    def test_bulk_create_recalculates_on_block_exit(self):
+        """bulk_create（save() 非経由）でも、deferred ブロックを抜けると集計が確定する。
+
+        手動 recalculate を一切呼んでいない点が重要 — 呼び忘れても壊れないこと。
+        """
+        from stockdiary.services.aggregate_service import AggregateService
+
+        with AggregateService.deferred(self.diary):
+            Transaction.objects.bulk_create([
+                Transaction(
+                    diary=self.diary,
+                    transaction_type='buy',
+                    transaction_date=date(2024, 1, 10),
+                    price=Decimal('2000.00'),
+                    quantity=Decimal('100'),
+                ),
+                Transaction(
+                    diary=self.diary,
+                    transaction_type='buy',
+                    transaction_date=date(2024, 1, 20),
+                    price=Decimal('2400.00'),
+                    quantity=Decimal('100'),
+                ),
+            ])
+            # ブロック内ではまだ集計は走っていない（_defer_recalc で抑制）
+            assert getattr(self.diary, '_defer_recalc', False) is True
+
+        self.diary.refresh_from_db()
+        assert self.diary.current_quantity == Decimal('200.00')
+        assert self.diary.average_purchase_price == Decimal('2200.00')
+
+    def test_queryset_delete_inside_deferred_resets_aggregates(self):
+        """QuerySet.delete()（model.delete() 非経由）でも、ブロック出口で集計が0に戻る。
+
+        QuerySet.delete は Transaction.delete() オーバーライドを経由しないため、
+        deferred で囲まなければ集計がずれたまま残る典型ケース。
+        """
+        from stockdiary.services.aggregate_service import AggregateService
+
+        # 通常作成（save() 経由で自動集計）
+        Transaction.objects.create(
+            diary=self.diary,
+            transaction_type='buy',
+            transaction_date=date(2024, 1, 10),
+            price=Decimal('2000.00'),
+            quantity=Decimal('100'),
+        )
+        self.diary.refresh_from_db()
+        assert self.diary.current_quantity == Decimal('100.00')
+
+        with AggregateService.deferred(self.diary):
+            self.diary.transactions.all().delete()  # QuerySet.delete()
+
+        self.diary.refresh_from_db()
+        assert self.diary.current_quantity == Decimal('0.00')
+
+    def test_recalc_runs_even_if_block_raises(self):
+        """ブロック内で例外が出ても、deferred は抑制フラグを必ず解除する。
+
+        finally で _defer_recalc=False に戻すことを保証し、以降の単体 save() の
+        自動集計が死なないことを担保する。
+        """
+        from stockdiary.services.aggregate_service import AggregateService
+
+        with pytest.raises(ValueError):
+            with AggregateService.deferred(self.diary):
+                raise ValueError('boom')
+
+        assert getattr(self.diary, '_defer_recalc', False) is False
+
+        # 例外後も単体 save() の自動集計が正常に動く
+        Transaction.objects.create(
+            diary=self.diary,
+            transaction_type='buy',
+            transaction_date=date(2024, 1, 10),
+            price=Decimal('2000.00'),
+            quantity=Decimal('100'),
+        )
+        self.diary.refresh_from_db()
+        assert self.diary.current_quantity == Decimal('100.00')
+
+
+@pytest.mark.django_db(transaction=True)
 class TestDiaryNoteModel:
     """継続記録（DiaryNote）のテスト"""
     

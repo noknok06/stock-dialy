@@ -77,7 +77,7 @@ class TagListView(LoginRequiredMixin, ListView):
 
         tags = list(context['tags'])
 
-        # 各タグに「投資理由ありのユニーク銘柄数（理由台帳の件数）」を付与
+        # 各タグに「背景ありのユニーク銘柄数（背景台帳の件数）」を付与
         tag_book_counts = {}
         for tag in tags:
             diaries = tag.stockdiary_set.filter(
@@ -396,7 +396,7 @@ class TagDeleteView(LoginRequiredMixin, DeleteView):
 
 class TagBookView(LoginRequiredMixin, DetailView):
     """
-    このタグで残した投資理由を、考えの変化（継続記録）まで通読する読み物ビュー。
+    このタグで残した背景（reason）を、考えの変化（継続記録）まで通読する読み物ビュー。
     """
     model = Tag
     template_name = 'tags/tag_book.html'
@@ -417,7 +417,7 @@ class TagBookView(LoginRequiredMixin, DetailView):
         else:
             date_order, sec_order = '-last_transaction_date', '-created_at'
 
-        # 投資理由がある日記のみ。継続記録（notes）も prefetch して通読できるようにする
+        # 背景(reason)がある日記のみ。継続記録（notes）も prefetch して通読できるようにする
         diaries = tag.stockdiary_set.filter(
             reason__isnull=False
         ).exclude(

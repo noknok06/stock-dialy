@@ -64,7 +64,7 @@ class StockDiary(models.Model):
     currency = models.CharField(
         max_length=3, choices=CURRENCY_CHOICES, default='JPY', verbose_name='通貨'
     )
-    reason = models.TextField(verbose_name='投資理由', blank=True, max_length=5000)
+    reason = models.TextField(verbose_name='背景', blank=True, max_length=5000)
     tags = models.ManyToManyField(Tag, blank=True)
     sector = models.CharField(max_length=50, blank=True, verbose_name='業種')
     image = models.ImageField(upload_to=get_diary_image_path, null=True, blank=True, help_text="日記に関連する画像")
@@ -173,7 +173,13 @@ class StockDiary(models.Model):
         return None
 
     def update_aggregates(self):
-        """集計フィールドを再計算して save() する。"""
+        """集計フィールドを再計算して save() する。
+
+        AggregateService.deferred() ブロック内では抑制され、ブロックを抜けるときに
+        一度だけ再集計が走る（個別 save() による N 回のフル再集計を防ぐ）。
+        """
+        if getattr(self, '_defer_recalc', False):
+            return
         from .services.aggregate_service import AggregateService
         AggregateService.recalculate(self)
 
@@ -344,6 +350,8 @@ class StockSplit(models.Model):
                 raise ValidationError('適用済みの分割情報は編集できません')
 
     def apply_split(self):
+        from .services.aggregate_service import AggregateService
+
         # 対象取引（分割日より前）
         transactions = list(self.diary.transactions.filter(
             transaction_date__lt=self.split_date
@@ -353,20 +361,17 @@ class StockSplit(models.Model):
             tx.quantity = tx.quantity * self.split_ratio
             tx.price = tx.price / self.split_ratio
 
-        # bulk_update は Transaction.save() を経由しないため、ここでは集計が走らない。
-        # 旧実装は tx.save() ごとに diary.update_aggregates()（全取引ゼロから再計算）が
-        # 発火し、取引 N 件で N 回のフル再集計が走っていた。全件更新してから
-        # 末尾で一度だけ再集計することで、結果を保ったまま O(N) → O(1) にする。
-        if transactions:
-            Transaction.objects.bulk_update(transactions, ["quantity", "price"])
+        # bulk_update は Transaction.save() を経由しないため自動再集計が走らない。
+        # deferred() で囲み、ブロック出口で一度だけ再集計する（O(N)→O(1)、かつ
+        # 再集計の呼び忘れを構造的に防ぐ）。
+        with AggregateService.deferred(self.diary):
+            if transactions:
+                Transaction.objects.bulk_update(transactions, ["quantity", "price"])
 
-        # フラグ更新
-        self.is_applied = True
-        self.applied_at = timezone.now()
-        self.save(update_fields=["is_applied", "applied_at"])
-
-        # 再集計（全件更新後に一度だけ）
-        self.diary.update_aggregates()
+            # フラグ更新
+            self.is_applied = True
+            self.applied_at = timezone.now()
+            self.save(update_fields=["is_applied", "applied_at"])
 
 
 class DiaryNote(models.Model):
@@ -724,31 +729,25 @@ class Verdict(models.Model):
 
     @property
     def hyp_ok(self):
-        return self.hypothesis_result in (self.HYP_HIT, self.HYP_PARTIAL)
+        # 「何を的中とみなすか」の定義は services.metrics（セマンティックレイヤー）が正。
+        from .services import metrics
+        return metrics.is_hypothesis_hit(self.hypothesis_result)
 
     @property
     def pnl_ok(self):
-        return self.pnl_result == self.PNL_PROFIT
+        from .services import metrics
+        return metrics.is_pnl_win(self.pnl_result)
 
     @property
     def quadrant(self):
         """意思決定の質 × 結果 の象限を返す。"""
-        if self.hyp_ok and self.pnl_ok:
-            return 'skill'        # 仮説◯×利益: 再現せよ
-        if self.hyp_ok and not self.pnl_ok:
-            return 'unlucky'      # 仮説◯×損失: 運/握力（学び: 継続の是非）
-        if not self.hyp_ok and self.pnl_ok:
-            return 'lucky'        # 仮説×××利益: 偶然（危険）
-        return 'discipline'       # 仮説×××損失: 想定通りの失敗（学び: 撤退の妥当性）
+        from .services import metrics
+        return metrics.quadrant_of(self.hyp_ok, self.pnl_ok)
 
     @property
     def quadrant_label(self):
-        return {
-            'skill': '再現すべき勝ち',
-            'unlucky': '正しいが報われず',
-            'lucky': '偶然の勝ち（要注意）',
-            'discipline': '想定通りの負け',
-        }[self.quadrant]
+        from .services import metrics
+        return metrics.QUADRANT_LABELS[self.quadrant]
 
     @property
     def stars(self):

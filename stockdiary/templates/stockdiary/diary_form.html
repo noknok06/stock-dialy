@@ -56,7 +56,7 @@
           <div class="wizard-step-connector"></div>
           <div class="wizard-step-item" data-step-indicator="2">
             <div class="wizard-step-dot">2</div>
-            <span class="wizard-step-label">投資理由</span>
+            <span class="wizard-step-label">背景</span>
           </div>
         </div>
         {% endif %}
@@ -216,10 +216,10 @@
         </div>
 
 
-        <!-- 投資理由セクション（Markdownエディタ）(ウィザード Step 2) -->
+        <!-- 背景セクション（Markdownエディタ）(ウィザード Step 2) -->
         <div class="form-section{% if not form.instance.pk %} wizard-step{% endif %}"{% if not form.instance.pk %} data-step="2"{% endif %}>
           <h4 class="form-section-title">
-            <i class="bi bi-journal-text"></i> 投資理由・分析内容
+            <i class="bi bi-journal-text"></i> 背景
             <small class="text-muted ms-2" style="font-size: 0.75rem; font-weight: 400;">
               <i class="bi bi-markdown me-1"></i>Markdown対応
             </small>
@@ -1146,7 +1146,7 @@ window.initReasonEasyMDE = function initReasonEasyMDE() {
     diaryForm.addEventListener('submit', function(e) {
       if (window.easyMDE.value().length > MAX_REASON_LENGTH) {
         e.preventDefault();
-        alert(`投資理由は${MAX_REASON_LENGTH}文字以内で入力してください。現在: ${window.easyMDE.value().length}文字`);
+        alert(`背景は${MAX_REASON_LENGTH}文字以内で入力してください。現在: ${window.easyMDE.value().length}文字`);
         return false;
       }
     });
@@ -2201,7 +2201,7 @@ document.addEventListener('DOMContentLoaded', function () {
       element: '#wizardProgressBar',
       popover: {
         title: '2つのステップで簡単記録',
-        description: '「銘柄情報」→「投資理由」の順に入力していきます。取引は作成後に詳細ページから追加できます。途中の項目は後からでも編集できるので、気軽に進めてみましょう。',
+        description: '「銘柄情報」→「背景」の順に入力していきます。取引は作成後に詳細ページから追加できます。途中の項目は後からでも編集できるので、気軽に進めてみましょう。',
         side: 'bottom',
       },
     },
