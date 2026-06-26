@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { font-family:'IPAGothic','WenQuanYi Zen Hei',sans-serif; color:#1f2433; background:#ffffff; }
+  .page { width:1560px; padding:34px 40px 28px; }
+
+  .head { text-align:center; margin-bottom:18px; }
+  .head h1 { font-size:34px; letter-spacing:1px; color:#1b2340; }
+  .head .sub { font-size:15px; color:#5b6376; margin-top:8px; }
+  .head .map { display:inline-block; margin-top:10px; font-size:12.5px; color:#6b5bbd;
+               background:#f1edfc; border:1px solid #ded3f7; border-radius:20px; padding:5px 16px; }
+
+  .north { margin:14px 0 20px; border:1px solid #d9e0ee; border-radius:12px;
+           background:linear-gradient(90deg,#f3f0fc 0%,#eef5f1 50%,#eef2fb 100%); padding:13px 22px; text-align:center; }
+  .north b { color:#1b2340; font-size:15px; }
+  .north .row { font-size:13.5px; color:#3a4257; margin-top:6px; }
+  .north .k { display:inline-block; margin:0 9px; }
+  .north .k i { font-style:normal; color:#7c5cd6; font-weight:bold; }
+
+  .cols { display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px; }
+  .pillar { border-radius:14px; padding:14px 14px 16px; border:1px solid; }
+  .p1 { background:#f6f2fe; border-color:#e0d4f7; }
+  .p2 { background:#eef7f1; border-color:#cfe9da; }
+  .p3 { background:#eef3fc; border-color:#d3e0f5; }
+  .pillar > .ph { display:flex; align-items:center; gap:10px; margin-bottom:11px; }
+  .pillar .num { width:30px; height:30px; border-radius:8px; color:#fff; font-weight:bold; font-size:16px;
+                 display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
+  .p1 .num{ background:#7c5cd6;} .p2 .num{ background:#2f9e6f;} .p3 .num{ background:#3b6fd4;}
+  .pillar .pt { font-size:16px; font-weight:bold; color:#1b2340; line-height:1.25; }
+  .pillar .pt small { display:block; font-weight:normal; font-size:11.5px; color:#69718a; margin-top:2px; }
+
+  .card { background:#fff; border-radius:9px; padding:9px 11px 10px; margin-bottom:9px; border:1px solid #e7e9f0;
+          border-left-width:4px; }
+  .p1 .card{ border-left-color:#9b81e2;} .p2 .card{ border-left-color:#4cb98a;} .p3 .card{ border-left-color:#6090df;}
+  .card .ct { font-size:13.5px; font-weight:bold; color:#23293c; margin-bottom:3px; }
+  .card .ct span { font-weight:normal; color:#8a8f9e; font-size:11px; }
+  .card ul { list-style:none; }
+  .card li { font-size:12px; color:#3f465a; line-height:1.65; padding-left:13px; position:relative; }
+  .card li::before { content:"▪"; position:absolute; left:0; color:#aeb4c4; font-size:10px; }
+  .card li code { font-family:'IPAGothic',monospace; background:#f2f3f7; border-radius:4px; padding:0 4px; font-size:11px; color:#5a4bb0; }
+  .p2 .card li code{ color:#1f7d57;} .p3 .card li code{ color:#2f5bb0;}
+
+  .ops { margin-top:18px; border:1px dashed #c9d0e0; border-radius:12px; background:#fafbfd; padding:12px 18px; }
+  .ops .ot { font-size:13.5px; font-weight:bold; color:#1b2340; margin-bottom:8px; }
+  .ops .orow { display:flex; gap:12px; flex-wrap:wrap; }
+  .ops .obox { flex:1; min-width:240px; background:#fff; border:1px solid #e7e9f0; border-radius:8px; padding:8px 11px; font-size:12px; color:#3f465a; line-height:1.6; }
+  .ops .obox b { color:#23293c; }
+
+  .foot { display:flex; gap:20px; margin-top:18px; align-items:stretch; }
+  .principles { flex:1.3; }
+  .principles .lbl, .commits .lbl { font-size:12px; color:#69718a; margin-bottom:8px; font-weight:bold; }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; }
+  .chip { font-size:12.5px; color:#384; background:#eef6f0; border:1px solid #cfe6d8; color:#2c6b4c; border-radius:18px; padding:5px 14px; }
+  .chip.v { background:#f1edfc; border-color:#ded3f7; color:#5b46aa; }
+  .chip.b { background:#eef3fc; border-color:#d3e0f5; color:#2f5bb0; }
+  .commits { flex:1; border-left:1px solid #e7e9f0; padding-left:18px; }
+  .commits ul { list-style:none; }
+  .commits li { font-size:11.5px; color:#3f465a; line-height:1.85; }
+  .commits li code { color:#9a4; color:#a06b00; font-family:monospace; background:#fbf6e9; border-radius:4px; padding:0 5px; margin-right:6px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="head">
+    <h1>カブログ AI駆動開発 ケイパビリティマップ</h1>
+    <div class="sub">コンテキスト × 構造 × 検証 ── AI が「忘れず・取り違えず・自分で確かめて」開発できる基盤（本セッション構築分）</div>
+    <div class="map">別システムの「コンテキストレイヤー」を、<b>AI 開発者へのコンテキスト供給</b>として翻案したもの</div>
+  </div>
+
+  <div class="north">
+    <b>到達点（North Star）</b>
+    <div class="row">
+      <span class="k"><i>①</i> AI が規約を忘れても壊れない</span>・
+      <span class="k"><i>②</i> 指標・概念の定義を取り違えない</span>・
+      <span class="k"><i>③</i> 自分の変更を自分で検証できる</span>
+    </div>
+  </div>
+
+  <div class="cols">
+
+    <!-- 柱① -->
+    <div class="pillar p1">
+      <div class="ph"><div class="num">1</div>
+        <div class="pt">コンテキスト供給<small>AI に与える「正本」＝オントロジー＋セマンティック＋規約</small></div></div>
+
+      <div class="card">
+        <div class="ct">オントロジー <span>概念の意味定義</span></div>
+        <ul>
+          <li><code>reason</code>＝背景（会社／ニュース／テーマ・遅く変わる）</li>
+          <li><code>topic</code>＝まとめスレッド全般（購入理由・決算・ニュース）</li>
+          <li><code>note_type</code>＝種類・絞り込み軸／<code>@tag</code>＝横断テーマ</li>
+          <li>Thesis → Verdict → Learning（検証ループ）</li>
+          <li>正本: <code>diary_recording_redesign.md</code> / <code>product_context.md</code></li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="ct">セマンティックレイヤー <span>指標定義の正本</span></div>
+        <ul>
+          <li><code>services.metrics</code>：的中／勝ち／2×2象限／閾値</li>
+          <li>純粋関数・定数（モデル非依存）</li>
+          <li><code>Verdict</code>・<code>karte_service</code> が参照（重複排除）</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="ct">規約（ルールエンジン） <span>CLAUDE.md</span></div>
+        <ul>
+          <li>View／HTMX／URL パターン・ディレクトリ規約</li>
+          <li>サービス層の表（metrics を正本として登録）</li>
+          <li>禁止事項・集計の不変条件を明文化</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 柱② -->
+    <div class="pillar p2">
+      <div class="ph"><div class="num">2</div>
+        <div class="pt">構造的不変条件<small>規約ではなく構造で守る＝忘れても壊れない</small></div></div>
+
+      <div class="card">
+        <div class="ct">集計の不変条件 <span>AggregateService</span></div>
+        <ul>
+          <li><code>Transaction.save()/delete()</code> が自動再集計（単体）</li>
+          <li><code>AggregateService.deferred()</code>＝一括操作の唯一の入口</li>
+          <li>ブロック出口で必ず1回だけ再集計（O(N)→O(1)）</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="ct">定義の単一正本 <span>DRY</span></div>
+        <ul>
+          <li>象限ラベル・閾値の重複を排除（metrics に集約）</li>
+          <li><code>reason＝背景</code> を全レイヤで一貫</li>
+          <li>model／form／template／TagBook まで統一</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="ct">変更の分離 <span>安全な刻み</span></div>
+        <ul>
+          <li>自分の変更だけを migration 化</li>
+          <li>既存ドリフト（memo 等）と混ぜない</li>
+          <li>大規模リプレイスをしない</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 柱③ -->
+    <div class="pillar p3">
+      <div class="ph"><div class="num">3</div>
+        <div class="pt">検証ループ<small>AI が自分の変更を確かめ、自己修正する</small></div></div>
+
+      <div class="card">
+        <div class="ct">自動テスト <span>pytest</span></div>
+        <ul>
+          <li>全 <b>546 tests green</b> / <code>config.test_settings</code></li>
+          <li><code>--nomigrations</code> / <code>--reuse-db</code> で高速ループ</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="ct">回帰でオントロジーを固定 <span>定義を退行させない</span></div>
+        <ul>
+          <li><code>deferred</code> の保証 3本</li>
+          <li><code>metrics</code> 純粋関数・タクソノミ 10ケース</li>
+          <li>「背景」ラベルの退行防止 2本</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="ct">実機・CI <span>fast feedback</span></div>
+        <ul>
+          <li><code>run-app</code> / <code>verify</code> スキルで画面確認</li>
+          <li>GitHub Actions：push／PR で pytest 自動実行</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 運用帯 -->
+  <div class="ops">
+    <div class="ot">作業単位・運用レイヤ（AI にタスクを渡す器）</div>
+    <div class="orow">
+      <div class="obox"><b>論点管理</b>：<code>improvement_plan.md</code> が「論点ごとに決定・状態」を保持。AI へ渡す自然なタスク単位</div>
+      <div class="obox"><b>設計ファースト</b>：コードより先にオントロジーを doc で固める（改訂ノートで来歴を残す）</div>
+      <div class="obox"><b>意図を残す</b>：小さなコミット粒度＋「なぜ」を docstring／コミットメッセージに記述</div>
+    </div>
+  </div>
+
+  <!-- フッタ -->
+  <div class="foot">
+    <div class="principles">
+      <div class="lbl">設計原則</div>
+      <div class="chips">
+        <span class="chip v">構造で守る</span>
+        <span class="chip v">定義は1箇所（正本）</span>
+        <span class="chip">既存ファイル優先</span>
+        <span class="chip">大規模リプレイスしない</span>
+        <span class="chip b">変更にはテスト</span>
+        <span class="chip b">コンテキスト駆動</span>
+        <span class="chip">忘れても壊れない</span>
+      </div>
+    </div>
+    <div class="commits">
+      <div class="lbl">本セッションの成果（このブランチ）</div>
+      <ul>
+        <li><code>2270185</code> ① 集計の不変条件を構造化（deferred）</li>
+        <li><code>3fa3376</code> ② 指標定義を services.metrics に集約</li>
+        <li><code>182a09e</code> 日記オントロジー再定義を設計に反映</li>
+        <li><code>67e8848</code> reason＝背景を実体（model/form/UI）に反映</li>
+        <li><code>abc0df9</code> TagBook を「背景まとめ」に統一</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
