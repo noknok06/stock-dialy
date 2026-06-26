@@ -123,6 +123,7 @@ with AggregateService.deferred(diary):
 | サービス | 役割 |
 |----------|------|
 | `AggregateService` | 全取引から損益・保有数をゼロから再計算 |
+| `metrics`（`metrics.py`） | 意思決定の質の指標の**意味定義の正本**（セマンティックレイヤー）。的中/勝ちの判定・2×2象限タクソノミ・得意/苦手の閾値を1箇所に集約。`Verdict` モデルと `karte_service` が参照する。純粋関数・定数のみ（モデル非依存）。指標を足す/変える際はここを正とする |
 | `GeminiStockAnalysis` | Google Gemini AI による銘柄分析 |
 | `ImageService` | django-q で非同期 WebP 圧縮（800×600） |
 | `NotificationService` | Web Push（VAPID）・アプリ内・メール通知 |

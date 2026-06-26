@@ -729,31 +729,25 @@ class Verdict(models.Model):
 
     @property
     def hyp_ok(self):
-        return self.hypothesis_result in (self.HYP_HIT, self.HYP_PARTIAL)
+        # 「何を的中とみなすか」の定義は services.metrics（セマンティックレイヤー）が正。
+        from .services import metrics
+        return metrics.is_hypothesis_hit(self.hypothesis_result)
 
     @property
     def pnl_ok(self):
-        return self.pnl_result == self.PNL_PROFIT
+        from .services import metrics
+        return metrics.is_pnl_win(self.pnl_result)
 
     @property
     def quadrant(self):
         """意思決定の質 × 結果 の象限を返す。"""
-        if self.hyp_ok and self.pnl_ok:
-            return 'skill'        # 仮説◯×利益: 再現せよ
-        if self.hyp_ok and not self.pnl_ok:
-            return 'unlucky'      # 仮説◯×損失: 運/握力（学び: 継続の是非）
-        if not self.hyp_ok and self.pnl_ok:
-            return 'lucky'        # 仮説×××利益: 偶然（危険）
-        return 'discipline'       # 仮説×××損失: 想定通りの失敗（学び: 撤退の妥当性）
+        from .services import metrics
+        return metrics.quadrant_of(self.hyp_ok, self.pnl_ok)
 
     @property
     def quadrant_label(self):
-        return {
-            'skill': '再現すべき勝ち',
-            'unlucky': '正しいが報われず',
-            'lucky': '偶然の勝ち（要注意）',
-            'discipline': '想定通りの負け',
-        }[self.quadrant]
+        from .services import metrics
+        return metrics.QUADRANT_LABELS[self.quadrant]
 
     @property
     def stars(self):
