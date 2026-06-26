@@ -9,6 +9,7 @@ from . import views_timeline  # 全銘柄横断タイムライン
 from . import views_migration  # 日記データ移行（インポート/エクスポート）
 from . import views_trade_import  # 証券CSV取込（楽天・SBI）
 from . import views_growth  # 成長OS（仮説・検証・カルテ・ライブラリ・年次レビュー）
+from . import views_panels  # 詳細ページの遅延ロードHTMXパネル（backlinks・EDINET）
 from django.contrib.auth.decorators import login_required
 from django.views.generic.base import RedirectView
 
@@ -155,9 +156,9 @@ path('api/create/', api.api_create_diary, name='api_create'),
     # EDINET連携（開示書類パネル）
     # ==========================================
     # バックリンク（関連タブの遅延ロード）
-    path('<int:diary_id>/backlinks-panel/', views.backlinks_panel, name='backlinks_panel'),
+    path('<int:diary_id>/backlinks-panel/', views_panels.backlinks_panel, name='backlinks_panel'),
 
-    path('<int:diary_id>/edinet-panel/', views.edinet_panel, name='edinet_panel'),
-    path('<int:diary_id>/edinet-note-prefill/', views.edinet_note_prefill, name='edinet_note_prefill'),
-    path('<int:diary_id>/edinet-xbrl-analyze/', views.edinet_xbrl_analyze, name='edinet_xbrl_analyze'),
+    path('<int:diary_id>/edinet-panel/', views_panels.edinet_panel, name='edinet_panel'),
+    path('<int:diary_id>/edinet-note-prefill/', views_panels.edinet_note_prefill, name='edinet_note_prefill'),
+    path('<int:diary_id>/edinet-xbrl-analyze/', views_panels.edinet_xbrl_analyze, name='edinet_xbrl_analyze'),
 ]
