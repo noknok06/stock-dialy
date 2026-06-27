@@ -142,151 +142,13 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
     paginate_by = DIARY_LIST_INITIAL_SIZE
     
     def get_queryset(self):
-        from .utils import apply_diary_search, search_diaries_by_hashtag
-
-        queryset = StockDiary.objects.filter(user=self.request.user).order_by('-updated_at')
-        # tag_directions も prefetch（diary_card の tag_direction_map が
-        # カードごとに diary.tag_directions.all() を引く N+1 を防ぐ）
-        queryset = queryset.select_related('user').prefetch_related('tags', 'notes', 'tag_directions')
-
-        # 検索クエリ（銘柄名・コード・投資理由・メモ・業種・継続記録を全文検索）
-        query = self.request.GET.get('query', '').strip()
-        if query:
-            queryset = apply_diary_search(queryset, query)
-
-        # ハッシュタグフィルター
-        hashtag = self.request.GET.get('hashtag', '').strip()
-        if hashtag:
-            queryset = search_diaries_by_hashtag(queryset, hashtag)
-
-        # タグフィルター
-        tag_id = self.request.GET.get('tag', '')
-        if tag_id:
-            try:
-                queryset = queryset.filter(tags__id=int(tag_id))
-            except (ValueError, TypeError):
-                pass
-        
-        # 業種フィルター
-        sector = self.request.GET.get('sector', '').strip()
-        if sector:
-            queryset = queryset.filter(sector__iexact=sector)
-        
-        # 🔧 保有状態フィルター（デフォルトですべて表示）
-        status = self.request.GET.get('status', 'all')  # デフォルト値を'all'に設定
-        if status == 'active':
-            # 保有中: 保有数が0より大きい
-            queryset = queryset.filter(current_quantity__gt=0)
-        elif status == 'sold':
-            # 売却済み: 取引はあるが保有数が0または負数（空売り決済済み）
-            queryset = queryset.filter(
-                Q(current_quantity=0) | Q(current_quantity__lt=0),
-                transaction_count__gt=0
-            )
-        elif status == 'memo':
-            # メモのみ: 取引がない
-            queryset = queryset.filter(transaction_count=0)
-        elif status == 'excluded':
-            # 除外済み: is_excluded=True のみ表示
-            queryset = queryset.filter(is_excluded=True)
-        elif status == 'all':
-            # すべて表示（フィルターなし）
-            pass
-
-        # 除外済みフィルタ以外はデフォルトで除外日記を非表示
-        if status != 'excluded':
-            queryset = queryset.filter(is_excluded=False)
-        
-        # 🆕 トランザクション期間フィルター（取引日基準）
-        transaction_date_range = self.request.GET.get('transaction_date_range', '')
-        if transaction_date_range:
-            from datetime import timedelta
-            today = timezone.now().date()
-
-            range_mapping = {
-                '1w': 7,
-                '1m': 30,
-                '3m': 90,
-                '6m': 180,
-                '1y': 365
-            }
-
-            if transaction_date_range in range_mapping:
-                start_date = today - timedelta(days=range_mapping[transaction_date_range])
-                # トランザクションの取引日で絞り込み
-                diary_ids = Transaction.objects.filter(
-                    diary__user=self.request.user,
-                    transaction_date__gte=start_date
-                ).values_list('diary_id', flat=True).distinct()
-                queryset = queryset.filter(id__in=diary_ids)
-        
-        # 開示書類更新フィルター
-        disclosure_filter = self.request.GET.get('disclosure', '')
-        if disclosure_filter == 'new':
-            from datetime import timedelta
-            cutoff = timezone.now().date() - timedelta(days=7)
-            queryset = queryset.filter(latest_disclosure_date__gte=cutoff)
-        elif disclosure_filter == 'recent':
-            from datetime import timedelta
-            cutoff = timezone.now().date() - timedelta(days=30)
-            queryset = queryset.filter(latest_disclosure_date__gte=cutoff)
-
-        # 既存の日付範囲フィルター（first_purchase_date基準）
-        date_range = self.request.GET.get('date_range', '')
-        if date_range:
-            from datetime import timedelta
-            today = timezone.now().date()
-            
-            range_mapping = {
-                '1w': 7,
-                '1m': 30,
-                '3m': 90,
-                '6m': 180,
-                '1y': 365
-            }
-            
-            if date_range in range_mapping:
-                start_date = today - timedelta(days=range_mapping[date_range])
-                queryset = queryset.filter(
-                    Q(first_purchase_date__gte=start_date) |
-                    Q(first_purchase_date__isnull=True, created_at__gte=start_date)
-                )
-        
-        # 🆕 ソート順（取引回数・総取得原価を追加）
-        sort = self.request.GET.get('sort', '')
-        if sort == 'name':
-            queryset = queryset.order_by('stock_name')
-        elif sort == 'symbol':
-            queryset = queryset.order_by('stock_symbol')
-        elif sort == 'date_asc':
-            queryset = queryset.order_by(
-                F('first_purchase_date').asc(nulls_last=True),
-                'created_at'
-            )
-        elif sort == 'date_desc':
-            queryset = queryset.order_by(
-                F('first_purchase_date').desc(nulls_last=True),
-                '-created_at'
-            )
-        elif sort == 'profit_desc':
-            queryset = queryset.order_by('-realized_profit')
-        elif sort == 'profit_asc':
-            queryset = queryset.order_by('realized_profit')
-        # 🆕 取引回数順
-        elif sort == 'transaction_count_desc':
-            queryset = queryset.order_by('-transaction_count', '-updated_at')
-        elif sort == 'transaction_count_asc':
-            queryset = queryset.order_by('transaction_count', 'updated_at')
-        # 🆕 総取得原価順
-        elif sort == 'total_cost_desc':
-            queryset = queryset.order_by('-total_cost', '-updated_at')
-        elif sort == 'total_cost_asc':
-            queryset = queryset.order_by('total_cost', 'updated_at')
-        else:
-            # デフォルト: 更新日時降順
-            queryset = queryset.order_by('-updated_at')
-        
-        return queryset.distinct()
+        from .utils import apply_diary_filters
+        queryset = (
+            StockDiary.objects.filter(user=self.request.user)
+            .select_related('user')
+            .prefetch_related('tags', 'notes', 'tag_directions')
+        )
+        return apply_diary_filters(queryset, self.request.GET, self.request.user)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -528,76 +390,67 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        
-        # ✅ 現物取引のみの統計を追加
         context['cash_only_stats'] = self.object.calculate_cash_only_stats()
-        
-        # 取引履歴を取得
+        self._build_history_context(context)
+        self._build_notes_context(context)
+        self._build_related_context(context)
+        self._build_retrospective_context(context)
+        self._build_actions_context(context)
+        context['today'] = timezone.now().date()
+        context['mention_map'] = get_mention_map(self.request.user)
+        from tags.models import Tag as _Tag
+        context['thesis_form'] = ThesisForm(user=self.request.user)
+        context['thesis_all_tags'] = list(
+            _Tag.objects.filter(user=self.request.user).order_by('name').values('id', 'name')
+        )
+        return context
+
+    def _build_history_context(self, context):
+        """取引・株式分割の履歴と統合タイムラインをコンテキストに追加する。"""
         transactions = self.object.transactions.all().order_by('-transaction_date', '-created_at')
-        context['transactions'] = transactions
-        
-        # 株式分割履歴を取得
         stock_splits = self.object.stock_splits.all().order_by('-split_date')
+        context['transactions'] = transactions
         context['stock_splits'] = stock_splits
-        
-        # 取引と分割を時系列で統合
-        combined = []
-        for transaction in transactions:
-            combined.append({
-                'type': 'transaction',
-                'date': transaction.transaction_date,
-                'data': transaction
-            })
-        
-        for split in stock_splits:
-            combined.append({
-                'type': 'split',
-                'date': split.split_date,
-                'data': split
-            })
-        
-        # 日付でソート（降順）
+
+        combined = [
+            {'type': 'transaction', 'date': t.transaction_date, 'data': t}
+            for t in transactions
+        ] + [
+            {'type': 'split', 'date': s.split_date, 'data': s}
+            for s in stock_splits
+        ]
         combined.sort(key=lambda x: x['date'], reverse=True)
         context['combined_history'] = combined
 
-        # 継続記録
+    def _build_notes_context(self, context):
+        """継続記録・トピック・仮説・イベントタイムラインをコンテキストに追加する。"""
+        combined = context['combined_history']
+
         context['note_form'] = DiaryNoteForm(initial={'date': timezone.now().date()})
         notes = self.object.notes.all().order_by('-date')
         context['notes'] = notes
-
-        # 見立ての変遷（ReasonVersion: reason 上書き前の来歴）。
-        # メイン時系列には混ぜず、専用の折りたたみブロックで既定非表示にして見せる。
         context['reason_versions'] = self.object.reason_versions.all()
 
-        # テーマ × 感応（銘柄のまとめ）: 付与タグ＋この銘柄への影響方向(DiaryTagDirection)。
-        # タグ＝方向を持つ事象（例: 金利上昇 / ナフサ高）、↑↓＝この銘柄への +/-。
         _dir_map = {td.tag_id: td.direction for td in self.object.tag_directions.all()}
         context['theme_tags'] = [
             {'tag': t, 'direction': _dir_map.get(t.id, '')}
             for t in self.object.tags.all()
         ]
-
-        # 検証ループ（Phase 8a）: 仮説（Thesis）と検証（Verdict）
         context['theses'] = (
             self.object.theses
             .select_related('verdict')
             .prefetch_related('basis_tags')
         )
 
-        # 時系列タブ: 取引・分割・継続記録を1本の時系列に統合
-        # （売買の前後に何を考えていたかを日付の隣接で読み取れるようにする）
-        event_timeline = list(combined)
-        for note in notes:
-            event_timeline.append({
-                'type': 'note',
-                'date': note.date,
-                'data': note,
-            })
+        # 取引・分割・継続記録を1本のイベント時系列に統合
+        event_timeline = list(combined) + [
+            {'type': 'note', 'date': n.date, 'data': n}
+            for n in notes
+        ]
         event_timeline.sort(key=lambda x: x['date'], reverse=True)
         context['event_timeline'] = event_timeline
 
-        # テーマ別（スレッド集約）ビュー用。date降順を保持し、未分類は最後に回す。
-        # 「振り返り」スレッド（ポジション総括）は粒度が違うため先頭に固定する。
+        # テーマ別スレッド集約: 「振り返り」を先頭、未分類を末尾に固定
         grouped = OrderedDict()
         for note in notes:
             topic = note.topic or ''
@@ -608,33 +461,27 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         if '' in grouped:
             grouped.move_to_end('')
         context['notes_by_topic'] = grouped
-        # 入力チップ/サジェスト用（直近使用順 = date降順での初出順、未分類を除く）
         context['note_topics'] = [t for t in grouped if t]
 
-        # 関連日記
-        # 銘柄コードが空の場合は同一銘柄グループとして扱わない（空同士がまとめられるのを防ぐ）
+    def _build_related_context(self, context):
+        """同銘柄の関連日記・希少性スコア付き統合ビュー・想起パネルを追加する。"""
+        # 銘柄コードが空の場合は空同士でまとめない
         if self.object.stock_symbol:
-            all_related_diaries = StockDiary.objects.filter(
+            all_related = StockDiary.objects.filter(
                 user=self.request.user,
-                stock_symbol=self.object.stock_symbol
+                stock_symbol=self.object.stock_symbol,
             ).order_by('first_purchase_date', 'created_at')
         else:
-            all_related_diaries = StockDiary.objects.filter(
-                id=self.object.id
-            )
+            all_related = StockDiary.objects.filter(id=self.object.id)
+        context['related_diaries'] = all_related.exclude(id=self.object.id)
 
-        context['related_diaries'] = all_related_diaries.exclude(id=self.object.id)
-
-        # 関連日記（統合版）: 希少性スコアでランキングしつつ、手動リンクの解除UI・本文抜粋を併設
         manual_linked_ids = set(self.object.linked_diaries.values_list('id', flat=True))
         related_strength = compute_related_strength(self.object, self.request.user)
         related_unified = []
         for item in related_strength:
             d = item['diary']
-            # 結論を機械的な先頭60字でなく「意味のある先頭文」で抽出（Markdownノイズ除去）
             excerpt = extract_lead(d.reason or '', max_len=60)
-            reason_labels = [v.get('label', '') for v in item['via']]
-            # 共有タグの方向から順相関/逆相関を集約（逆相関優先で提示）
+            # 共有タグの方向から逆相関優先で集約
             correlation = None
             if any(v.get('correlation') == 'inverse' for v in item['via']):
                 correlation = 'inverse'
@@ -643,73 +490,74 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
             related_unified.append({
                 'diary': d,
                 'via': item['via'],
-                'reason_labels': reason_labels,
+                'reason_labels': [v.get('label', '') for v in item['via']],
                 'score': item['score'],
                 'is_manual': d.id in manual_linked_ids,
                 'excerpt': excerpt,
                 'correlation': correlation,
             })
         context['related_unified'] = related_unified
-
-        # 想起パネル: 同テーマの過去判断（概要タブ先頭に常設）
+        # バックリンクは重いため関連タブの HTMX 遅延ロードで取得する
         context['theme_recall'] = build_theme_recall(
             related_unified, self.object, self.request.user
         )
 
-        # バックリンク（この銘柄に言及している他の記録）は重いため、ここでは計算せず
-        # 関連タブ表示時に backlinks_panel（HTMX）で遅延ロードする。
-
-        # 振り返り（retrospective）関連: 売却完結済みの日記のみ
+    def _build_retrospective_context(self, context):
+        """売却済みの場合のみ振り返り分析データをコンテキストに追加する。"""
         context['needs_retrospective'] = False
-        if self.object.is_sold_out:
-            buys = [t for t in transactions if t.transaction_type == 'buy']
-            sells = [t for t in transactions if t.transaction_type == 'sell']
-            total_buy_qty = sum((t.quantity for t in buys), Decimal('0'))
-            total_sell_qty = sum((t.quantity for t in sells), Decimal('0'))
-            first_buy = min((t.transaction_date for t in buys), default=None)
-            last_sell = max((t.transaction_date for t in sells), default=None)
-            avg_buy = (sum((t.amount for t in buys), Decimal('0')) / total_buy_qty) \
-                if total_buy_qty else None
-            avg_sell = (sum((t.amount for t in sells), Decimal('0')) / total_sell_qty) \
-                if total_sell_qty else None
-            context['retro_summary'] = {
-                'first_buy': first_buy,
-                'last_sell': last_sell,
-                'holding_days': (last_sell - first_buy).days if first_buy and last_sell else None,
-                'avg_buy': avg_buy,
-                'avg_sell': avg_sell,
-            }
+        if not self.object.is_sold_out:
+            return
 
-            # 振り返り未記入の判定。複数ラウンド対応:
-            # 最後の売り以降に書かれた振り返りがなければ再度促す
-            # （売り日が取れない場合は「1件もない」の旧条件にフォールバック）
-            if last_sell is not None:
-                context['needs_retrospective'] = not any(
-                    n.note_type == 'retrospective' and n.date >= last_sell
-                    for n in notes
-                )
-            else:
-                context['needs_retrospective'] = not any(
-                    n.note_type == 'retrospective' for n in notes
-                )
+        transactions = context['transactions']
+        notes = context['notes']
+        buys = [t for t in transactions if t.transaction_type == 'buy']
+        sells = [t for t in transactions if t.transaction_type == 'sell']
+        total_buy_qty = sum((t.quantity for t in buys), Decimal('0'))
+        total_sell_qty = sum((t.quantity for t in sells), Decimal('0'))
+        first_buy = min((t.transaction_date for t in buys), default=None)
+        last_sell = max((t.transaction_date for t in sells), default=None)
+        avg_buy = (
+            sum((t.amount for t in buys), Decimal('0')) / total_buy_qty
+        ) if total_buy_qty else None
+        avg_sell = (
+            sum((t.amount for t in sells), Decimal('0')) / total_sell_qty
+        ) if total_sell_qty else None
 
-            # 振り返りシートに本文プリフィルする取引サマリー（Markdown）。
-            # 表示専用ではなく記録自体に残すことで、スレッド・タイムライン・想起でも文脈が自己完結する
-            sym = self.object.currency_symbol
-            lines = ['## この投資の記録（通算）']
-            if first_buy and last_sell:
-                lines.append(
-                    f"- 期間: {first_buy:%Y/%m/%d} 〜 {last_sell:%Y/%m/%d}"
-                    f"（{(last_sell - first_buy).days}日）"
-                )
-            if avg_buy is not None and avg_sell is not None:
-                lines.append(f"- 平均買値 {sym}{avg_buy:,.1f} → 平均売値 {sym}{avg_sell:,.1f}")
-            rp = self.object.realized_profit or Decimal('0')
-            lines.append(f"- 実現損益: {'+' if rp >= 0 else ''}{sym}{rp:,.0f}")
-            lines += ['', '## 結果と要因', '', '', '## 次に活かす教訓', '', '']
-            context['retro_prefill'] = '\n'.join(lines)
+        context['retro_summary'] = {
+            'first_buy': first_buy,
+            'last_sell': last_sell,
+            'holding_days': (last_sell - first_buy).days if first_buy and last_sell else None,
+            'avg_buy': avg_buy,
+            'avg_sell': avg_sell,
+        }
 
-        # スピードダイアルアクション
+        # 最後の売り以降の振り返りがなければ記入を促す
+        if last_sell is not None:
+            context['needs_retrospective'] = not any(
+                n.note_type == 'retrospective' and n.date >= last_sell for n in notes
+            )
+        else:
+            context['needs_retrospective'] = not any(
+                n.note_type == 'retrospective' for n in notes
+            )
+
+        # 振り返りシートにプリフィルするMarkdownサマリー
+        sym = self.object.currency_symbol
+        lines = ['## この投資の記録（通算）']
+        if first_buy and last_sell:
+            lines.append(
+                f"- 期間: {first_buy:%Y/%m/%d} 〜 {last_sell:%Y/%m/%d}"
+                f"（{(last_sell - first_buy).days}日）"
+            )
+        if avg_buy is not None and avg_sell is not None:
+            lines.append(f"- 平均買値 {sym}{avg_buy:,.1f} → 平均売値 {sym}{avg_sell:,.1f}")
+        rp = self.object.realized_profit or Decimal('0')
+        lines.append(f"- 実現損益: {'+' if rp >= 0 else ''}{sym}{rp:,.0f}")
+        lines += ['', '## 結果と要因', '', '', '## 次に活かす教訓', '', '']
+        context['retro_prefill'] = '\n'.join(lines)
+
+    def _build_actions_context(self, context):
+        """詳細ページのスピードダイアルアクション一覧をコンテキストに追加する。"""
         context['diary_actions'] = [
             {
                 'id': 'add-note',
@@ -719,7 +567,7 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
                 'icon': 'bi-chat-dots',
                 'label': '記録を追加',
                 'aria_label': '新しい継続記録を追加',
-                'condition': True
+                'condition': True,
             },
             {
                 'id': 'add-transaction',
@@ -728,7 +576,7 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
                 'icon': 'bi-cart-plus',
                 'label': '取引を追加',
                 'aria_label': '取引を追加',
-                'condition': True
+                'condition': True,
             },
             {
                 'id': 'add-split',
@@ -737,7 +585,7 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
                 'icon': 'bi-scissors',
                 'label': '株式分割を追加',
                 'aria_label': '株式分割を追加',
-                'condition': True
+                'condition': True,
             },
             {
                 'id': 'add-thesis',
@@ -746,7 +594,7 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
                 'icon': 'bi-lightbulb',
                 'label': '新しい仮説を追加',
                 'aria_label': '新しい仮説を追加',
-                'condition': True
+                'condition': True,
             },
             {
                 'id': 'back-to-home',
@@ -755,25 +603,9 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
                 'icon': 'bi-arrow-left',
                 'label': '戻る',
                 'aria_label': '一覧に戻る',
-                'condition': True
-            }
+                'condition': True,
+            },
         ]
-
-        # クイック記録用に今日の日付を追加
-        context['today'] = timezone.now().date()
-
-        # テキスト内銘柄コードリンク用マッピング {stock_symbol: diary_pk}
-        context['mention_map'] = get_mention_map(self.request.user)
-
-        # 仮説追加ボトムシート用フォーム（記録タブの『仮説』ビューから起動）。
-        # 他の入力（取引・株式分割）と同じくシート内に常設し、確実に表示されるようにする。
-        from tags.models import Tag as _Tag
-        context['thesis_form'] = ThesisForm(user=self.request.user)
-        context['thesis_all_tags'] = list(
-            _Tag.objects.filter(user=self.request.user).order_by('name').values('id', 'name')
-        )
-
-        return context
 
 def _sync_hashtag_tags(diary, user):
     from stockdiary.utils import extract_hashtags_with_direction
@@ -1130,8 +962,6 @@ class DiaryTabContentView(LoginRequiredMixin, View):
             
             if tab_type == 'notes':
                 html = self._render_notes_tab(diary)
-            elif tab_type == 'analysis':
-                html = self._render_analysis_tab(diary)
             elif tab_type == 'details':
                 html = self._render_details_tab(context)
             else:
@@ -1146,206 +976,54 @@ class DiaryTabContentView(LoginRequiredMixin, View):
             return JsonResponse({'error': 'タブコンテンツの読み込みに失敗しました'}, status=500)
 
     def _render_notes_tab(self, diary):
-        """継続記録タブのHTMLを直接生成"""
-        notes = diary.notes.all().order_by('-date')[:3]
-        html = '<div class="px-1 py-2"><div class="notes-timeline">'
-        
-        if notes.exists():
-            for note in notes:
-                date_str = note.date.strftime('%Y年%m月%d日')
-                badge_class = get_note_badge_class(note.note_type)
-                badge_text = get_note_type_display(note.note_type)
-                
-                html += f'''
-                <div class="note-item mb-3">
-                  <div class="d-flex justify-content-between align-items-start mb-1">
-                    <div class="note-date">
-                      <i class="bi bi-calendar-date text-muted"></i>
-                      <span class="text-muted small">{date_str}</span>
-                    </div>
-                    <span class="badge {badge_class} small">{badge_text}</span>
-                  </div>
-                '''
-                
-                if note.current_price:
-                    price_formatted = f"{float(note.current_price):,.2f}円"
-                    html += f'<div class="note-price small mb-1"><span class="text-muted">記録時価格:</span><span class="fw-medium">{price_formatted}</span>'
-                    
-                    if diary.purchase_price:
-                        price_change = ((float(note.current_price) / float(diary.purchase_price)) - 1) * 100
-                        price_change_class = "text-success" if price_change > 0 else "text-danger"
-                        price_change_sign = "+" if price_change > 0 else ""
-                        html += f'<span class="{price_change_class} ms-2">({price_change_sign}{price_change:.2f}%)</span>'
-                    
-                    html += '</div>'
-                                
-                formatted_content = note.content.replace('\n', '<br>')
-                html += f'''
-                <div class="note-content bg-light p-2 rounded">
-                    {formatted_content}
-                </div>
-                </div>
-                '''
-            
-            notes_count = diary.notes.count()
-            if notes_count > 3:
-                html += f'''
-                <div class="text-end mt-2">
-                  <a href="/stockdiary/{diary.id}/" class="text-primary text-decoration-none small">
-                    すべての記録を見る ({notes_count}件) <i class="bi bi-arrow-right"></i>
-                  </a>
-                </div>
-                '''
-        else:
-            html += '<p class="text-muted">継続記録はまだありません</p>'
-        
-        html += '</div></div>'
-        return html
+        """継続記録タブのHTMLをテンプレートで生成"""
+        raw_notes = diary.notes.all().order_by('-date')[:3]
+        notes_count = diary.notes.count()
+
+        notes = []
+        for note in raw_notes:
+            price_change = None
+            price_change_class = ''
+            if note.current_price and diary.purchase_price:
+                price_change = (
+                    (float(note.current_price) / float(diary.purchase_price)) - 1
+                ) * 100
+                price_change_class = 'text-success' if price_change > 0 else 'text-danger'
+            note.badge_class = get_note_badge_class(note.note_type)
+            note.price_change = price_change
+            note.price_change_class = price_change_class
+            notes.append(note)
+
+        return render_to_string(
+            'stockdiary/partials/_tab_notes.html',
+            {'notes': notes, 'notes_count': notes_count, 'diary_id': diary.id},
+        )
             
     
     def _render_details_tab(self, context):
-        """取引タブのHTMLを直接生成"""
+        """取引情報タブのHTMLをテンプレートで生成"""
         diary = context['diary']
-        html = '<div class="px-1 py-2">'
-        
-        # 🔧 修正: 購入情報の表示
-        # 取引履歴があり、平均取得単価と保有数が設定されている場合
-        if diary.transaction_count > 0 and diary.average_purchase_price is not None:
-            # 現在の総投資額を計算
-            if diary.current_quantity > 0:
-                total_investment = float(diary.average_purchase_price) * float(diary.current_quantity)
-            else:
-                # 売却済みの場合は総購入額を表示
-                total_investment = float(diary.total_buy_amount) if diary.total_buy_amount else 0
-            
-            html += '''
-            <div class="info-block mb-3">
-            <div class="info-row">
-                <div class="info-item">
-                <div class="info-icon">
-                    <i class="bi bi-currency-yen"></i>
-                </div>
-                <div class="info-content">
-                    <span class="info-label">平均取得単価</span>
-                    <span class="info-value">{:,.2f}円</span>
-                </div>
-                </div>
-                
-                <div class="info-item">
-                <div class="info-icon">
-                    <i class="bi bi-graph-up"></i>
-                </div>
-                <div class="info-content">
-                    <span class="info-label">現在保有数</span>
-                    <span class="info-value">{:.2f}株</span>
-                </div>
-                </div>
-                
-                <div class="info-item">
-                <div class="info-icon">
-                    <i class="bi bi-calendar-date"></i>
-                </div>
-                <div class="info-content">
-                    <span class="info-label">初回購入日</span>
-                    <span class="info-value">{}</span>
-                </div>
-                </div>
-                
-                <div class="info-item">
-                <div class="info-icon">
-                    <i class="bi bi-cash-stack"></i>
-                </div>
-                <div class="info-content">
-                    <span class="info-label">総投資額</span>
-                    <span class="info-value">{:,.0f}円</span>
-                </div>
-                </div>
-            </div>
-            </div>
-            '''.format(
-                float(diary.average_purchase_price),
-                float(diary.current_quantity) if diary.current_quantity else 0,
-                diary.first_purchase_date.strftime('%Y年%m月%d日') if diary.first_purchase_date else '未設定',
-                total_investment
+
+        if diary.current_quantity and diary.current_quantity > 0:
+            total_investment = (
+                float(diary.average_purchase_price) * float(diary.current_quantity)
+                if diary.average_purchase_price else 0
             )
-        
-        # 🔧 修正: 売却情報の表示
-        # 売却済み（保有数0、取引あり）かつ実現損益がある場合
-        if diary.is_sold_out and diary.realized_profit is not None:
-            profit = float(diary.realized_profit)
-            # 損益率を計算（総売却額 ÷ 総購入額）
-            profit_rate = 0
-            if diary.total_buy_amount and float(diary.total_buy_amount) > 0:
-                profit_rate = (profit / float(diary.total_buy_amount)) * 100
-            
-            profit_class = "profit" if profit > 0 else ("loss" if profit < 0 else "text-muted")
-            profit_sign = "+" if profit > 0 else ""
-            
-            html += '''
-            <div class="sell-info">
-            <div class="info-row">
-                <div class="info-item">
-                <div class="info-icon">
-                    <i class="bi bi-calendar-check"></i>
-                </div>
-                <div class="info-content">
-                    <span class="info-label">最終取引日</span>
-                    <span class="info-value">{}</span>
-                </div>
-                </div>
-                
-                <div class="info-item">
-                <div class="info-icon">
-                    <i class="bi bi-graph-up-arrow"></i>
-                </div>
-                <div class="info-content">
-                    <span class="info-label">実現損益</span>
-                    <span class="info-value {}">{}{:,.0f}円</span>
-                </div>
-                </div>
-                
-                <div class="info-item">
-                <div class="info-icon">
-                    <i class="bi bi-percent"></i>
-                </div>
-                <div class="info-content">
-                    <span class="info-label">損益率</span>
-                    <span class="info-value {}">{}{:.2f}%</span>
-                </div>
-                </div>
-                
-                <div class="info-item">
-                <div class="info-icon">
-                    <i class="bi bi-cash-stack"></i>
-                </div>
-                <div class="info-content">
-                    <span class="info-label">総売却額</span>
-                    <span class="info-value">{:,.0f}円</span>
-                </div>
-                </div>
-            </div>
-            </div>
-            '''.format(
-                diary.last_transaction_date.strftime('%Y年%m月%d日') if diary.last_transaction_date else '未設定',
-                profit_class,
-                profit_sign,
-                profit,
-                profit_class,
-                profit_sign,
-                profit_rate,
-                float(diary.total_sell_amount) if diary.total_sell_amount else 0
-            )
-        elif diary.is_memo:
-            # メモのみの場合
-            html += '''
-            <div class="alert alert-info">
-            <i class="bi bi-info-circle me-2"></i>
-            この日記はメモとして記録されています。取引情報が設定されていません。
-            </div>
-            '''
-        
-        html += '</div>'
-        return html
+        else:
+            total_investment = float(diary.total_buy_amount) if diary.total_buy_amount else 0
+
+        profit = float(diary.realized_profit) if diary.realized_profit is not None else 0
+        profit_rate = 0
+        if diary.total_buy_amount and float(diary.total_buy_amount) > 0:
+            profit_rate = (profit / float(diary.total_buy_amount)) * 100
+
+        return render_to_string('stockdiary/partials/_tab_details.html', {
+            'diary': diary,
+            'total_investment': total_investment,
+            'profit_class': 'profit' if profit > 0 else ('loss' if profit < 0 else 'text-muted'),
+            'profit_sign': '+' if profit > 0 else '',
+            'profit_rate': profit_rate,
+        })
 
 
 class DiarySummaryView(LoginRequiredMixin, TemplateView):
@@ -1578,183 +1256,57 @@ class ServeImageView(LoginRequiredMixin, View):
 # ファンクションベースビュー
 # ==========================================
 def diary_list(request):
-    """日記リストを表示するビュー（HTMX対応）"""
-    from .utils import apply_diary_search, search_diaries_by_hashtag
+    """日記リストを表示するビュー（HTMX専用パーシャル）"""
+    from .utils import apply_diary_filters, annotate_search_matches
 
-    is_htmx = request.headers.get('HX-Request') == 'true' or request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-
+    is_htmx = (
+        request.headers.get('HX-Request') == 'true'
+        or request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    )
     if not is_htmx:
         return redirect(f'/stockdiary/?{request.GET.urlencode()}')
 
     try:
-        queryset = StockDiary.objects.filter(user=request.user).order_by('-updated_at')
-        queryset = queryset.select_related('user').prefetch_related('tags', 'notes')
+        queryset = (
+            StockDiary.objects.filter(user=request.user)
+            .select_related('user')
+            .prefetch_related('tags', 'notes')
+        )
+        queryset = apply_diary_filters(queryset, request.GET, request.user)
 
-        # 検索クエリ（銘柄名・コード・投資理由・メモ・業種・継続記録を全文検索）
-        query = request.GET.get('query', '').strip()
-        if query:
-            queryset = apply_diary_search(queryset, query)
-
-        # ハッシュタグフィルター
-        hashtag = request.GET.get('hashtag', '').strip()
-        if hashtag:
-            queryset = search_diaries_by_hashtag(queryset, hashtag)
-
-        # タグフィルター
-        tag_id = request.GET.get('tag', '')
-        if tag_id:
-            try:
-                queryset = queryset.filter(tags__id=int(tag_id))
-            except (ValueError, TypeError):
-                pass
-        
-        # 業種フィルター
-        sector = request.GET.get('sector', '').strip()
-        if sector:
-            queryset = queryset.filter(sector__iexact=sector)
-        
-        # 保有状態フィルター
-        status = request.GET.get('status', '')
-        if status == 'active':
-            queryset = queryset.filter(current_quantity__gt=0)
-        elif status == 'sold':
-            queryset = queryset.filter(
-                Q(current_quantity=0) | Q(current_quantity__lt=0),
-                transaction_count__gt=0
-            )
-        elif status == 'memo':
-            queryset = queryset.filter(transaction_count=0)
-        elif status == 'excluded':
-            queryset = queryset.filter(is_excluded=True)
-
-        # 除外済みフィルタ以外はデフォルトで除外日記を非表示
-        if status != 'excluded':
-            queryset = queryset.filter(is_excluded=False)
-
-        # 日付範囲フィルター
-        date_range = request.GET.get('date_range', '')
-        if date_range:
-            from datetime import timedelta
-            today = timezone.now().date()
-            
-            range_mapping = {
-                '1w': 7, '1m': 30, '3m': 90, '6m': 180, '1y': 365
-            }
-            
-            if date_range in range_mapping:
-                start_date = today - timedelta(days=range_mapping[date_range])
-                queryset = queryset.filter(
-                    Q(first_purchase_date__gte=start_date) |
-                    Q(first_purchase_date__isnull=True, created_at__gte=start_date)
-                )
-        
-        # トランザクション期間フィルター（取引日基準）
-        transaction_date_range = request.GET.get('transaction_date_range', '')
-        if transaction_date_range:
-            from datetime import timedelta
-            today = timezone.now().date()
-            range_mapping = {
-                '1w': 7, '1m': 30, '3m': 90, '6m': 180, '1y': 365
-            }
-            if transaction_date_range in range_mapping:
-                start_date = today - timedelta(days=range_mapping[transaction_date_range])
-                diary_ids = Transaction.objects.filter(
-                    diary__user=request.user,
-                    transaction_date__gte=start_date
-                ).values_list('diary_id', flat=True).distinct()
-                queryset = queryset.filter(id__in=diary_ids)
-
-        # 開示書類更新フィルター
-        disclosure_filter = request.GET.get('disclosure', '')
-        if disclosure_filter == 'new':
-            from datetime import timedelta
-            cutoff = timezone.now().date() - timedelta(days=7)
-            queryset = queryset.filter(latest_disclosure_date__gte=cutoff)
-        elif disclosure_filter == 'recent':
-            from datetime import timedelta
-            cutoff = timezone.now().date() - timedelta(days=30)
-            queryset = queryset.filter(latest_disclosure_date__gte=cutoff)
-
-        # 未記録フィルター（継続記録がない日記）
-        no_notes = request.GET.get('no_notes', '')
-        if no_notes:
-            from django.db.models import Count
-            queryset = queryset.annotate(note_count=Count('notes')).filter(note_count=0)
-
-        # ソート
-        sort = request.GET.get('sort', '')
-        if sort == 'name':
-            queryset = queryset.order_by('stock_name')
-        elif sort == 'symbol':
-            queryset = queryset.order_by('stock_symbol')
-        elif sort == 'date_asc':
-            queryset = queryset.order_by(
-                F('first_purchase_date').asc(nulls_last=True),
-                'created_at'
-            )
-        elif sort == 'date_desc':
-            queryset = queryset.order_by(
-                F('first_purchase_date').desc(nulls_last=True),
-                '-created_at'
-            )
-        elif sort == 'profit_desc':
-            queryset = queryset.order_by('-realized_profit')
-        elif sort == 'profit_asc':
-            queryset = queryset.order_by('realized_profit')
-        elif sort == 'transaction_count_desc':
-            queryset = queryset.order_by('-transaction_count', '-updated_at')
-        elif sort == 'transaction_count_asc':
-            queryset = queryset.order_by('transaction_count', 'updated_at')
-        elif sort == 'total_cost_desc':
-            queryset = queryset.order_by('-total_cost', '-updated_at')
-        elif sort == 'total_cost_asc':
-            queryset = queryset.order_by('total_cost', 'updated_at')
-        else:
-            queryset = queryset.order_by('-updated_at')
-        
-        queryset = queryset.distinct()
-        
-        # ページネーション
         current_params = request.GET.copy()
         current_params.pop('page', None)
 
         paginator = Paginator(queryset, DIARY_LIST_PAGE_SIZE)
-        page = request.GET.get('page', 1)
-        
         try:
-            diaries = paginator.page(page)
+            diaries = paginator.page(request.GET.get('page', 1))
         except (PageNotAnInteger, EmptyPage):
             diaries = paginator.page(1)
 
-        # 検索ヒット箇所（銘柄名／日記本文／継続記録）を各 diary に付与
-        from .utils import annotate_search_matches
-        annotate_search_matches(diaries.object_list, query)
+        annotate_search_matches(diaries.object_list, request.GET.get('query', '').strip())
 
-        tags = Tag.objects.filter(user=request.user)
-        
-        # 業種リスト
-        sectors = StockDiary.objects.filter(
-            user=request.user,
-            sector__isnull=False
-        ).exclude(sector='').values_list('sector', flat=True).distinct().order_by('sector')
-        
-        context = {
+        sectors = (
+            StockDiary.objects.filter(user=request.user, sector__isnull=False)
+            .exclude(sector='')
+            .values_list('sector', flat=True)
+            .distinct()
+            .order_by('sector')
+        )
+
+        return render(request, 'stockdiary/partials/diary_list.html', {
             'diaries': diaries,
             'page_obj': diaries,
-            'tags': tags,
+            'tags': Tag.objects.filter(user=request.user),
             'sectors': list(sectors),
             'request': request,
             'current_params': current_params,
-        }
-        
-        return render(request, 'stockdiary/partials/diary_list.html', context)
-    
+        })
+
     except Exception as e:
         logger.error("Diary list error: %s", e, exc_info=True)
-
         return HttpResponse(
             '<div class="alert alert-danger">日記リストの読み込みに失敗しました。</div>',
-            status=500
+            status=500,
         )
 
 def tab_content(request, diary_id, tab_type):
@@ -1850,30 +1402,11 @@ def search_suggestion(request):
     
     if not stock_matches and not tag_matches:
         return HttpResponse('')
-    
-    html = '<div class="search-suggestions mt-2">'
-    
-    if stock_matches:
-        html += '<div class="search-suggestion-title"><small>銘柄:</small></div>'
-        html += '<div class="search-suggestion-items">'
-        for match in stock_matches:
-            html += f'<div class="search-suggestion-item" hx-get="/stockdiary/diary-list/?query={match["stock_name"]}" hx-target="#diary-container" hx-push-url="true">'
-            html += f'<i class="bi bi-building me-1"></i> {match["stock_name"]} ({match["stock_symbol"]})'
-            html += '</div>'
-        html += '</div>'
-    
-    if tag_matches:
-        html += '<div class="search-suggestion-title"><small>タグ:</small></div>'
-        html += '<div class="search-suggestion-items">'
-        for match in tag_matches:
-            html += f'<div class="search-suggestion-item" hx-get="/stockdiary/diary-list/?tag={match["id"]}" hx-target="#diary-container" hx-push-url="true">'
-            html += f'<i class="bi bi-tag me-1"></i> {match["name"]}'
-            html += '</div>'
-        html += '</div>'
-    
-    html += '</div>'
-    
-    return HttpResponse(html)
+
+    return render(request, 'stockdiary/partials/_search_suggestions.html', {
+        'stock_matches': stock_matches,
+        'tag_matches': tag_matches,
+    })
 
 
 def csrf_failure_view(request, reason=""):

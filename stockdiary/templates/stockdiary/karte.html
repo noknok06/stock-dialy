@@ -3,6 +3,19 @@
 {% load humanize %}
 {% block title %}投資家カルテ | カブログ{% endblock %}
 
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+.karte-growth-chart-wrap { margin: 16px 0 8px; }
+.karte-growth-stats { display: flex; flex-wrap: wrap; gap: 20px; margin: 16px 0 8px; }
+.karte-growth-stat { display: flex; flex-direction: column; align-items: center; min-width: 80px; }
+.karte-growth-val { font-size: 2rem; font-weight: 700; color: var(--ink); line-height: 1.1; }
+.karte-growth-label { font-size: 0.75rem; color: var(--muted-ink); margin-top: 4px; text-align: center; }
+.karte-growth-hint { font-size: 0.8rem; color: var(--faint-ink); margin-top: 12px; width: 100%; }
+.karte-growth-learnings-total { font-size: 0.85rem; color: var(--muted-ink); margin-top: 12px; }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container py-4 reading-page">
   <div class="rp-review">
@@ -103,6 +116,47 @@
       </section>
       {% endif %}
 
+      {# 成長の軌跡グラフ #}
+      <section class="rp-section">
+        <div class="rp-section-title">成長の軌跡</div>
+        <p class="rp-section-note">判断の質（1–5）と仮説的中率（%）の月別推移。</p>
+
+        {% if karte.growth.has_chart %}
+        <div class="karte-growth-chart-wrap">
+          <canvas id="karteGrowthChart" height="180"></canvas>
+        </div>
+        {% else %}
+        {# データが2ヶ月未満 — 数値だけ並べる #}
+        <div class="karte-growth-stats">
+          {% if karte.growth.latest_quality is not None %}
+          <div class="karte-growth-stat">
+            <span class="karte-growth-val">{{ karte.growth.latest_quality }}</span>
+            <span class="karte-growth-label">直近の判断の質（/5）</span>
+          </div>
+          {% endif %}
+          {% if karte.growth.latest_hit_rate is not None %}
+          <div class="karte-growth-stat">
+            <span class="karte-growth-val">{{ karte.growth.latest_hit_rate }}%</span>
+            <span class="karte-growth-label">直近の仮説的中率</span>
+          </div>
+          {% endif %}
+          {% if karte.growth.total_learnings %}
+          <div class="karte-growth-stat">
+            <span class="karte-growth-val">{{ karte.growth.total_learnings }}</span>
+            <span class="karte-growth-label">累積の学び</span>
+          </div>
+          {% endif %}
+          <p class="karte-growth-hint">2ヶ月分の検証が溜まると推移グラフが表示されます。</p>
+        </div>
+        {% endif %}
+
+        {% if karte.growth.total_learnings %}
+        <p class="karte-growth-learnings-total">
+          これまでに <strong>{{ karte.growth.total_learnings }}</strong> 個の学びを記録しました。
+        </p>
+        {% endif %}
+      </section>
+
       {# これまでの検証 — 判断の質 × 結果 の 2×2 #}
       <section class="rp-section">
         <div class="rp-section-title">これまでの検証 — 判断の質 × 結果</div>
@@ -130,4 +184,103 @@
     {% endif %}
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+{% if karte.growth.has_chart %}
+<script>
+(function () {
+  const ctx = document.getElementById('karteGrowthChart');
+  if (!ctx) return;
+
+  const style = getComputedStyle(document.documentElement);
+  const muted      = style.getPropertyValue('--muted-ink').trim()   || '#6b6a64';
+  const hairline   = style.getPropertyValue('--hairline').trim()    || '#e7e4dc';
+  const skillColor = style.getPropertyValue('--verdict-skill').trim()   || '#3f7a5f';
+  const luckColor  = style.getPropertyValue('--verdict-unlucky').trim() || '#9a7b3f';
+
+  const labels   = {{ karte.growth.labels|safe }};
+  const quality  = {{ karte.growth.quality|safe }};
+  const hitRates = {{ karte.growth.hit_rates|safe }};
+
+  new Chart(ctx, {
+    data: {
+      labels,
+      datasets: [
+        {
+          type: 'line',
+          label: '判断の質（/5）',
+          data: quality,
+          yAxisID: 'yQ',
+          borderColor: skillColor,
+          backgroundColor: skillColor + '22',
+          pointBackgroundColor: skillColor,
+          borderWidth: 2,
+          pointRadius: 4,
+          tension: 0.3,
+          fill: true,
+        },
+        {
+          type: 'line',
+          label: '仮説的中率（%）',
+          data: hitRates,
+          yAxisID: 'yH',
+          borderColor: luckColor,
+          backgroundColor: 'transparent',
+          pointBackgroundColor: luckColor,
+          borderWidth: 2,
+          borderDash: [5, 3],
+          pointRadius: 4,
+          tension: 0.3,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          labels: { color: muted, font: { size: 12 }, boxWidth: 14 },
+        },
+        tooltip: {
+          callbacks: {
+            label: (c) => {
+              const suffix = c.dataset.yAxisID === 'yQ' ? ' / 5' : '%';
+              return ` ${c.dataset.label}: ${c.parsed.y}${suffix}`;
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          ticks: { color: muted, font: { size: 11 } },
+          grid: { color: hairline },
+        },
+        yQ: {
+          type: 'linear',
+          position: 'left',
+          min: 1, max: 5,
+          ticks: { stepSize: 1, color: skillColor, font: { size: 11 } },
+          grid: { color: hairline },
+          title: { display: true, text: '判断の質', color: muted, font: { size: 11 } },
+        },
+        yH: {
+          type: 'linear',
+          position: 'right',
+          min: 0, max: 100,
+          ticks: {
+            callback: (v) => v + '%',
+            color: luckColor,
+            font: { size: 11 },
+            stepSize: 25,
+          },
+          grid: { drawOnChartArea: false },
+          title: { display: true, text: '的中率', color: muted, font: { size: 11 } },
+        },
+      },
+    },
+  });
+})();
+</script>
+{% endif %}
 {% endblock %}

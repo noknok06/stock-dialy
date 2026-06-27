@@ -40,6 +40,20 @@ def compress_note_image(note_id):
         ImageService.compress_stored(note, max_size=NOTE_IMAGE_MAX_SIZE, quality=80)
 
 
+def send_monthly_review():
+    """月次レビュー通知（毎月1日 9:00 JST に django-q CRON で実行）。"""
+    try:
+        logger.info("📅 月次レビュー通知タスク開始")
+        result = NotificationService.send_monthly_review()
+        logger.info(
+            f"✅ 月次レビュー完了: 送信={result['sent']}, エラー={result['errors']}"
+        )
+        return result
+    except Exception as e:
+        logger.error(f"❌ 月次レビュー通知エラー: {e}", exc_info=True)
+        return {'sent': 0, 'errors': 1, 'error': str(e)}
+
+
 def process_notifications():
     """
     通知を処理するタスク（Django-Qで定期実行）
@@ -121,3 +135,45 @@ def setup_notification_schedule():
 
     logger.info("✅ 通知スケジュール作成完了")
     return Schedule.objects.get(func='stockdiary.tasks.process_notifications')
+
+
+def setup_monthly_review_schedule():
+    """月次レビュー通知の CRON スケジュールを設定（初回起動時に実行）。
+
+    毎月1日 9:00 JST（TIME_ZONE='Asia/Tokyo'）に send_monthly_review を実行する。
+    django-q の CRON スケジュールはサーバーのローカル時刻ではなく UTC で内部管理される
+    ため、JST 9:00 = UTC 0:00 を cron 式に指定する。
+    既存スケジュールが正常であれば何もしない。壊れている場合は上書き修復する。
+    """
+    FUNC = 'stockdiary.tasks.send_monthly_review'
+    # JST 9:00 = UTC 0:00 → cron: 0 0 1 * *
+    CRON = '0 0 1 * *'
+
+    existing = Schedule.objects.filter(func=FUNC).first()
+
+    if existing:
+        is_broken = (
+            existing.schedule_type != Schedule.CRON
+            or existing.cron != CRON
+            or existing.repeats != -1
+        )
+        if not is_broken:
+            logger.info(f"✅ 月次レビュースケジュール既存: {existing.name}")
+            return existing
+        logger.warning("⚠️ 月次レビュースケジュールを修復します")
+        existing.schedule_type = Schedule.CRON
+        existing.cron = CRON
+        existing.repeats = -1
+        existing.save()
+        logger.info("✅ 月次レビュースケジュール修復完了")
+        return existing
+
+    schedule(
+        FUNC,
+        name='月次レビュー通知',
+        schedule_type=Schedule.CRON,
+        cron=CRON,
+        repeats=-1,
+    )
+    logger.info("✅ 月次レビュースケジュール作成完了")
+    return Schedule.objects.get(func=FUNC)

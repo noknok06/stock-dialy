@@ -1,0 +1,295 @@
+"""stockdiary/api_views.py の主要エンドポイントテスト。
+
+関連日記検索・追加・削除、ハッシュタグ検索、自分の日記検索、
+グラフデータ API を優先的にカバーする（従来カバレッジ 15%）。
+"""
+import pytest
+import json
+from django.urls import reverse
+from django.contrib.auth import get_user_model
+from decimal import Decimal
+from datetime import date
+
+from stockdiary.models import StockDiary, DiaryNote, Transaction
+
+User = get_user_model()
+
+pytestmark = pytest.mark.django_db(transaction=True)
+
+
+# ---------------------------------------------------------------------------
+# fixtures
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def user(db):
+    return User.objects.create_user(
+        username='apiv_user', password='pass', email='apiv@example.com'
+    )
+
+
+@pytest.fixture
+def other_user(db):
+    return User.objects.create_user(
+        username='apiv_other', password='pass', email='apiv_other@example.com'
+    )
+
+
+@pytest.fixture
+def diary(user):
+    return StockDiary.objects.create(
+        user=user, stock_symbol='7203', stock_name='トヨタ自動車', reason='長期保有'
+    )
+
+
+@pytest.fixture
+def diary2(user):
+    return StockDiary.objects.create(
+        user=user, stock_symbol='9984', stock_name='ソフトバンクG', reason='成長期待'
+    )
+
+
+@pytest.fixture
+def authed_client(client, user):
+    client.login(username='apiv_user', password='pass')
+    return client
+
+
+# ---------------------------------------------------------------------------
+# search_related_diaries
+# ---------------------------------------------------------------------------
+
+class TestSearchRelatedDiaries:
+    """関連日記候補の検索 API テスト。"""
+
+    def test_returns_matching_diaries(self, authed_client, diary, diary2):
+        """クエリに一致する自分の日記を返す。"""
+        url = reverse('stockdiary:api_related_search', args=[diary.id])
+        resp = authed_client.get(url, {'q': 'ソフトバンク'})
+        assert resp.status_code == 200
+        data = resp.json()
+        ids = [d['id'] for d in data['diaries']]
+        assert diary2.id in ids
+
+    def test_excludes_self(self, authed_client, diary):
+        """自分自身の日記は候補に含まれない。"""
+        url = reverse('stockdiary:api_related_search', args=[diary.id])
+        resp = authed_client.get(url, {'q': 'トヨタ'})
+        data = resp.json()
+        ids = [d['id'] for d in data['diaries']]
+        assert diary.id not in ids
+
+    def test_excludes_already_linked(self, authed_client, diary, diary2):
+        """既に関連付け済みの日記は候補に含まれない。"""
+        diary.linked_diaries.add(diary2)
+        url = reverse('stockdiary:api_related_search', args=[diary.id])
+        resp = authed_client.get(url, {'q': 'ソフトバンク'})
+        data = resp.json()
+        ids = [d['id'] for d in data['diaries']]
+        assert diary2.id not in ids
+
+    def test_empty_query_returns_empty(self, authed_client, diary):
+        """クエリが空のとき空リストを返す。"""
+        url = reverse('stockdiary:api_related_search', args=[diary.id])
+        resp = authed_client.get(url, {'q': ''})
+        assert resp.json() == {'diaries': []}
+
+    def test_other_users_diary_not_returned(self, authed_client, diary, other_user):
+        """他ユーザーの日記は候補に含まれない。"""
+        other_diary = StockDiary.objects.create(
+            user=other_user, stock_symbol='7203', stock_name='トヨタ'
+        )
+        url = reverse('stockdiary:api_related_search', args=[diary.id])
+        resp = authed_client.get(url, {'q': 'トヨタ'})
+        ids = [d['id'] for d in resp.json()['diaries']]
+        assert other_diary.id not in ids
+
+    def test_requires_login(self, client, diary):
+        url = reverse('stockdiary:api_related_search', args=[diary.id])
+        resp = client.get(url, {'q': 'トヨタ'})
+        assert resp.status_code == 302
+
+
+# ---------------------------------------------------------------------------
+# add_related_diary
+# ---------------------------------------------------------------------------
+
+class TestAddRelatedDiary:
+    """関連日記追加 API テスト（双方向リンク）。"""
+
+    def test_adds_bidirectional_link(self, authed_client, diary, diary2):
+        """追加すると双方向にリンクが張られる。"""
+        url = reverse('stockdiary:api_related_add', args=[diary.id])
+        resp = authed_client.post(
+            url,
+            data=json.dumps({'related_id': diary2.id}),
+            content_type='application/json',
+        )
+        assert resp.status_code == 200
+        assert resp.json()['success'] is True
+        # 双方向確認
+        assert diary.linked_diaries.filter(id=diary2.id).exists()
+        assert diary2.linked_diaries.filter(id=diary.id).exists()
+
+    def test_returns_400_for_self_link(self, authed_client, diary):
+        """自分自身を関連付けしようとすると 400 を返す。"""
+        url = reverse('stockdiary:api_related_add', args=[diary.id])
+        resp = authed_client.post(
+            url,
+            data=json.dumps({'related_id': diary.id}),
+            content_type='application/json',
+        )
+        assert resp.status_code == 400
+
+    def test_returns_400_for_invalid_body(self, authed_client, diary):
+        """不正な JSON は 400 を返す。"""
+        url = reverse('stockdiary:api_related_add', args=[diary.id])
+        resp = authed_client.post(url, data='not json', content_type='application/json')
+        assert resp.status_code == 400
+
+    def test_requires_login(self, client, diary, diary2):
+        url = reverse('stockdiary:api_related_add', args=[diary.id])
+        resp = client.post(
+            url,
+            data=json.dumps({'related_id': diary2.id}),
+            content_type='application/json',
+        )
+        assert resp.status_code == 302
+
+
+# ---------------------------------------------------------------------------
+# remove_related_diary
+# ---------------------------------------------------------------------------
+
+class TestRemoveRelatedDiary:
+    """関連日記削除 API テスト（双方向解除）。"""
+
+    def test_removes_bidirectional_link(self, authed_client, diary, diary2):
+        """解除すると双方向のリンクが消える。"""
+        diary.linked_diaries.add(diary2)
+        diary2.linked_diaries.add(diary)
+
+        url = reverse('stockdiary:api_related_remove', args=[diary.id, diary2.id])
+        resp = authed_client.post(url)
+        assert resp.status_code == 200
+        assert resp.json()['success'] is True
+        assert not diary.linked_diaries.filter(id=diary2.id).exists()
+        assert not diary2.linked_diaries.filter(id=diary.id).exists()
+
+    def test_requires_login(self, client, diary, diary2):
+        url = reverse('stockdiary:api_related_remove', args=[diary.id, diary2.id])
+        resp = client.post(url)
+        assert resp.status_code == 302
+
+
+# ---------------------------------------------------------------------------
+# search_my_diaries
+# ---------------------------------------------------------------------------
+
+class TestSearchMyDiaries:
+    """自分の日記検索 API テスト（FAB クイック記録用）。"""
+
+    def test_returns_all_when_no_query(self, authed_client, diary, diary2):
+        """クエリなしのとき最近の日記を返す。"""
+        url = reverse('stockdiary:api_search_my_diaries')
+        resp = authed_client.get(url)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert 'diaries' in data
+        ids = [d['id'] for d in data['diaries']]
+        assert diary.id in ids
+        assert diary2.id in ids
+
+    def test_filters_by_query(self, authed_client, diary, diary2):
+        """クエリに一致する日記のみ返す。"""
+        url = reverse('stockdiary:api_search_my_diaries')
+        resp = authed_client.get(url, {'q': 'ソフトバンク'})
+        data = resp.json()
+        ids = [d['id'] for d in data['diaries']]
+        assert diary2.id in ids
+        assert diary.id not in ids
+
+    def test_does_not_return_other_users_diaries(self, authed_client, other_user):
+        """他ユーザーの日記は返さない。"""
+        other_diary = StockDiary.objects.create(
+            user=other_user, stock_symbol='8001', stock_name='伊藤忠商事'
+        )
+        url = reverse('stockdiary:api_search_my_diaries')
+        resp = authed_client.get(url, {'q': '伊藤忠'})
+        ids = [d['id'] for d in resp.json()['diaries']]
+        assert other_diary.id not in ids
+
+    def test_requires_login(self, client):
+        url = reverse('stockdiary:api_search_my_diaries')
+        resp = client.get(url)
+        assert resp.status_code == 302
+
+    def test_response_includes_topics_field(self, authed_client, diary):
+        """レスポンスに topics フィールドが含まれる。"""
+        DiaryNote.objects.create(
+            diary=diary, date=date.today(), content='テスト', topic='円安動向'
+        )
+        url = reverse('stockdiary:api_search_my_diaries')
+        resp = authed_client.get(url, {'q': 'トヨタ'})
+        entry = next(d for d in resp.json()['diaries'] if d['id'] == diary.id)
+        assert 'topics' in entry
+        assert '円安動向' in entry['topics']
+
+
+# ---------------------------------------------------------------------------
+# get_hashtags
+# ---------------------------------------------------------------------------
+
+class TestGetHashtags:
+    """ハッシュタグ補完 API テスト。"""
+
+    def test_returns_200(self, authed_client):
+        url = reverse('stockdiary:api_hashtags')
+        resp = authed_client.get(url)
+        assert resp.status_code == 200
+        assert 'hashtags' in resp.json()
+
+    def test_requires_login(self, client):
+        url = reverse('stockdiary:api_hashtags')
+        resp = client.get(url)
+        assert resp.status_code == 302
+
+
+# ---------------------------------------------------------------------------
+# diary_graph_data
+# ---------------------------------------------------------------------------
+
+class TestDiaryGraphData:
+    """日記関連グラフデータ API テスト。"""
+
+    def test_returns_nodes_and_edges(self, authed_client, diary):
+        url = reverse('stockdiary:api_diary_graph_data')
+        resp = authed_client.get(url)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert 'nodes' in data
+        assert 'edges' in data
+
+    def test_status_filter_holding(self, authed_client, diary):
+        """status=holding でも 200 を返す（クラッシュしない）。"""
+        url = reverse('stockdiary:api_diary_graph_data')
+        resp = authed_client.get(url, {'status': 'holding'})
+        assert resp.status_code == 200
+
+    def test_edge_mode_manual(self, authed_client, diary, diary2):
+        """edge_modes=manual でリンクノードとエッジが返る。"""
+        diary.linked_diaries.add(diary2)
+        url = reverse('stockdiary:api_diary_graph_data')
+        resp = authed_client.get(url, {'edge_modes': 'manual'})
+        assert resp.status_code == 200
+
+    def test_requires_login(self, client):
+        url = reverse('stockdiary:api_diary_graph_data')
+        resp = client.get(url)
+        assert resp.status_code == 302
+
+    def test_empty_state_does_not_crash(self, authed_client):
+        """日記が1件もなくてもクラッシュしない。"""
+        url = reverse('stockdiary:api_diary_graph_data')
+        resp = authed_client.get(url)
+        assert resp.status_code == 200

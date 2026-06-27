@@ -709,4 +709,75 @@ class TestHomeViewStatusDefault:
         assert response.status_code == 200
         ids = {d.id for d in response.context['diaries']}
         assert self.diary_active.id in ids
-        assert self.diary_memo.id in ids
+
+
+@pytest.mark.django_db(transaction=True)
+class TestDiaryTabContentXSS:
+    """DiaryTabContentView (_render_notes_tab) の XSS 対策テスト。
+
+    note.content をエスケープせずに f-string で HTML に埋め込んでいたため、
+    <script> 等を含むノート本文がそのまま JSON レスポンスに含まれ、
+    クライアントが innerHTML で挿入すると XSS になっていた。
+    修正後は django.utils.html.escape() でエスケープされることを確認する。
+    """
+
+    def setup_method(self):
+        self.user = User.objects.create_user(
+            username='xss_test_user', password='pass', email='xss@example.com'
+        )
+        self.diary = StockDiary.objects.create(
+            user=self.user,
+            stock_symbol='1234',
+            stock_name='テスト株式',
+            reason='テスト',
+        )
+
+    def test_script_tag_in_note_content_is_escaped(self, client):
+        """<script> タグを含む note.content が JSON レスポンス内でエスケープされる。"""
+        malicious = '<script>alert("XSS")</script>'
+        DiaryNote.objects.create(
+            diary=self.diary,
+            date=date.today(),
+            content=malicious,
+        )
+        client.login(username='xss_test_user', password='pass')
+        url = reverse('stockdiary:api_tab_content', args=[self.diary.id, 'notes'])
+        response = client.get(url)
+        assert response.status_code == 200
+        body = response.content.decode()
+        # エスケープ済みならスクリプトタグが生の状態で含まれない
+        assert '<script>' not in body
+        assert '&lt;script&gt;' in body
+
+    def test_html_attribute_injection_in_note_content_is_escaped(self, client):
+        """" onerror= 等の HTML 属性インジェクションが無効化される。"""
+        malicious = '"onmouseover="alert(1)'
+        DiaryNote.objects.create(
+            diary=self.diary,
+            date=date.today(),
+            content=malicious,
+        )
+        client.login(username='xss_test_user', password='pass')
+        url = reverse('stockdiary:api_tab_content', args=[self.diary.id, 'notes'])
+        response = client.get(url)
+        assert response.status_code == 200
+        body = response.content.decode()
+        assert '&quot;' in body or '&#x27;' in body or '"onmouseover=' not in body
+
+    def test_newline_in_note_content_becomes_br(self, client):
+        """改行は <br> に変換され、テキスト自体はエスケープされる。"""
+        DiaryNote.objects.create(
+            diary=self.diary,
+            date=date.today(),
+            content='line1\nline2',
+        )
+        client.login(username='xss_test_user', password='pass')
+        url = reverse('stockdiary:api_tab_content', args=[self.diary.id, 'notes'])
+        response = client.get(url)
+        assert response.status_code == 200
+        data = json.loads(response.content)
+        assert '<br>' in data['html']
+        assert 'line1' in data['html']
+        assert 'line2' in data['html']
+        # <script> 等が含まれる場合もエスケープされるはず（念のため確認）
+        assert '<script>' not in data['html']

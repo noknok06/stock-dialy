@@ -1,0 +1,87 @@
+{% load humanize %}
+<div class="px-1 py-2">
+  {% if diary.transaction_count > 0 and diary.average_purchase_price is not None %}
+  <div class="info-block mb-3">
+    <div class="info-row">
+      <div class="info-item">
+        <div class="info-icon"><i class="bi bi-currency-yen"></i></div>
+        <div class="info-content">
+          <span class="info-label">平均取得単価</span>
+          <span class="info-value">{{ diary.average_purchase_price|floatformat:2|intcomma }}円</span>
+        </div>
+      </div>
+      <div class="info-item">
+        <div class="info-icon"><i class="bi bi-graph-up"></i></div>
+        <div class="info-content">
+          <span class="info-label">現在保有数</span>
+          <span class="info-value">{{ diary.current_quantity|default:0|floatformat:2 }}株</span>
+        </div>
+      </div>
+      <div class="info-item">
+        <div class="info-icon"><i class="bi bi-calendar-date"></i></div>
+        <div class="info-content">
+          <span class="info-label">初回購入日</span>
+          <span class="info-value">
+            {% if diary.first_purchase_date %}{{ diary.first_purchase_date|date:"Y年n月j日" }}{% else %}未設定{% endif %}
+          </span>
+        </div>
+      </div>
+      <div class="info-item">
+        <div class="info-icon"><i class="bi bi-cash-stack"></i></div>
+        <div class="info-content">
+          <span class="info-label">総投資額</span>
+          <span class="info-value">{{ total_investment|floatformat:0|intcomma }}円</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if diary.is_sold_out and diary.realized_profit is not None %}
+  <div class="sell-info">
+    <div class="info-row">
+      <div class="info-item">
+        <div class="info-icon"><i class="bi bi-calendar-check"></i></div>
+        <div class="info-content">
+          <span class="info-label">最終取引日</span>
+          <span class="info-value">
+            {% if diary.last_transaction_date %}{{ diary.last_transaction_date|date:"Y年n月j日" }}{% else %}未設定{% endif %}
+          </span>
+        </div>
+      </div>
+      <div class="info-item">
+        <div class="info-icon"><i class="bi bi-graph-up-arrow"></i></div>
+        <div class="info-content">
+          <span class="info-label">実現損益</span>
+          <span class="info-value {{ profit_class }}">
+            {{ profit_sign }}{{ diary.realized_profit|floatformat:0|intcomma }}円
+          </span>
+        </div>
+      </div>
+      <div class="info-item">
+        <div class="info-icon"><i class="bi bi-percent"></i></div>
+        <div class="info-content">
+          <span class="info-label">損益率</span>
+          <span class="info-value {{ profit_class }}">
+            {{ profit_sign }}{{ profit_rate|floatformat:2 }}%
+          </span>
+        </div>
+      </div>
+      <div class="info-item">
+        <div class="info-icon"><i class="bi bi-cash-stack"></i></div>
+        <div class="info-content">
+          <span class="info-label">総売却額</span>
+          <span class="info-value">
+            {% if diary.total_sell_amount %}{{ diary.total_sell_amount|floatformat:0|intcomma }}{% else %}0{% endif %}円
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% elif diary.is_memo %}
+  <div class="alert alert-info">
+    <i class="bi bi-info-circle me-2"></i>
+    この日記はメモとして記録されています。取引情報が設定されていません。
+  </div>
+  {% endif %}
+</div>

@@ -1,0 +1,30 @@
+<div class="search-suggestions mt-2">
+  {% if stock_matches %}
+  <div class="search-suggestion-title"><small>銘柄:</small></div>
+  <div class="search-suggestion-items">
+    {% for match in stock_matches %}
+    <div class="search-suggestion-item"
+         hx-get="/stockdiary/diary-list/?query={{ match.stock_name|urlencode }}"
+         hx-target="#diary-container"
+         hx-push-url="true">
+      <i class="bi bi-building me-1"></i>
+      {{ match.stock_name }} ({{ match.stock_symbol }})
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% if tag_matches %}
+  <div class="search-suggestion-title"><small>タグ:</small></div>
+  <div class="search-suggestion-items">
+    {% for match in tag_matches %}
+    <div class="search-suggestion-item"
+         hx-get="/stockdiary/diary-list/?tag={{ match.id }}"
+         hx-target="#diary-container"
+         hx-push-url="true">
+      <i class="bi bi-tag me-1"></i>
+      {{ match.name }}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>

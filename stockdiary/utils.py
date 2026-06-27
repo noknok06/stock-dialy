@@ -330,6 +330,116 @@ def apply_diary_search(queryset, query: str):
     return queryset.distinct()
 
 
+def apply_diary_filters(queryset, params, user):
+    """GET パラメータに基づいて日記 QuerySet にフィルター・ソートを適用する。
+
+    StockDiaryListView.get_queryset() と diary_list FBV の両方で使われる共通ロジック。
+    params は request.GET (QueryDict) を想定する。
+
+    Args:
+        queryset: StockDiary の QuerySet（user 絞り込み済みであること）
+        params: request.GET など dict-like オブジェクト
+        user: リクエストユーザー（transaction_date_range フィルターで参照）
+
+    Returns:
+        フィルター・ソート済みの QuerySet（distinct 適用済み）
+    """
+    from datetime import timedelta
+    from django.db.models import Count, Q as _Q, F as _F
+    from django.utils import timezone as _tz
+    from .models import Transaction as _Transaction
+    from .utils import apply_diary_search, search_diaries_by_hashtag
+
+    DATE_RANGE_DAYS = {'1w': 7, '1m': 30, '3m': 90, '6m': 180, '1y': 365}
+
+    # 全文検索
+    query = params.get('query', '').strip()
+    if query:
+        queryset = apply_diary_search(queryset, query)
+
+    # ハッシュタグフィルター
+    hashtag = params.get('hashtag', '').strip()
+    if hashtag:
+        queryset = search_diaries_by_hashtag(queryset, hashtag)
+
+    # タグフィルター
+    tag_id = params.get('tag', '')
+    if tag_id:
+        try:
+            queryset = queryset.filter(tags__id=int(tag_id))
+        except (ValueError, TypeError):
+            pass
+
+    # 業種フィルター
+    sector = params.get('sector', '').strip()
+    if sector:
+        queryset = queryset.filter(sector__iexact=sector)
+
+    # 保有状態フィルター
+    status = params.get('status', 'all')
+    if status == 'active':
+        queryset = queryset.filter(current_quantity__gt=0)
+    elif status == 'sold':
+        queryset = queryset.filter(
+            _Q(current_quantity=0) | _Q(current_quantity__lt=0),
+            transaction_count__gt=0,
+        )
+    elif status == 'memo':
+        queryset = queryset.filter(transaction_count=0)
+    elif status == 'excluded':
+        queryset = queryset.filter(is_excluded=True)
+    if status != 'excluded':
+        queryset = queryset.filter(is_excluded=False)
+
+    # 日付範囲フィルター（first_purchase_date 基準）
+    date_range = params.get('date_range', '')
+    if date_range in DATE_RANGE_DAYS:
+        start_date = _tz.now().date() - timedelta(days=DATE_RANGE_DAYS[date_range])
+        queryset = queryset.filter(
+            _Q(first_purchase_date__gte=start_date) |
+            _Q(first_purchase_date__isnull=True, created_at__gte=start_date)
+        )
+
+    # 取引日基準フィルター
+    transaction_date_range = params.get('transaction_date_range', '')
+    if transaction_date_range in DATE_RANGE_DAYS:
+        start_date = _tz.now().date() - timedelta(days=DATE_RANGE_DAYS[transaction_date_range])
+        diary_ids = _Transaction.objects.filter(
+            diary__user=user,
+            transaction_date__gte=start_date,
+        ).values_list('diary_id', flat=True).distinct()
+        queryset = queryset.filter(id__in=diary_ids)
+
+    # 開示書類更新フィルター
+    disclosure = params.get('disclosure', '')
+    if disclosure in ('new', 'recent'):
+        days = 7 if disclosure == 'new' else 30
+        cutoff = _tz.now().date() - timedelta(days=days)
+        queryset = queryset.filter(latest_disclosure_date__gte=cutoff)
+
+    # 未記録フィルター
+    if params.get('no_notes', ''):
+        queryset = queryset.annotate(note_count=Count('notes')).filter(note_count=0)
+
+    # ソート
+    sort = params.get('sort', '')
+    sort_map = {
+        'name': ['stock_name'],
+        'symbol': ['stock_symbol'],
+        'date_asc': [_F('first_purchase_date').asc(nulls_last=True), 'created_at'],
+        'date_desc': [_F('first_purchase_date').desc(nulls_last=True), '-created_at'],
+        'profit_desc': ['-realized_profit'],
+        'profit_asc': ['realized_profit'],
+        'transaction_count_desc': ['-transaction_count', '-updated_at'],
+        'transaction_count_asc': ['transaction_count', 'updated_at'],
+        'total_cost_desc': ['-total_cost', '-updated_at'],
+        'total_cost_asc': ['total_cost', 'updated_at'],
+    }
+    queryset = queryset.order_by(*sort_map.get(sort, ['-updated_at']))
+
+    return queryset.distinct()
+
+
 def _make_search_snippet(text: str, query: str, radius: int = 40) -> str:
     """検索語の周辺を切り出した抜粋テキストを返す（ハイライトは呼び出し側で行う）。"""
     if not text or not query:
