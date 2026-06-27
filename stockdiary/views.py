@@ -28,10 +28,9 @@ from django.core.cache import cache
 
 from utils.mixins import ObjectNotFoundRedirectMixin
 from .models import StockDiary, DiaryNote, DiaryNotification
-from .models import Transaction, StockSplit, Thesis, Verdict, ReasonVersion
-from .forms import TransactionForm, StockSplitForm, TradeUploadForm
-from .forms import StockDiaryForm, DiaryNoteForm, ThesisForm, VerdictForm
-from .utils import compute_related_strength, extract_lead, build_theme_recall, find_backlinks
+from .models import Transaction, ReasonVersion
+from .forms import StockDiaryForm, DiaryNoteForm, ThesisForm
+from .utils import compute_related_strength, extract_lead, build_theme_recall
 from company_master.models import CompanyMaster
 from tags.models import Tag
 from django.views.generic import FormView
@@ -47,7 +46,6 @@ import mimetypes
 import os
 import csv
 import io
-import traceback
 import html
 
 logger = logging.getLogger(__name__)
