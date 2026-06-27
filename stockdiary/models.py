@@ -484,7 +484,7 @@ class DiaryNote(models.Model):
     
     def get_price_change(self):
         """購入価格からの変動率を計算"""
-        if self.current_price and self.diary.average_purchase_price:
+        if self.current_price is not None and self.diary.average_purchase_price:
             change = ((self.current_price - self.diary.average_purchase_price) / self.diary.average_purchase_price) * 100
             return change
         return None
