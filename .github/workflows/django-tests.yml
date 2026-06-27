@@ -19,14 +19,14 @@ jobs:
           python-version: '3.12'
 
       - name: Cache pip
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
           restore-keys: ${{ runner.os }}-pip-
 
       - name: Cache apt packages
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         id: apt-cache
         with:
           path: /var/cache/apt/archives
