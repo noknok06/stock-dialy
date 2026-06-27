@@ -395,6 +395,8 @@ class TradingDashboardView(LoginRequiredMixin, TemplateView):
         sector_analysis = sector_analysis[:10]
 
         max_transaction_count = sector_analysis[0]['transaction_count'] if sector_analysis else 1
+        if max_transaction_count == 0:
+            max_transaction_count = 1
         total_all_transactions = sum(s['transaction_count'] for s in sector_analysis)
         
         for sector in sector_analysis:

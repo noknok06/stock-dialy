@@ -132,9 +132,9 @@ def _build_diagnosis(total, hit_rate, lucky_share, quad_counts, strong_themes, w
             parts.append('仮説の的中は五分')
     if lucky_share is not None and lucky_share >= metrics.LUCKY_WIN_SHARE_ALERT:
         parts.append('勝ちには「偶然」が混じる')
-    elif quad_counts.get('unlucky', 0) and quad_counts['unlucky'] >= quad_counts.get('skill', 0):
+    elif quad_counts.get('unlucky', 0) >= quad_counts.get('skill', 0) and quad_counts.get('unlucky', 0) > 0:
         parts.append('正しくても報われないことが多い')
-    elif quad_counts.get('discipline', 0) and quad_counts['discipline'] >= quad_counts.get('skill', 0):
+    elif quad_counts.get('discipline', 0) >= quad_counts.get('skill', 0) and quad_counts.get('discipline', 0) > 0:
         parts.append('読みが外れたときは規律を守れている')
     if parts:
         lines.append('、'.join(parts) + '。')
