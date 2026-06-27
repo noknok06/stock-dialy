@@ -4,6 +4,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import ProhibitNullCharactersValidator, MaxLengthValidator
 from .models import StockDiary, Transaction, StockSplit, DiaryNote, Thesis, Verdict, sanitize_text_content
 from .utils import detect_currency
+from .services.migration_export_service import SECTION_CHOICES as _SECTION_CHOICES
 from decimal import Decimal
 
 
@@ -424,8 +425,6 @@ class SelectiveExportForm(forms.Form):
     日記本体（銘柄・投資理由）は常に含め、ここで選んだ関連データのみを追加する。
     LLM に渡して分析する用途で、不要なデータを削ってファイルを軽くするのが目的（Issue #356）。
     """
-    from .services.migration_export_service import SECTION_CHOICES as _SECTION_CHOICES
-
     sections = forms.MultipleChoiceField(
         label='含める項目（日記本体は常に含まれます）',
         choices=_SECTION_CHOICES,

@@ -3,6 +3,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods, require_GET
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
@@ -565,7 +566,6 @@ def search_related_diaries(request, diary_id):
     already_linked_ids |= set(diary.linked_from.values_list('id', flat=True))
     already_linked_ids.add(diary_id)
 
-    from django.db.models import Q
     results = StockDiary.objects.filter(
         user=request.user
     ).filter(
@@ -600,7 +600,6 @@ def search_my_diaries(request):
     """
     query = request.GET.get('q', '').strip()
 
-    from django.db.models import Q
     qs = StockDiary.objects.filter(user=request.user)
     if query:
         qs = qs.filter(Q(stock_name__icontains=query) | Q(stock_symbol__icontains=query))
@@ -687,7 +686,6 @@ def diary_graph_data(request):
     複数モードを同時に指定すると各モードのノード・エッジを統合して返す。
     """
     try:
-        from django.db.models import Q as _Q
         user = request.user
         tag_id = request.GET.get('tag', '').strip()
 
@@ -712,13 +710,13 @@ def diary_graph_data(request):
         # --- primary: フィルター条件に合う日記 ---
         primary_qs = all_user_qs
         if statuses and 'all' not in statuses:
-            status_q = _Q()
+            status_q = Q()
             if 'holding' in statuses:
-                status_q |= _Q(current_quantity__gt=0)
+                status_q |= Q(current_quantity__gt=0)
             if 'sold' in statuses:
-                status_q |= _Q(transaction_count__gt=0, current_quantity=0)
+                status_q |= Q(transaction_count__gt=0, current_quantity=0)
             if 'memo' in statuses:
-                status_q |= _Q(transaction_count=0)
+                status_q |= Q(transaction_count=0)
             primary_qs = primary_qs.filter(status_q)
         if tag_id:
             try:
