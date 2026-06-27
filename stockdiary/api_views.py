@@ -603,7 +603,7 @@ def search_my_diaries(request):
     qs = StockDiary.objects.filter(user=request.user)
     if query:
         qs = qs.filter(Q(stock_name__icontains=query) | Q(stock_symbol__icontains=query))
-    results = qs.order_by('-updated_at')[:8]
+    results = list(qs.prefetch_related('notes').order_by('-updated_at')[:8])
 
     diaries = []
     for d in results:
