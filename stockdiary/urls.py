@@ -11,6 +11,7 @@ from . import views_trade_import  # 証券CSV取込（楽天・SBI）
 from . import views_growth  # 成長OS（仮説・検証・カルテ・ライブラリ・年次レビュー）
 from . import views_panels  # 詳細ページの遅延ロードHTMXパネル（backlinks・EDINET）
 from . import views_dashboard  # ダッシュボード・パフォーマンスグラフ・タグ別成績
+from . import views_transactions  # 取引・株式分割の CRUD
 from django.contrib.auth.decorators import login_required
 from django.views.generic.base import RedirectView
 
@@ -38,17 +39,17 @@ urlpatterns = [
     # ==========================================
     # 取引管理
     # ==========================================
-    path('<int:diary_id>/transaction/add/', views.add_transaction, name='add_transaction'),
-    path('transaction/<int:transaction_id>/', views.get_transaction, name='get_transaction'),
-    path('transaction/<int:transaction_id>/update/', views.update_transaction, name='update_transaction'),
-    path('transaction/<int:transaction_id>/delete/', views.delete_transaction, name='delete_transaction'),
+    path('<int:diary_id>/transaction/add/', views_transactions.add_transaction, name='add_transaction'),
+    path('transaction/<int:transaction_id>/', views_transactions.get_transaction, name='get_transaction'),
+    path('transaction/<int:transaction_id>/update/', views_transactions.update_transaction, name='update_transaction'),
+    path('transaction/<int:transaction_id>/delete/', views_transactions.delete_transaction, name='delete_transaction'),
 
     # ==========================================
     # 株式分割管理
     # ==========================================
-    path('<int:diary_id>/stock-split/add/', views.add_stock_split, name='add_stock_split'),
-    path('stock-split/<int:split_id>/apply/', views.apply_stock_split, name='apply_stock_split'),
-    path('stock-split/<int:split_id>/delete/', views.delete_stock_split, name='delete_stock_split'),
+    path('<int:diary_id>/stock-split/add/', views_transactions.add_stock_split, name='add_stock_split'),
+    path('stock-split/<int:split_id>/apply/', views_transactions.apply_stock_split, name='apply_stock_split'),
+    path('stock-split/<int:split_id>/delete/', views_transactions.delete_stock_split, name='delete_stock_split'),
 
     # ==========================================
     # 継続記録関連
