@@ -202,7 +202,10 @@ def process_rakuten_csv(user, csv_content, filename):
     error_count = 0
     overwrite_count = 0
     errors = []
-    
+    # 今回の取込で実際に取引を作成・更新した Diary の pk。末尾でこれらだけを
+    # 1回ずつ再集計する（ループ内の個別 save() の自動再集計は _defer_recalc で抑制）。
+    touched_diary_pks = set()
+
     # まず全データを読み込んで日付順にソート
     all_rows = []
     for original_row_num, row in enumerate(reader, start=2):
@@ -321,7 +324,10 @@ def process_rakuten_csv(user, csv_content, filename):
                         stock_name=stock_name,
                         reason=f'楽天証券からインポート（{trade_date}）',
                     )
-                
+
+                # この行の save() による自動再集計を抑制する（末尾で1回だけ実行）。
+                diary._defer_recalc = True
+
                 # メモ内容を作成
                 memo_content = f'楽天証券からインポート({trade_category} {trade_type_raw}) [ファイル: {filename} 行: {original_row_num}]'
                 
@@ -338,13 +344,15 @@ def process_rakuten_csv(user, csv_content, filename):
                 
                 if existing_transaction:
                     # ✅ 既存の同一キーがある場合は常に上書き（重複取り込み防止）
+                    # defer フラグ付きの diary インスタンスを使わせ、save() の自動再集計を抑制。
+                    existing_transaction.diary = diary
                     existing_transaction.quantity = quantity
                     existing_transaction.price = price
                     existing_transaction.memo = memo_content
                     existing_transaction.is_margin = is_margin_trade  # ✅ 信用取引フラグを更新
                     existing_transaction.save()
                     overwrite_count += 1
-                    
+
                 else:
                     # ✅ 新規取引として作成
                     transaction_obj = Transaction(
@@ -356,10 +364,12 @@ def process_rakuten_csv(user, csv_content, filename):
                         memo=memo_content,
                         is_margin=is_margin_trade  # ✅ 信用取引フラグを設定
                     )
-                    
+
                     transaction_obj.save()
                     success_count += 1
-                
+
+                touched_diary_pks.add(diary.pk)
+
         except Exception as e:
             import traceback
             traceback.print_exc()
@@ -367,16 +377,12 @@ def process_rakuten_csv(user, csv_content, filename):
             errors.append(f'行{original_row_num} ({stock_name_for_error}): {str(e)}')
             error_count += 1
             continue
-    
-    # 最後に各Diaryの集計を更新
-    processed_diaries = StockDiary.objects.filter(
-        user=user,
-        transactions__memo__contains='楽天証券からインポート'
-    ).distinct()
-    
-    for diary in processed_diaries:
+
+    # 最後に、今回触れた Diary だけを1回ずつ再集計する。
+    # pk__in で DB から取り直すため、ロールバックされた新規 Diary は自然に除外される。
+    for diary in StockDiary.objects.filter(pk__in=touched_diary_pks):
         diary.update_aggregates()
-    
+
     return {
         'success_count': success_count,
         'skip_count': skip_count,
@@ -619,7 +625,10 @@ def process_sbi_csv(user, csv_content, filename):
     error_count = 0
     overwrite_count = 0
     errors = []
-    
+    # 今回の取込で実際に取引を作成・更新した Diary の pk。末尾でこれらだけを
+    # 1回ずつ再集計する（ループ内の個別 save() の自動再集計は _defer_recalc で抑制）。
+    touched_diary_pks = set()
+
     # 全データを読み込んで日付順にソート
     all_rows = []
     for original_row_num, row in enumerate(reader, start=10):  # 実際のデータは10行目から
@@ -734,7 +743,10 @@ def process_sbi_csv(user, csv_content, filename):
                         stock_name=stock_name,
                         reason=f'SBI証券からインポート（{trade_date}）',
                     )
-                
+
+                # この行の save() による自動再集計を抑制する（末尾で1回だけ実行）。
+                diary._defer_recalc = True
+
                 # メモ内容を作成
                 memo_content = f'SBI証券からインポート({trade_type_raw}'
                 if market:
@@ -754,6 +766,8 @@ def process_sbi_csv(user, csv_content, filename):
                 
                 if existing_transaction:
                     # 既存の同一キーがある場合は上書き
+                    # defer フラグ付きの diary インスタンスを使わせ、save() の自動再集計を抑制。
+                    existing_transaction.diary = diary
                     existing_transaction.quantity = quantity
                     existing_transaction.price = price
                     existing_transaction.memo = memo_content
@@ -773,7 +787,9 @@ def process_sbi_csv(user, csv_content, filename):
                     )
                     transaction_obj.save()
                     success_count += 1
-                
+
+                touched_diary_pks.add(diary.pk)
+
         except Exception as e:
             import traceback
             traceback.print_exc()
@@ -781,16 +797,12 @@ def process_sbi_csv(user, csv_content, filename):
             errors.append(f'行{original_row_num} ({stock_name_for_error}): {str(e)}')
             error_count += 1
             continue
-    
-    # 各Diaryの集計を更新
-    processed_diaries = StockDiary.objects.filter(
-        user=user,
-        transactions__memo__contains='SBI証券からインポート'
-    ).distinct()
-    
-    for diary in processed_diaries:
+
+    # 最後に、今回触れた Diary だけを1回ずつ再集計する。
+    # pk__in で DB から取り直すため、ロールバックされた新規 Diary は自然に除外される。
+    for diary in StockDiary.objects.filter(pk__in=touched_diary_pks):
         diary.update_aggregates()
-    
+
     return {
         'success_count': success_count,
         'skip_count': skip_count,

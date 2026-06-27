@@ -233,6 +233,10 @@ def quick_add_transaction(request, diary_id):
             transaction_date = timezone.now().date()
 
         # 取引作成
+        # Transaction.objects.create() は内部で save() を呼び、その中で
+        # diary.update_aggregates()（＝集計の再計算）が自動的に走る。
+        # ここで明示的に recalculate() を呼ぶと二重再集計になるため呼ばない
+        # （CLAUDE.md「AggregateService — 集計の不変条件」: 単体操作は自動）。
         transaction = Transaction.objects.create(
             diary=diary,
             transaction_type=normalized_type,
@@ -241,11 +245,6 @@ def quick_add_transaction(request, diary_id):
             quantity=quantity_decimal,
             is_margin=is_margin,
         )
-
-        # 取引作成後は集計（保有数・損益等）を再計算する。
-        # ※ recalculate() 内で diary.save() まで実行される。
-        from .services.aggregate_service import AggregateService
-        AggregateService.recalculate(diary)
 
         return JsonResponse({
             'success': True,

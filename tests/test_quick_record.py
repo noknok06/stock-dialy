@@ -146,6 +146,28 @@ class TestQuickAddTransactionMargin:
         assert tx.transaction_type == 'buy'
         assert tx.is_margin is False
 
+    def test_no_double_recalculation(self, authenticated_client, sample_diary):
+        """集計の二重再計算が起きないことの回帰テスト。
+
+        なぜこのバグが起きたか:
+        quick_add_transaction は Transaction.objects.create() の直後に
+        AggregateService.recalculate(diary) を明示的に呼んでいた。しかし
+        Transaction.save() は内部で diary.update_aggregates() を呼び、その中で
+        既に recalculate() が走る（CLAUDE.md「集計の不変条件」: 単体操作は自動）。
+        結果、1取引につきフルO(N)再集計が2回走っていた。明示呼び出しを除去し、
+        再集計がちょうど1回であることを固定する。
+        """
+        from unittest.mock import patch
+        from stockdiary.services.aggregate_service import AggregateService
+
+        with patch.object(
+            AggregateService, 'recalculate',
+            wraps=AggregateService.recalculate,
+        ) as spy:
+            resp = self._post(authenticated_client, sample_diary, 'buy')
+        assert resp.status_code == 200
+        assert spy.call_count == 1
+
 
 @pytest.mark.django_db
 class TestHomeHorizontalPanLocked:
