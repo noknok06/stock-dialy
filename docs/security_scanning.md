@@ -6,6 +6,20 @@
 > 課金の原則：**Gemini/Claude API を CI に直結しない**（per-token 課金になる）。
 > AIによる検知は「公開リポジトリ無料の CodeQL/Copilot Autofix」と「Claude Code の定額レビュー」で賄う。
 
+## コスト（GitHub 上の課金）
+
+**公開リポジトリのため、GitHub Actions は標準ランナーで無制限・無料**。コミット/プッシュの
+回数は課金に無関係。CodeQL・Dependabot・Secret scanning・Copilot Autofix もすべて
+公開リポジトリは無料。課金が出るのは「非公開リポジトリの無料枠超過」か「大型/GPUランナー」
+だけで、本リポジトリはどちらも該当しない。
+
+無駄ラン削減（金額ではなく速さ・見やすさのため）も設定済み：
+
+- 全ワークフローは `push:[main,develop]` と `pull_request:[main,develop]` のみで起動。
+  **作業ブランチへの普段のコミットでは何も走らない**（走るのは PR と main/develop への push）。
+- `concurrency: cancel-in-progress` で連続 push 時は古いランを自動キャンセル。
+- `paths-ignore: ['**.md','docs/**']` でドキュメントのみの変更はスキャンしない。
+
 ## 導入済みの仕組み
 
 | 仕組み | 種別 | AI性 | 課金 | 何を検知 | 所見の場所 |
