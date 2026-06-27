@@ -44,11 +44,16 @@ class AggregateService:
         （``diary._defer_recalc`` フラグ）、出口で一度だけ走らせて O(N)→O(1) にする。
         """
         diary._defer_recalc = True
+        exc_occurred = False
         try:
             yield diary
+        except Exception:
+            exc_occurred = True
+            raise
         finally:
             diary._defer_recalc = False
-            AggregateService.recalculate(diary)
+            if not exc_occurred:
+                AggregateService.recalculate(diary)
 
     @staticmethod
     def _recalculate_all(diary):

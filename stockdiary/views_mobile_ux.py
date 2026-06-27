@@ -17,7 +17,6 @@ from django.shortcuts import get_object_or_404
 from decimal import Decimal, InvalidOperation
 
 from .models import StockDiary, DiaryNote, Transaction, sanitize_text_content
-from tags.models import Tag
 import logging
 
 logger = logging.getLogger(__name__)
