@@ -5,64 +5,21 @@ DiaryGraphView（関連グラフ）と、タグ別成績の集計ヘルパー bu
 TAG_AXIS_COLORS（タグ軸の表示色）は本ブロック専用のためここに置く。
 urls.py は `from . import views_dashboard` で参照する。
 """
+import json
 import logging
+from datetime import timedelta
+from decimal import Decimal
 
-from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, TemplateView, View
-from django.urls import reverse_lazy
-from django.db.models import Q, Count, Avg, F, Sum, Min, Max, Case, When, Value, IntegerField, DecimalField
-from django.db.models.functions import Coalesce
-from django.db.models.functions import TruncMonth, ExtractWeekDay, Length
-from django.utils import timezone
-from datetime import datetime, timezone as dt_timezone
-from django.utils.html import strip_tags
-from django.utils.safestring import mark_safe
-from django.template.defaultfilters import truncatechars_html
-from django.contrib import messages
-from django.shortcuts import get_object_or_404, redirect, render
-from django.views.decorators.http import require_http_methods
-from django.http import JsonResponse, HttpResponse, Http404
-from django.template.loader import render_to_string
-from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_GET, require_POST
-from django.views.decorators.csrf import csrf_exempt
-from django.utils.decorators import method_decorator
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.conf import settings
-from django.urls import reverse
-from django.core.exceptions import ValidationError
-from django.core.cache import cache
+from django.urls import reverse_lazy
+from django.utils import timezone
+from django.views.generic import TemplateView
 
-from utils.mixins import ObjectNotFoundRedirectMixin
-from .models import StockDiary, DiaryNote, DiaryNotification
-from .models import Transaction, StockSplit, Thesis, Verdict, ReasonVersion
-from .forms import TransactionForm, StockSplitForm, TradeUploadForm
-from .forms import StockDiaryForm, DiaryNoteForm, ThesisForm, VerdictForm
-from .utils import compute_related_strength, extract_lead, build_theme_recall, find_backlinks
 from company_master.models import CompanyMaster
 from tags.models import Tag
-from django.views.generic import FormView
-
-
-from django.db import transaction as db_transaction
-from decimal import Decimal, InvalidOperation
-from datetime import datetime, timedelta, date
-from collections import Counter, defaultdict, OrderedDict
-import calendar
-import chardet
-import mimetypes
-import os
-import csv
-import io
-import traceback
-import html
+from .models import StockDiary, Transaction
 
 logger = logging.getLogger(__name__)
-
-# ページネーション定数
-DIARY_LIST_PAGE_SIZE = 10        # 日記一覧 HTMX パーシャルおよびFBV
-DIARY_LIST_INITIAL_SIZE = 4      # 日記一覧 CBV 初期表示
-NOTIFICATION_LIST_PAGE_SIZE = 20 # 通知一覧
 
 # タグの分類軸（Tag.AXIS_CHOICES）ごとの表示色。タグ別成績の軸バッジで使用。
 TAG_AXIS_COLORS = {
@@ -74,12 +31,6 @@ TAG_AXIS_COLORS = {
     'event': '#db2777',
     'custom': '#64748b',
 }
-
-import json
-import re
-import statistics
-
-from PIL import Image
 
 
 
