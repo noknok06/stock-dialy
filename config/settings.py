@@ -582,11 +582,15 @@ CONTENT_SECURITY_POLICY = {
 
 # USE_S3=True のとき S3/CloudFront ドメインを CSP の各ディレクティブに追加
 if USE_S3:
-    # S3 は global(bucket.s3.amazonaws.com) と regional(bucket.s3.region.amazonaws.com) 両方の
-    # URL で配信されるためバケット名を含む両エンドポイントを明示する（*.amazonaws.com は広すぎる）
+    # S3 には3種類のドメイン形式があり、boto3/ブラウザリダイレクトで混在する:
+    #   global:          bucket.s3.amazonaws.com
+    #   regional (dot):  bucket.s3.ap-northeast-1.amazonaws.com  (現行)
+    #   regional (dash): bucket.s3-ap-northeast-1.amazonaws.com  (レガシー・boto3が生成する場合あり)
+    # *.amazonaws.com は広すぎるため、バケット名を含む3形式を明示する。
     _s3_origins = [
         f'https://{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com',
         f'https://{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com',
+        f'https://{AWS_STORAGE_BUCKET_NAME}.s3-{AWS_S3_REGION_NAME}.amazonaws.com',
     ]
     if AWS_S3_CUSTOM_DOMAIN:
         _s3_origins.append(f'https://{AWS_S3_CUSTOM_DOMAIN}')
