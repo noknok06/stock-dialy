@@ -30,17 +30,20 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 
 # 本番環境用デバッグ設定（無効）。DJANGO_DEBUG=True で開発用に上書き可
 DEBUG = os.getenv('DJANGO_DEBUG', 'False') == 'True'
+# ドメイン取得前のデプロイ検証用。True のとき本番分岐でも HTTP を許可する（検証後は False に戻す）
+HTTP_ONLY = os.getenv('HTTP_ONLY', 'False') == 'True'
 
 # ホストとCSRF設定
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
+_extra_csrf = [o for o in os.getenv('EXTRA_CSRF_ORIGINS', '').split(',') if o]
 CSRF_TRUSTED_ORIGINS = [
-    'https://kabu-log.net', 'http://kabu-log.net', 
-    'http://localhost:8000', 
-]
+    'https://kabu-log.net', 'http://kabu-log.net',
+    'http://localhost:8000',
+] + _extra_csrf
 
 # 1. セキュリティ向上のための基本設定
-if DEBUG:
-    # 開発環境の設定
+if DEBUG or HTTP_ONLY:
+    # 開発環境またはドメインなし検証時の設定
     SECURE_SSL_REDIRECT = False
     SESSION_COOKIE_SECURE = False
     CSRF_COOKIE_SECURE = False
@@ -56,7 +59,7 @@ else:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
 
-SECURE_HSTS_SECONDS = 31536000  # 1年
+SECURE_HSTS_SECONDS = 0 if HTTP_ONLY else 31536000  # 検証時は無効、本番は1年
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 SECURE_BROWSER_XSS_FILTER = True
