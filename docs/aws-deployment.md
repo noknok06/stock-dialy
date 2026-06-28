@@ -1,273 +1,453 @@
-# AWS デプロイ・移行手順（ConoHa VPS → AWS 案B）
+# AWS デプロイ手順（ConoHa VPS → AWS 案B）
 
-ConoHa VPS（全部入り単一サーバー）から **AWS 案B（EC2 + RDS + S3 + CloudFront + SES）** へ
-移行する手順書。インフラは Terraform（`infra/terraform/`）で構築し、**無料利用枠**（最初の12ヶ月）で
-ほぼ無料で学べるようにする。アプリ側は `USE_S3` / `USE_SES` フラグで AWS 構成へ切替える。
+ConoHa VPS（全部入り単一サーバー）から **EC2 + RDS + S3** へ移行する手順書。
+インフラは Terraform（`infra/terraform/`）で構築し、**無料利用枠**（最初の12ヶ月）で学ぶ。
 
-> サーバー内のアプリ配置・マイグレーション・初期データ・systemd の詳細は
-> `docs/server-reconstruction.md` と共通。本書は **差分（DB を RDS、メディアを S3、メールを SES）** を中心に記す。
+**構成の全体像**
 
----
-
-## 0. 構成の全体像
-
-| 層 | ConoHa VPS（現状） | AWS（移行後） |
-|----|------------------|--------------|
-| アプリ | nginx + gunicorn + django-q（同一 VPS） | EC2 t3.micro（同じ構成を踏襲） |
-| DB | 同一 VPS の PostgreSQL | RDS PostgreSQL 16（db.t3.micro / Single-AZ） |
-| メディア/静的 | ローカルディスク | S3（+ 任意で CloudFront） |
-| メール | Gmail SMTP | SES（移行は任意・段階的） |
+| 層 | ConoHa VPS | AWS（移行後） |
+|----|------------|--------------|
+| アプリ | nginx + gunicorn + django-q | EC2 t3.micro（同じ構成を踏襲） |
+| DB | VPS 内 PostgreSQL | RDS PostgreSQL 16（db.t3.micro） |
+| メディア/静的ファイル | ローカルディスク | S3（static/ + media/） |
+| メール | Gmail SMTP | SES（後の章で移行。当面 Gmail のまま） |
 | HTTPS | Let's Encrypt | Let's Encrypt（ALB は使わない） |
 
-**コスト方針**: t3.micro / db.t3.micro / Single-AZ、NAT・ALB なし。使わない期間は `terraform destroy` で停止。
+**コスト方針**: NAT Gateway・ALB なし、Single-AZ。使わない期間は `terraform destroy` で課金停止。
 
 ---
 
-## 1. 前提
+## フェーズ概要
+
+| フェーズ | 内容 | 影響 |
+|---------|------|------|
+| 1 | アプリ側コード変更（USE_S3 / HTTP_ONLY フラグ） | VPS に影響なし |
+| 2 | Terraform でインフラ構築（VPC / EC2 / RDS / S3） | AWS 環境のみ |
+| 2.5 | ドメインなし検証（EIP で HTTP 動作確認） | 一時的 |
+| 3 | データ移行（DB / メディア）→ ConoHa 廃止 | 本番切替 |
+| 4 | ドメイン取得 → HTTPS → SES → DNS カットオーバー | 本番 |
+
+---
+
+## フェーズ 1: アプリ側コード変更
+
+> すでに完了済み（PR #377 にて main マージ）。VPS への影響はない。
+
+### 変更内容
+
+**`requirements.txt`** に追加:
+- `django-storages[s3]`（S3 ストレージバックエンド + boto3）
+- `django-ses`（SES メールバックエンド）
+
+**`config/settings.py`** の変更点:
+- `USE_S3` フラグ: `True` にすると静的・メディアファイルを S3 へ配信
+- `USE_SES` フラグ: `True` にするとメール送信を SES 経由に切替
+- `HTTP_ONLY` フラグ: ドメインなし検証時に一時的に `True`（HTTPS 強制を無効化）
+- `EXTRA_CSRF_ORIGINS`: EIP を `CSRF_TRUSTED_ORIGINS` に追加する環境変数
+- S3 の CSP ディレクティブ: `USE_S3=True` 時にバケット固有の3形式ドメインを CSP に追加
+  - `bucket.s3.amazonaws.com`（global）
+  - `bucket.s3.ap-northeast-1.amazonaws.com`（regional dot）
+  - `bucket.s3-ap-northeast-1.amazonaws.com`（regional dash、boto3 レガシー形式）
+
+**`.env.example`** に AWS 系変数を追加済み。
+
+---
+
+## フェーズ 2: Terraform でインフラ構築
+
+### 2-1. 前提
 
 | 項目 | 内容 |
 |------|------|
-| AWS アカウント | 作成済み・請求アラート設定可能 |
 | AWS CLI | `aws configure` 済み（管理用 IAM ユーザー） |
 | Terraform | >= 1.6 |
-| ドメイン | `kabu-log.net`（DNS を操作できること） |
-| SSH キーペア | EC2 用に事前作成（`key_pair_name` に指定） |
+| SSH キーペア | EC2 用に事前作成（AWS コンソール or CLI） |
 | S3 バケット名 | グローバル一意な名前を決める |
 
-事前に EC2 用 SSH キーペアを作成（既存があれば流用）:
-
+**キーペア作成**（コンソールで作るか、CLI で）:
 ```bash
 aws ec2 create-key-pair --key-name stock-dialy-key \
   --query 'KeyMaterial' --output text > ~/.ssh/stock-dialy-key.pem
 chmod 600 ~/.ssh/stock-dialy-key.pem
 ```
 
----
-
-## 2. Terraform でインフラ構築
+### 2-2. terraform.tfvars の作成
 
 ```bash
 cd infra/terraform
 cp terraform.tfvars.example terraform.tfvars
-vim terraform.tfvars          # key_pair_name / media_bucket_name / ssh_ingress_cidr 等
-export TF_VAR_db_password='<強いパスワード>'   # 機密は環境変数で
-
-terraform init
-terraform plan                # 無料枠リソースのみか確認（t3.micro / db.t3.micro）
-terraform apply
-
-terraform output              # EIP・RDS エンドポイント・S3 バケット名を控える
 ```
 
-初回は **`enable_cloudfront=false` / `enable_ses=false`** のまま VPC/EC2/RDS/S3 を構築する。
-CloudFront・SES は後の章で有効化する（段階導入）。
+`terraform.tfvars` を以下を参考に編集:
+```hcl
+key_pair_name      = "stock-dialy-key"          # 作成したキーペア名
+media_bucket_name  = "your-unique-bucket-name"  # グローバル一意
+ssh_ingress_cidr   = "203.0.113.10/32"          # 自分の固定 IP（curl ifconfig.me で確認）
+db_password        = "StrongPass123!"           # 記号・大小英数字を含む12文字以上
+                                                 # 使用不可文字: / @ " スペース
+```
 
-`ssh_ingress_cidr` は必ず自分の固定 IP（`/32`）に絞ること。
+> `terraform.tfvars` は `.gitignore` 済み。コミットしない。
+> `db_password` は `.env` の `DB_PASSWORD` と同じ値にする。
+
+### 2-3. terraform コマンド
+
+```bash
+terraform init      # プロバイダのダウンロード（初回のみ）
+terraform plan      # 作成されるリソースの確認（無料枠外のものが含まれないか）
+terraform apply     # 実際に作成（確認プロンプトに yes）
+terraform output    # EIP・RDS エンドポイント・S3 バケット名を確認
+```
+
+**`terraform output` の例:**
+```
+cloudfront_domain = ""
+ec2_public_ip     = "35.76.97.160"
+rds_endpoint      = "stock-dialy-db.xxxxxxxxxx.ap-northeast-1.rds.amazonaws.com:5432"
+s3_bucket_name    = "your-unique-bucket-name"
+```
+
+### 2-4. ハマりポイント（実際に起きたエラー）
+
+| エラー | 原因 | 対処 |
+|--------|------|------|
+| `FreeTierRestrictionError: backup_retention_period` | 無料枠では `backup_retention_period = 0` 必須 | `rds.tf` の値を `0` に変更 |
+| `InvalidParameterValue: Invalid master password` | パスワードに `/` `@` `"` が含まれている | パスワードを記号なしか `!` `_` のみに変更 |
+| SSH タイムアウト | `ssh_ingress_cidr` が古い IP になっている | `terraform.tfvars` の CIDR を更新して再 apply |
+| EC2 にキーペアが紐づかない | `terraform.tfvars` を example のままにした | 正しい値で tfvars を作り直し、EC2 を再作成 |
 
 ---
 
-## 3. EC2 へアプリをデプロイ
+## フェーズ 2.5: ドメインなし検証（EIP アクセス確認）
 
-`user-data.sh` が swap・python3.11・nginx・postgresql クライアント・`naoki` ユーザーを用意済み。
+ドメイン取得前に EIP（`http://<EIP>`）で一通りの機能を確認する手順。
+
+### 2.5-1. EC2 へ SSH してアプリをデプロイ
 
 ```bash
 ssh -i ~/.ssh/stock-dialy-key.pem ec2-user@<EIP>
 
-sudo -iu naoki
-cd /var/www/django
+# リポジトリ取得
+cd ~
 git clone <リポジトリURL> stock-dialy
 cd stock-dialy
+git checkout main    # または feature ブランチ
 
+# 仮想環境
 python3.11 -m venv venv
 source venv/bin/activate
-pip install --upgrade pip
 pip install -r requirements.txt
+
+# ホームディレクトリを nginx が読めるようにしておく
+chmod 755 /home/ec2-user
 ```
 
-`.env` を作成（`server-reconstruction.md` の必須変数に加え、以下を AWS 向けに設定）:
+### 2.5-2. .env 作成
+
+```bash
+cp .env.example .env
+vim .env
+```
 
 ```env
-# DB は RDS を指す
-DB_HOST=<terraform output rds_endpoint>
+SECRET_KEY=<python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())' で生成>
+DEBUG=False
+ALLOWED_HOSTS=<EIP>
+
+DB_HOST=<terraform output rds_endpoint のホスト部分（:5432 を除く）>
 DB_PORT=5432
 DB_NAME=stock_dialy
 DB_USER=naoki
-DB_PASSWORD=<TF_VAR_db_password と同じ>
+DB_PASSWORD=<terraform.tfvars の db_password と同じ>
 
-# S3 を有効化（CloudFront 導入後に AWS_S3_CUSTOM_DOMAIN を設定）
 USE_S3=True
 AWS_STORAGE_BUCKET_NAME=<terraform output s3_bucket_name>
 AWS_S3_REGION_NAME=ap-northeast-1
 AWS_S3_CUSTOM_DOMAIN=
 
-# メールは当面 Gmail のまま（SES 移行は後の章）
 USE_SES=False
 EMAIL_HOST_PASSWORD=<Gmail アプリパスワード>
+
+# ドメインなし検証用（確認が終わったら False に戻す）
+HTTP_ONLY=True
+EXTRA_CSRF_ORIGINS=http://<EIP>
+
+GEMINI_API_KEY=...
+EDINET_API_KEY=...
+VAPID_PUBLIC_KEY=...
+VAPID_PRIVATE_KEY=...
+VAPID_ADMIN_EMAIL=...
 ```
 
-> アクセスキーは `.env` に置かない。S3/SES へは EC2 の **IAM インスタンスプロファイル**から
-> boto3 が自動で認証する（`infra/terraform/iam.tf`）。
+> **注意**: `HTTP_ONLY=True` は HTTPS 強制・HSTS を無効化する。ドメイン取得 → HTTPS 設定後は必ず `False` に戻す。
 
-`gunicorn` の workers は t3.micro（メモリ1GB）に合わせ **2〜3** に抑える。
-
----
-
-## 4. データ移行（DB・メディア）
-
-### 4-1. DB（ConoHa PostgreSQL → RDS）
-
-PG16 同士なので論理ダンプで移送する。
+### 2.5-3. DB セットアップ
 
 ```bash
-# 旧サーバー（ConoHa）でダンプ
-pg_dump -Fc -h localhost -U naoki stock_dialy > stock_dialy.dump
-
-# ダンプを EC2 に転送し、EC2 から RDS へリストア
-#（RDS はプライベート配置のため EC2 経由で実行）
-pg_restore --no-owner --no-acl \
-  -h <rds_endpoint> -U naoki -d stock_dialy stock_dialy.dump
-
-# 整合性確認
-export DJANGO_SETTINGS_MODULE=config.settings
-python manage.py showmigrations | grep '\[ \]'   # 未適用がないこと
-python manage.py migrate                          # 念のため
+python manage.py migrate
+python manage.py createsuperuser
+python manage.py collectstatic --noinput   # S3 へ静的ファイルをアップロード
 ```
 
-### 4-2. メディア（ローカル → S3）
+### 2.5-4. gunicorn のセットアップ
 
 ```bash
-# 旧サーバーの media/ を S3 へ同期（EC2 の IAM ロールで認証）
-aws s3 sync ./media/ s3://<bucket>/media/
+sudo tee /etc/systemd/system/gunicorn.service > /dev/null <<'EOF'
+[Unit]
+Description=Gunicorn daemon for stock-dialy
+After=network.target
 
-# 静的ファイルを S3 へ収集（USE_S3=True なので出力先は S3）
-python manage.py collectstatic --noinput
+[Service]
+User=ec2-user
+Group=ec2-user
+WorkingDirectory=/home/ec2-user/stock-dialy
+ExecStart=/home/ec2-user/stock-dialy/venv/bin/gunicorn \
+    --workers 2 \
+    --bind unix:/home/ec2-user/gunicorn.sock \
+    config.wsgi:application
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable --now gunicorn
 ```
 
-ブラウザで画像・静的アセットが S3（または後述 CloudFront）から配信されることを確認する。
-
----
-
-## 5. systemd（django-q / margin-fetch）
-
-`docs/server-reconstruction.md` の「8. systemd サービス設定」をそのまま流用する
-（`etc/systemd/system/*` をコピーして有効化）。タイムゾーンは `user-data.sh` で Asia/Tokyo 済み。
+### 2.5-5. nginx のセットアップ
 
 ```bash
-sudo cp etc/systemd/system/django-qcluster.service /etc/systemd/system/
-sudo cp etc/systemd/system/margin-fetch.service    /etc/systemd/system/
-sudo cp etc/systemd/system/margin-fetch.timer      /etc/systemd/system/
+sudo tee /etc/nginx/conf.d/stock-dialy.conf > /dev/null <<'EOF'
+server {
+    listen 80;
+    server_name <EIP>;
+    client_max_body_size 10M;
+
+    location /static/ {
+        proxy_pass https://<s3_bucket_name>.s3.ap-northeast-1.amazonaws.com/static/;
+    }
+    location /media/ {
+        proxy_pass https://<s3_bucket_name>.s3.ap-northeast-1.amazonaws.com/media/;
+    }
+    location / {
+        proxy_pass http://unix:/home/ec2-user/gunicorn.sock;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+}
+EOF
+
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+### 2.5-6. django-q / margin-fetch のセットアップ
+
+```bash
+sudo tee /etc/systemd/system/django-qcluster.service > /dev/null <<'EOF'
+[Unit]
+Description=Django Q Cluster (stock-dialy)
+After=network.target
+
+[Service]
+User=ec2-user
+Group=ec2-user
+WorkingDirectory=/home/ec2-user/stock-dialy
+Environment="DJANGO_SETTINGS_MODULE=config.settings"
+ExecStart=/home/ec2-user/stock-dialy/venv/bin/python manage.py qcluster
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo tee /etc/systemd/system/margin-fetch.service > /dev/null <<'EOF'
+[Unit]
+Description=JPX 信用取引残高データ日次取得
+After=network.target
+
+[Service]
+Type=oneshot
+User=ec2-user
+Group=ec2-user
+WorkingDirectory=/home/ec2-user/stock-dialy
+Environment="DJANGO_SETTINGS_MODULE=config.settings"
+ExecStart=/home/ec2-user/stock-dialy/venv/bin/python manage.py fetch_margin_data --days 40
+StandardOutput=journal
+StandardError=journal
+EOF
+
+sudo tee /etc/systemd/system/margin-fetch.timer > /dev/null <<'EOF'
+[Unit]
+Description=JPX 信用取引残高データ 日次取得タイマー
+Requires=margin-fetch.service
+
+[Timer]
+OnCalendar=*-*-* 15:00:00
+TimeZone=Asia/Tokyo
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+
 sudo systemctl daemon-reload
 sudo systemctl enable --now django-qcluster.service
 sudo systemctl enable --now margin-fetch.timer
 ```
 
+### 2.5-7. 確認チェックリスト
+
+- [ ] `http://<EIP>` でトップページ表示
+- [ ] ログイン・ログアウト
+- [ ] 日記の新規作成・編集・削除
+- [ ] 画像アップロード → S3 保存 → 表示
+- [ ] `sudo systemctl status gunicorn django-qcluster` が active
+- [ ] `systemctl list-timers | grep margin` でタイマー登録確認
+
 ---
 
-## 6. nginx + HTTPS（Let's Encrypt）
+## フェーズ 3: データ移行（本番切替前）
 
-ALB は使わず EC2 上で証明書を取得する（コスト削減）。
+### DB（ConoHa PostgreSQL → RDS）
 
 ```bash
-# nginx のリバースプロキシ設定（127.0.0.1:8000 の gunicorn へ）を配置後
+# ConoHa 側でダンプ
+pg_dump -Fc -h localhost -U naoki stock_dialy > stock_dialy.dump
+
+# EC2 に転送してリストア（RDS はプライベートサブネット → EC2 経由で実行）
+scp stock_dialy.dump ec2-user@<EIP>:~/
+ssh ec2-user@<EIP>
+pg_restore --no-owner --no-acl \
+  -h <rds_endpoint_host> -U naoki -d stock_dialy ~/stock_dialy.dump
+
+python manage.py showmigrations   # 未適用がないこと確認
+```
+
+### メディア（ローカル → S3）
+
+```bash
+# ConoHa 側から直接 S3 に sync（IAM ユーザーか EC2 経由）
+aws s3 sync ./media/ s3://<bucket_name>/media/
+```
+
+---
+
+## フェーズ 4: ドメイン取得 → HTTPS → DNS カットオーバー
+
+### nginx + HTTPS（Let's Encrypt）
+
+```bash
 sudo certbot --nginx -d kabu-log.net -d www.kabu-log.net
 ```
 
-DNS を先に EIP へ向けてから certbot を実行する（HTTP-01 検証のため）。
+### .env の更新（ドメイン確定後）
 
----
-
-## 7. CloudFront・SES の有効化（段階導入）
-
-### 7-1. CloudFront（S3 の CDN 配信）
-
-独自ドメインで配信する場合、**us-east-1** の ACM 証明書が必要（CloudFront はこのリージョン固定）。
-
-```bash
-# us-east-1 で証明書を発行（DNS 検証）し、ARN を取得
-# その ARN を terraform.tfvars に設定して再適用
-#   enable_cloudfront   = true
-#   acm_certificate_arn = "arn:aws:acm:us-east-1:...:certificate/..."
-terraform apply
-
-terraform output cloudfront_domain
+```env
+ALLOWED_HOSTS=kabu-log.net,www.kabu-log.net
+CSRF_TRUSTED_ORIGINS=https://kabu-log.net,https://www.kabu-log.net
+HTTP_ONLY=False    # HTTPS が動いたら必ず False に戻す
 ```
 
-`.env` の `AWS_S3_CUSTOM_DOMAIN` に CloudFront ドメイン（または `cdn.kabu-log.net`）を設定し、
-`collectstatic` をやり直す。`STATIC_URL`/`MEDIA_URL` が CloudFront を指すようになる（`config/settings.py`）。
-
-> CloudFront を有効化すると S3 バケットは非公開（OAC 経由のみ）に切り替わる（`infra/terraform/s3.tf`）。
-
-### 7-2. SES（Gmail → SES）
-
 ```bash
-# enable_ses=true / domain_name="kabu-log.net" で適用
-terraform apply
-terraform output ses_dkim_tokens          # CNAME×3 を DNS 登録
-terraform output ses_verification_token   # _amazonses TXT を DNS 登録
+sudo systemctl restart gunicorn
 ```
 
-DNS 認証が完了したら **プロダクションアクセス申請**（サンドボックス解除）を AWS コンソールから行う。
-承認まで時間がかかるため **早めに申請**する。承認後に `.env` で `USE_SES=True` にして送信テスト:
+### SES（Gmail → SES）
 
 ```bash
+# terraform.tfvars で enable_ses=true / domain_name="kabu-log.net" を設定して再 apply
+terraform apply
+terraform output   # DKIM CNAME × 3 と SPF TXT を DNS に登録
+
+# DNS 認証完了後、AWS コンソールからサンドボックス解除（本番アクセス）申請
+# 承認後
+USE_SES=True
 python manage.py sendtestemail your@example.com
 ```
 
 ---
 
-## 8. DNS カットオーバー
+## 停止・再構築（コスト管理）
 
-1. `kabu-log.net` の A レコードを **EIP** に向ける
-2. `.env` の `ALLOWED_HOSTS` / `CSRF_TRUSTED_ORIGINS` に本番ドメインが含まれることを確認
-3. TTL を短くしてから切替え、旧 VPS は数日並行稼働させてフォールバック可能にする
+### 停止（terraform destroy）
 
----
-
-## 9. 課金アラーム（必須）
-
-無料枠の超過に早く気づくため、**AWS Budgets** で月次予算アラートを設定する。
+**⚠️ S3 バケットが空でないと destroy が失敗する。先に中身を削除する。**
 
 ```bash
-# 例: 月 $5 を超えそうなら通知（コンソール: Billing → Budgets でも可）
-aws budgets create-budget --account-id <ID> \
-  --budget '{"BudgetName":"stock-dialy-monthly","BudgetLimit":{"Amount":"5","Unit":"USD"},"TimeUnit":"MONTHLY","BudgetType":"COST"}' \
-  --notifications-with-subscribers '[{"Notification":{"NotificationType":"ACTUAL","ComparisonOperator":"GREATER_THAN","Threshold":80},"Subscribers":[{"SubscriptionType":"EMAIL","Address":"you@example.com"}]}]'
+# 1. S3 を空にする（静的・メディアファイルを削除）
+aws s3 rm s3://<bucket_name> --recursive
+
+# 2. Terraform でインフラを全削除
+cd infra/terraform
+terraform destroy
 ```
 
-12ヶ月後に無料枠が切れて課金が跳ねる「無料枠の崖」に注意。
+`terraform destroy` の確認プロンプトに `yes` と入力。
+完了すると EC2・RDS・S3・EIP・VPC がすべて削除される。
 
----
-
-## 10. 停止・再構築（コスト管理）
-
-学習が主目的で常時稼働が不要な期間は、丸ごと削除して課金を止められる。
+### 再構築（terraform apply）
 
 ```bash
 cd infra/terraform
-terraform destroy     # RDS は最終スナップショット取得後に削除される
+terraform apply     # 同じ tfvars で再構築（EIP は変わる）
+terraform output    # 新しい EIP と RDS エンドポイントを確認
 
-# 再開するとき
-terraform apply       # 同じ構成を再構築（DB は手順4でリストア）
+# EC2 で再デプロイ（フェーズ 2.5 の手順を繰り返す）
+# DB は migrate から、メディアは S3 sync でリストア
+```
+
+> EIP は再 apply ごとに変わる。ConoHa から DNS カットオーバー前なら影響なし。
+
+---
+
+## 課金アラーム（必須）
+
+AWS コンソール → Billing → Budgets → 「予算を作成」:
+- **無料枠使用率アラート**: AWS が自動で提案してくれる（設定推奨）
+- **月額上限**: $5〜10 を超えたらメール通知
+
+12ヶ月後に無料枠が切れて課金が跳ねる「**無料枠の崖**」に注意。
+
+---
+
+## 定常運用（デプロイ手順）
+
+```bash
+cd ~/stock-dialy
+git pull
+# requirements 変更時のみ: pip install -r requirements.txt
+# モデル変更時のみ:         python manage.py migrate
+# 静的ファイル変更時のみ:   python manage.py collectstatic --noinput
+sudo systemctl restart gunicorn django-qcluster
+```
+
+ログ確認:
+```bash
+journalctl -u gunicorn -n 50
+journalctl -u django-qcluster -n 50
+journalctl -u margin-fetch -n 50
 ```
 
 ---
 
 ## 付録: 学習完了後の Supabase 移行（RDS 廃止）
 
-将来、RDS のコストが見合わなくなったら DB を **Supabase（まず無料枠 Free）** へ移す。
-アプリは DB 接続が環境変数化されているため **コード変更ゼロ**で切り替えられる。
+RDS のコストが見合わなくなったら DB を **Supabase（まず無料枠 Free）** へ移す。
+接続が環境変数化されているため **コード変更ゼロ**で切り替えられる。
 
 ```bash
 # 1. RDS をダンプ
-pg_dump -Fc -h <rds_endpoint> -U naoki stock_dialy > stock_dialy.dump
+pg_dump -Fc -h <rds_endpoint_host> -U naoki stock_dialy > stock_dialy.dump
 
 # 2. Supabase プロジェクトへリストア（接続文字列は Supabase ダッシュボードから）
-pg_restore --no-owner --no-acl -d "<supabase 接続文字列>" stock_dialy.dump
+pg_restore --no-owner --no-acl -d "<Supavisor 接続文字列>" stock_dialy.dump
 
-# 3. .env の DB_* を Supabase（接続プーラ Supavisor 推奨）に差し替え
-# 4. infra/terraform/rds.tf を削除して terraform apply（RDS を破棄）
+# 3. .env の DB_* を Supabase 接続情報に差し替え、RDS を terraform destroy
+# 4. infra/terraform/rds.tf を削除して terraform apply
 ```
 
-Supabase Free の制約（DB 500MB / 1週間無活動で自動 pause / マネージドバックアップなし）を、
-**`pg_dump` の cron → S3 退避** で補う。DB が 500MB に近づく・PITR が必要になったら **Pro（$25/月）** へ。
-詳細は移行計画書（`/root/.claude/plans/` の AWS 移行プラン「将来のコスト見直し」章）を参照。
+Supabase Free の制約（DB 500MB / 1週間無活動で自動 pause / バックアップなし）を
+`pg_dump` の週次 cron → S3 退避で補う。500MB 接近時・PITR 必要時に **Pro（$25/月）** へ。
