@@ -1,0 +1,33 @@
+{% comment %}銘柄一覧の1行 Row。stock コンテキスト変数を使用。{% endcomment %}
+<a href="{% if stock.diary_id %}{% url 'stockdiary:detail' pk=stock.diary_id %}{% else %}{% url 'stockdiary:home' %}?query={{ stock.symbol }}{% endif %}"
+   class="ds-row">
+  <span class="ds-row-dot ds-row-dot--{{ stock.state }}"></span>
+  <span class="ds-row-body">
+    <span class="ds-row-top">
+      <span class="ds-row-name">{{ stock.name }}</span>
+      <span class="ds-row-code">{{ stock.symbol }}</span>
+      {% if stock.realized_profit != 0 %}
+        {% if stock.realized_profit > 0 %}
+        <span class="ds-pnl ds-pnl--gain">+{{ stock.realized_profit|floatformat:0 }}円</span>
+        {% else %}
+        <span class="ds-pnl ds-pnl--loss">{{ stock.realized_profit|floatformat:0 }}円</span>
+        {% endif %}
+      {% endif %}
+    </span>
+    <span class="ds-row-meta">
+      <span class="ds-row-state--{{ stock.state }}">
+        {% if stock.state == 'due' %}検証待ち
+        {% elif stock.state == 'live' %}保有中
+        {% else %}終了{% endif %}
+      </span>
+      {% if stock.latest_date %}
+      <span class="sep">·</span>
+      <span>{{ stock.latest_date|date:"Y/m/d" }}</span>
+      {% endif %}
+      {% if stock.disclosure %}
+      <span class="sep">·</span>
+      <span class="ds-row-disclosure"><i class="bi bi-file-earmark-text" style="font-size:0.75em;"></i>{{ stock.disclosure }}</span>
+      {% endif %}
+    </span>
+  </span>
+</a>

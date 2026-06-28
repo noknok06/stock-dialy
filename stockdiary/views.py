@@ -1054,6 +1054,8 @@ class DiarySummaryView(LoginRequiredMixin, TemplateView):
                 latest_updated=Max('updated_at'),
                 diary_count=Count('id'),
                 active_count=Count('id', filter=Q(current_quantity__gt=0)),
+                total_realized=Sum('cash_only_realized_profit'),
+                latest_disclosure=Max('latest_disclosure_doc_type_name'),
             )
         )
 
@@ -1069,6 +1071,17 @@ class DiarySummaryView(LoginRequiredMixin, TemplateView):
             .values_list('diary__stock_symbol', 'cnt')
         )
 
+        # 仮説の検証期限切れ銘柄を集計（due state の判定用）
+        from .models import Thesis
+        from django.utils import timezone as tz
+        due_symbols = set(
+            Thesis.objects.filter(
+                diary__user=user,
+                status=Thesis.STATUS_OPEN,
+                review_due_date__lte=tz.localdate(),
+            ).values_list('diary__stock_symbol', flat=True)
+        )
+
         # CompanyMaster で未設定業種を補完（旧 StockListView から引き継ぎ）
         symbols = [row['stock_symbol'] for row in diary_agg]
         company_sector_map = {
@@ -1081,14 +1094,26 @@ class DiarySummaryView(LoginRequiredMixin, TemplateView):
             sector = row['sector'] or ''
             if not sector or sector == '未分類':
                 sector = company_sector_map.get(row['stock_symbol'], '未分類')
+            sym = row['stock_symbol']
+            is_holding = row['active_count'] > 0
+            # 状態分類: due(検証待ち) > live(保有中) > closed(終了)
+            if sym in due_symbols:
+                state = 'due'
+            elif is_holding:
+                state = 'live'
+            else:
+                state = 'closed'
             summary_list.append({
-                'symbol': row['stock_symbol'],
+                'symbol': sym,
                 'name': row['stock_name'],
                 'sector': sector,
                 'latest_date': row['latest_updated'],
-                'note_count': note_count_map.get(row['stock_symbol'], 0),
+                'note_count': note_count_map.get(sym, 0),
                 'diary_count': row['diary_count'],
-                'is_holding': row['active_count'] > 0,
+                'is_holding': is_holding,
+                'state': state,
+                'realized_profit': int(row['total_realized'] or 0),
+                'disclosure': row['latest_disclosure'] or '',
                 'diary_id': None,
             })
 
@@ -1137,12 +1162,78 @@ class DiarySummaryView(LoginRequiredMixin, TemplateView):
                 'label': '戻る',
             },
         ]
+        # 状態カウント（レンズ表示用）
+        state_counts = {'due': 0, 'live': 0, 'closed': 0}
+        for s in summary_list:
+            state_counts[s['state']] = state_counts.get(s['state'], 0) + 1
+
+        # レンズ
+        lens = self.request.GET.get('lens', 'state')
+
+        # テーマレンズ用グルーピング（タグは日記ごとに取得）
+        from collections import defaultdict as _dd
+        theme_groups = _dd(list)
+        if lens == 'theme':
+            # symbol→stock のマップを作成
+            sym_map = {s['symbol']: s for s in summary_list}
+            from .models import StockDiary as _SD
+            from tags.models import Tag as _Tag
+            diary_tags = (
+                _SD.objects.filter(user=user, stock_symbol__in=list(sym_map.keys()))
+                .prefetch_related('tags')
+                .values('stock_symbol', 'tags__name')
+            )
+            added = set()
+            for row in diary_tags:
+                sym = row['stock_symbol']
+                tag = row['tags__name'] or ''
+                key = (sym, tag)
+                if key not in added and sym in sym_map:
+                    added.add(key)
+                    theme_groups[tag].append(sym_map[sym])
+            # タグなし銘柄を末尾に
+            tagged = {s['symbol'] for key in added for s in [sym_map[key[0]]] if key[0] in sym_map}
+            untagged = [s for s in summary_list if s['symbol'] not in tagged]
+            for s in untagged:
+                theme_groups[''].append(s)
+
+        # 時系列・銘柄レンズの並び替え
+        time_list = sorted(summary_list, key=lambda x: x['latest_date'] or _epoch, reverse=True)
+        symbol_list = sorted(summary_list, key=lambda x: x['symbol'])
+
+        # レンズタブ定義
+        lens_tabs = [
+            ('state',  '状態',   None),
+            ('theme',  'テーマ', None),
+            ('time',   '時系列', None),
+            ('symbol', '銘柄',   None),
+        ]
+
+        # 状態グルーピング順
+        state_groups = [
+            ('due',    '検証待ち'),
+            ('live',   '保有中'),
+            ('closed', '終了'),
+        ]
+
+        # 状態レンズ用グループ済みリスト
+        state_grouped = [
+            ('due',    '検証待ち', [s for s in summary_list if s['state'] == 'due']),
+            ('live',   '保有中',   [s for s in summary_list if s['state'] == 'live']),
+            ('closed', '終了',     [s for s in summary_list if s['state'] == 'closed']),
+        ]
+
         context.update({
-            'summary_list': summary_list,
+            'summary_list': summary_list if lens in ('state', 'theme') else (time_list if lens == 'time' else symbol_list),
             'search_query': search_query,
             'sort_by': sort_by,
             'sectors': sectors,
             'sector_filter': sector_filter,
+            'lens': lens,
+            'lens_tabs': lens_tabs,
+            'state_counts': state_counts,
+            'state_grouped': state_grouped,
+            'theme_groups': dict(theme_groups),
         })
         return context
 

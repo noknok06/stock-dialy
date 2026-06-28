@@ -1,225 +1,335 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}日記一覧（銘柄別） - カブログ{% endblock %}
+{% block title %}日記一覧 - カブログ{% endblock %}
 
 {% block head %}
 <style>
-.summary-table {
-    table-layout: fixed;
-    width: 100%;
+/* ── 日記一覧（銘柄別）— Quiet Journal リデザイン ── */
+
+.ds-page { max-width: 42em; margin: 0 auto; padding: 0 1rem 4rem; }
+
+/* ヘッダー */
+.ds-header {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin: 1.5rem 0 1.25rem; gap: 0.75rem;
+}
+.ds-title {
+  font-size: 1.0625rem; font-weight: 700; color: var(--ink);
+  display: flex; align-items: center; gap: 0.45rem;
+}
+.ds-total { font-size: 0.75rem; color: var(--faint-ink); font-weight: 400; }
+
+/* 検索バー */
+.ds-search {
+  display: flex; align-items: center; gap: 0.5rem; height: 40px;
+  background: var(--paper-raised); border: 1px solid var(--hairline);
+  border-radius: var(--radius-md); padding: 0 0.75rem; margin-bottom: 1rem;
+}
+.ds-search i { color: var(--faint-ink); font-size: 0.9em; flex-shrink: 0; }
+.ds-search input {
+  flex: 1; border: none; background: transparent; outline: none;
+  font-size: 0.9375rem; color: var(--ink);
+}
+.ds-search input::placeholder { color: var(--faint-ink); }
+.ds-search button {
+  border: none; background: transparent; color: var(--faint-ink);
+  cursor: pointer; padding: 0; display: flex; align-items: center;
+}
+.ds-search button:hover { color: var(--ink); }
+
+/* レンズタブ */
+.ds-lenses {
+  display: flex; gap: 0; border-bottom: 1px solid var(--hairline);
+  margin-bottom: 0; overflow-x: auto; -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.ds-lenses::-webkit-scrollbar { display: none; }
+.ds-lens {
+  flex-shrink: 0; display: flex; align-items: center; gap: 0.3rem;
+  font-size: 0.875rem; font-weight: 500; color: var(--muted-ink);
+  text-decoration: none; padding: 0.55rem 0.75rem; margin-bottom: -1px;
+  border-bottom: 2px solid transparent; white-space: nowrap;
+  background: none; border-top: none; border-left: none; border-right: none;
+  cursor: pointer;
+}
+.ds-lens:hover { color: var(--ink-soft); }
+.ds-lens.is-active { color: var(--ink); border-bottom-color: var(--ink); font-weight: 600; }
+.ds-lens-count {
+  font-size: 0.65rem; color: var(--faint-ink);
+  background: var(--paper-sunken); border: 1px solid var(--hairline);
+  border-radius: 999px; padding: 0.05rem 0.4rem;
+}
+.ds-lens.is-active .ds-lens-count { color: var(--muted-ink); }
+
+/* 状態サマリー行 */
+.ds-state-summary {
+  display: flex; gap: 1rem; font-size: 0.8rem; color: var(--muted-ink);
+  padding: 0.6rem 0 0.5rem; border-bottom: 1px solid var(--hairline-soft);
+  margin-bottom: 0.25rem;
+}
+.ds-state-summary b { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+/* グループ見出し */
+.ds-group-head {
+  display: flex; align-items: center; gap: 0.45rem;
+  font-size: 0.75rem; font-weight: 600; color: var(--muted-ink);
+  padding: 0.8rem 0 0.3rem; letter-spacing: 0.02em;
+}
+.ds-group-dot {
+  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+}
+.ds-group-dot--due      { background: var(--verdict-unlucky); }
+.ds-group-dot--live     { background: var(--verdict-skill); }
+.ds-group-dot--closed   { background: var(--hairline); }
+.ds-group-dot--theme    { background: var(--muted-ink); }
+
+/* フレームレス Row */
+.ds-row {
+  display: flex; align-items: flex-start; gap: 0.65rem;
+  padding: 0.78rem 0; border-top: 1px solid var(--hairline-soft);
+  text-decoration: none; color: inherit; cursor: pointer;
+  background: transparent;
+  width: 100%; text-align: left; border-left: none; border-right: none; border-bottom: none;
+}
+.ds-row:hover .ds-row-name { text-decoration: underline; text-underline-offset: 3px; }
+.ds-row:first-of-type { border-top: none; }
+
+/* 状態ドット */
+.ds-row-dot {
+  flex-shrink: 0; width: 8px; height: 8px; border-radius: 50%;
+  margin-top: 0.42rem;
+}
+.ds-row-dot--due      { background: var(--verdict-unlucky); }
+.ds-row-dot--live     { background: var(--verdict-skill); }
+.ds-row-dot--closed   { background: var(--hairline); }
+
+/* Row 本文 */
+.ds-row-body { flex: 1; min-width: 0; }
+.ds-row-top {
+  display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap;
+}
+.ds-row-name {
+  font-size: 1rem; font-weight: 600; color: var(--ink);
+  flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ds-row-code {
+  font-size: 0.65rem; color: var(--muted-ink); flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+/* 損益ピル */
+.ds-pnl {
+  flex-shrink: 0; font-size: 0.68rem; font-weight: 700;
+  letter-spacing: 0.02em; border-radius: 999px; padding: 0.1rem 0.45rem;
+  font-variant-numeric: tabular-nums;
+}
+.ds-pnl--gain {
+  color: var(--verdict-skill);
+  background: color-mix(in srgb, var(--verdict-skill) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--verdict-skill) 30%, transparent);
+}
+.ds-pnl--loss {
+  color: var(--verdict-lucky);
+  background: color-mix(in srgb, var(--verdict-lucky) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--verdict-lucky) 30%, transparent);
+}
+/* メタ行 */
+.ds-row-meta {
+  display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;
+  font-size: 0.7rem; color: var(--faint-ink); margin-top: 0.2rem;
+}
+.ds-row-meta .sep { color: var(--hairline); }
+.ds-row-state--due      { color: var(--verdict-unlucky); font-weight: 600; }
+.ds-row-state--live     { color: var(--verdict-skill); font-weight: 600; }
+.ds-row-state--closed   { color: var(--faint-ink); }
+.ds-row-disclosure { display: inline-flex; align-items: center; gap: 0.15rem; }
+
+/* テーマタグ見出し */
+.ds-theme-head {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  font-size: 0.75rem; font-weight: 600; color: var(--muted-ink);
+  padding: 0.75rem 0 0.25rem; letter-spacing: 0.02em;
 }
 
-.summary-table th {
-    background: linear-gradient(135deg, #f8f9fc 0%, #e9ecef 100%);
-    border-bottom: 2px solid rgba(79, 131, 204, 0.15);
-    font-weight: 600;
-    color: #2d3748;
-    white-space: nowrap;
+/* 銘柄テーブルビュー */
+.ds-symbol-table {
+  width: 100%; border-collapse: collapse; margin-top: 0.5rem;
 }
-
-.summary-table tbody tr {
-    cursor: pointer;
-    transition: background-color 0.15s ease;
+.ds-symbol-table th {
+  font-size: 0.7rem; font-weight: 600; color: var(--faint-ink);
+  letter-spacing: 0.04em; padding: 0.4rem 0.5rem 0.4rem 0;
+  border-bottom: 1px solid var(--hairline); text-align: left;
+  white-space: nowrap;
 }
-
-.summary-table tbody tr:hover {
-    background-color: rgba(79, 131, 204, 0.05);
+.ds-symbol-table th:not(:first-child) { text-align: center; }
+.ds-symbol-table td {
+  padding: 0.6rem 0.5rem 0.6rem 0;
+  border-top: 1px solid var(--hairline-soft);
+  font-size: 0.875rem; color: var(--ink);
+  vertical-align: middle;
 }
+.ds-symbol-table tbody tr { cursor: pointer; }
+.ds-symbol-table tbody tr:hover td { background: var(--paper-sunken); }
+.ds-symbol-table td:not(:first-child) { text-align: center; }
 
-.col-code  { width: 4.5rem; }
-.col-name  { /* 残り幅 */ }
-.col-date  { width: 6.5rem; }
-.col-count { width: 5rem; }
-
-.symbol-code {
-    font-family: monospace;
-    font-weight: 600;
-    color: #2C5AA0;
-    font-size: 0.9rem;
+/* 空状態 */
+.ds-empty {
+  text-align: center; padding: 3rem 0; color: var(--muted-ink);
 }
+.ds-empty i { font-size: 2.5rem; color: var(--hairline); display: block; margin-bottom: 0.75rem; }
 
-.stock-name-cell {
-    font-weight: 500;
-    display: block;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+/* ビュー切り替えボタン（カード/銘柄） */
+.ds-view-toggle {
+  display: flex; gap: 0; border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm); overflow: hidden;
 }
-
-.date-cell {
-    white-space: nowrap;
+.ds-view-btn {
+  font-size: 0.75rem; font-weight: 500; cursor: pointer;
+  border: none; padding: 0.25rem 0.65rem;
+  background: var(--paper-raised); color: var(--muted-ink);
 }
+.ds-view-btn.is-active { background: var(--ink); color: var(--paper); }
 
-.note-badge {
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1));
-    color: #059669;
-    border: 1px solid rgba(16, 185, 129, 0.25);
-    font-weight: 600;
-    font-size: 0.75rem;
-    padding: 0.2rem 0.5rem;
-    border-radius: 0.375rem;
-    white-space: nowrap;
-}
-
-.note-badge-zero {
-    color: #9ca3af;
-    font-size: 0.8rem;
-}
-
-.filter-area {
-    background: linear-gradient(135deg, #f8f9fc 0%, #e9ecef 100%);
-    border: 1px solid rgba(79, 131, 204, 0.1);
-    border-radius: 0.75rem;
-    padding: 1rem 1.25rem;
-    margin-bottom: 1.5rem;
-}
-
-@media (max-width: 576px) {
-    .col-code  { width: 3.8rem; }
-    .col-date  { width: 3.2rem; }
-    .col-count { width: 3.8rem; }
-    .symbol-code { font-size: 0.8rem; }
+@media (max-width: 480px) {
+  .ds-page { padding: 0 0.75rem 4rem; }
+  .ds-row-name { font-size: 0.9375rem; }
 }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container page-narrow">
+<div class="ds-page reading-page">
 
-    <div class="page-header mb-4 d-flex flex-wrap align-items-center justify-content-between gap-2">
-        <div>
-            <h1 class="page-title">
-                <i class="bi bi-journal-bookmark"></i>
-                <span>日記一覧（銘柄別）</span>
-            </h1>
-            <p class="page-subtitle">日記に記録している銘柄を1行ずつまとめた表示</p>
-        </div>
-        <a href="{% url 'stockdiary:home' %}{% if search_query %}?query={{ search_query|urlencode }}{% endif %}"
-           class="btn btn-sm btn-outline-secondary flex-shrink-0"
-           title="日記カードの一覧で表示">
-            <i class="bi bi-card-text me-1"></i>カード表示
-        </a>
+  <div class="ds-header">
+    <div class="ds-title">
+      <i class="bi bi-journals"></i>
+      記録
+      <span class="ds-total">{{ summary_list|length }}銘柄</span>
     </div>
+    <div class="ds-view-toggle" id="ds-view-toggle">
+      <button class="ds-view-btn is-active" data-view="list" onclick="setView('list')">リスト</button>
+      <button class="ds-view-btn"           data-view="table" onclick="setView('table')">銘柄別</button>
+    </div>
+  </div>
 
-    <!-- 検索・ソート -->
-    <div class="filter-area">
-        <form method="get" class="d-flex flex-wrap gap-2 align-items-end">
-            <div class="flex-grow-1" style="min-width: 180px;">
-                <label class="form-label small mb-1">検索</label>
-                <input type="text" name="q" class="form-control form-control-sm"
-                       placeholder="銘柄名・コードで絞り込み"
-                       value="{{ search_query }}">
-            </div>
-            <div>
-                <label class="form-label small mb-1">業種</label>
-                <select name="sector" class="form-select form-select-sm" onchange="this.form.submit()">
-                    <option value="">すべて</option>
-                    {% for sector in sectors %}
-                    <option value="{{ sector }}" {% if sector_filter == sector %}selected{% endif %}>{{ sector }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label class="form-label small mb-1">並び順</label>
-                <select name="sort" class="form-select form-select-sm" onchange="this.form.submit()">
-                    <option value="updated_desc" {% if sort_by == 'updated_desc' %}selected{% endif %}>最終更新日↓</option>
-                    <option value="updated_asc"  {% if sort_by == 'updated_asc'  %}selected{% endif %}>最終更新日↑</option>
-                    <option value="note_count_desc" {% if sort_by == 'note_count_desc' %}selected{% endif %}>継続記録数↓</option>
-                    <option value="note_count_asc"  {% if sort_by == 'note_count_asc'  %}selected{% endif %}>継続記録数↑</option>
-                    <option value="symbol" {% if sort_by == 'symbol' %}selected{% endif %}>証券コード順</option>
-                    <option value="name"   {% if sort_by == 'name'   %}selected{% endif %}>銘柄名順</option>
-                    <option value="sector" {% if sort_by == 'sector' %}selected{% endif %}>業種順</option>
-                </select>
-            </div>
-            <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-primary btn-sm">
-                    <i class="bi bi-search"></i>
-                </button>
-                <a href="{% url 'stockdiary:diary_summary' %}" class="btn btn-outline-secondary btn-sm">
-                    <i class="bi bi-arrow-clockwise"></i>
-                </a>
-            </div>
-        </form>
+  {# 検索 #}
+  <form method="get" id="ds-search-form">
+    <input type="hidden" name="lens" value="{{ lens }}">
+    <div class="ds-search">
+      <i class="bi bi-search"></i>
+      <input type="text" name="q" value="{{ search_query }}"
+             placeholder="銘柄名・コードで絞り込み"
+             onchange="document.getElementById('ds-search-form').submit()">
+      {% if search_query %}
+      <a href="?lens={{ lens }}" style="color:var(--faint-ink);"><i class="bi bi-x-lg"></i></a>
+      {% endif %}
+    </div>
+  </form>
+
+  {# ── リストビュー ── #}
+  <div id="ds-list-view">
+
+    {# レンズタブ #}
+    <div class="ds-lenses">
+      {% for l_id, l_label, l_count in lens_tabs %}
+      <a href="?lens={{ l_id }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}"
+         class="ds-lens {% if lens == l_id %}is-active{% endif %}">
+        {{ l_label }}
+        {% if l_count %}<span class="ds-lens-count">{{ l_count }}</span>{% endif %}
+      </a>
+      {% endfor %}
     </div>
 
     {% if summary_list %}
-    <div class="table-responsive">
-        <table class="table table-hover align-middle summary-table">
-            <colgroup>
-                <col class="col-code">
-                <col class="col-name">
-                <col class="col-date">
-                <col class="col-count">
-            </colgroup>
-            <thead>
-                <tr>
-                    <th>コード</th>
-                    <th>銘柄名</th>
-                    <th class="text-center">
-                        <span class="d-none d-sm-inline">最終更新日</span>
-                        <span class="d-sm-none">更新日</span>
-                    </th>
-                    <th class="text-center">
-                        <span class="d-none d-sm-inline">継続記録数</span>
-                        <span class="d-sm-none">記録数</span>
-                    </th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for stock in summary_list %}
-                <tr onclick="location.href='{% if stock.diary_id %}{% url 'stockdiary:detail' pk=stock.diary_id %}{% else %}{% url 'stockdiary:home' %}?query={{ stock.symbol }}{% endif %}'">
-                    <td><span class="symbol-code">{{ stock.symbol }}</span></td>
-                    <td>
-                        <span class="stock-name-cell">
-                            {{ stock.name }}
-                            {% if stock.is_holding %}<span class="badge bg-success ms-1" style="font-size:0.75rem;">保有中</span>{% endif %}
-                        </span>
-                        {% if stock.sector and stock.sector != '未分類' %}
-                        <span class="text-muted d-block" style="font-size:0.75rem;">{{ stock.sector }}</span>
-                        {% endif %}
-                    </td>
-                    <td class="text-center date-cell">
-                        {% if stock.latest_date %}
-                            <span class="text-muted d-none d-sm-inline">{{ stock.latest_date|date:"Y/m/d" }}</span>
-                            <span class="text-muted d-sm-none">{{ stock.latest_date|date:"m/d" }}</span>
-                        {% else %}
-                            <span class="text-muted">-</span>
-                        {% endif %}
-                    </td>
-                    <td class="text-center">
-                        {% if stock.note_count > 0 %}
-                            <span class="note-badge">{{ stock.note_count }}件</span>
-                        {% else %}
-                            <span class="note-badge-zero">-</span>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    <p class="text-muted small mt-2">{{ summary_list|length }}銘柄</p>
+
+      {# 状態レンズ #}
+      {% if lens == 'state' or not lens %}
+        <div class="ds-state-summary">
+          <span>検証待ち <b>{{ state_counts.due }}</b></span>
+          <span>保有中 <b>{{ state_counts.live }}</b></span>
+          <span>終了 <b>{{ state_counts.closed }}</b></span>
+        </div>
+        {% for state_key, state_label, items in state_grouped %}
+          {% if items %}
+          <div class="ds-group-head">
+            <span class="ds-group-dot ds-group-dot--{{ state_key }}"></span>
+            {{ state_label }}
+          </div>
+          {% for stock in items %}{% include "stockdiary/partials/_summary_row.html" %}{% endfor %}
+          {% endif %}
+        {% endfor %}
+
+      {# テーマレンズ #}
+      {% elif lens == 'theme' %}
+        {% for theme, items in theme_groups.items %}
+        <div class="ds-theme-head">
+          <i class="bi bi-hash"></i>{{ theme|default:"未分類" }}
+        </div>
+        {% for stock in items %}{% include "stockdiary/partials/_summary_row.html" %}{% endfor %}
+        {% endfor %}
+
+      {# 時系列 / 銘柄レンズ #}
+      {% else %}
+        {% for stock in summary_list %}{% include "stockdiary/partials/_summary_row.html" %}{% endfor %}
+
+      {% endif %}
 
     {% else %}
-    <div class="text-center py-5">
-        <i class="bi bi-journal-bookmark" style="font-size: 3rem; color: #cbd5e0;"></i>
-        <p class="mt-3 text-muted">
-            {% if search_query %}
-                「{{ search_query }}」に一致する銘柄が見つかりませんでした
-            {% else %}
-                まだ日記が登録されていません
-            {% endif %}
-        </p>
-        {% if not search_query %}
-        <a href="{% url 'stockdiary:create' %}" class="btn btn-primary mt-2">
-            <i class="bi bi-plus-lg me-1"></i>最初の日記を作成
-        </a>
-        {% endif %}
-    </div>
+      <div class="ds-empty">
+        <i class="bi bi-journals"></i>
+        {% if search_query %}「{{ search_query }}」に一致する銘柄が見つかりませんでした
+        {% else %}まだ日記が登録されていません{% endif %}
+      </div>
     {% endif %}
+  </div>
+
+  {# ── 銘柄テーブルビュー ── #}
+  <div id="ds-table-view" style="display:none">
+    {% if summary_list %}
+    <table class="ds-symbol-table">
+      <thead>
+        <tr>
+          <th>銘柄</th>
+          <th>状態</th>
+          <th>記録</th>
+          <th>最終更新</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for stock in summary_list|dictsort:"symbol" %}
+        <tr onclick="location.href='{% if stock.diary_id %}{% url 'stockdiary:detail' pk=stock.diary_id %}{% else %}{% url 'stockdiary:home' %}?query={{ stock.symbol }}{% endif %}'">
+          <td>
+            <span style="display:flex;align-items:center;gap:0.5rem;">
+              <span class="ds-row-dot ds-row-dot--{{ stock.state }}"></span>
+              <span style="font-weight:600;">{{ stock.name }}</span>
+              <span class="ds-row-code">{{ stock.symbol }}</span>
+            </span>
+          </td>
+          <td><span class="ds-row-state--{{ stock.state }}">
+            {% if stock.state == 'due' %}検証待ち
+            {% elif stock.state == 'live' %}保有中
+            {% else %}終了{% endif %}
+          </span></td>
+          <td style="color:var(--muted-ink);font-variant-numeric:tabular-nums;">{{ stock.note_count }}</td>
+          <td style="color:var(--faint-ink);white-space:nowrap;">
+            {% if stock.latest_date %}{{ stock.latest_date|date:"Y/m/d" }}{% else %}—{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </div>
 
 </div>
 
 {% include 'speed_dial.html' with actions=page_actions %}
+
+<script>
+function setView(v) {
+  document.getElementById('ds-list-view').style.display  = v === 'list'  ? '' : 'none';
+  document.getElementById('ds-table-view').style.display = v === 'table' ? '' : 'none';
+  document.querySelectorAll('.ds-view-btn').forEach(b => b.classList.toggle('is-active', b.dataset.view === v));
+}
+</script>
 {% endblock %}
