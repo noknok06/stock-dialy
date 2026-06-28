@@ -712,3 +712,108 @@ body.reading-app .modal-title { color: var(--ink) !important; }
 body.reading-app .modal-body { color: var(--ink-soft) !important; }
 body.reading-app .modal-body .text-muted,
 body.reading-app .modal-body small { color: var(--muted-ink) !important; }
+
+/* ============================================================
+   9k-6. 仮説タブ カード型レイアウト（Phase 9 ブラッシュアップ）
+   デザインシステム準拠: border-left 3px でステータス/象限を色分け。
+   ============================================================ */
+
+/* 仮説アイテム間の間隔 */
+.reading-page .karte-thesis-item {
+  margin-bottom: 1.5rem;
+}
+
+/* ── 仮説カード ── */
+.reading-page .karte-tcard {
+  background: var(--paper-sunken);
+  border: 1px solid var(--hairline);
+  border-left: 3px solid var(--verdict-unlucky);
+  border-radius: var(--radius-lg);
+  padding: 1.15rem 1.5rem;
+  margin-bottom: 0.5rem;
+}
+.reading-page .karte-tcard--open     { border-left-color: var(--verdict-unlucky); }
+.reading-page .karte-tcard--abandoned { border-left-color: var(--hairline); }
+/* 検証済みは象限色を引き継ぐ */
+.reading-page .karte-tcard--q-skill      { border-left-color: var(--verdict-skill); }
+.reading-page .karte-tcard--q-unlucky    { border-left-color: var(--verdict-unlucky); }
+.reading-page .karte-tcard--q-lucky      { border-left-color: var(--verdict-lucky); }
+.reading-page .karte-tcard--q-discipline { border-left-color: var(--verdict-discipline); }
+
+/* 仮説カードのヘッダー行（ラベル + ステータスバッジ + 編集） */
+.reading-page .karte-tcard-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.65rem;
+}
+.reading-page .karte-tcard-head-right {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* ステータスバッジ */
+.reading-page .karte-ts-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted-ink);
+  border: 1px solid var(--hairline);
+  border-radius: 9999px;
+  padding: 0.1rem 0.55rem;
+  line-height: 1.5;
+}
+.reading-page .karte-ts-badge .bi { font-size: 0.8em; }
+.reading-page .karte-ts-badge--open     { color: var(--verdict-unlucky); border-color: color-mix(in srgb, var(--verdict-unlucky) 40%, transparent); }
+.reading-page .karte-ts-badge--verified { color: var(--verdict-skill); border-color: color-mix(in srgb, var(--verdict-skill) 40%, transparent); }
+.reading-page .karte-ts-badge--abandoned { color: var(--faint-ink); }
+
+/* ── 検証カード（検証済み時） ── */
+.reading-page .karte-vcard {
+  background: var(--paper-raised);
+  border: 1px solid var(--hairline);
+  border-left: 3px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  padding: 1.15rem 1.5rem;
+  margin-bottom: 0.5rem;
+}
+.reading-page .karte-vcard.karte-q-skill      { border-left-color: var(--verdict-skill); }
+.reading-page .karte-vcard.karte-q-unlucky    { border-left-color: var(--verdict-unlucky); }
+.reading-page .karte-vcard.karte-q-lucky      { border-left-color: var(--verdict-lucky); }
+.reading-page .karte-vcard.karte-q-discipline { border-left-color: var(--verdict-discipline); }
+
+/* 検証カード内の象限名の色 */
+.reading-page .karte-vcard.karte-q-skill .karte-quadrant      { color: var(--verdict-skill); }
+.reading-page .karte-vcard.karte-q-unlucky .karte-quadrant    { color: var(--verdict-unlucky); }
+.reading-page .karte-vcard.karte-q-lucky .karte-quadrant      { color: var(--verdict-lucky); }
+.reading-page .karte-vcard.karte-q-discipline .karte-quadrant { color: var(--verdict-discipline); }
+
+/* 学びブロック（墨色左罫線） */
+.reading-page .karte-learning-block {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--hairline-soft);
+  padding-left: 0.85rem;
+  border-left: 3px solid var(--ink);
+}
+
+/* 旧 .karte-row.karte-verdict は削除せずオーバーライドで非表示化（既存 HTMX 応答と共存） */
+.reading-page .karte-row.karte-verdict {
+  border: 1px solid var(--hairline);
+  border-left-width: 3px;
+  border-radius: var(--radius-lg);
+  padding: 1.15rem 1.5rem;
+  background: var(--paper-raised);
+  margin-top: 0.5rem;
+}
+
+/* Horizon メタ行を横並びに（既存 karte-thesis-meta に追加） */
+.reading-page .karte-thesis-meta {
+  gap: 0.5rem;
+}
+.reading-page .karte-due .bi {
+  font-size: 0.8em;
+}
