@@ -47,12 +47,8 @@ if DEBUG or HTTP_ONLY:
     SECURE_SSL_REDIRECT = False
     SESSION_COOKIE_SECURE = False
     CSRF_COOKIE_SECURE = False
-    # CSP: 開発環境ではインラインスタイル・外部CDNを許可
-    CSP_DEFAULT_SRC = ["'self'", "'unsafe-inline'", "cdn.jsdelivr.net", "*.googleapis.com", "*.gstatic.com", "*.bootstrapcdn.com", "*"]
-    CSP_STYLE_SRC = ["'self'", "'unsafe-inline'", "cdn.jsdelivr.net", "*.googleapis.com", "https:", "*"]
-    CSP_SCRIPT_SRC = ["'self'", "'unsafe-inline'", "'unsafe-eval'", "cdn.jsdelivr.net", "*"]
-    CSP_FONT_SRC = ["'self'", "data:", "*.googleapis.com", "*.gstatic.com", "*"]
-    CSP_IMG_SRC = ["'self'", "data:", "*"]
+    # CSP は django-csp 4.0 形式（CONTENT_SECURITY_POLICY dict）で下部に一元管理。
+    # CSP_* 変数は 4.0 では無効のためここには書かない。
 else:
     # 本番環境の設定
     SECURE_SSL_REDIRECT = True
@@ -587,8 +583,11 @@ CONTENT_SECURITY_POLICY = {
 # USE_S3=True のとき S3/CloudFront ドメインを CSP の各ディレクティブに追加
 if USE_S3:
     # S3 は global(bucket.s3.amazonaws.com) と regional(bucket.s3.region.amazonaws.com) 両方の
-    # URL で配信されるため *.amazonaws.com でまとめてカバーする
-    _s3_origins = ['https://*.amazonaws.com']
+    # URL で配信されるためバケット名を含む両エンドポイントを明示する（*.amazonaws.com は広すぎる）
+    _s3_origins = [
+        f'https://{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com',
+        f'https://{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com',
+    ]
     if AWS_S3_CUSTOM_DOMAIN:
         _s3_origins.append(f'https://{AWS_S3_CUSTOM_DOMAIN}')
     for _directive in ('default-src', 'script-src', 'style-src', 'font-src', 'img-src', 'connect-src'):
