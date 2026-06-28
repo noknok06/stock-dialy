@@ -41,7 +41,7 @@
       {# ── 検証カード（検証済み） ── #}
       <div class="karte-vcard karte-q-{{ thesis.verdict.quadrant }}">
         <div class="karte-row-head">
-          <span class="karte-row-label">検証</span>
+          <span class="karte-row-label">この銘柄の検証</span>
           <button type="button" class="karte-editlink"
                   hx-get="{% url 'stockdiary:thesis_verify' diary.id thesis.id %}"
                   hx-target="#karte-block" hx-swap="outerHTML">見直す</button>
@@ -56,7 +56,10 @@
           <span class="karte-axis"><span class="karte-axis-k">損益</span>{{ thesis.verdict.get_pnl_result_display }}</span>
         </div>
         {% if thesis.verdict.missed_factor %}
-          <p class="karte-missed">見落とし：{{ thesis.verdict.missed_factor }}</p>
+        <div class="karte-missed-block">
+          <div class="karte-missed-label">見逃した要因</div>
+          <p class="karte-missed-text">{{ thesis.verdict.missed_factor }}</p>
+        </div>
         {% endif %}
         {% if thesis.verdict.learning %}
         <div class="karte-learning-block">
