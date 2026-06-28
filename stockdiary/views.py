@@ -186,21 +186,6 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
             user=self.request.user, is_excluded=True
         ).count()
 
-        # レンズタブ用カウント（home_counts）
-        from .models import Thesis
-        from django.utils import timezone as _tz_home
-        due_diary_ids = set(
-            Thesis.objects.filter(
-                diary__user=self.request.user,
-                status=Thesis.STATUS_OPEN,
-                review_due_date__lte=_tz_home.localdate(),
-            ).values_list('diary_id', flat=True)
-        )
-        context['home_counts'] = {
-            'active': stats['active_count'] or 0,
-            'due': len(due_diary_ids),
-        }
-
         # 直近で使われているハッシュタグ（モバイル：タブ下のクイックチップ用）
         from .utils import get_all_hashtags_from_queryset
         context['recent_hashtags'] = get_all_hashtags_from_queryset(all_diaries_qs)[:5]
