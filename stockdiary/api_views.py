@@ -308,14 +308,17 @@ def get_notification_logs(request):
 @login_required
 def mark_notification_read(request, log_id):
     """通知を既読にする"""
+    from django.http import Http404
     try:
         log = get_object_or_404(NotificationLog, id=log_id, user=request.user)
         log.is_read = True
         log.read_at = timezone.now()
         log.save()
-        
+
         return JsonResponse({'success': True})
-        
+
+    except Http404:
+        raise
     except Exception as e:
         logger.error("Mark notification read error: %s", e, exc_info=True)
         return JsonResponse({'error': '既読処理に失敗しました'}, status=500)

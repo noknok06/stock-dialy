@@ -536,3 +536,277 @@ class TestComplexScenarios:
         
         # 保有中であることを確認
         assert self.diary.is_holding is True
+
+# ---------------------------------------------------------------------------
+# 未カバーモデルメソッドの回帰テスト
+# ---------------------------------------------------------------------------
+
+class TestTransactionModelUncovered:
+    """Transaction モデルの未テストメソッド。"""
+
+    def setup_method(self):
+        self.user = User.objects.create_user(
+            username='model_uncov_user', password='pass', email='uncov@example.com'
+        )
+        self.diary = StockDiary.objects.create(
+            user=self.user, stock_symbol='7203', stock_name='トヨタ'
+        )
+
+    def test_amount_property(self):
+        """amount プロパティが price × quantity を返す。"""
+        t = Transaction.objects.create(
+            diary=self.diary,
+            transaction_type='buy',
+            transaction_date=date.today(),
+            price=Decimal('2000'),
+            quantity=Decimal('100'),
+        )
+        assert t.amount == Decimal('200000')
+
+    def test_str_method(self):
+        """__str__ が銘柄名・種別・数量・単価を含む文字列を返す。"""
+        t = Transaction.objects.create(
+            diary=self.diary,
+            transaction_type='buy',
+            transaction_date=date.today(),
+            price=Decimal('2000'),
+            quantity=Decimal('100'),
+        )
+        s = str(t)
+        assert 'トヨタ' in s
+        assert '100' in s
+
+    def test_clean_raises_for_negative_price(self):
+        """価格が 0 以下のとき ValidationError を発生させる。"""
+        from django.core.exceptions import ValidationError
+        t = Transaction(
+            diary=self.diary,
+            transaction_type='buy',
+            transaction_date=date.today(),
+            price=Decimal('-100'),
+            quantity=Decimal('10'),
+        )
+        with pytest.raises(ValidationError):
+            t.clean()
+
+    def test_clean_raises_for_zero_quantity(self):
+        """数量が 0 以下のとき ValidationError を発生させる。"""
+        from django.core.exceptions import ValidationError
+        t = Transaction(
+            diary=self.diary,
+            transaction_type='buy',
+            transaction_date=date.today(),
+            price=Decimal('2000'),
+            quantity=Decimal('0'),
+        )
+        with pytest.raises(ValidationError):
+            t.clean()
+
+
+class TestDiaryNoteModelUncovered:
+    """DiaryNote モデルの未テストメソッド。"""
+
+    def setup_method(self):
+        self.user = User.objects.create_user(
+            username='note_uncov_user', password='pass', email='noteuncov@example.com'
+        )
+        self.diary = StockDiary.objects.create(
+            user=self.user, stock_symbol='7203', stock_name='トヨタ'
+        )
+
+    def test_str_method(self):
+        """__str__ が銘柄名と日付を含む。"""
+        note = DiaryNote.objects.create(
+            diary=self.diary, date=date(2024, 1, 15), content='テスト'
+        )
+        s = str(note)
+        assert 'トヨタ' in s
+        assert '2024' in s
+
+    def test_retrospective_gets_fixed_topic(self):
+        """振り返りタイプで topic 未指定のとき固定テーマが自動設定される。"""
+        note = DiaryNote.objects.create(
+            diary=self.diary,
+            date=date.today(),
+            content='振り返り内容',
+            note_type='retrospective',
+            topic='',
+        )
+        assert note.topic == DiaryNote.RETROSPECTIVE_TOPIC
+
+    def test_retrospective_explicit_topic_preserved(self):
+        """振り返りでも topic を明示したときは上書きされない。"""
+        note = DiaryNote.objects.create(
+            diary=self.diary,
+            date=date.today(),
+            content='振り返り内容',
+            note_type='retrospective',
+            topic='カスタムテーマ',
+        )
+        assert note.topic == 'カスタムテーマ'
+
+    def test_get_image_url_returns_none_when_no_image(self):
+        """画像なしのとき get_image_url が None を返す。"""
+        note = DiaryNote.objects.create(
+            diary=self.diary, date=date.today(), content='テスト'
+        )
+        assert note.get_image_url() is None
+
+
+class TestVerdictProperties:
+    """Verdict モデルのプロパティテスト。"""
+
+    def setup_method(self):
+        self.user = User.objects.create_user(
+            username='verdict_user', password='pass', email='verdict@example.com'
+        )
+        self.diary = StockDiary.objects.create(
+            user=self.user, stock_symbol='7203', stock_name='トヨタ'
+        )
+        from stockdiary.models import Thesis, Verdict
+        self.thesis = Thesis.objects.create(
+            diary=self.diary,
+            claim='円安が続く',
+        )
+        self.Verdict = Verdict
+
+    def test_hyp_ok_true_when_hit(self):
+        """仮説的中のとき hyp_ok が True を返す。"""
+        v = self.Verdict.objects.create(
+            thesis=self.thesis,
+            hypothesis_result='hit',
+            pnl_result='profit',
+        )
+        assert v.hyp_ok is True
+
+    def test_hyp_ok_false_when_miss(self):
+        """仮説外れのとき hyp_ok が False を返す。"""
+        v = self.Verdict.objects.create(
+            thesis=self.thesis,
+            hypothesis_result='miss',
+            pnl_result='loss',
+        )
+        assert v.hyp_ok is False
+
+    def test_quadrant_returns_string(self):
+        """quadrant プロパティが文字列を返す。"""
+        v = self.Verdict.objects.create(
+            thesis=self.thesis,
+            hypothesis_result='hit',
+            pnl_result='profit',
+        )
+        assert isinstance(v.quadrant, str)
+
+    def test_quadrant_label_returns_string(self):
+        """quadrant_label プロパティが文字列を返す。"""
+        v = self.Verdict.objects.create(
+            thesis=self.thesis,
+            hypothesis_result='hit',
+            pnl_result='profit',
+        )
+        assert isinstance(v.quadrant_label, str)
+
+    def test_stars_property(self):
+        """stars プロパティが ★☆ 文字列を返す。"""
+        v = self.Verdict.objects.create(
+            thesis=self.thesis,
+            hypothesis_result='hit',
+            pnl_result='profit',
+            decision_quality=3,
+        )
+        assert '★★★' in v.stars
+        assert '☆☆' in v.stars
+
+
+class TestReasonVersionSnapshot:
+    """ReasonVersion.snapshot_on_change のロジックテスト。"""
+
+    def setup_method(self):
+        self.user = User.objects.create_user(
+            username='reason_ver_user', password='pass', email='reasonver@example.com'
+        )
+        self.diary = StockDiary.objects.create(
+            user=self.user, stock_symbol='7203', stock_name='トヨタ',
+            reason='最初の見立て'
+        )
+
+    def test_creates_snapshot_when_content_changes(self):
+        """前版と現在版が異なるとき版を作成する。"""
+        from stockdiary.models import ReasonVersion
+        self.diary.reason = '新しい見立て'
+        self.diary.save(update_fields=['reason'])
+
+        result = ReasonVersion.snapshot_on_change(self.diary, '最初の見立て')
+        assert result is not None
+        assert result.content == '最初の見立て'
+
+    def test_no_snapshot_when_content_same(self):
+        """前版と現在版が同じとき版を作成しない。"""
+        from stockdiary.models import ReasonVersion
+        result = ReasonVersion.snapshot_on_change(self.diary, '最初の見立て')
+        assert result is None
+
+    def test_no_snapshot_when_previous_empty(self):
+        """前版が空のとき版を作成しない（残す価値がない）。"""
+        from stockdiary.models import ReasonVersion
+        result = ReasonVersion.snapshot_on_change(self.diary, '')
+        assert result is None
+
+    def test_coalesce_skips_snapshot_within_window(self):
+        """COALESCE_WINDOW 内の連続編集は追加版を作らない。"""
+        from stockdiary.models import ReasonVersion
+        # 最初の版を作成
+        self.diary.reason = '二回目の見立て'
+        self.diary.save(update_fields=['reason'])
+        ReasonVersion.snapshot_on_change(self.diary, '最初の見立て')
+
+        # すぐに再度変更（COALESCE_WINDOW 内）
+        self.diary.reason = '三回目の見立て'
+        self.diary.save(update_fields=['reason'])
+        result = ReasonVersion.snapshot_on_change(self.diary, '二回目の見立て')
+
+        assert result is None  # 直近版が窓内なのでスキップ
+        assert ReasonVersion.objects.filter(diary=self.diary).count() == 1
+
+
+class TestStockDiaryDisclosureFreshness:
+    """StockDiary.disclosure_freshness プロパティのテスト。"""
+
+    def setup_method(self):
+        self.user = User.objects.create_user(
+            username='freshness_user', password='pass', email='fresh@example.com'
+        )
+
+    def test_returns_new_within_7_days(self):
+        """7日以内の開示は 'new' を返す。"""
+        from datetime import date as d
+        diary = StockDiary.objects.create(
+            user=self.user, stock_symbol='7203', stock_name='トヨタ',
+            latest_disclosure_date=d.today(),
+        )
+        assert diary.disclosure_freshness == 'new'
+
+    def test_returns_recent_within_30_days(self):
+        """8〜30日以内の開示は 'recent' を返す。"""
+        from datetime import date as d
+        diary = StockDiary.objects.create(
+            user=self.user, stock_symbol='7204', stock_name='テスト',
+            latest_disclosure_date=d.today() - timedelta(days=15),
+        )
+        assert diary.disclosure_freshness == 'recent'
+
+    def test_returns_none_when_old(self):
+        """31日以上前の開示は None を返す。"""
+        from datetime import date as d
+        diary = StockDiary.objects.create(
+            user=self.user, stock_symbol='7205', stock_name='テスト2',
+            latest_disclosure_date=d.today() - timedelta(days=45),
+        )
+        assert diary.disclosure_freshness is None
+
+    def test_returns_none_when_no_disclosure(self):
+        """開示日未設定のとき None を返す。"""
+        diary = StockDiary.objects.create(
+            user=self.user, stock_symbol='7206', stock_name='テスト3',
+        )
+        assert diary.disclosure_freshness is None

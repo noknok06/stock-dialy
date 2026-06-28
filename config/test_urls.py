@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.http import HttpResponse
 from config import views  # landing_page 用
+from stockdiary import api_views
 
 
 # ---- ダミービュー定義 ----
@@ -37,6 +38,11 @@ urlpatterns = [
 
     # ✅ ads名前空間をダミーで登録
     path('ads/', include((ads_patterns, 'ads'), namespace='ads')),
+
+    # 通知 API（config/urls.py と同じルート）
+    path('api/notifications/logs/', api_views.get_notification_logs, name='api_notification_logs'),
+    path('api/notifications/<int:log_id>/read/', api_views.mark_notification_read, name='api_mark_notification_read'),
+    path('api/notifications/mark-all-read/', api_views.mark_all_read, name='api_mark_all_read'),
 ]
 
 

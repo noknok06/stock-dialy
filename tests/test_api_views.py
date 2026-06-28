@@ -10,7 +10,7 @@ from django.contrib.auth import get_user_model
 from decimal import Decimal
 from datetime import date
 
-from stockdiary.models import StockDiary, DiaryNote, Transaction
+from stockdiary.models import StockDiary, DiaryNote, Transaction, NotificationLog, DiaryNotification
 
 User = get_user_model()
 
@@ -293,3 +293,124 @@ class TestDiaryGraphData:
         url = reverse('stockdiary:api_diary_graph_data')
         resp = authed_client.get(url)
         assert resp.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# list_diary_notifications
+# ---------------------------------------------------------------------------
+
+class TestListDiaryNotifications:
+    """日記通知設定一覧 API テスト。"""
+
+    def test_returns_empty_list_when_no_notifications(self, authed_client, diary):
+        url = reverse('stockdiary:api_list_diary_notifications', args=[diary.id])
+        resp = authed_client.get(url)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data['success'] is True
+        assert data['notifications'] == []
+        assert data['count'] == 0
+
+    def test_returns_notification_list(self, authed_client, diary):
+        from django.utils import timezone as tz
+        DiaryNotification.objects.create(
+            diary=diary,
+            remind_at=tz.now() + __import__('datetime').timedelta(days=1),
+            message='確認してください',
+        )
+        url = reverse('stockdiary:api_list_diary_notifications', args=[diary.id])
+        resp = authed_client.get(url)
+        data = resp.json()
+        assert data['count'] == 1
+        assert data['notifications'][0]['message'] == '確認してください'
+
+    def test_requires_login(self, client, diary):
+        url = reverse('stockdiary:api_list_diary_notifications', args=[diary.id])
+        resp = client.get(url)
+        assert resp.status_code == 302
+
+
+# ---------------------------------------------------------------------------
+# get_notification_logs
+# ---------------------------------------------------------------------------
+
+class TestGetNotificationLogs:
+    """通知履歴取得 API テスト。"""
+
+    def test_returns_empty_logs_when_none(self, authed_client):
+        url = reverse('api_notification_logs')
+        resp = authed_client.get(url)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert 'logs' in data
+        assert 'unread_count' in data
+
+    def test_returns_existing_logs(self, authed_client, user):
+        NotificationLog.objects.create(
+            user=user, title='テスト通知', message='内容', url='/stockdiary/'
+        )
+        url = reverse('api_notification_logs')
+        resp = authed_client.get(url)
+        data = resp.json()
+        assert len(data['logs']) == 1
+        assert data['logs'][0]['title'] == 'テスト通知'
+
+    def test_unread_filter(self, authed_client, user):
+        NotificationLog.objects.create(
+            user=user, title='未読', message='', url='/', is_read=False
+        )
+        NotificationLog.objects.create(
+            user=user, title='既読', message='', url='/', is_read=True
+        )
+        url = reverse('api_notification_logs')
+        resp = authed_client.get(url, {'unread': 'true'})
+        data = resp.json()
+        titles = [l['title'] for l in data['logs']]
+        assert '未読' in titles
+        assert '既読' not in titles
+
+    def test_requires_login(self, client):
+        url = reverse('api_notification_logs')
+        resp = client.get(url)
+        assert resp.status_code == 302
+
+
+# ---------------------------------------------------------------------------
+# mark_notification_read / mark_all_read
+# ---------------------------------------------------------------------------
+
+class TestMarkNotificationRead:
+    """通知既読 API テスト。"""
+
+    def test_marks_single_notification_read(self, authed_client, user):
+        log = NotificationLog.objects.create(
+            user=user, title='通知', message='', url='/', is_read=False
+        )
+        url = reverse('api_mark_notification_read', args=[log.id])
+        resp = authed_client.post(url)
+        assert resp.status_code == 200
+        assert resp.json()['success'] is True
+        log.refresh_from_db()
+        assert log.is_read is True
+
+    def test_other_users_log_returns_404(self, authed_client, other_user):
+        log = NotificationLog.objects.create(
+            user=other_user, title='他ユーザー通知', message='', url='/'
+        )
+        url = reverse('api_mark_notification_read', args=[log.id])
+        resp = authed_client.post(url)
+        assert resp.status_code == 404
+
+    def test_mark_all_read(self, authed_client, user):
+        NotificationLog.objects.create(user=user, title='A', message='', url='/', is_read=False)
+        NotificationLog.objects.create(user=user, title='B', message='', url='/', is_read=False)
+        url = reverse('api_mark_all_read')
+        resp = authed_client.post(url)
+        assert resp.status_code == 200
+        assert resp.json()['success'] is True
+        assert NotificationLog.objects.filter(user=user, is_read=False).count() == 0
+
+    def test_requires_login(self, client):
+        url = reverse('api_mark_all_read')
+        resp = client.post(url)
+        assert resp.status_code == 302
