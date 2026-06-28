@@ -1429,3 +1429,66 @@ body.writing-focus .pc-only-header:hover { opacity: 1; }
   /* モバイルは sticky を解除。ただし日付スパインの節を anchor するため relative は保つ */
   .reading-page .rp-day-label { position: relative; top: auto; }
 }
+
+/* ============================================================
+   11. ホームページ レンズタブ（Zone C LibraryZone 準拠）
+   ============================================================ */
+.home-library-header {
+  margin: 0 0 0;
+}
+
+.home-library-lenses {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--hairline);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.home-library-lenses::-webkit-scrollbar { display: none; }
+
+.home-lens {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--muted-ink);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  padding: 0.55rem 0.75rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.home-lens:hover { color: var(--ink-soft); }
+.home-lens.is-active {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+  font-weight: 600;
+}
+
+.home-lens-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.home-lens-dot--live { background: var(--verdict-skill); }
+.home-lens-dot--due  { background: var(--verdict-unlucky); }
+
+.home-lens-count {
+  font-size: 0.65rem;
+  color: var(--faint-ink);
+  background: var(--paper-sunken);
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  padding: 0.05rem 0.4rem;
+}
+.home-lens.is-active .home-lens-count { color: var(--muted-ink); }
+
+@media (max-width: 480px) {
+  .home-lens { padding: 0.5rem 0.6rem; font-size: 0.8125rem; }
+}
