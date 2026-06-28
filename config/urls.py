@@ -22,7 +22,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 from . import views
-from stockdiary import api_views
+from stockdiary import api_views, api_analysis
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.views.generic.base import RedirectView
 from django.views.generic import TemplateView
@@ -82,6 +82,11 @@ urlpatterns = [
     
     # 信用倍率
     path('margin/', include('margin_tracking.urls', namespace='margin_tracking')),
+
+    # 分析API（Claude Code / 外部ツール向け・Bearer認証）
+    path('api/analysis/holdings/', api_analysis.holdings, name='api_analysis_holdings'),
+    path('api/analysis/diary/<str:symbol>/', api_analysis.diary_detail, name='api_analysis_diary'),
+    path('api/analysis/portfolio/', api_analysis.portfolio_summary, name='api_analysis_portfolio'),
 
     # APIエンドポイント（将来的な拡張用）
     # path('api/v1/earnings/', include('earnings_analysis.urls')),  # API専用

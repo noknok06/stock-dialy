@@ -793,6 +793,10 @@ LOGGING['loggers']['security'] = {
 
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
 
+# 分析API（Claude Code / 外部ツール向け）
+# generate_analysis_key コマンドで生成し .env に追記する
+ANALYSIS_API_KEY = os.environ.get('ANALYSIS_API_KEY', '')
+
 AUTO_GENERATE_SUMMARY = True  # 自動要約生成を有効化
 
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 50000
