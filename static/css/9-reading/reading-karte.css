@@ -77,8 +77,12 @@ body.dark-mode, html[data-theme="dark"] {
 .reading-page .karte-q-lucky      { border-left-color: var(--verdict-lucky); }
 .reading-page .karte-q-discipline { border-left-color: var(--verdict-discipline); }
 
+.reading-page .karte-row-head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem;
+  margin-bottom: 0.85rem;
+}
 .reading-page .karte-verdict-head {
-  display: flex; align-items: center; gap: 0.6rem; margin: 0.3rem 0 0.35rem;
+  display: flex; align-items: center; gap: 0.6rem; margin: 0 0 0.4rem;
 }
 .reading-page .karte-quadrant {
   font-weight: var(--font-semibold); color: var(--ink); font-size: 0.9375rem;
@@ -128,6 +132,11 @@ body.dark-mode, html[data-theme="dark"] {
 .reading-page .karte-verify-cta {
   display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
   gap: 0.75rem;
+  background: var(--paper-raised);
+  border: 1px solid var(--hairline-soft);
+  border-radius: var(--radius-lg);
+  padding: 0.9rem 1.25rem;
+  margin-bottom: 0.5rem;
 }
 .reading-page .karte-verify-msg { font-size: 0.875rem; color: var(--muted-ink); display: inline-flex; gap: 0.4rem; align-items: center; }
 .reading-page .karte-verify-cta.is-due .karte-verify-msg { color: var(--ink); }
@@ -736,16 +745,16 @@ body.reading-app .modal-body small { color: var(--muted-ink) !important; }
 
 /* 仮説アイテム間の間隔 */
 .reading-page .karte-thesis-item {
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
 }
 
 /* ── 仮説カード ── */
 .reading-page .karte-tcard {
   background: var(--paper-sunken);
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--hairline-soft);
   border-left: 3px solid var(--verdict-unlucky);
   border-radius: var(--radius-lg);
-  padding: 1.15rem 1.5rem;
+  padding: 1.25rem 1.5rem;
   margin-bottom: 0.5rem;
 }
 .reading-page .karte-tcard--open     { border-left-color: var(--verdict-unlucky); }
@@ -761,7 +770,7 @@ body.reading-app .modal-body small { color: var(--muted-ink) !important; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 0.65rem;
+  margin-bottom: 0.75rem;
 }
 .reading-page .karte-tcard-head-right {
   display: flex;
@@ -777,14 +786,15 @@ body.reading-app .modal-body small { color: var(--muted-ink) !important; }
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--muted-ink);
+  background: var(--paper-raised);
   border: 1px solid var(--hairline);
   border-radius: 9999px;
-  padding: 0.1rem 0.55rem;
+  padding: 0.2rem 0.65rem;
   line-height: 1.5;
 }
 .reading-page .karte-ts-badge .bi { font-size: 0.8em; }
-.reading-page .karte-ts-badge--open     { color: var(--verdict-unlucky); border-color: color-mix(in srgb, var(--verdict-unlucky) 40%, transparent); }
-.reading-page .karte-ts-badge--verified { color: var(--verdict-skill); border-color: color-mix(in srgb, var(--verdict-skill) 40%, transparent); }
+.reading-page .karte-ts-badge--open     { color: var(--verdict-unlucky); border-color: color-mix(in srgb, var(--verdict-unlucky) 35%, transparent); background: color-mix(in srgb, var(--verdict-unlucky) 6%, var(--paper-raised)); }
+.reading-page .karte-ts-badge--verified { color: var(--verdict-skill); border-color: color-mix(in srgb, var(--verdict-skill) 35%, transparent); background: color-mix(in srgb, var(--verdict-skill) 6%, var(--paper-raised)); }
 .reading-page .karte-ts-badge--abandoned { color: var(--faint-ink); }
 
 /* ── 検証カード（検証済み時） ── */
@@ -793,8 +803,9 @@ body.reading-app .modal-body small { color: var(--muted-ink) !important; }
   background: var(--paper-raised);
   border: 1px solid var(--hairline);
   border-radius: var(--radius-lg);
-  padding: 1.15rem 1.5rem;
+  padding: 1.25rem 1.5rem;
   margin-bottom: 0.5rem;
+  box-shadow: var(--shadow-xs);
 }
 
 /* 象限名テキストに左罫線＋色（VerdictBadge: border-left 3px + padding-left 0.5rem） */
