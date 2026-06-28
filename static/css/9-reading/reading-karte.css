@@ -78,7 +78,7 @@ body.dark-mode, html[data-theme="dark"] {
 .reading-page .karte-q-discipline { border-left-color: var(--verdict-discipline); }
 
 .reading-page .karte-verdict-head {
-  display: flex; align-items: baseline; gap: 0.6rem; margin: 0.3rem 0 0.5rem;
+  display: flex; align-items: center; gap: 0.6rem; margin: 0.3rem 0 0.35rem;
 }
 .reading-page .karte-quadrant {
   font-weight: var(--font-semibold); color: var(--ink); font-size: 0.9375rem;
@@ -92,6 +92,7 @@ body.dark-mode, html[data-theme="dark"] {
 .reading-page .karte-verdict-axes {
   display: flex; align-items: baseline; gap: 0.5rem;
   font-size: 0.875rem; color: var(--ink-soft); margin-bottom: 0.35rem;
+  padding-left: calc(3px + 0.5rem);
 }
 .reading-page .karte-axis-k {
   font-size: 0.7rem; color: var(--faint-ink); margin-right: 0.3rem;
@@ -772,24 +773,27 @@ body.reading-app .modal-body small { color: var(--muted-ink) !important; }
 .reading-page .karte-ts-badge--abandoned { color: var(--faint-ink); }
 
 /* ── 検証カード（検証済み時） ── */
+/* カード自体は plain raised — 象限色はラベルテキストに載せる（VerdictBadge パターン） */
 .reading-page .karte-vcard {
   background: var(--paper-raised);
   border: 1px solid var(--hairline);
-  border-left: 3px solid var(--hairline);
   border-radius: var(--radius-lg);
   padding: 1.15rem 1.5rem;
   margin-bottom: 0.5rem;
 }
-.reading-page .karte-vcard.karte-q-skill      { border-left-color: var(--verdict-skill); }
-.reading-page .karte-vcard.karte-q-unlucky    { border-left-color: var(--verdict-unlucky); }
-.reading-page .karte-vcard.karte-q-lucky      { border-left-color: var(--verdict-lucky); }
-.reading-page .karte-vcard.karte-q-discipline { border-left-color: var(--verdict-discipline); }
 
-/* 検証カード内の象限名の色 */
-.reading-page .karte-vcard.karte-q-skill .karte-quadrant      { color: var(--verdict-skill); }
-.reading-page .karte-vcard.karte-q-unlucky .karte-quadrant    { color: var(--verdict-unlucky); }
-.reading-page .karte-vcard.karte-q-lucky .karte-quadrant      { color: var(--verdict-lucky); }
-.reading-page .karte-vcard.karte-q-discipline .karte-quadrant { color: var(--verdict-discipline); }
+/* 象限名テキストに左罫線＋色（VerdictBadge: border-left 3px + padding-left 0.5rem） */
+.reading-page .karte-quadrant {
+  font-weight: 600;
+  font-size: 0.9375rem;
+  line-height: 1.2;
+  border-left: 3px solid var(--hairline);
+  padding-left: 0.5rem;
+}
+.reading-page .karte-vcard.karte-q-skill .karte-quadrant      { color: var(--verdict-skill);      border-left-color: var(--verdict-skill); }
+.reading-page .karte-vcard.karte-q-unlucky .karte-quadrant    { color: var(--verdict-unlucky);    border-left-color: var(--verdict-unlucky); }
+.reading-page .karte-vcard.karte-q-lucky .karte-quadrant      { color: var(--verdict-lucky);      border-left-color: var(--verdict-lucky); }
+.reading-page .karte-vcard.karte-q-discipline .karte-quadrant { color: var(--verdict-discipline); border-left-color: var(--verdict-discipline); }
 
 /* 学びブロック（墨色左罫線） */
 .reading-page .karte-learning-block {
