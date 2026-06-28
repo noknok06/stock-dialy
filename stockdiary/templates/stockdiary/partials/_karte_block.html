@@ -105,4 +105,27 @@
   </button>
   {% endif %}
 
+  {# ── あなたの判断の傾向（全銘柄集計 2×2） ── #}
+  {% if user_total_verdicts %}
+  <div class="karte-tendency">
+    <div class="karte-tendency-head">あなたの判断の傾向</div>
+    <div class="karte-tendency-axes">
+      <span class="karte-tendency-axis-label karte-tendency-axis-x"><span>損失 −</span><span>利益 ＋</span></span>
+    </div>
+    <div class="karte-tendency-grid">
+      {# 行ラベル（仮説○ 上段 / 仮説× 下段）× 列（損失/利益） #}
+      {# QUADRANTS 順: skill(○×利益), unlucky(○×損失), lucky(×利益), discipline(×損失) #}
+      {# グリッド: 上行=仮説○、下行=仮説×。左列=損失、右列=利益 #}
+      {% for q in user_quadrants %}
+      <div class="karte-tendency-cell karte-tendency-cell--{{ q.key }} {% if q.is_highlight %}is-highlight{% endif %}">
+        <div class="karte-tendency-count">{{ q.count }}</div>
+        <div class="karte-tendency-label">{{ q.label }}</div>
+        <div class="karte-tendency-axis">{{ q.axis }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    <p class="karte-tendency-caption">損益と、判断の質は、別物だ。</p>
+  </div>
+  {% endif %}
+
 </div>

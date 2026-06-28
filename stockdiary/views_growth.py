@@ -302,6 +302,25 @@ def _default_review_due_date(diary, horizon):
     return base + timedelta(days=days)
 
 
+def _build_user_quadrants(user):
+    """ユーザー全体の 2×2 判断傾向を集計して返す（_karte_block 用）。"""
+    from . import services
+    quad_counts = {key: 0 for key, _, _ in services.metrics.QUADRANTS}
+    total = 0
+    for v in Verdict.objects.filter(
+        thesis__diary__user=user,
+        thesis__diary__is_excluded=False,
+    ).only('hypothesis_result', 'pnl_result'):
+        total += 1
+        quad_counts[v.quadrant] += 1
+    highlight = max(quad_counts, key=quad_counts.get) if total else None
+    return total, [
+        {'key': key, 'label': label, 'axis': axis,
+         'count': quad_counts[key], 'is_highlight': key == highlight}
+        for key, label, axis in services.metrics.QUADRANTS
+    ]
+
+
 def _render_karte_block(request, diary):
     """検証ループのブロック（仮説→結果→検証→学び）を再描画する。"""
     theses = (
@@ -309,8 +328,12 @@ def _render_karte_block(request, diary):
         .select_related('verdict')
         .prefetch_related('basis_tags')
     )
+    total_verdicts, user_quadrants = _build_user_quadrants(request.user)
     return render(request, 'stockdiary/partials/_karte_block.html', {
-        'diary': diary, 'theses': theses,
+        'diary': diary,
+        'theses': theses,
+        'user_quadrants': user_quadrants,
+        'user_total_verdicts': total_verdicts,
     })
 
 

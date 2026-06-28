@@ -442,6 +442,12 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
             .prefetch_related('basis_tags')
         )
 
+        # 仮説タブ用: ユーザー全体の 2×2 判断傾向
+        from .views_growth import _build_user_quadrants
+        _total_verdicts, _user_quadrants = _build_user_quadrants(self.request.user)
+        context['user_quadrants'] = _user_quadrants
+        context['user_total_verdicts'] = _total_verdicts
+
         # 取引・分割・継続記録を1本のイベント時系列に統合
         event_timeline = list(combined) + [
             {'type': 'note', 'date': n.date, 'data': n}

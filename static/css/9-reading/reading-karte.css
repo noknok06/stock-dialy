@@ -119,12 +119,15 @@ body.dark-mode, html[data-theme="dark"] {
   line-height: 1.65; margin: 0;
 }
 
-/* 学び＝引用ブロック */
+/* 学び＝引用ブロック（Bootstrap の blockquote リセット込み） */
 .reading-page .karte-learning-quote {
   font-family: var(--font-family-serif);
   font-size: 1.0625rem; line-height: 1.7; color: var(--ink);
-  margin: 0.5rem 0 0; padding-left: var(--space-4, 1rem);
+  margin: 0.35rem 0 0; padding: 0 0 0 0.85rem;
+  border: none;
   border-left: 2px solid var(--ink);
+  background: none;
+  border-radius: 0;
   font-style: normal;
 }
 
@@ -838,6 +841,69 @@ body.reading-app .modal-body small { color: var(--muted-ink) !important; }
   padding: 1.15rem 1.5rem;
   background: var(--paper-raised);
   margin-top: 0.5rem;
+}
+
+/* ── あなたの判断の傾向（2×2） ── */
+.reading-page .karte-tendency {
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--hairline-soft);
+}
+.reading-page .karte-tendency-head {
+  font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em;
+  color: var(--faint-ink); margin-bottom: 0.75rem;
+}
+.reading-page .karte-tendency-axis-label {
+  display: flex; justify-content: space-between;
+  font-size: 0.65rem; color: var(--faint-ink);
+  padding: 0 0 0.35rem;
+}
+/* 2列グリッド。QUADRANTS 順: skill, unlucky, lucky, discipline
+   → CSS grid-column で配置: skill=col2, unlucky=col1, lucky=col2, discipline=col1 */
+.reading-page .karte-tendency-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 0.5rem;
+}
+/* skill: 仮説○×利益 → 右上 (row1,col2) */
+.reading-page .karte-tendency-cell--skill      { grid-row: 1; grid-column: 2; }
+/* unlucky: 仮説○×損失 → 左上 (row1,col1) */
+.reading-page .karte-tendency-cell--unlucky    { grid-row: 1; grid-column: 1; }
+/* lucky: 仮説×××利益 → 右下 (row2,col2) */
+.reading-page .karte-tendency-cell--lucky      { grid-row: 2; grid-column: 2; }
+/* discipline: 仮説×××損失 → 左下 (row2,col1) */
+.reading-page .karte-tendency-cell--discipline { grid-row: 2; grid-column: 1; }
+
+.reading-page .karte-tendency-cell {
+  background: var(--paper-raised);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+}
+.reading-page .karte-tendency-cell.is-highlight {
+  background: color-mix(in srgb, var(--paper-raised) 80%, currentColor 5%);
+  border-color: currentColor;
+}
+.reading-page .karte-tendency-cell--skill      { color: var(--verdict-skill); }
+.reading-page .karte-tendency-cell--unlucky    { color: var(--verdict-unlucky); }
+.reading-page .karte-tendency-cell--lucky      { color: var(--verdict-lucky); }
+.reading-page .karte-tendency-cell--discipline { color: var(--verdict-discipline); }
+.reading-page .karte-tendency-count {
+  font-size: 1.5rem; font-weight: 700; line-height: 1;
+  font-variant-numeric: tabular-nums; color: inherit;
+}
+.reading-page .karte-tendency-label {
+  font-size: 0.875rem; font-weight: 600; color: var(--ink);
+  margin-top: 0.3rem;
+}
+.reading-page .karte-tendency-axis {
+  font-size: 0.7rem; color: var(--muted-ink); margin-top: 0.15rem;
+}
+.reading-page .karte-tendency-caption {
+  font-family: var(--font-family-serif);
+  font-size: 0.875rem; color: var(--faint-ink);
+  text-align: center; margin-top: 1rem; font-style: italic;
 }
 
 /* Horizon メタ行を横並びに（既存 karte-thesis-meta に追加） */
