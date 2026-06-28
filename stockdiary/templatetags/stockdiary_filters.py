@@ -2,6 +2,7 @@
 import re
 import math
 from django.utils.safestring import mark_safe
+from django.utils.html import conditional_escape
 from django import template
 from django.template.defaultfilters import stringfilter
 import decimal
@@ -103,23 +104,23 @@ def highlight(text, search_term):
     例: {{ diary.reason|highlight:request.GET.query }}
     """
     if not search_term or not text:
-        return mark_safe(text)
+        return mark_safe(conditional_escape(text))
 
     # 空白区切りの複数語はそれぞれハイライトする（AND検索に対応）
     from stockdiary.utils import split_search_terms
     terms = split_search_terms(search_term)
     if not terms:
-        return mark_safe(text)
+        return mark_safe(conditional_escape(text))
 
-    # HTMLタグをエスケープせずに検索するために正規表現を使用
-    # 一方の語が他方の語の接頭辞になっている場合に備え、長い語から優先して照合する
+    # 未エスケープのテキストをエスケープしてからハイライト処理（XSS防止）
+    # SafeString（|escape や |linebreaks 適用済み）は conditional_escape でそのまま通過する
     search_pattern = re.compile(
         r'({0})'.format(
             '|'.join(re.escape(t) for t in sorted(terms, key=len, reverse=True))
         ),
         re.IGNORECASE,
     )
-    result = search_pattern.sub(r'<span class="search-highlight">\1</span>', text)
+    result = search_pattern.sub(r'<span class="search-highlight">\1</span>', conditional_escape(text))
 
     return mark_safe(result)
         
@@ -649,7 +650,7 @@ def render_markdown(value):
         strip=True,
     )
 
-    return mark_safe(clean_html)
+    return mark_safe(clean_html)  # nosec B308, B703 — bleach.clean() でサニタイズ済み
 
 
 _MENTION_PATTERN = re.compile(r'[（(](\d{4,6}|\d{3,4}[A-Z]|[A-Z]{2,6})[）)]')

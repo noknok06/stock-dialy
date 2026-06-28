@@ -1,6 +1,6 @@
 # earnings_analysis/services/xbrl_extractor.py の完全版
 
-import xml.etree.ElementTree as ET
+import defusedxml.ElementTree as ET
 import re
 import requests
 import zipfile
