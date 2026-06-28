@@ -386,6 +386,15 @@ def apply_diary_filters(queryset, params, user):
         )
     elif status == 'memo':
         queryset = queryset.filter(transaction_count=0)
+    elif status == 'due':
+        from .models import Thesis
+        from django.utils import timezone as _tz_util
+        due_ids = Thesis.objects.filter(
+            diary__user=user,
+            status=Thesis.STATUS_OPEN,
+            review_due_date__lte=_tz_util.localdate(),
+        ).values_list('diary_id', flat=True)
+        queryset = queryset.filter(id__in=due_ids)
     elif status == 'excluded':
         queryset = queryset.filter(is_excluded=True)
     if status != 'excluded':

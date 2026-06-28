@@ -527,6 +527,36 @@
   </div>
   {% endif %}{# /is_empty_state（検索・フィルター群） #}
 
+  {% if not is_empty_state %}
+  <!-- 記録セクション：レンズタブ（デザインシステム Zone C 準拠） -->
+  <div class="home-library-header">
+    <div class="home-library-lenses" id="home-lenses" role="tablist">
+      <button type="button" class="home-lens {% if not request.GET.status or request.GET.status == 'all' %}is-active{% endif %}"
+              hx-get="{% url 'stockdiary:diary_list' %}?status=all"
+              hx-target="#diary-container" hx-push-url="true" hx-include="#filterPanel,#optimizedSearchForm">
+        すべて
+      </button>
+      <button type="button" class="home-lens {% if request.GET.status == 'active' %}is-active{% endif %}"
+              hx-get="{% url 'stockdiary:diary_list' %}?status=active"
+              hx-target="#diary-container" hx-push-url="true" hx-include="#filterPanel,#optimizedSearchForm">
+        <span class="home-lens-dot home-lens-dot--live"></span>保有中
+        {% if home_counts.active %}<span class="home-lens-count">{{ home_counts.active }}</span>{% endif %}
+      </button>
+      <button type="button" class="home-lens {% if request.GET.status == 'due' %}is-active{% endif %}"
+              hx-get="{% url 'stockdiary:diary_list' %}?status=due"
+              hx-target="#diary-container" hx-push-url="true" hx-include="#filterPanel,#optimizedSearchForm">
+        <span class="home-lens-dot home-lens-dot--due"></span>検証待ち
+        {% if home_counts.due %}<span class="home-lens-count">{{ home_counts.due }}</span>{% endif %}
+      </button>
+      <button type="button" class="home-lens {% if request.GET.status == 'sold' %}is-active{% endif %}"
+              hx-get="{% url 'stockdiary:diary_list' %}?status=sold"
+              hx-target="#diary-container" hx-push-url="true" hx-include="#filterPanel,#optimizedSearchForm">
+        終了
+      </button>
+    </div>
+  </div>
+  {% endif %}
+
   <!-- 日記コンテナ -->
   <div id="diary-container" class="home-diary-grid">
     {% include "stockdiary/partials/diary_list.html" with diaries=diaries page_obj=page_obj %}
