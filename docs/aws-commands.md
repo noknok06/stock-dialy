@@ -2,6 +2,55 @@
 
 ---
 
+## SSH 接続
+
+### 基本コマンド
+
+```bash
+ssh -i ~/.ssh/stock-dialy-key.pem ec2-user@<EIP>
+```
+
+| 部分 | 内容 |
+|------|------|
+| `-i ~/.ssh/stock-dialy-key.pem` | 秘密鍵のパス |
+| `ec2-user` | Amazon Linux 2023 のデフォルトユーザー名（変更不要） |
+| `<EIP>` | Elastic IP（`terraform output` または AWS コンソールで確認） |
+
+### IP アドレスの確認方法
+
+```bash
+# Terraform output から確認（インフラ構築後）
+cd infra/terraform
+terraform output ec2_public_ip
+
+# Makefile がある場合は SSH まで自動化されている
+make ssh
+```
+
+### よくあるエラー
+
+| エラー | 原因 | 対処 |
+|--------|------|------|
+| `Permission denied (publickey)` | 秘密鍵が違う / 権限が緩い | `chmod 600 ~/.ssh/stock-dialy-key.pem` |
+| `Connection timed out` | セキュリティグループの SSH 許可 IP が違う | `make apply` で IP を更新（Makefile の MY_IP が自動取得） |
+| `WARNING: UNPROTECTED PRIVATE KEY FILE` | .pem の権限が 600 になっていない | `chmod 600 ~/.ssh/stock-dialy-key.pem` |
+| `Host key verification failed` | EC2 を再作成して IP が変わった | `ssh-keygen -R <旧EIP>` で既知ホストを削除 |
+
+### キーペアの準備（初回のみ）
+
+```bash
+# 作成
+aws ec2 create-key-pair --key-name stock-dialy-key \
+  --query 'KeyMaterial' --output text > ~/.ssh/stock-dialy-key.pem
+
+# 権限設定（必須）
+chmod 600 ~/.ssh/stock-dialy-key.pem
+```
+
+> 秘密鍵（.pem）は作成時の1回しかダウンロードできない。紛失したらキーペアを作り直してEC2を再作成。
+
+---
+
 ## 0. 前提準備（初回のみ）
 
 ```bash
