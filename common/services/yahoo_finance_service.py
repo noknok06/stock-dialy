@@ -1,7 +1,8 @@
 # common/services/yahoo_finance_service.py
 import urllib.request
 import urllib.parse
-import defusedxml.ElementTree as ET
+import xml.etree.ElementTree as ET
+import defusedxml.ElementTree as _defused_ET
 from datetime import datetime
 import yfinance as yf
 import pandas as pd
@@ -364,7 +365,7 @@ class YahooFinanceService:
             req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
             with urllib.request.urlopen(req, timeout=5) as resp:  # nosec B310 — URLスキームは https:// にハードコード
                 content = resp.read()
-            root = ET.fromstring(content)
+            root = _defused_ET.fromstring(content)
             for item in root.findall('.//item')[:max_items]:
                 title_el = item.find('title')
                 source_el = item.find('source')
