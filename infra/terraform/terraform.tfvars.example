@@ -1,0 +1,23 @@
+# このファイルを terraform.tfvars にコピーして値を埋める。
+# terraform.tfvars は機密を含むため .gitignore 済み（コミット禁止）。
+
+project   = "stock-dialy"
+region    = "ap-northeast-1"
+
+# EC2 へ SSH するための既存キーペア名（AWS コンソール/CLI で事前作成）
+key_pair_name = "stock-dialy-key"
+
+# SSH を許可する自分の固定 IP（必ず /32 で絞る）
+ssh_ingress_cidr = "203.0.113.10/32"
+
+# RDS マスターパスワード（機密。環境変数 TF_VAR_db_password での受け渡しを推奨）
+db_password = "CHANGE_ME_strong_password"
+
+# S3 バケット名（グローバルで一意にする）
+media_bucket_name = "stock-dialy-media-prod"
+
+# 任意: ドメイン・CloudFront・SES（段階導入。初期は未設定/false で可）
+domain_name         = ""
+acm_certificate_arn = ""
+enable_cloudfront   = false
+enable_ses          = false
