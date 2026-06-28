@@ -1345,7 +1345,7 @@ class FinancialBenchmarkAdmin(admin.ModelAdmin):
 
 
 # 管理画面のカスタムCSS
-admin.site.site_header = mark_safe('''
+admin.site.site_header = mark_safe('''  # nosec B308 — 静的CSSリテラル、ユーザー入力なし
 <style>
 .badge { 
     display: inline-block; 
