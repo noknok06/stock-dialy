@@ -172,6 +172,11 @@ class StockDiary(models.Model):
             return 'recent'
         return None
 
+    @property
+    def disclosure_freshness(self):
+        """recent_disclosure_status の別名。"""
+        return self.recent_disclosure_status
+
     def update_aggregates(self):
         """集計フィールドを再計算して save() する。
 
