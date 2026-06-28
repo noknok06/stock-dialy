@@ -1,7 +1,7 @@
 # common/services/yahoo_finance_service.py
 import urllib.request
 import urllib.parse
-import xml.etree.ElementTree as ET
+import defusedxml.ElementTree as ET
 from datetime import datetime
 import yfinance as yf
 import pandas as pd

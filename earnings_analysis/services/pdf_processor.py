@@ -41,7 +41,7 @@ class PDFProcessor:
             logger.info(f"PDFダウンロード開始: {pdf_url}")
 
             # URLからファイル名を生成（ハッシュ化）
-            url_hash = hashlib.md5(pdf_url.encode()).hexdigest()
+            url_hash = hashlib.md5(pdf_url.encode(), usedforsecurity=False).hexdigest()
             local_path = os.path.join(self.cache_dir, f"{url_hash}.pdf")
 
             # PDFをダウンロード（キャッシュしない）
