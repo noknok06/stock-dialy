@@ -33,9 +33,9 @@ resource "aws_db_instance" "main" {
   publicly_accessible    = false
   multi_az               = false
 
-  # バックアップ（無料枠内。RDS の自動バックアップは追加課金なし）
-  backup_retention_period = 7
-  backup_window           = "18:00-19:00" # UTC = 03:00-04:00 JST
+  # 無料枠では backup_retention_period = 0 が必須（自動バックアップ無効）
+  # 学習完了後 Supabase 移行前に手動スナップショットで代替する
+  backup_retention_period = 0
   maintenance_window      = "Mon:19:30-Mon:20:30"
 
   auto_minor_version_upgrade = true
