@@ -1082,6 +1082,37 @@ class DiarySummaryView(LoginRequiredMixin, TemplateView):
             ).values_list('diary__stock_symbol', flat=True)
         )
 
+        # 取引回数を別クエリで集計（「向き合った量」の一要素。JOIN乗算を回避）
+        txn_count_map = dict(
+            Transaction.objects.filter(
+                diary__user=user,
+                diary__stock_symbol__isnull=False,
+            )
+            .exclude(diary__stock_symbol='')
+            .values('diary__stock_symbol')
+            .annotate(cnt=Count('id'))
+            .values_list('diary__stock_symbol', 'cnt')
+        )
+
+        # 検証（Verdict）の的中数・総数を銘柄ごとに集計（「成果」の一要素）。
+        # 的中の判定は metrics（意味定義の正本）に委譲する。
+        from .models import Verdict
+        from .services import metrics
+        verdict_map = {}  # symbol -> {'hit': int, 'total': int}
+        for r in (
+            Verdict.objects.filter(
+                thesis__diary__user=user,
+                thesis__diary__stock_symbol__isnull=False,
+            )
+            .exclude(thesis__diary__stock_symbol='')
+            .values('thesis__diary__stock_symbol', 'hypothesis_result')
+        ):
+            sym = r['thesis__diary__stock_symbol']
+            d = verdict_map.setdefault(sym, {'hit': 0, 'total': 0})
+            d['total'] += 1
+            if metrics.is_hypothesis_hit(r['hypothesis_result']):
+                d['hit'] += 1
+
         # CompanyMaster で未設定業種を補完（旧 StockListView から引き継ぎ）
         symbols = [row['stock_symbol'] for row in diary_agg]
         company_sector_map = {
@@ -1103,16 +1134,25 @@ class DiarySummaryView(LoginRequiredMixin, TemplateView):
                 state = 'live'
             else:
                 state = 'closed'
+            note_count = note_count_map.get(sym, 0)
+            verdict = verdict_map.get(sym, {'hit': 0, 'total': 0})
             summary_list.append({
                 'symbol': sym,
                 'name': row['stock_name'],
                 'sector': sector,
                 'latest_date': row['latest_updated'],
-                'note_count': note_count_map.get(sym, 0),
+                'note_count': note_count,
                 'diary_count': row['diary_count'],
+                # 「向き合った量」: 日記＋ノートの累計記録数と取引回数
+                'record_count': row['diary_count'] + note_count,
+                'txn_count': txn_count_map.get(sym, 0),
                 'is_holding': is_holding,
                 'state': state,
                 'realized_profit': int(row['total_realized'] or 0),
+                # 「成果」: 検証の的中数／総数（検証がある銘柄のみ意味を持つ）
+                'verdict_hit': verdict['hit'],
+                'verdict_total': verdict['total'],
+                'verdict_label': f"{verdict['hit']}/{verdict['total']}" if verdict['total'] else '',
                 'disclosure': row['latest_disclosure'] or '',
                 'diary_id': None,
             })
@@ -1201,6 +1241,20 @@ class DiarySummaryView(LoginRequiredMixin, TemplateView):
         time_list = sorted(summary_list, key=lambda x: x['latest_date'] or _epoch, reverse=True)
         symbol_list = sorted(summary_list, key=lambda x: x['symbol'])
 
+        # 銘柄別テーブル（量×成果の対比）の並び替え。
+        # リストビューの lens/sort とは独立に、専用のソート軸を持つ。
+        table_sort = self.request.GET.get('tsort', 'record_desc')
+        table_sort_mapping = {
+            'record_desc': (lambda x: x['record_count'], True),
+            'txn_desc':    (lambda x: x['txn_count'], True),
+            'profit_desc': (lambda x: x['realized_profit'], True),
+            'profit_asc':  (lambda x: x['realized_profit'], False),
+            'hit_desc':    (lambda x: (x['verdict_hit'] / x['verdict_total']) if x['verdict_total'] else -1, True),
+            'symbol':      (lambda x: x['symbol'], False),
+        }
+        t_key, t_reverse = table_sort_mapping.get(table_sort, table_sort_mapping['record_desc'])
+        table_list = sorted(summary_list, key=t_key, reverse=t_reverse)
+
         # レンズタブ定義
         lens_tabs = [
             ('state',  '状態',   None),
@@ -1225,6 +1279,16 @@ class DiarySummaryView(LoginRequiredMixin, TemplateView):
 
         context.update({
             'summary_list': summary_list if lens in ('state', 'theme') else (time_list if lens == 'time' else symbol_list),
+            'table_list': table_list,
+            'table_sort': table_sort,
+            'table_sorts': [
+                ('record_desc', '記録が多い'),
+                ('txn_desc',    '取引が多い'),
+                ('profit_desc', '損益（上位）'),
+                ('profit_asc',  '損益（下位）'),
+                ('hit_desc',    '的中率'),
+                ('symbol',      'コード順'),
+            ],
             'search_query': search_query,
             'sort_by': sort_by,
             'sectors': sectors,

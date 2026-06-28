@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static humanize %}
 
 {% block title %}日記一覧 - カブログ{% endblock %}
 
@@ -171,6 +171,28 @@
 .ds-symbol-table tbody tr { cursor: pointer; }
 .ds-symbol-table tbody tr:hover td { background: var(--paper-sunken); }
 .ds-symbol-table td:not(:first-child) { text-align: center; }
+/* 数値列は右寄せ・等幅で対比しやすく */
+.ds-symbol-table th.num, .ds-symbol-table td.num {
+  text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+/* 損益・的中は共通バッジ（components.css の .badge / _profit_display）を使用。
+   セル内では等幅で右寄せに整え、未確定値はミュート表示にする。 */
+.ds-symbol-table td.num .badge { font-variant-numeric: tabular-nums; }
+.ds-num-empty { color: var(--faint-ink); }
+
+/* 銘柄テーブルのソート軸 */
+.ds-table-sort {
+  display: flex; gap: 0.3rem; flex-wrap: wrap;
+  margin: 0.75rem 0 0.25rem;
+}
+.ds-tsort {
+  font-size: 0.72rem; color: var(--muted-ink); text-decoration: none;
+  padding: 0.2rem 0.55rem; border-radius: 999px;
+  border: 1px solid var(--hairline); white-space: nowrap;
+}
+.ds-tsort.is-active {
+  color: var(--paper); background: var(--ink); border-color: var(--ink);
+}
 
 /* 空状態 */
 .ds-empty {
@@ -207,8 +229,8 @@
       <span class="ds-total">{{ summary_list|length }}銘柄</span>
     </div>
     <div class="ds-view-toggle" id="ds-view-toggle">
-      <button class="ds-view-btn is-active" data-view="list" onclick="setView('list')">リスト</button>
-      <button class="ds-view-btn"           data-view="table" onclick="setView('table')">銘柄別</button>
+      <button class="ds-view-btn"           data-view="list" onclick="setView('list')">リスト</button>
+      <button class="ds-view-btn is-active" data-view="table" onclick="setView('table')">銘柄別</button>
     </div>
   </div>
 
@@ -226,8 +248,8 @@
     </div>
   </form>
 
-  {# ── リストビュー ── #}
-  <div id="ds-list-view">
+  {# ── リストビュー（既定は銘柄別。スクリプトで切替）── #}
+  <div id="ds-list-view" style="display:none">
 
     {# レンズタブ #}
     <div class="ds-lenses">
@@ -283,36 +305,49 @@
     {% endif %}
   </div>
 
-  {# ── 銘柄テーブルビュー ── #}
-  <div id="ds-table-view" style="display:none">
-    {% if summary_list %}
+  {# ── 銘柄テーブルビュー（量×成果の対比）。既定ビュー ── #}
+  <div id="ds-table-view">
+    {% if table_list %}
+
+    {# 量×成果の対比軸でソート（リストビューの lens とは独立） #}
+    <div class="ds-table-sort">
+      {% for ts_id, ts_label in table_sorts %}
+      <a href="?lens={{ lens }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}&tsort={{ ts_id }}#table"
+         class="ds-tsort {% if table_sort == ts_id %}is-active{% endif %}">{{ ts_label }}</a>
+      {% endfor %}
+    </div>
+
     <table class="ds-symbol-table">
       <thead>
         <tr>
           <th>銘柄</th>
-          <th>状態</th>
-          <th>記録</th>
-          <th>最終更新</th>
+          <th class="num" title="日記＋ノートの累計">記録</th>
+          <th class="num">取引</th>
+          <th class="num">損益</th>
+          <th class="num" title="仮説の的中／検証数">的中</th>
         </tr>
       </thead>
       <tbody>
-        {% for stock in summary_list|dictsort:"symbol" %}
+        {% for stock in table_list %}
         <tr onclick="location.href='{% if stock.diary_id %}{% url 'stockdiary:detail' pk=stock.diary_id %}{% else %}{% url 'stockdiary:home' %}?query={{ stock.symbol }}{% endif %}'">
           <td>
             <span style="display:flex;align-items:center;gap:0.5rem;">
-              <span class="ds-row-dot ds-row-dot--{{ stock.state }}"></span>
+              <span class="ds-row-dot ds-row-dot--{{ stock.state }}" title="{% if stock.state == 'due' %}検証待ち{% elif stock.state == 'live' %}保有中{% else %}終了{% endif %}"></span>
               <span style="font-weight:600;">{{ stock.name }}</span>
               <span class="ds-row-code">{{ stock.symbol }}</span>
             </span>
           </td>
-          <td><span class="ds-row-state--{{ stock.state }}">
-            {% if stock.state == 'due' %}検証待ち
-            {% elif stock.state == 'live' %}保有中
-            {% else %}終了{% endif %}
-          </span></td>
-          <td style="color:var(--muted-ink);font-variant-numeric:tabular-nums;">{{ stock.note_count }}</td>
-          <td style="color:var(--faint-ink);white-space:nowrap;">
-            {% if stock.latest_date %}{{ stock.latest_date|date:"Y/m/d" }}{% else %}—{% endif %}
+          <td class="num">{{ stock.record_count|intcomma }}</td>
+          <td class="num">{{ stock.txn_count|intcomma }}</td>
+          <td class="num">
+            {% if stock.realized_profit != 0 %}
+              {% include "stockdiary/components/_profit_display.html" with profit=stock.realized_profit style="badge" size="sm" show_icon=False decimals=0 %}
+            {% else %}<span class="ds-num-empty">—</span>{% endif %}
+          </td>
+          <td class="num">
+            {% if stock.verdict_total %}
+              {% include "stockdiary/components/_badge.html" with text=stock.verdict_label type="secondary" size="sm" %}
+            {% else %}<span class="ds-num-empty">—</span>{% endif %}
           </td>
         </tr>
         {% endfor %}
@@ -330,6 +365,9 @@ function setView(v) {
   document.getElementById('ds-list-view').style.display  = v === 'list'  ? '' : 'none';
   document.getElementById('ds-table-view').style.display = v === 'table' ? '' : 'none';
   document.querySelectorAll('.ds-view-btn').forEach(b => b.classList.toggle('is-active', b.dataset.view === v));
+  try { localStorage.setItem('ds-view', v); } catch (e) {}
 }
+// 既定は常に銘柄別ビュー（保存値に関わらず table を開く）。
+setView('table');
 </script>
 {% endblock %}
