@@ -362,7 +362,7 @@ class YahooFinanceService:
             query = urllib.parse.quote(query_str)
             url = f"https://news.google.com/rss/search?q={query}&hl=ja&gl=JP&ceid=JP:ja"
             req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, timeout=5) as resp:
+            with urllib.request.urlopen(req, timeout=5) as resp:  # nosec B310 — URLスキームは https:// にハードコード
                 content = resp.read()
             root = ET.fromstring(content)
             for item in root.findall('.//item')[:max_items]:
