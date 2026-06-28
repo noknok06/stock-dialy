@@ -586,12 +586,14 @@ CONTENT_SECURITY_POLICY = {
 
 # USE_S3=True のとき S3/CloudFront ドメインを CSP の各ディレクティブに追加
 if USE_S3:
-    _s3_csp_domain = AWS_S3_CUSTOM_DOMAIN or f'{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com'
-    _s3_csp_origin = f'https://{_s3_csp_domain}'
+    # S3 は global(bucket.s3.amazonaws.com) と regional(bucket.s3.region.amazonaws.com) 両方の
+    # URL で配信されるため *.amazonaws.com でまとめてカバーする
+    _s3_origins = ['https://*.amazonaws.com']
+    if AWS_S3_CUSTOM_DOMAIN:
+        _s3_origins.append(f'https://{AWS_S3_CUSTOM_DOMAIN}')
     for _directive in ('default-src', 'script-src', 'style-src', 'font-src', 'img-src', 'connect-src'):
-        CONTENT_SECURITY_POLICY['DIRECTIVES'].setdefault(_directive, []).append(_s3_csp_origin)
-    # manifest-src は default-src フォールバックで拾えるが明示的に追加
-    CONTENT_SECURITY_POLICY['DIRECTIVES'].setdefault('manifest-src', []).extend(["'self'", _s3_csp_origin])
+        CONTENT_SECURITY_POLICY['DIRECTIVES'].setdefault(_directive, []).extend(_s3_origins)
+    CONTENT_SECURITY_POLICY['DIRECTIVES']['manifest-src'] = ["'self'"] + _s3_origins
 # =============================================================================
 # 現在使用していない設定（コメントアウト）
 # =============================================================================
