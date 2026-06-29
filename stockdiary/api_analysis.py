@@ -389,6 +389,53 @@ def add_note(request, symbol: str):
 
 
 @csrf_exempt
+@require_http_methods(['DELETE'])
+@_require_analysis_key
+def delete_note(request, symbol: str, note_id: int):
+    """
+    継続記録（DiaryNote）を1件削除する。
+
+    DELETE /api/analysis/diary/<symbol>/notes/<note_id>/
+    Authorization: Bearer <key>
+
+    削除後は reason＋残りノートの和集合でタグを再同期する
+    （削除したノートにしか無かった @タグはタグ欄からも解除される）。
+    書き込み先ユーザーは ANALYSIS_API_USER 環境変数で固定。
+    """
+    user, err = _get_api_user()
+    if err:
+        return err
+
+    symbol = symbol.upper().strip()
+    diary = StockDiary.objects.filter(
+        stock_symbol__iexact=symbol, user=user
+    ).first()
+    if not diary:
+        return JsonResponse(
+            {'error': f'{symbol} の日記が見つかりません（ユーザー: {user.username}）'},
+            status=404,
+        )
+
+    note = diary.notes.filter(id=note_id).first()
+    if not note:
+        return JsonResponse(
+            {'error': f'ノート(id={note_id}) が {symbol} の日記に見つかりません'},
+            status=404,
+        )
+
+    note.delete()
+    synced_tags = _sync_diary_tags(diary, user)
+
+    return JsonResponse({
+        'success': True,
+        'symbol': symbol,
+        'diary_name': diary.stock_name,
+        'deleted_note_id': note_id,
+        'tags': synced_tags,
+    })
+
+
+@csrf_exempt
 @require_http_methods(['PATCH'])
 @_require_analysis_key
 def update_reason(request, symbol: str):

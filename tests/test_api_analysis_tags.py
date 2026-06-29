@@ -8,13 +8,14 @@
   書き込み後に呼ぶよう修正した。その同期挙動を固定する回帰テスト。
 """
 import json
+from datetime import date
 
 import pytest
 from django.test import RequestFactory
 from django.contrib.auth import get_user_model
 
 from stockdiary import api_analysis
-from stockdiary.models import StockDiary
+from stockdiary.models import StockDiary, DiaryNote
 
 User = get_user_model()
 pytestmark = pytest.mark.django_db
@@ -53,6 +54,10 @@ def _post(path, payload):
         path, data=json.dumps(payload), content_type='application/json',
         HTTP_AUTHORIZATION='Bearer testkey',
     )
+
+
+def _delete(path):
+    return RequestFactory().delete(path, HTTP_AUTHORIZATION='Bearer testkey')
 
 
 def test_update_reason_syncs_tags_from_body(auth_settings, diary):
@@ -103,3 +108,48 @@ def test_update_reason_removes_stale_tags(auth_settings, diary):
     )
     diary.refresh_from_db()
     assert set(diary.tags.values_list('name', flat=True)) == {'世界トップ'}
+
+
+def test_delete_note_removes_note_and_resyncs_tags(auth_settings, diary):
+    """ノート削除で、そのノートにしか無かった @タグがタグ欄から解除される。"""
+    # reason 由来のタグ（残るべき）
+    api_analysis.update_reason(
+        _patch('/api/analysis/diary/7203/reason/', {'reason': '`@世界トップ`'}), '7203'
+    )
+    # ノート由来のタグ（削除で消えるべき）
+    resp = api_analysis.add_note(
+        _post('/api/analysis/diary/7203/notes/', {'content': '`@半導体`', 'topic': '決算分析'}),
+        '7203',
+    )
+    note_id = json.loads(resp.content)['note_id']
+    diary.refresh_from_db()
+    assert {'世界トップ', '半導体'} <= set(diary.tags.values_list('name', flat=True))
+
+    # 削除
+    response = api_analysis.delete_note(
+        _delete(f'/api/analysis/diary/7203/notes/{note_id}/'), '7203', note_id
+    )
+    assert response.status_code == 200
+    body = json.loads(response.content)
+    assert body['deleted_note_id'] == note_id
+    assert set(body['tags']) == {'世界トップ'}
+
+    assert not DiaryNote.objects.filter(id=note_id).exists()
+    diary.refresh_from_db()
+    assert set(diary.tags.values_list('name', flat=True)) == {'世界トップ'}
+
+
+def test_delete_note_404_for_other_diary(auth_settings, diary, api_user):
+    """別の日記のノートIDは削除できない（404）。"""
+    other = StockDiary.objects.create(
+        user=api_user, stock_name='ソニー', stock_symbol='6758', reason=''
+    )
+    note = DiaryNote.objects.create(
+        diary=other, content='x', topic='決算分析', note_type='analysis', date=date(2026, 6, 29)
+    )
+
+    response = api_analysis.delete_note(
+        _delete(f'/api/analysis/diary/7203/notes/{note.id}/'), '7203', note.id
+    )
+    assert response.status_code == 404
+    assert DiaryNote.objects.filter(id=note.id).exists()

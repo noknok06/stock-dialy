@@ -90,6 +90,7 @@ urlpatterns = [
     path('api/analysis/portfolio/', api_analysis.portfolio_summary, name='api_analysis_portfolio'),
     # 書き込み（ANALYSIS_API_USER で対象ユーザーを固定）
     path('api/analysis/diary/<str:symbol>/notes/', api_analysis.add_note, name='api_analysis_add_note'),
+    path('api/analysis/diary/<str:symbol>/notes/<int:note_id>/', api_analysis.delete_note, name='api_analysis_delete_note'),
     path('api/analysis/diary/<str:symbol>/reason/', api_analysis.update_reason, name='api_analysis_update_reason'),
 
     # APIエンドポイント（将来的な拡張用）

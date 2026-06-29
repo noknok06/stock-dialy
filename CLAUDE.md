@@ -435,6 +435,7 @@ Claude Code
 | `GET /api/analysis/diary/<symbol>/` | 指定銘柄の日記全体＋取引履歴＋継続記録＋**最新ニュース** |
 | `GET /api/analysis/portfolio/` | 業種分布・損益合計などポートフォリオサマリー |
 | `POST /api/analysis/diary/<symbol>/notes/` | **継続記録（DiaryNote）を追加**（書き込み）。書き込み先ユーザーは `ANALYSIS_API_USER` で固定 |
+| `DELETE /api/analysis/diary/<symbol>/notes/<note_id>/` | **継続記録を1件削除**（書き込み）。削除後にタグを再同期する |
 | `PATCH /api/analysis/diary/<symbol>/reason/` | **日記本体の投資理由（reason）を更新**（書き込み）。旧内容は `ReasonVersion` に自動退避 |
 
 クエリパラメータ:
