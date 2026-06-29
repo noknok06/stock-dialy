@@ -1,23 +1,38 @@
 # stockdiary/api_analysis.py
 """
-Claude Code などの外部ツール向け 読み取り専用分析API。
+Claude Code などの外部ツール向け分析API（読み取り＋書き込み）。
+
 認証: Authorization: Bearer <ANALYSIS_API_KEY> ヘッダー。
-キーは環境変数 ANALYSIS_API_KEY で設定（manage.py generate_analysis_key で生成）。
+書き込み先ユーザー: 環境変数 ANALYSIS_API_USER で固定（サーバー側で決まる）。
+
+セットアップ:
+    python manage.py generate_analysis_key
+    # .env に ANALYSIS_API_KEY と ANALYSIS_API_USER を追記
+    # gunicorn reload
+
 従量課金なし: ニュースは yfinance.news（無料）を使用。
 """
+import json
 import logging
-from datetime import datetime, timezone as dt_timezone
+from datetime import date, datetime, timezone as dt_timezone
 from functools import wraps
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.http import JsonResponse
-from django.views.decorators.http import require_GET
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_GET, require_http_methods
 
-from .models import StockDiary
+from .models import DiaryNote, ReasonVersion, StockDiary
 from .utils import is_japanese_stock
 
 logger = logging.getLogger(__name__)
+User = get_user_model()
 
+# ------------------------------------------------------------------ #
+#  共通ヘルパー
+# ------------------------------------------------------------------ #
 
 def _require_analysis_key(view_func):
     """ANALYSIS_API_KEY による Bearer 認証デコレータ"""
@@ -36,6 +51,26 @@ def _require_analysis_key(view_func):
     return wrapper
 
 
+def _get_api_user():
+    """
+    書き込み操作の対象ユーザーを返す。
+    ANALYSIS_API_USER 環境変数で固定（呼び出し元からは変更不可）。
+    """
+    username = getattr(settings, 'ANALYSIS_API_USER', '').strip()
+    if not username:
+        return None, JsonResponse(
+            {'error': 'ANALYSIS_API_USER が未設定です。.env に追記してサーバーを再起動してください'},
+            status=503,
+        )
+    try:
+        return User.objects.get(username=username), None
+    except User.DoesNotExist:
+        return None, JsonResponse(
+            {'error': f'ユーザー "{username}" が存在しません。ANALYSIS_API_USER を確認してください'},
+            status=503,
+        )
+
+
 def _fetch_yfinance_news(stock_symbol: str, limit: int = 10) -> list[dict]:
     """yfinance でニュースを取得（無料）"""
     try:
@@ -45,7 +80,6 @@ def _fetch_yfinance_news(stock_symbol: str, limit: int = 10) -> list[dict]:
         raw_news = ticker.news or []
         results = []
         for item in raw_news[:limit]:
-            # yfinance v0.2 以降は content_dict 構造が変わる場合があるため両対応
             content = item.get('content') or item
             title = content.get('title') or item.get('title', '')
             link = (
@@ -57,7 +91,7 @@ def _fetch_yfinance_news(stock_symbol: str, limit: int = 10) -> list[dict]:
                 (content.get('provider') or {}).get('displayName')
                 or item.get('publisher', '')
             )
-            pub_ts = item.get('providerPublishTime') or (content.get('pubDate') and None)
+            pub_ts = item.get('providerPublishTime') or None
             if pub_ts:
                 try:
                     pub_date = datetime.fromtimestamp(pub_ts, tz=dt_timezone.utc).strftime('%Y-%m-%d %H:%M UTC')
@@ -78,7 +112,7 @@ def _fetch_yfinance_news(stock_symbol: str, limit: int = 10) -> list[dict]:
 
 
 # ------------------------------------------------------------------ #
-#  エンドポイント
+#  読み取りエンドポイント
 # ------------------------------------------------------------------ #
 
 @require_GET
@@ -101,8 +135,9 @@ def holdings(request):
             'user__username',
         )
     )
+    rows = list(diaries)
     return JsonResponse({
-        'count': len(list(diaries)),
+        'count': len(rows),
         'holdings': [
             {
                 'id': d['id'],
@@ -115,7 +150,7 @@ def holdings(request):
                 'since': d['first_purchase_date'].isoformat() if d['first_purchase_date'] else None,
                 'user': d['user__username'],
             }
-            for d in diaries
+            for d in rows
         ],
     })
 
@@ -158,6 +193,7 @@ def diary_detail(request, symbol: str):
 
     notes = [
         {
+            'id': n.id,
             'date': n.date.isoformat(),
             'type': n.note_type,
             'topic': n.topic,
@@ -168,7 +204,6 @@ def diary_detail(request, symbol: str):
 
     tags = list(diary.tags.values_list('name', flat=True))
 
-    # ステータス判定
     if diary.current_quantity > 0:
         status = '保有中'
     elif diary.transaction_count > 0:
@@ -176,7 +211,6 @@ def diary_detail(request, symbol: str):
     else:
         status = 'メモ'
 
-    # ニュース（デフォルトON、?news=0 でスキップ）
     fetch_news = request.GET.get('news', '1') != '0'
     news = _fetch_yfinance_news(symbol) if fetch_news else []
 
@@ -208,7 +242,7 @@ def portfolio_summary(request):
     GET /api/analysis/portfolio/
     Authorization: Bearer <key>
     """
-    from django.db.models import Sum, Count, Q
+    from django.db.models import Count, Q, Sum
 
     qs = StockDiary.objects.filter(user__isnull=False)
 
@@ -219,7 +253,6 @@ def portfolio_summary(request):
         total_realized_profit=Sum('realized_profit'),
     )
 
-    # 業種分布（保有中のみ）
     sector_dist = (
         qs.filter(current_quantity__gt=0)
         .values('sector')
@@ -240,4 +273,162 @@ def portfolio_summary(request):
             }
             for s in sector_dist
         ],
+    })
+
+
+# ------------------------------------------------------------------ #
+#  書き込みエンドポイント
+# ------------------------------------------------------------------ #
+
+_VALID_NOTE_TYPES = {c[0] for c in DiaryNote.TYPE_CHOICES}
+
+
+@csrf_exempt
+@require_http_methods(['POST'])
+@_require_analysis_key
+def add_note(request, symbol: str):
+    """
+    継続記録（DiaryNote）を追加する。
+
+    POST /api/analysis/diary/<symbol>/notes/
+    Authorization: Bearer <key>
+    Content-Type: application/json
+
+    {
+      "content":   "分析内容...",          // 必須
+      "note_type": "analysis",             // 省略可（デフォルト: analysis）
+                                           //   analysis / news / earnings /
+                                           //   insight / risk / retrospective / other
+      "topic":     "決算後の見直し",       // 省略可（retrospective 以外は任意）
+      "date":      "2024-01-15"            // 省略可（デフォルト: 今日）
+    }
+
+    書き込み先ユーザーは ANALYSIS_API_USER 環境変数で固定（呼び出し元からは変更不可）。
+    """
+    user, err = _get_api_user()
+    if err:
+        return err
+
+    symbol = symbol.upper().strip()
+    diary = StockDiary.objects.filter(
+        stock_symbol__iexact=symbol, user=user
+    ).first()
+    if not diary:
+        return JsonResponse(
+            {'error': f'{symbol} の日記が見つかりません（ユーザー: {user.username}）'},
+            status=404,
+        )
+
+    try:
+        body = json.loads(request.body)
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return JsonResponse({'error': 'リクエストボディが不正な JSON です'}, status=400)
+
+    content = (body.get('content') or '').strip()
+    if not content:
+        return JsonResponse({'error': 'content は必須です'}, status=400)
+    if len(content) > 5000:
+        return JsonResponse({'error': 'content は 5000 文字以内にしてください'}, status=400)
+
+    note_type = (body.get('note_type') or 'analysis').strip()
+    if note_type not in _VALID_NOTE_TYPES:
+        return JsonResponse(
+            {'error': f'note_type が不正です。使用可能: {sorted(_VALID_NOTE_TYPES)}'},
+            status=400,
+        )
+
+    topic = (body.get('topic') or '').strip()
+
+    raw_date = body.get('date')
+    if raw_date:
+        try:
+            note_date = date.fromisoformat(raw_date)
+        except ValueError:
+            return JsonResponse({'error': 'date は YYYY-MM-DD 形式で指定してください'}, status=400)
+    else:
+        note_date = date.today()
+
+    note = DiaryNote(
+        diary=diary,
+        content=content,
+        note_type=note_type,
+        topic=topic,
+        date=note_date,
+    )
+    try:
+        note.full_clean()
+        note.save()
+    except ValidationError as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+    return JsonResponse({
+        'success': True,
+        'note_id': note.id,
+        'symbol': symbol,
+        'diary_name': diary.stock_name,
+        'note_type': note.note_type,
+        'topic': note.topic,
+        'date': note.date.isoformat(),
+        'content_length': len(note.content),
+    }, status=201)
+
+
+@csrf_exempt
+@require_http_methods(['PATCH'])
+@_require_analysis_key
+def update_reason(request, symbol: str):
+    """
+    投資理由（reason）を更新する。上書き前の内容は ReasonVersion に自動退避される。
+
+    PATCH /api/analysis/diary/<symbol>/
+    Authorization: Bearer <key>
+    Content-Type: application/json
+
+    {
+      "reason": "更新後の投資理由テキスト..."  // 必須
+    }
+
+    書き込み先ユーザーは ANALYSIS_API_USER 環境変数で固定（呼び出し元からは変更不可）。
+    """
+    user, err = _get_api_user()
+    if err:
+        return err
+
+    symbol = symbol.upper().strip()
+    diary = StockDiary.objects.filter(
+        stock_symbol__iexact=symbol, user=user
+    ).first()
+    if not diary:
+        return JsonResponse(
+            {'error': f'{symbol} の日記が見つかりません（ユーザー: {user.username}）'},
+            status=404,
+        )
+
+    try:
+        body = json.loads(request.body)
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return JsonResponse({'error': 'リクエストボディが不正な JSON です'}, status=400)
+
+    new_reason = (body.get('reason') or '').strip()
+    if not new_reason:
+        return JsonResponse({'error': 'reason は必須です'}, status=400)
+
+    old_reason = diary.reason or ''
+    diary.reason = new_reason
+
+    try:
+        diary.full_clean(exclude=['user', 'stock_name'])
+    except ValidationError as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+    diary.save(update_fields=['reason', 'updated_at'])
+    snapshot = ReasonVersion.snapshot_on_change(diary, old_reason)
+
+    return JsonResponse({
+        'success': True,
+        'symbol': symbol,
+        'diary_name': diary.stock_name,
+        'reason_updated': True,
+        'snapshot_created': snapshot is not None,
+        'reason_length': len(new_reason),
     })

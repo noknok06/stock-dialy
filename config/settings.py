@@ -796,6 +796,8 @@ GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
 # 分析API（Claude Code / 外部ツール向け）
 # generate_analysis_key コマンドで生成し .env に追記する
 ANALYSIS_API_KEY = os.environ.get('ANALYSIS_API_KEY', '')
+# 書き込みAPIの対象ユーザー（サーバー側で固定。呼び出し元からは変更不可）
+ANALYSIS_API_USER = os.environ.get('ANALYSIS_API_USER', '')
 
 AUTO_GENERATE_SUMMARY = True  # 自動要約生成を有効化
 

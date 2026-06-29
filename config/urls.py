@@ -84,9 +84,13 @@ urlpatterns = [
     path('margin/', include('margin_tracking.urls', namespace='margin_tracking')),
 
     # 分析API（Claude Code / 外部ツール向け・Bearer認証）
+    # 読み取り
     path('api/analysis/holdings/', api_analysis.holdings, name='api_analysis_holdings'),
     path('api/analysis/diary/<str:symbol>/', api_analysis.diary_detail, name='api_analysis_diary'),
     path('api/analysis/portfolio/', api_analysis.portfolio_summary, name='api_analysis_portfolio'),
+    # 書き込み（ANALYSIS_API_USER で対象ユーザーを固定）
+    path('api/analysis/diary/<str:symbol>/notes/', api_analysis.add_note, name='api_analysis_add_note'),
+    path('api/analysis/diary/<str:symbol>/reason/', api_analysis.update_reason, name='api_analysis_update_reason'),
 
     # APIエンドポイント（将来的な拡張用）
     # path('api/v1/earnings/', include('earnings_analysis.urls')),  # API専用
