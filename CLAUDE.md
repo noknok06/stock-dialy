@@ -432,6 +432,7 @@ Claude Code
 | パス | 返却内容 |
 |------|----------|
 | `GET /api/analysis/holdings/` | 保有中全銘柄（銘柄コード・名前・数量・平均取得単価・実現損益） |
+| `GET /api/analysis/diaries/` | **記録銘柄の一覧（スクリーニング用・保有/売却/メモ横断）**。`?tags=半導体,AI`（OR）・`?sector=`・`?status=holding\|sold\|memo\|all`・`?user=` で絞り込み。各銘柄に最新の信用倍率を付与（バリュエーションは呼び出し側で補完） |
 | `GET /api/analysis/diary/<symbol>/` | 指定銘柄の日記全体＋取引履歴＋継続記録＋**最新ニュース** |
 | `GET /api/analysis/portfolio/` | 業種分布・損益合計などポートフォリオサマリー |
 | `POST /api/analysis/diary/<symbol>/notes/` | **継続記録（DiaryNote）を追加**（書き込み）。書き込み先ユーザーは `ANALYSIS_API_USER` で固定 |

@@ -330,6 +330,88 @@ def portfolio_summary(request):
     })
 
 
+def _diary_status(diary) -> str:
+    if diary.current_quantity > 0:
+        return '保有中'
+    if diary.transaction_count > 0:
+        return '売却済み'
+    return 'メモ'
+
+
+@require_GET
+@_require_analysis_key
+def list_diaries(request):
+    """
+    記録銘柄の一覧（スクリーニング用・保有/売却/メモを横断）。
+
+    GET /api/analysis/diaries/
+    Authorization: Bearer <key>
+
+    クエリ:
+      ?tags=半導体,AI   いずれかのタグを持つ日記に絞る（OR）
+      ?sector=電気       業種の部分一致で絞る
+      ?status=holding|sold|memo|all（既定 all）
+      ?user=<username>   複数ユーザー環境での絞り込み
+
+    各銘柄に最新の信用倍率（margin_ratio）を付与する（バリュエーションは
+    呼び出し側で yfinance 等から補完する想定＝サーバ側で外部APIは叩かない）。
+    """
+    qs = StockDiary.objects.filter(user__isnull=False).prefetch_related('tags')
+
+    username = request.GET.get('user', '').strip()
+    if username:
+        qs = qs.filter(user__username=username)
+
+    status = request.GET.get('status', 'all').strip()
+    if status == 'holding':
+        qs = qs.filter(current_quantity__gt=0)
+    elif status == 'sold':
+        qs = qs.filter(current_quantity=0, transaction_count__gt=0)
+    elif status == 'memo':
+        qs = qs.filter(transaction_count=0)
+
+    sector = request.GET.get('sector', '').strip()
+    if sector:
+        qs = qs.filter(sector__icontains=sector)
+
+    tags_param = request.GET.get('tags', '').strip()
+    want_tags = [t.strip().lstrip('@') for t in tags_param.split(',') if t.strip()]
+    if want_tags:
+        qs = qs.filter(tags__name__in=want_tags).distinct()
+
+    # 最新週の信用倍率をまとめて引く（JPX週次は全銘柄同一 record_date のため1クエリ）
+    margin_map = {}
+    try:
+        from django.db.models import Max
+        from margin_tracking.models import MarginData
+        latest_date = MarginData.objects.aggregate(d=Max('record_date'))['d']
+        if latest_date:
+            margin_map = {
+                m.stock_code: float(m.margin_ratio) if m.margin_ratio is not None else None
+                for m in MarginData.objects.filter(record_date=latest_date)
+            }
+    except Exception:
+        margin_map = {}
+
+    diaries = []
+    for d in qs.order_by('stock_symbol'):
+        diaries.append({
+            'symbol': d.stock_symbol,
+            'name': d.stock_name,
+            'status': _diary_status(d),
+            'sector': d.sector,
+            'tags': list(d.tags.values_list('name', flat=True)),
+            'current_quantity': float(d.current_quantity),
+            'realized_profit': float(d.realized_profit),
+            'latest_disclosure_date': (
+                d.latest_disclosure_date.isoformat() if d.latest_disclosure_date else None
+            ),
+            'margin_ratio': margin_map.get(d.stock_symbol),
+        })
+
+    return JsonResponse({'count': len(diaries), 'diaries': diaries})
+
+
 # ------------------------------------------------------------------ #
 #  書き込みエンドポイント
 # ------------------------------------------------------------------ #

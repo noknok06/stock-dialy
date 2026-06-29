@@ -86,6 +86,7 @@ urlpatterns = [
     # 分析API（Claude Code / 外部ツール向け・Bearer認証）
     # 読み取り
     path('api/analysis/holdings/', api_analysis.holdings, name='api_analysis_holdings'),
+    path('api/analysis/diaries/', api_analysis.list_diaries, name='api_analysis_list_diaries'),
     path('api/analysis/diary/<str:symbol>/', api_analysis.diary_detail, name='api_analysis_diary'),
     path('api/analysis/portfolio/', api_analysis.portfolio_summary, name='api_analysis_portfolio'),
     # 書き込み（ANALYSIS_API_USER で対象ユーザーを固定）
