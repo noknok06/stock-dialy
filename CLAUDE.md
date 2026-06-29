@@ -434,10 +434,23 @@ Claude Code
 | `GET /api/analysis/holdings/` | 保有中全銘柄（銘柄コード・名前・数量・平均取得単価・実現損益） |
 | `GET /api/analysis/diary/<symbol>/` | 指定銘柄の日記全体＋取引履歴＋継続記録＋**最新ニュース** |
 | `GET /api/analysis/portfolio/` | 業種分布・損益合計などポートフォリオサマリー |
+| `POST /api/analysis/diary/<symbol>/notes/` | **継続記録（DiaryNote）を追加**（書き込み）。書き込み先ユーザーは `ANALYSIS_API_USER` で固定 |
+| `PATCH /api/analysis/diary/<symbol>/reason/` | **日記本体の投資理由（reason）を更新**（書き込み）。旧内容は `ReasonVersion` に自動退避 |
 
 クエリパラメータ:
 - `diary/<symbol>/?news=0` → ニュース取得をスキップ（高速）
 - `diary/<symbol>/?user=<username>` → 複数ユーザー環境での絞り込み
+
+📝 **書き込み本文は markdown をそのまま使ってよい**（見出し `##`・表 `|---|`・
+アポストロフィ可）。日記本体（PATCH）も継続記録（POST）も同じ。
+
+補足: security ミドルウェア（`security/middleware.py` の `_is_suspicious_request`）は
+`/api/` 配下の POST JSON ボディを SQLi/XSS ヒューリスティックで走査し、
+`'`・`--`・`#`・`<...>` を不正とみなす。これが markdown を誤検知して 403
+`Suspicious Request Detected` を返していたため、**`/api/analysis/` だけ本文走査の
+対象外**にした（Bearer 認証・ORM 保存・テンプレート自動エスケープで SQLi/XSS は別途不成立）。
+回帰テスト: `tests/test_security_middleware.py`。
+※ この除外はサーバーへ反映（デプロイ＋再起動）して初めて有効。
 
 ### 認証方式
 ```
@@ -492,6 +505,24 @@ Claude が `diary_detail` エンドポイントを叩き、
   ]
 }
 ```
+
+### 記録時のテンプレート運用（必須）
+
+分析APIで日記・継続記録を**書き込む**ときは、必ず `docs/analysis_templates/` の
+テンプレートに沿って記録する。役割設定・出力制限・タグ運用は `_手順.md` が正本。
+
+| 記録の種類 | 書き込み先 | エンドポイント | 使うテンプレート |
+|------------|------------|----------------|------------------|
+| **企業分析**（ビジネスモデル・稼ぐ力・競合の俯瞰） | 日記本体（`reason`） | `PATCH .../diary/<symbol>/reason/` | `企業説明テンプレート.md` |
+| **決算分析**（決算の質×継続性×アクション判定） | 継続記録（DiaryNote） | `POST .../diary/<symbol>/notes/` | `決算業績分析テンプレート.md` |
+
+- **決算分析を継続記録に書くときは `topic="決算分析"` を必ず指定する。**
+- タグは **`docs/analysis_templates/tag_master.md` から最大4つ**だけ選ぶ
+  （子タグ優先・企業名/コードは不可・マクロは方向矢印付き・マスタにないタグは作らない）。
+- 出力制限（`_手順.md`）: テンプレートの指示文コメントは記録に含めない／
+  3,000字以内（改行含む）／`<h1>` は使わない。
+- 該当テンプレートが未取り込みの分析種別（仮説・ピア比較等。`docs/analysis_templates/README.md`
+  の「⛔ 本文未取り込み」を参照）は、本文が揃うまで記録用途には使わない。
 
 ### 注意事項
 - `holdings/` は全ユーザーのデータを返す（シングルユーザー前提）。
