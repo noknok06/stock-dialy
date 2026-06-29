@@ -166,10 +166,11 @@ with AggregateService.deferred(diary):
 |----------|------|----------|
 | Google Gemini API | AI 銘柄・財務分析 | `GEMINI_API_KEY` |
 | EDINET API | 日本の開示書類取得 | `EDINET_API_KEY` |
-| yfinance | 株価履歴・財務データ | — |
+| yfinance | 株価履歴・財務データ・ニュース | — |
 | Google OAuth | 認証（allauth 経由） | `GOOGLE_CLIENT_ID` |
 | Web Push（VAPID） | プッシュ通知 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_ADMIN_EMAIL` |
 | Gmail SMTP | メール送信 | `EMAIL_HOST_PASSWORD` |
+| **分析API（自前）** | Claude Code など外部ツール向け読み取り専用API | `ANALYSIS_API_KEY` |
 
 ---
 
@@ -399,3 +400,104 @@ JSON を返す View → `api.py` / `api_views.py` に集約する。
 ### 禁止事項
 - ❌ 同じ用途のファイルを複数作成して並行利用する（保守性低下）
 - ❌ 理由なく既存の構造を変更する
+
+---
+
+## Claude Code 分析連携
+
+### 目的
+カブログの実データ（日記・取引・損益）＋最新ニュースを Claude Code から取得し、
+個別銘柄の投資分析を行う。**従量課金ゼロ**（ニュースは yfinance 無料、分析は Claude Code 定額）。
+
+### アーキテクチャ
+```
+Claude Code
+  └─ WebFetch / curl
+       └─ GET /api/analysis/diary/<symbol>/  ← Bearer 認証
+            ├─ StockDiary（日記・取引・継続記録）
+            └─ yfinance.news（最新ニュース・無料）
+```
+
+### 実装ファイル
+
+| ファイル | 役割 |
+|----------|------|
+| `stockdiary/api_analysis.py` | 分析API エンドポイント本体（Bearer認証・読み取り専用） |
+| `stockdiary/management/commands/generate_analysis_key.py` | APIキー生成コマンド |
+| `config/settings.py` | `ANALYSIS_API_KEY = os.environ.get('ANALYSIS_API_KEY', '')` |
+| `config/urls.py` | `/api/analysis/` 以下の URL 登録 |
+
+### エンドポイント一覧
+
+| パス | 返却内容 |
+|------|----------|
+| `GET /api/analysis/holdings/` | 保有中全銘柄（銘柄コード・名前・数量・平均取得単価・実現損益） |
+| `GET /api/analysis/diary/<symbol>/` | 指定銘柄の日記全体＋取引履歴＋継続記録＋**最新ニュース** |
+| `GET /api/analysis/portfolio/` | 業種分布・損益合計などポートフォリオサマリー |
+
+クエリパラメータ:
+- `diary/<symbol>/?news=0` → ニュース取得をスキップ（高速）
+- `diary/<symbol>/?user=<username>` → 複数ユーザー環境での絞り込み
+
+### 認証方式
+```
+Authorization: Bearer <ANALYSIS_API_KEY>
+```
+キーが `.env` 未設定の場合は 503 を返す（誤って公開 API になることを防ぐ）。
+
+### サーバー側セットアップ（初回のみ）
+```bash
+# 1. キー生成（指示に従って .env に追記）
+python manage.py generate_analysis_key
+
+# 2. サーバー再起動
+sudo systemctl reload gunicorn  # または systemctl restart
+```
+
+### Claude Code からの使い方
+```bash
+# 保有銘柄一覧を確認
+curl -H "Authorization: Bearer <KEY>" https://<サーバー>/api/analysis/holdings/
+
+# 7203（トヨタ）を分析
+curl -H "Authorization: Bearer <KEY>" https://<サーバー>/api/analysis/diary/7203/
+```
+
+Claude Code セッション内でのプロンプト例:
+> 「7203の日記データと最新ニュースを /api/analysis/diary/7203/ から取得して、
+>  投資継続判断の観点で分析して」
+
+Claude が `diary_detail` エンドポイントを叩き、
+`investment_reason`（投資理由）・`transactions`（取引履歴）・`notes`（継続記録）・
+`latest_news`（最新ニュース）を一括取得して分析する。
+
+### `diary_detail` レスポンス構造（主要フィールド）
+```json
+{
+  "symbol": "7203",
+  "name": "トヨタ自動車",
+  "status": "保有中",
+  "investment_reason": "投資理由のテキスト...",
+  "current_quantity": 100.0,
+  "avg_cost": 2000.0,
+  "realized_profit": 50000.0,
+  "transactions": [
+    { "date": "2023-04-01", "type": "buy", "price": 2000.0, "quantity": 100.0 }
+  ],
+  "notes": [
+    { "date": "2023-06-01", "type": "analysis", "topic": "決算", "content": "..." }
+  ],
+  "latest_news": [
+    { "title": "...", "publisher": "...", "published_at": "2024-01-15 12:00 UTC", "url": "..." }
+  ]
+}
+```
+
+### 注意事項
+- `holdings/` は全ユーザーのデータを返す（シングルユーザー前提）。
+  マルチユーザーで運用する場合は `?user=<username>` で絞るか、
+  `api_analysis.py` の `holdings()` にユーザーフィルターを追加すること。
+- `ANALYSIS_API_KEY` はセッション認証とは完全に独立。ローテーションは
+  `.env` の書き換え＋サーバー再起動のみで完結する。
+- ニュースは yfinance 経由のため日本株は `.T` サフィックスを自動付与。
+  外国株（`AAPL` 等）はそのままで取得できる。
