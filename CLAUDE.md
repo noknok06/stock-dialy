@@ -519,6 +519,11 @@ Claude が `diary_detail` エンドポイントを叩き、
 - **決算分析を継続記録に書くときは `topic="決算分析"` を必ず指定する。**
 - タグは **`docs/analysis_templates/tag_master.md` から最大4つ**だけ選ぶ
   （子タグ優先・企業名/コードは不可・マクロは方向矢印付き・マスタにないタグは作らない）。
+  本文中の `@タグ` は書き込み後に `diary.tags` へ**自動同期**される（UIと同じ
+  `views._sync_hashtag_tags` を `update_reason`/`add_note` が呼ぶ。追加・解除・
+  方向(↑/↓/→)・df 再計算まで実施。reason とノートの和集合で同期される）。
+  → 別途タグ更新APIを叩く必要はない。レスポンスの `tags` に同期後の一覧が返る。
+  回帰テスト: `tests/test_api_analysis_tags.py`。
 - 出力制限（`_手順.md`）: テンプレートの指示文コメントは記録に含めない／
   3,000字以内（改行含む）／`<h1>` は使わない。
 - 該当テンプレートが未取り込みの分析種別（仮説・ピア比較等。`docs/analysis_templates/README.md`

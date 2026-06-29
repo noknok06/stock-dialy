@@ -71,6 +71,18 @@ def _get_api_user():
         )
 
 
+def _sync_diary_tags(diary, user) -> list[str]:
+    """本文（reason＋全ノート）の @タグを diary.tags へ同期し、結果のタグ名を返す。
+
+    UI の保存フローと同じ正本ロジック（views._sync_hashtag_tags）を使い、
+    タグの追加・解除・方向(↑/↓/→)・df 再計算まで行う。分析API経由の書き込みでも
+    本文中の `@タグ` がタグ欄へ反映されるように、reason/note の保存後に呼ぶ。
+    """
+    from .views import _sync_hashtag_tags  # 循環インポート回避のため遅延 import
+    _sync_hashtag_tags(diary, user)
+    return list(diary.tags.values_list('name', flat=True))
+
+
 def _fetch_yfinance_news(stock_symbol: str, limit: int = 10) -> list[dict]:
     """yfinance でニュースを取得（無料）"""
     try:
@@ -361,6 +373,8 @@ def add_note(request, symbol: str):
     except ValidationError as e:
         return JsonResponse({'error': str(e)}, status=400)
 
+    synced_tags = _sync_diary_tags(diary, user)
+
     return JsonResponse({
         'success': True,
         'note_id': note.id,
@@ -370,6 +384,7 @@ def add_note(request, symbol: str):
         'topic': note.topic,
         'date': note.date.isoformat(),
         'content_length': len(note.content),
+        'tags': synced_tags,
     }, status=201)
 
 
@@ -424,6 +439,8 @@ def update_reason(request, symbol: str):
     diary.save(update_fields=['reason', 'updated_at'])
     snapshot = ReasonVersion.snapshot_on_change(diary, old_reason)
 
+    synced_tags = _sync_diary_tags(diary, user)
+
     return JsonResponse({
         'success': True,
         'symbol': symbol,
@@ -431,4 +448,5 @@ def update_reason(request, symbol: str):
         'reason_updated': True,
         'snapshot_created': snapshot is not None,
         'reason_length': len(new_reason),
+        'tags': synced_tags,
     })
