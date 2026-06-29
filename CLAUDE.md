@@ -440,7 +440,15 @@ Claude Code
 
 クエリパラメータ:
 - `diary/<symbol>/?news=0` → ニュース取得をスキップ（高速）
+- `diary/<symbol>/?margin=0` → 信用残（信用倍率）取得をスキップ
 - `diary/<symbol>/?user=<username>` → 複数ユーザー環境での絞り込み
+
+`diary_detail` は `margin` フィールドを返す（`margin_tracking.MarginData` 連携）。
+JPX週次の信用取引残高から、最新の `margin_ratio`（=買い残/売り残）と直近トレンド
+（`history`・古い順）を含む。信用倍率は需給の補助指標として分析に使う
+（1倍未満＝売り長で取組良好、高倍率・買い残増＝将来の戻り売り圧力＝上値の重し）。
+データが無い銘柄（外国株・未取得）は `margin: null`。回帰テスト:
+`tests/test_api_analysis_margin.py`。
 
 📝 **書き込み本文は markdown をそのまま使ってよい**（見出し `##`・表 `|---|`・
 アポストロフィ可）。日記本体（PATCH）も継続記録（POST）も同じ。

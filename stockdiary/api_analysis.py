@@ -83,6 +83,44 @@ def _sync_diary_tags(diary, user) -> list[str]:
     return list(diary.tags.values_list('name', flat=True))
 
 
+def _fetch_margin_data(symbol: str, weeks: int = 8) -> dict | None:
+    """信用取引残高（JPX週次）の最新値＋直近トレンドを返す。
+
+    margin_tracking.MarginData（銘柄コード単位・週次）から取得する。
+    信用倍率 = 買い残 / 売り残（1未満は売り長＝取組良好の目安、過大は上値の重し）。
+    データが無い銘柄（外国株・未取得）は None を返す。
+    """
+    try:
+        from margin_tracking.models import MarginData
+    except Exception:
+        return None
+
+    rows = list(
+        MarginData.objects
+        .filter(stock_code=symbol)
+        .order_by('-record_date')[:weeks]
+    )
+    if not rows:
+        return None
+
+    def _row(m):
+        return {
+            'date': m.record_date.isoformat(),
+            'long_balance': m.long_balance,
+            'short_balance': m.short_balance,
+            'margin_ratio': float(m.margin_ratio) if m.margin_ratio is not None else None,
+        }
+
+    latest = rows[0]
+    history = [_row(m) for m in reversed(rows)]  # 古い→新しい
+    return {
+        'latest': _row(latest),
+        'history': history,  # 直近 weeks 週（古い順）
+        'note': '信用倍率 = 買い残 / 売り残。1倍未満は売り長（取組良好）、'
+                '高倍率・買い残増は将来の戻り売り圧力（上値の重し）の目安。',
+    }
+
+
 def _fetch_yfinance_news(stock_symbol: str, limit: int = 10) -> list[dict]:
     """yfinance でニュースを取得（無料）"""
     try:
@@ -226,6 +264,9 @@ def diary_detail(request, symbol: str):
     fetch_news = request.GET.get('news', '1') != '0'
     news = _fetch_yfinance_news(symbol) if fetch_news else []
 
+    fetch_margin = request.GET.get('margin', '1') != '0'
+    margin = _fetch_margin_data(symbol) if fetch_margin else None
+
     return JsonResponse({
         'symbol': symbol,
         'name': diary.stock_name,
@@ -241,6 +282,7 @@ def diary_detail(request, symbol: str):
         'transactions': transactions,
         'notes': notes,
         'latest_news': news,
+        'margin': margin,
         'fetched_at': datetime.now(tz=dt_timezone.utc).strftime('%Y-%m-%d %H:%M UTC'),
     })
 
