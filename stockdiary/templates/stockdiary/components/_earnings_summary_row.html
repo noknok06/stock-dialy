@@ -1,0 +1,18 @@
+{# 保有/ウォッチの決算サマリー1行。diary.next_earnings（NextEarnings）が必須 #}
+<a class="ec-row" href="{% url 'stockdiary:detail' diary.id %}">
+  <span class="ec-row-name">
+    <span class="ec-code">{{ diary.stock_symbol }}</span>
+    {{ diary.stock_name }}
+    {% if diary.next_earnings.type %}<span class="ec-type">{{ diary.next_earnings.type }}</span>{% endif %}
+  </span>
+  <span class="ec-row-date">
+    {{ diary.next_earnings.date|date:"Y/m/d" }}
+    {% with d=diary.next_earnings.days_until %}
+      {% if d == 0 %}
+        <span class="ec-badge ec-badge--imminent">本日</span>
+      {% else %}
+        <span class="ec-badge ec-badge--{{ diary.next_earnings.proximity }}">あと{{ d }}日</span>
+      {% endif %}
+    {% endwith %}
+  </span>
+</a>

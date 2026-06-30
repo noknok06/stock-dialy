@@ -23,7 +23,6 @@ from .disclosure_sync import update_diary_disclosure_status
 # 決算予定同期
 from .earnings_calendar_sync import (
     sync_earnings_calendar,
-    update_diary_next_earnings,
     fan_out_earnings_reminders,
 )
 
@@ -36,6 +35,5 @@ __all__ = [
     'BatchService',
     'update_diary_disclosure_status',
     'sync_earnings_calendar',
-    'update_diary_next_earnings',
     'fan_out_earnings_reminders',
 ]

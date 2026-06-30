@@ -2,12 +2,14 @@
 """決算予定の同期・想起サービス
 
 決算予定API（earnings_calendar_api）から当日〜90日後の決算発表予定を取得し、
-EarningsSchedule を洗い替え保存する。あわせて各 StockDiary の next_earnings_date
-を事前計算し、決算前日（翌日決算）の銘柄を記録中のユーザーへアプリ内通知を
-ファンアウトする。
+EarningsSchedule を洗い替え保存する。あわせて決算前日（翌日決算）の銘柄を
+記録中のユーザーへアプリ内通知をファンアウトする。
 
-設計方針（disclosure_sync.py と同じ）:
-- 画面表示時の追加クエリは不要（next_earnings_date に事前計算）
+設計方針:
+- 決算予定は EarningsSchedule（証券コードがキーの決算予定マスタ）を唯一の正とする。
+  日記側へは事前計算カラムを持たせず、表示時に銘柄コードで都度 join する
+  （日記とマスタの二重管理・日次コピーを避ける）。コード→決算の参照ヘルパーは
+  stockdiary/views_earnings.py に置く
 - 日次バッチ（sync_earnings_calendar コマンド）から呼び出す
 - 通知は (user, earnings_schedule) の一意制約 + ignore_conflicts で重複送信を防ぐ
 """
@@ -73,65 +75,6 @@ def sync_earnings_calendar(days: int = 90) -> int:
 
     logger.info('決算予定同期完了: 保存=%s件', len(to_create))
     return len(to_create)
-
-
-def update_diary_next_earnings() -> int:
-    """全ユーザーの StockDiary に「次回決算日」と「決算種別」を事前計算する。
-
-    負荷は日記数ではなくユニーク銘柄数に比例させる（disclosure_sync と同じ方針）。
-
-    Returns:
-        int: 更新した StockDiary レコード数
-    """
-    from stockdiary.models import StockDiary
-    from earnings_analysis.models import EarningsSchedule
-
-    symbols = list(
-        StockDiary.objects
-        .filter(stock_symbol__regex=r'^\d{4}$')
-        .values_list('stock_symbol', flat=True)
-        .distinct()
-    )
-    if not symbols:
-        logger.info('次回決算日更新: 対象銘柄なし')
-        return 0
-
-    today = date.today()
-    # 4桁コードと末尾0付き5桁コードの両方で照合する
-    candidate_codes = []
-    for s in symbols:
-        candidate_codes.append(s)
-        candidate_codes.append(s + '0')
-
-    rows = (
-        EarningsSchedule.objects
-        .filter(securities_code__in=candidate_codes, earnings_date__gte=today)
-        .order_by('securities_code', 'earnings_date')
-        .values('securities_code', 'earnings_date', 'earnings_type')
-    )
-
-    # 銘柄（4桁）ごとの直近の決算予定
-    next_by_symbol = {}
-    for row in rows:
-        ticker = _to_ticker(row['securities_code'])
-        if ticker not in next_by_symbol:
-            next_by_symbol[ticker] = row
-
-    updated_count = 0
-    for symbol in symbols:
-        info = next_by_symbol.get(symbol)
-        new_date = info['earnings_date'] if info else None
-        new_type = info['earnings_type'] if info else ''
-
-        updated_count += (
-            StockDiary.objects
-            .filter(stock_symbol=symbol)
-            .exclude(next_earnings_date=new_date, next_earnings_type=new_type)
-            .update(next_earnings_date=new_date, next_earnings_type=new_type)
-        )
-
-    logger.info('次回決算日更新完了: %s件', updated_count)
-    return updated_count
 
 
 def fan_out_earnings_reminders(target_date=None) -> int:

@@ -2,8 +2,8 @@
 """決算予定の日次同期コマンド
 
 決算予定API（EDINET DB /v1/calendar）から当日〜90日後の決算発表予定を取得し、
-EarningsSchedule を洗い替え保存する。あわせて各日記の next_earnings_date を
-事前計算し、決算前日（翌日決算）の通知をファンアウトする。
+EarningsSchedule を洗い替え保存する。あわせて決算前日（翌日決算）の通知を
+ファンアウトする。決算日は日記側に持たせず、表示時に銘柄コードで都度参照する。
 
 cron で毎日1回実行する想定（etc/cron.d/earnings-calendar 参照）。
 無料枠（100リクエスト/日）に対し、本コマンドのAPI利用は1〜3リクエスト程度。
@@ -32,7 +32,6 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         from earnings_analysis.services import (
             sync_earnings_calendar,
-            update_diary_next_earnings,
             fan_out_earnings_reminders,
         )
 
@@ -49,14 +48,6 @@ class Command(BaseCommand):
             self.stdout.write(self.style.ERROR(f'決算予定同期エラー: {e}'))
             self.stdout.write(traceback.format_exc())
             return
-
-        # 各日記の次回決算日を事前計算（失敗してもバッチは止めない）
-        try:
-            updated = update_diary_next_earnings()
-            self.stdout.write(self.style.SUCCESS(f'次回決算日 更新: {updated}件'))
-        except Exception as e:
-            logger.warning('次回決算日更新エラー（スキップ）: %s', e, exc_info=True)
-            self.stdout.write(self.style.WARNING(f'次回決算日更新スキップ: {e}'))
 
         # 決算前日通知のファンアウト
         if not skip_notifications:

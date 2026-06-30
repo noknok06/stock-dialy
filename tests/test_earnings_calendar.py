@@ -9,9 +9,11 @@
   - APIクライアントはフィールド名の揺れを吸収して正規化する
   - limit到達時は offset でページングして全件取得する
   - 同期は未来分を洗い替えし、過去分は履歴として残す
-  - next_earnings_date が日記へ事前計算される（4桁/5桁コードの両方に対応）
+  - 決算日は日記に持たせず、銘柄コードで EarningsSchedule を join して引く
+    （4桁/5桁コードの両方に対応・最近接の未来日を採用）
   - 決算前日（翌日決算）の通知が記録ユーザーへ1通だけ届く（重複しない）
-  - カレンダー画面は GET のみで描画でき、scope で記録銘柄/全銘柄を切り替えられる
+  - カレンダー画面（月グリッド＋選択日）は GET のみで描画でき、scope で
+    記録銘柄/全銘柄を切り替えられる
 """
 from datetime import date, timedelta
 from unittest.mock import patch
@@ -26,6 +28,7 @@ from earnings_analysis.services.earnings_calendar_api import (
     EarningsCalendarAPIService,
 )
 from earnings_analysis.services import earnings_calendar_sync as sync
+from stockdiary import views_earnings
 
 User = get_user_model()
 pytestmark = pytest.mark.django_db
@@ -136,37 +139,29 @@ def test_sync_replaces_future_keeps_past(settings):
     assert '7203' in codes          # 新規が入る
 
 
-def test_update_diary_next_earnings_matches_4_and_5_digit(settings):
-    """4桁の日記コードに対し、4桁/末尾0付き5桁どちらの予定も照合できる。"""
-    user = User.objects.create_user('u1', 'u1@e.com', 'p')
-    d1 = StockDiary.objects.create(user=user, stock_name='A', stock_symbol='7203')
-    d2 = StockDiary.objects.create(user=user, stock_name='B', stock_symbol='6758')
-    today = date.today()
+# ---------------------------------------------------------------------------
+# 決算日のコード参照ヘルパー（日記にカラムを持たせず join で引く）
+# ---------------------------------------------------------------------------
 
-    # 7203 は4桁コードで、6758 は末尾0付き5桁コードで提供されるケース
+def test_get_next_earnings_map_matches_4_and_5_digit():
+    """4桁の日記コードに対し、4桁/末尾0付き5桁どちらの予定も照合できる。"""
+    today = date.today()
     EarningsSchedule.objects.create(
         securities_code='7203', earnings_date=today + timedelta(days=10),
-        earnings_type='第1四半期',
-    )
+        earnings_type='第1四半期')
     EarningsSchedule.objects.create(
         securities_code='67580', earnings_date=today + timedelta(days=3),
-        earnings_type='本決算',
-    )
+        earnings_type='本決算')
 
-    updated = sync.update_diary_next_earnings()
-    assert updated == 2
-
-    d1.refresh_from_db()
-    d2.refresh_from_db()
-    assert d1.next_earnings_date == today + timedelta(days=10)
-    assert d1.next_earnings_type == '第1四半期'
-    assert d2.next_earnings_date == today + timedelta(days=3)
+    mapping = views_earnings.get_next_earnings_map({'7203', '6758'}, today=today)
+    assert mapping['7203'].date == today + timedelta(days=10)
+    assert mapping['7203'].type == '第1四半期'
+    assert mapping['7203'].days_until == 10
+    assert mapping['6758'].date == today + timedelta(days=3)
 
 
-def test_update_diary_next_earnings_picks_nearest_future(settings):
+def test_get_next_earnings_map_picks_nearest_future():
     """過去の予定は無視し、当日以降で最も近い予定を採用する。"""
-    user = User.objects.create_user('u2', 'u2@e.com', 'p')
-    d = StockDiary.objects.create(user=user, stock_name='A', stock_symbol='7203')
     today = date.today()
     EarningsSchedule.objects.create(
         securities_code='7203', earnings_date=today - timedelta(days=5))
@@ -175,9 +170,59 @@ def test_update_diary_next_earnings_picks_nearest_future(settings):
     EarningsSchedule.objects.create(
         securities_code='7203', earnings_date=today + timedelta(days=12))
 
-    sync.update_diary_next_earnings()
-    d.refresh_from_db()
-    assert d.next_earnings_date == today + timedelta(days=12)
+    mapping = views_earnings.get_next_earnings_map({'7203'}, today=today)
+    assert mapping['7203'].date == today + timedelta(days=12)
+
+
+def test_get_next_earnings_map_ignores_non_jp_codes():
+    """4桁数字以外（外国株など）はマスタ照合の対象外。"""
+    today = date.today()
+    assert views_earnings.get_next_earnings_map({'AAPL', ''}, today=today) == {}
+
+
+def test_attach_next_earnings_sets_attribute(db):
+    """attach_next_earnings は各日記へ next_earnings（無ければ None）を付与する。"""
+    user = User.objects.create_user('u_at', 'uat@e.com', 'p')
+    today = date.today()
+    d1 = StockDiary.objects.create(user=user, stock_name='A', stock_symbol='7203')
+    d2 = StockDiary.objects.create(user=user, stock_name='B', stock_symbol='6758')
+    EarningsSchedule.objects.create(
+        securities_code='7203', earnings_date=today + timedelta(days=2),
+        earnings_type='本決算')
+
+    views_earnings.attach_next_earnings([d1, d2], today=today)
+    assert d1.next_earnings.date == today + timedelta(days=2)
+    assert d1.next_earnings.proximity == 'imminent'  # 3日以内
+    assert d2.next_earnings is None
+
+
+def test_classify_proximity_boundaries():
+    """近さ区分が境界値で正しく分類される（imminent≤3, soon≤14, 以降 scheduled）。"""
+    assert views_earnings._classify_proximity(0) == 'imminent'
+    assert views_earnings._classify_proximity(3) == 'imminent'
+    assert views_earnings._classify_proximity(4) == 'soon'
+    assert views_earnings._classify_proximity(14) == 'soon'
+    assert views_earnings._classify_proximity(15) == 'scheduled'
+
+
+def test_build_month_grid_marks_counts_and_states():
+    """月グリッドのセルが件数・記録銘柄・選択日・範囲外を正しく持つ。"""
+    today = date(2026, 8, 5)
+    window_start, window_end = today, today + timedelta(days=90)
+    d1 = date(2026, 8, 10)
+    d2 = date(2026, 8, 20)
+    counts = {d1: 3, d2: 1}
+    mine_dates = {d1}
+
+    grid = views_earnings.build_month_grid(
+        2026, 8, today, window_start, window_end, counts, mine_dates, selected_date=d1)
+
+    cells = {c['date']: c for week in grid for c in week}
+    assert cells[d1]['count'] == 3 and cells[d1]['has_mine'] and cells[d1]['is_selected']
+    assert cells[d2]['count'] == 1 and not cells[d2]['has_mine']
+    assert cells[today]['is_today']
+    # 8/1 は当月だがウィンドウ開始(8/5)より前 → 範囲外
+    assert cells[date(2026, 8, 1)]['in_window'] is False
 
 
 # ---------------------------------------------------------------------------
@@ -242,57 +287,29 @@ def test_fan_out_excludes_excluded_diary():
 
 
 # ---------------------------------------------------------------------------
-# StockDiary プロパティ
-# ---------------------------------------------------------------------------
-
-def test_days_until_earnings_and_proximity():
-    """残り日数と近さ区分が境界値で正しく分類される。"""
-    user = User.objects.create_user('u5', 'u5@e.com', 'p')
-    today = date.today()
-    d = StockDiary.objects.create(user=user, stock_name='A', stock_symbol='7203')
-
-    d.next_earnings_date = today + timedelta(days=2)
-    assert d.days_until_earnings == 2
-    assert d.earnings_proximity == 'imminent'
-
-    d.next_earnings_date = today + timedelta(days=10)
-    assert d.earnings_proximity == 'soon'
-
-    d.next_earnings_date = today + timedelta(days=30)
-    assert d.earnings_proximity == 'scheduled'
-
-    # 過去日・未設定は None
-    d.next_earnings_date = today - timedelta(days=1)
-    assert d.days_until_earnings is None
-    assert d.earnings_proximity is None
-    d.next_earnings_date = None
-    assert d.days_until_earnings is None
-
-
-# ---------------------------------------------------------------------------
-# カレンダー画面（GETのみ・APIを叩かない・scope切替）
+# カレンダー画面（GETのみ・APIを叩かない・月グリッド＋選択日・scope切替）
 # ---------------------------------------------------------------------------
 
 def test_calendar_view_renders_without_calling_api(client):
-    """画面表示は外部APIを一切叩かず、ローカルDBのみで描画する。"""
+    """画面表示は外部APIを一切叩かず、ローカルDB（マスタ join）だけで描画する。
+
+    決算日は日記に持たせないので、サマリーは EarningsSchedule を作って初めて出る。
+    """
     user = User.objects.create_user('v1', 'v1@e.com', 'p')
     client.force_login(user)
     today = date.today()
 
-    # 保有銘柄（取引あり想定の current_quantity>0 を直接設定）
     holding = StockDiary.objects.create(
         user=user, stock_name='保有株', stock_symbol='7203',
-        current_quantity=100, transaction_count=2,
-        next_earnings_date=today + timedelta(days=5), next_earnings_type='本決算',
-    )
-    # ウォッチ（メモ＝取引なし）
+        current_quantity=100, transaction_count=2)
     watch = StockDiary.objects.create(
-        user=user, stock_name='監視株', stock_symbol='6758',
-        next_earnings_date=today + timedelta(days=9),
-    )
+        user=user, stock_name='監視株', stock_symbol='6758')
     EarningsSchedule.objects.create(
         securities_code='7203', earnings_date=today + timedelta(days=5),
         company_name='保有株', earnings_type='本決算')
+    EarningsSchedule.objects.create(
+        securities_code='6758', earnings_date=today + timedelta(days=9),
+        company_name='監視株')
 
     url = reverse('stockdiary:earnings_calendar')
     with patch.object(EarningsCalendarAPIService, 'fetch_window') as mocked:
@@ -300,33 +317,72 @@ def test_calendar_view_renders_without_calling_api(client):
         assert mocked.call_count == 0  # 表示でAPIは呼ばれない
 
     assert resp.status_code == 200
+    # サマリー（保有・ウォッチ）は選択日に依らず常時表示
     assert holding.stock_name.encode() in resp.content
     assert watch.stock_name.encode() in resp.content
 
 
-def test_calendar_scope_mine_filters_to_recorded_symbols(client):
-    """scope=mine は記録銘柄のみ、scope=all は全銘柄を一覧する。"""
-    user = User.objects.create_user('v2', 'v2@e.com', 'p')
+def test_calendar_selected_day_lists_that_days_earnings(client):
+    """?date= で指定した日の決算が選択日パネルに一覧される。"""
+    user = User.objects.create_user('v_day', 'vd@e.com', 'p')
     client.force_login(user)
-    today = date.today()
-    StockDiary.objects.create(
-        user=user, stock_name='保有株', stock_symbol='7203',
-        next_earnings_date=today + timedelta(days=5))
-
+    target = date.today() + timedelta(days=5)
     EarningsSchedule.objects.create(
-        securities_code='7203', earnings_date=today + timedelta(days=5),
-        company_name='記録銘柄')
-    EarningsSchedule.objects.create(
-        securities_code='9999', earnings_date=today + timedelta(days=6),
-        company_name='無関係銘柄')
+        securities_code='7203', earnings_date=target, company_name='トヨタ自動車')
 
     url = reverse('stockdiary:earnings_calendar')
-    mine = client.get(url, {'scope': 'mine'}, HTTP_HX_REQUEST='true')
+    resp = client.get(url, {
+        'scope': 'all',
+        'month': target.strftime('%Y-%m'),
+        'date': target.isoformat(),
+    })
+    assert resp.status_code == 200
+    assert 'トヨタ自動車'.encode() in resp.content
+
+
+def test_calendar_scope_mine_filters_to_recorded_symbols(client):
+    """scope=mine は記録銘柄のみ、scope=all は全銘柄を選択日パネルに出す。"""
+    user = User.objects.create_user('v2', 'v2@e.com', 'p')
+    client.force_login(user)
+    target = date.today() + timedelta(days=5)
+    StockDiary.objects.create(user=user, stock_name='保有株', stock_symbol='7203')
+
+    EarningsSchedule.objects.create(
+        securities_code='7203', earnings_date=target, company_name='記録銘柄')
+    EarningsSchedule.objects.create(
+        securities_code='9999', earnings_date=target, company_name='無関係銘柄')
+
+    url = reverse('stockdiary:earnings_calendar')
+    params = {'month': target.strftime('%Y-%m'), 'date': target.isoformat()}
+
+    mine = client.get(url, dict(params, scope='mine'), HTTP_HX_REQUEST='true')
     assert '記録銘柄'.encode() in mine.content
     assert '無関係銘柄'.encode() not in mine.content
 
-    everything = client.get(url, {'scope': 'all'}, HTTP_HX_REQUEST='true')
+    everything = client.get(url, dict(params, scope='all'), HTTP_HX_REQUEST='true')
     assert '無関係銘柄'.encode() in everything.content
+
+
+def test_calendar_day_panel_only_swap_via_htmx(client):
+    """panel=day のHTMXリクエストは選択日パネルのみ返す（グリッドを含まない）。"""
+    user = User.objects.create_user('v_panel', 'vp@e.com', 'p')
+    client.force_login(user)
+    target = date.today() + timedelta(days=5)
+    EarningsSchedule.objects.create(
+        securities_code='7203', earnings_date=target, company_name='トヨタ自動車')
+
+    url = reverse('stockdiary:earnings_calendar')
+    resp = client.get(url, {
+        'scope': 'all', 'panel': 'day',
+        'month': target.strftime('%Y-%m'), 'date': target.isoformat(),
+    }, HTTP_HX_REQUEST='true')
+
+    assert resp.status_code == 200
+    assert b'ec-day-panel' in resp.content
+    assert 'トヨタ自動車'.encode() in resp.content
+    # 月ナビ・グリッドは含まれない（パネルだけ差し替え）
+    assert b'ec-month-nav' not in resp.content
+    assert b'ec-grid' not in resp.content
 
 
 def test_calendar_view_requires_login(client):

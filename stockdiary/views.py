@@ -211,6 +211,11 @@ class StockDiaryListView(LoginRequiredMixin, ListView):
         from .utils import annotate_search_matches
         annotate_search_matches(context['diaries'], self.request.GET.get('query', ''))
 
+        # 次回決算（カードの決算予定バッジ用）。決算日は日記に持たせず、表示中の
+        # ページ分だけ銘柄コードで EarningsSchedule を1クエリ join して付与する。
+        from .views_earnings import attach_next_earnings
+        attach_next_earnings(context['diaries'])
+
         # フォーム用のスピードダイアルアクション
         context['form_actions'] = [
             {

@@ -6,9 +6,9 @@
 このテーブルのみを参照する（API障害・レスポンス速度の影響を受けない設計）。
 
 データ取得は earnings_analysis/services/earnings_calendar_sync.py が担う。
-銘柄ごとの「次回決算日」は StockDiary.next_earnings_date に事前計算され、
-日記一覧表示時の追加クエリを不要にする（DocumentMetadata→latest_disclosure_date
-と同じ設計方針）。
+このテーブルが決算予定の唯一の正（証券コードがキーのマスタ）。日記側には決算日を
+持たせず、表示時に銘柄コードで都度 join して引く
+（stockdiary/views_earnings.py の get_next_earnings_map / attach_next_earnings）。
 """
 from django.db import models
 

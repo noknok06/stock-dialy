@@ -15,20 +15,6 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AddField(
-            model_name="stockdiary",
-            name="next_earnings_date",
-            field=models.DateField(
-                blank=True, db_index=True, null=True, verbose_name="次回決算予定日"
-            ),
-        ),
-        migrations.AddField(
-            model_name="stockdiary",
-            name="next_earnings_type",
-            field=models.CharField(
-                blank=True, max_length=50, verbose_name="次回決算種別"
-            ),
-        ),
-        migrations.AddField(
             model_name="notificationlog",
             name="earnings_schedule",
             field=models.ForeignKey(
