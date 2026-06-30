@@ -396,6 +396,7 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         self._build_related_context(context)
         self._build_retrospective_context(context)
         self._build_actions_context(context)
+        self._build_json_export_context(context)
         context['today'] = timezone.now().date()
         context['mention_map'] = get_mention_map(self.request.user)
         from tags.models import Tag as _Tag
@@ -612,6 +613,97 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
                 'condition': True,
             },
         ]
+
+    def _build_json_export_context(self, context):
+        """LLM分析用JSONエクスポートデータをコンテキストに追加する。"""
+        from datetime import datetime as _dt
+
+        diary = self.object
+
+        tags = [
+            {'name': item['tag'].name, 'direction': item['direction']}
+            for item in context.get('theme_tags', [])
+        ]
+
+        notes = [
+            {
+                'date': n.date.isoformat(),
+                'type': n.note_type,
+                'topic': n.topic or '',
+                'content': n.content,
+            }
+            for n in diary.notes.order_by('-date')
+        ]
+
+        theses = []
+        for th in context.get('theses', []):
+            verdict_data = None
+            try:
+                v = th.verdict
+                verdict_data = {
+                    'hypothesis_result': v.get_hypothesis_result_display(),
+                    'pnl_result': v.get_pnl_result_display(),
+                    'decision_quality': v.decision_quality,
+                    'missed_factor': v.missed_factor or '',
+                    'learning': v.learning or '',
+                }
+            except Exception:
+                pass
+            theses.append({
+                'claim': th.claim,
+                'basis': th.basis or '',
+                'basis_tags': [t.name for t in th.basis_tags.all()],
+                'horizon': th.get_horizon_display(),
+                'worst_case': th.worst_case or '',
+                'status': th.get_status_display(),
+                'review_due_date': th.review_due_date.isoformat() if th.review_due_date else None,
+                'verdict': verdict_data,
+            })
+
+        related = [
+            {
+                'symbol': r['diary'].stock_symbol,
+                'name': r['diary'].stock_name,
+                'score': round(r['score'], 2),
+                'via': r['reason_labels'],
+                'correlation': r.get('correlation'),
+            }
+            for r in context.get('related_unified', [])
+        ]
+
+        margin = None
+        if diary.stock_symbol:
+            try:
+                from stockdiary.api_analysis import _fetch_margin_data
+                margin = _fetch_margin_data(diary.stock_symbol)
+            except Exception:
+                pass
+
+        if diary.current_quantity > 0:
+            status = '保有中'
+        elif diary.transaction_count > 0:
+            status = '売却済み'
+        else:
+            status = 'メモ'
+
+        context['diary_json_export'] = {
+            'symbol': diary.stock_symbol or '',
+            'name': diary.stock_name,
+            'status': status,
+            'sector': diary.sector or '',
+            'tags': tags,
+            'investment_reason': diary.reason or '',
+            'notes': notes,
+            'theses': theses,
+            'related_stocks': related,
+            'margin': margin,
+            'current_quantity': float(diary.current_quantity),
+            'avg_cost': float(diary.average_purchase_price) if diary.average_purchase_price else None,
+            'realized_profit': float(diary.realized_profit),
+            'first_purchase_date': diary.first_purchase_date.isoformat() if diary.first_purchase_date else None,
+            'exported_at': _dt.now().strftime('%Y-%m-%d'),
+        }
+
 
 def _sync_hashtag_tags(diary, user):
     from stockdiary.utils import extract_hashtags_with_direction
