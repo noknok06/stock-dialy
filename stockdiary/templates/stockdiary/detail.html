@@ -2829,7 +2829,8 @@ function applyNoteFilters() {
 function copyDiaryJson(btn) {
   var el = document.getElementById('diary-export-json');
   if (!el) return;
-  var text = el.textContent;
+  // json_script は \uXXXX エスケープで出力するため、パース→再シリアライズで日本語を復元する
+  var text = JSON.stringify(JSON.parse(el.textContent), null, 2);
   var originalHtml = btn.innerHTML;
   navigator.clipboard.writeText(text).then(function() {
     btn.innerHTML = '<i class="bi bi-check2 me-2"></i>コピーしました';
