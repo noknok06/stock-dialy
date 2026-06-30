@@ -64,6 +64,11 @@
           <li>
             {% include "stockdiary/partials/_exclude_toggle_button.html" %}
           </li>
+          <li>
+            <button type="button" class="dropdown-item" id="copy-json-btn" onclick="copyDiaryJson(this)">
+              <i class="bi bi-code-square me-2"></i>JSONをコピー
+            </button>
+          </li>
           <li><hr class="dropdown-divider"></li>
           <li>
             <a href="{% url 'stockdiary:delete' diary.id %}" class="dropdown-item text-danger">
@@ -2819,6 +2824,30 @@ function applyNoteFilters() {
 })();
 </script>
 
+{{ diary_json_export|json_script:"diary-export-json" }}
+<script>
+function copyDiaryJson(btn) {
+  var el = document.getElementById('diary-export-json');
+  if (!el) return;
+  var text = el.textContent;
+  var originalHtml = btn.innerHTML;
+  navigator.clipboard.writeText(text).then(function() {
+    btn.innerHTML = '<i class="bi bi-check2 me-2"></i>コピーしました';
+    setTimeout(function() { btn.innerHTML = originalHtml; }, 2000);
+  }).catch(function() {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    btn.innerHTML = '<i class="bi bi-check2 me-2"></i>コピーしました';
+    setTimeout(function() { btn.innerHTML = originalHtml; }, 2000);
+  });
+}
+</script>
 <!-- テーマ詳細モーダル（body直下・position:fixed で全画面表示） -->
 <div class="note-detail-overlay" id="noteDetailOverlay" aria-modal="true" role="dialog" hidden>
   <div class="note-detail-panel">
