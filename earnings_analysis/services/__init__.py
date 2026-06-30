@@ -20,6 +20,13 @@ from .batch_service import BatchService
 # 開示インジケーター同期
 from .disclosure_sync import update_diary_disclosure_status
 
+# 決算予定同期
+from .earnings_calendar_sync import (
+    sync_earnings_calendar,
+    update_diary_next_earnings,
+    fan_out_earnings_reminders,
+)
+
 __all__ = [
     'EdinetAPIClient',
     'EdinetDocumentService',
@@ -28,4 +35,7 @@ __all__ = [
     'CashFlowExtractor',
     'BatchService',
     'update_diary_disclosure_status',
+    'sync_earnings_calendar',
+    'update_diary_next_earnings',
+    'fan_out_earnings_reminders',
 ]

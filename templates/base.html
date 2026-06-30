@@ -943,9 +943,14 @@
                               <i class="bi bi-graph-up"></i> ダッシュボード
                           </a>
                       </li>
+                      <li class="nav-item">
+                          <a class="nav-link" href="{% url 'stockdiary:earnings_calendar' %}">
+                              <i class="bi bi-calendar-event"></i> 決算カレンダー
+                          </a>
+                      </li>
                       {% endif %}
                   </ul>
-                  
+
                     <!-- ユーザーメニュー -->
                     {% if user.is_authenticated %}
                     <div class="d-flex align-items-center gap-2">
@@ -1126,6 +1131,13 @@
                     <i class="bi bi-graph-up"></i>
                 </div>
                 <div class="menu-item-label">ダッシュボード</div>
+            </a>
+
+            <a href="{% url 'stockdiary:earnings_calendar' %}" class="menu-item primary">
+                <div class="menu-item-icon">
+                    <i class="bi bi-calendar-event"></i>
+                </div>
+                <div class="menu-item-label">決算カレンダー</div>
             </a>
 
             <a href="{% url 'stockdiary:create' %}" class="menu-item primary">

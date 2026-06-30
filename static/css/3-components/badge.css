@@ -168,6 +168,59 @@
   border-color: rgba(16, 185, 129, 0.35);
 }
 
+/* ========== 決算予定インジケーター ========== */
+.earnings-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
+  cursor: default;
+}
+
+.earnings-indicator i { font-size: 0.7rem; }
+.earnings-date { opacity: 0.9; }
+
+/* それ以降（〜90日） */
+.earnings-indicator--scheduled {
+  background: rgba(120, 130, 140, 0.1);
+  color: #6b7280;
+  border: 1px solid rgba(120, 130, 140, 0.25);
+}
+
+/* 近日（14日以内） */
+.earnings-indicator--soon {
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+/* 間近（3日以内） */
+.earnings-indicator--imminent {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  animation: disclosure-pulse 2.5s ease-in-out infinite;
+}
+
+.dark-mode .earnings-indicator--soon,
+[data-theme="dark"] .earnings-indicator--soon {
+  background: rgba(245, 158, 11, 0.18);
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.dark-mode .earnings-indicator--imminent,
+[data-theme="dark"] .earnings-indicator--imminent {
+  background: rgba(239, 68, 68, 0.18);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
 /* ========== アニメーション ========== */
 @keyframes fadeIn {
   from {

@@ -107,6 +107,14 @@ class StockDiary(models.Model):
         max_length=50, blank=True, verbose_name='最新開示種別'
     )
 
+    # 決算予定情報（決算予定APIから定期更新。一覧表示時の追加クエリを不要にする事前計算）
+    next_earnings_date = models.DateField(
+        null=True, blank=True, db_index=True, verbose_name='次回決算予定日'
+    )
+    next_earnings_type = models.CharField(
+        max_length=50, blank=True, verbose_name='次回決算種別'
+    )
+
     # 除外フラグ（一覧・グラフから非表示にするが記録は保持）
     is_excluded = models.BooleanField(default=False, verbose_name='除外フラグ', db_index=True)
 
@@ -176,6 +184,27 @@ class StockDiary(models.Model):
     def disclosure_freshness(self):
         """recent_disclosure_status の別名。"""
         return self.recent_disclosure_status
+
+    @property
+    def days_until_earnings(self):
+        """次回決算予定日までの残り日数。当日=0、過去・未設定はNone。"""
+        if not self.next_earnings_date:
+            return None
+        from datetime import date
+        days = (self.next_earnings_date - date.today()).days
+        return days if days >= 0 else None
+
+    @property
+    def earnings_proximity(self):
+        """決算の近さ: 'imminent'(3日以内), 'soon'(14日以内), 'scheduled'(それ以降), None"""
+        days = self.days_until_earnings
+        if days is None:
+            return None
+        if days <= 3:
+            return 'imminent'
+        if days <= 14:
+            return 'soon'
+        return 'scheduled'
 
     def update_aggregates(self):
         """集計フィールドを再計算して save() する。
@@ -561,6 +590,16 @@ class NotificationLog(models.Model):
         related_name='notification_logs',
         null=True, blank=True
     )
+    # 決算予定由来の「決算前日」通知。(user, earnings_schedule) の一意制約で重複を防ぐ。
+    # EarningsSchedule は日次同期で未来分を洗い替えする（行が消える）ため、送信済みの
+    # 通知履歴が巻き添えで消えないよう SET_NULL にする（DisclosureEvent は追記専用で
+    # 削除されないため CASCADE で問題ないが、こちらは削除され得る点が異なる）。
+    earnings_schedule = models.ForeignKey(
+        'earnings_analysis.EarningsSchedule',
+        on_delete=models.SET_NULL,
+        related_name='notification_logs',
+        null=True, blank=True
+    )
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -586,6 +625,11 @@ class NotificationLog(models.Model):
                 fields=['user', 'disclosure_event'],
                 condition=models.Q(disclosure_event__isnull=False),
                 name='uniq_user_disclosure_event',
+            ),
+            models.UniqueConstraint(
+                fields=['user', 'earnings_schedule'],
+                condition=models.Q(earnings_schedule__isnull=False),
+                name='uniq_user_earnings_schedule',
             ),
         ]
 

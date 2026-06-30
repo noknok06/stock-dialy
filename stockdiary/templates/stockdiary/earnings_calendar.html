@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}決算カレンダー - カブログ{% endblock %}
+
+{% block head %}
+<style>
+.ec-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+.ec-header h1 {
+    font-size: 1.4rem;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.ec-scope {
+    display: inline-flex;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+.ec-scope button {
+    border: none;
+    background: var(--bg-secondary);
+    padding: 0.45rem 1rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+}
+.ec-scope button.active {
+    background: var(--primary-color);
+    color: #fff;
+}
+.ec-section { margin-bottom: 2rem; }
+.ec-section-title {
+    font-size: 1.05rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 2px solid var(--border-light);
+}
+.ec-count, .ec-day-count {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: normal;
+    margin-left: auto;
+}
+.ec-list { display: flex; flex-direction: column; gap: 0.4rem; }
+.ec-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.85rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md, 8px);
+    text-decoration: none;
+    color: var(--text-primary);
+}
+.ec-row:hover { border-color: var(--primary-color); }
+.ec-row-name { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.ec-row-date { display: flex; align-items: center; gap: 0.5rem; white-space: nowrap; font-size: 0.9rem; }
+.ec-code {
+    font-family: monospace;
+    font-weight: 700;
+    background: var(--bg-tertiary, #eef);
+    padding: 0.05rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+.ec-type, .ec-market {
+    font-size: 0.72rem;
+    padding: 0.05rem 0.4rem;
+    border-radius: 4px;
+    background: rgba(90,126,197,0.12);
+    color: var(--primary-color);
+}
+.ec-market { background: rgba(120,120,120,0.12); color: var(--text-secondary); }
+.ec-badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.1rem 0.5rem;
+    border-radius: var(--radius-full);
+    color: #fff;
+    background: var(--text-secondary);
+}
+.ec-badge--imminent { background: #e03131; }
+.ec-badge--soon { background: #f08c00; }
+.ec-badge--scheduled { background: #868e96; }
+.ec-empty { color: var(--text-secondary); font-size: 0.9rem; padding: 0.5rem 0; }
+.ec-calendar { display: flex; flex-direction: column; gap: 0.75rem; }
+.ec-day {
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md, 8px);
+    overflow: hidden;
+}
+.ec-day--today { border-color: #e03131; }
+.ec-day-head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.75rem;
+    background: var(--bg-secondary);
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+.ec-day-items { display: flex; flex-direction: column; }
+.ec-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.75rem;
+    border-top: 1px solid var(--border-light);
+    flex-wrap: wrap;
+}
+.ec-item--mine { background: rgba(90,126,197,0.06); }
+.ec-item-name { flex: 1; min-width: 8rem; }
+.ec-mine-tag { font-size: 0.72rem; color: var(--primary-color); white-space: nowrap; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="ec-header">
+    <h1><i class="bi bi-calendar-event"></i> 決算カレンダー</h1>
+    <div class="ec-scope" role="group" aria-label="表示範囲">
+      <button type="button"
+              class="{% if scope == 'mine' %}active{% endif %}"
+              hx-get="{% url 'stockdiary:earnings_calendar' %}?scope=mine"
+              hx-target="#earnings-body" hx-push-url="true">記録銘柄</button>
+      <button type="button"
+              class="{% if scope == 'all' %}active{% endif %}"
+              hx-get="{% url 'stockdiary:earnings_calendar' %}?scope=all"
+              hx-target="#earnings-body" hx-push-url="true">全銘柄</button>
+    </div>
+  </div>
+
+  <div id="earnings-body">
+    {% include 'stockdiary/partials/earnings_calendar_body.html' %}
+  </div>
+</div>
+{% endblock %}

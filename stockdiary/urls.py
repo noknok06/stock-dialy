@@ -11,6 +11,7 @@ from . import views_trade_import  # 証券CSV取込（楽天・SBI）
 from . import views_growth  # 成長OS（仮説・検証・カルテ・ライブラリ・年次レビュー）
 from . import views_panels  # 詳細ページの遅延ロードHTMXパネル（backlinks・EDINET）
 from . import views_dashboard  # ダッシュボード・パフォーマンスグラフ・タグ別成績
+from . import views_earnings  # 決算カレンダー（決算予定の表示）
 from . import views_transactions  # 取引・株式分割の CRUD
 from django.contrib.auth.decorators import login_required
 from django.views.generic.base import RedirectView
@@ -136,6 +137,7 @@ path('api/create/', api.api_create_diary, name='api_create'),
 
 
     path('dashboard/', views_dashboard.TradingDashboardView.as_view(), name='dashboard'),
+    path('earnings-calendar/', views_earnings.earnings_calendar, name='earnings_calendar'),
     path('review/', views_growth.AnnualReviewView.as_view(), name='annual_review'),
     path('karte/', views_growth.InvestorKarteView.as_view(), name='investor_karte'),
     path('library/', views_growth.LibraryView.as_view(), name='library'),

@@ -688,6 +688,22 @@ EDINET_API_SETTINGS = {
     'USER_AGENT': 'EarningsAnalysisBot/1.0 (https://kabu-log.net)',
 }
 
+# 決算予定API設定（EDINET DB /v1/calendar 等）
+# 画面表示時は使わず、日次バッチ（sync_earnings_calendar）からのみ呼び出す。
+# エンドポイント・認証ヘッダーは提供元仕様に合わせて環境変数で差し替え可能。
+EARNINGS_CALENDAR_API_SETTINGS = {
+    'API_KEY': os.getenv('EARNINGS_CALENDAR_API_KEY', ''),
+    'BASE_URL': os.getenv('EARNINGS_CALENDAR_API_BASE_URL', 'https://edinetdb.com'),
+    'CALENDAR_PATH': os.getenv('EARNINGS_CALENDAR_API_PATH', '/v1/calendar'),
+    # 認証ヘッダー名と方式（例: AUTH_HEADER='Authorization', AUTH_SCHEME='Bearer'）。
+    # 既定はキーをヘッダーへそのまま入れる方式。提供元のドキュメントに合わせること。
+    'AUTH_HEADER': os.getenv('EARNINGS_CALENDAR_API_AUTH_HEADER', 'X-API-Key'),
+    'AUTH_SCHEME': os.getenv('EARNINGS_CALENDAR_API_AUTH_SCHEME', ''),
+    'PAGE_LIMIT': int(os.getenv('EARNINGS_CALENDAR_API_PAGE_LIMIT', '2000')),
+    'TIMEOUT': int(os.getenv('EARNINGS_CALENDAR_API_TIMEOUT', '60')),
+    'USER_AGENT': 'KabulogEarningsCalendarBot/1.0 (https://kabu-log.net)',
+}
+
 # REST Framework設定
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
@@ -829,4 +845,4 @@ Q_CLUSTER = {
     'catch_up': False,
 }
 
-STATIC_VERSION = '1.2.959'
+STATIC_VERSION = '1.2.963'

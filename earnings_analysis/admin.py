@@ -27,7 +27,22 @@ from .models import (
     TDNETReportSection,
 )
 
+from .models import EarningsSchedule
+
 from .services.tdnet_report_generator import TDNETReportGeneratorService
+
+
+@admin.register(EarningsSchedule)
+class EarningsScheduleAdmin(admin.ModelAdmin):
+    """決算予定の管理画面"""
+    list_display = (
+        'securities_code', 'company_name', 'earnings_date',
+        'earnings_type', 'market_segment', 'updated_at',
+    )
+    list_filter = ('earnings_type', 'market_segment', 'earnings_date')
+    search_fields = ('securities_code', 'company_name')
+    date_hierarchy = 'earnings_date'
+    ordering = ('earnings_date', 'securities_code')
 
 
 # ログ設定（最優先で設定）
