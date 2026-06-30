@@ -25,12 +25,17 @@ logger = logging.getLogger(__name__)
 FANOUT_BATCH_SIZE = 500
 
 
-def sync_earnings_calendar(days: int = 90) -> int:
+def sync_earnings_calendar(days: int = 90, base_date=None) -> int:
     """決算予定APIから取得して EarningsSchedule を洗い替え保存する。
 
-    取得期間（当日〜days日後）の既存レコードを削除してから再投入するため、
-    リスケ・取り下げがあっても未来分は常に最新のAPI内容と一致する。過去分の
-    レコードは履歴として保持する。
+    取得期間（基準日〜days日後）の既存レコードを削除してから再投入するため、
+    リスケ・取り下げがあっても未来分は常に最新のAPI内容と一致する。基準日より
+    前のレコードは履歴として保持する。
+
+    Args:
+        days: 取得期間（基準日からの日数）
+        base_date: 取得基準日（既定=今日）。日次バッチが失敗した日のリカバリ実行で
+            過去日を指定できる。
 
     Returns:
         int: 保存した決算予定レコード数
@@ -45,8 +50,8 @@ def sync_earnings_calendar(days: int = 90) -> int:
         logger.warning('決算予定同期: APIキー未設定のためスキップ')
         return 0
 
-    items = service.fetch_window(days=days)
-    today = date.today()
+    base_date = base_date or date.today()
+    items = service.fetch_window(days=days, start=base_date)
 
     # 同一バッチ内のコード×日付の重複を排除（DBの一意制約に合わせる）
     deduped = {}
@@ -66,8 +71,8 @@ def sync_earnings_calendar(days: int = 90) -> int:
     ]
 
     with transaction.atomic():
-        # 未来分（当日以降）のみ洗い替え。過去分は履歴として残す。
-        EarningsSchedule.objects.filter(earnings_date__gte=today).delete()
+        # 基準日以降のみ洗い替え。基準日より前は履歴として残す。
+        EarningsSchedule.objects.filter(earnings_date__gte=base_date).delete()
         if to_create:
             EarningsSchedule.objects.bulk_create(
                 to_create, batch_size=500, ignore_conflicts=True

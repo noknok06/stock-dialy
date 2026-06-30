@@ -139,6 +139,35 @@ def test_sync_replaces_future_keeps_past(settings):
     assert '7203' in codes          # 新規が入る
 
 
+def test_sync_base_date_controls_window_and_cutoff(settings):
+    """base_date を指定すると取得起点と洗い替え境界がその日になる（失敗日リカバリ）。"""
+    settings.EARNINGS_CALENDAR_API_SETTINGS = {'API_KEY': 'k'}
+    today = date.today()
+    base = today + timedelta(days=10)
+
+    # base より前（=today+5）は base 基準では「過去」扱い → 残る
+    EarningsSchedule.objects.create(
+        securities_code='0002', earnings_date=today + timedelta(days=5))
+    # base 以降は洗い替え対象 → 消える
+    EarningsSchedule.objects.create(
+        securities_code='0003', earnings_date=base + timedelta(days=1))
+
+    captured = {}
+
+    def fake_fetch(self, days=90, start=None):
+        captured['days'] = days
+        captured['start'] = start
+        return []
+
+    with patch.object(EarningsCalendarAPIService, 'fetch_window', fake_fetch):
+        sync.sync_earnings_calendar(days=30, base_date=base)
+
+    assert captured == {'days': 30, 'start': base}  # 起点が base に渡る
+    codes = set(EarningsSchedule.objects.values_list('securities_code', flat=True))
+    assert '0002' in codes      # base より前は残る
+    assert '0003' not in codes  # base 以降は洗い替えで消える
+
+
 # ---------------------------------------------------------------------------
 # 決算日のコード参照ヘルパー（日記にカラムを持たせず join で引く）
 # ---------------------------------------------------------------------------
@@ -389,3 +418,62 @@ def test_calendar_view_requires_login(client):
     """未ログインはログインへリダイレクトする。"""
     resp = client.get(reverse('stockdiary:earnings_calendar'))
     assert resp.status_code in (301, 302)
+
+
+# ---------------------------------------------------------------------------
+# 管理コマンド（手動実行・日付指定リカバリ）
+# ---------------------------------------------------------------------------
+
+def test_command_rejects_invalid_base_date(settings):
+    """不正な日付指定はエラーメッセージを出して中断する（例外で落とさない）。"""
+    from io import StringIO
+    from django.core.management import call_command
+
+    out = StringIO()
+    call_command('sync_earnings_calendar', base_date='2026/01/01', stdout=out)
+    assert '日付形式が不正' in out.getvalue()
+
+
+def test_command_target_date_recovers_missed_reminder(settings):
+    """--target-date で過去に送り逃した決算前日通知を後から送れる。"""
+    from io import StringIO
+    from django.core.management import call_command
+
+    # APIキー未設定 → 保存はスキップされるが、通知ファンアウトは走る
+    settings.EARNINGS_CALENDAR_API_SETTINGS = {'API_KEY': ''}
+    user = User.objects.create_user('u_cmd', 'uc@e.com', 'p')
+    StockDiary.objects.create(user=user, stock_name='A', stock_symbol='7203')
+    earnings_day = date.today() + timedelta(days=7)
+    schedule = EarningsSchedule.objects.create(
+        securities_code='7203', earnings_date=earnings_day)
+
+    call_command('sync_earnings_calendar',
+                 target_date=earnings_day.isoformat(), stdout=StringIO())
+
+    log = NotificationLog.objects.get(user=user)
+    assert log.earnings_schedule_id == schedule.id
+
+
+def test_admin_run_sync_view_executes(settings, client):
+    """管理画面の手動実行ビューが同期コマンドを走らせて決算予定を保存する。"""
+    settings.EARNINGS_CALENDAR_API_SETTINGS = {'API_KEY': 'k'}
+    today = date.today()
+    admin_user = User.objects.create_superuser('boss', 'boss@e.com', 'p')
+    client.force_login(admin_user)
+
+    new_items = [{
+        'securities_code': '7203', 'company_name': 'トヨタ',
+        'earnings_date': today + timedelta(days=20),
+        'earnings_type': '本決算', 'market_segment': 'プライム',
+        'source_updated_at': '',
+    }]
+    url = reverse('admin:earnings_analysis_earningsschedule_run_sync')
+
+    # フォーム表示（GET）
+    assert client.get(url).status_code == 200
+
+    # 実行（POST）→ リダイレクトし、決算予定が保存される
+    with patch.object(EarningsCalendarAPIService, 'fetch_window', return_value=new_items):
+        resp = client.post(url, {'days': '90', 'skip_notifications': '1'})
+    assert resp.status_code == 302
+    assert EarningsSchedule.objects.filter(securities_code='7203').exists()

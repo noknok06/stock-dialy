@@ -22,7 +22,17 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument(
             '--days', type=int, default=90,
-            help='取得期間（当日からの日数、既定90日）',
+            help='取得期間（基準日からの日数、既定90日）',
+        )
+        parser.add_argument(
+            '--base-date', type=str, default=None,
+            help='取得基準日 YYYY-MM-DD（既定=今日）。日次バッチが失敗した日の'
+                 'リカバリ実行に使う',
+        )
+        parser.add_argument(
+            '--target-date', type=str, default=None,
+            help='決算前日通知の対象決算日 YYYY-MM-DD（既定=翌日）。前日通知の'
+                 '送り逃しをリカバリするときに指定',
         )
         parser.add_argument(
             '--skip-notifications', action='store_true',
@@ -38,10 +48,18 @@ class Command(BaseCommand):
         days = options['days']
         skip_notifications = options['skip_notifications']
 
-        self.stdout.write(f'決算予定同期開始（当日〜{days}日後）')
+        try:
+            base_date = self._parse_date(options.get('base_date'))
+            target_date = self._parse_date(options.get('target_date'))
+        except ValueError as e:
+            self.stdout.write(self.style.ERROR(str(e)))
+            return
+
+        base_label = base_date.isoformat() if base_date else '今日'
+        self.stdout.write(f'決算予定同期開始（基準日={base_label}〜{days}日後）')
 
         try:
-            saved = sync_earnings_calendar(days=days)
+            saved = sync_earnings_calendar(days=days, base_date=base_date)
             self.stdout.write(self.style.SUCCESS(f'決算予定 保存: {saved}件'))
         except Exception as e:
             logger.error('決算予定同期エラー: %s', e, exc_info=True)
@@ -52,10 +70,21 @@ class Command(BaseCommand):
         # 決算前日通知のファンアウト
         if not skip_notifications:
             try:
-                notified = fan_out_earnings_reminders()
+                notified = fan_out_earnings_reminders(target_date=target_date)
                 self.stdout.write(self.style.SUCCESS(f'決算前日通知: {notified}件'))
             except Exception as e:
                 logger.warning('決算前日通知エラー（スキップ）: %s', e, exc_info=True)
                 self.stdout.write(self.style.WARNING(f'決算前日通知スキップ: {e}'))
 
         self.stdout.write(self.style.SUCCESS('決算予定同期完了'))
+
+    @staticmethod
+    def _parse_date(value):
+        """YYYY-MM-DD を date に。未指定は None。不正は ValueError。"""
+        if not value:
+            return None
+        from datetime import datetime
+        try:
+            return datetime.strptime(value, '%Y-%m-%d').date()
+        except ValueError:
+            raise ValueError(f'日付形式が不正です（YYYY-MM-DD で指定）: {value}')

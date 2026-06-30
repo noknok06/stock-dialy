@@ -75,16 +75,20 @@ class EarningsCalendarAPIService:
     def endpoint(self) -> str:
         return f"{self.base_url}{self.calendar_path}"
 
-    def fetch_window(self, days: int = 90) -> list:
-        """当日〜days日後の決算予定を全件取得して正規化済みのリストで返す。
+    def fetch_window(self, days: int = 90, start=None) -> list:
+        """基準日〜days日後の決算予定を全件取得して正規化済みのリストで返す。
+
+        Args:
+            days: 取得期間（基準日からの日数）
+            start: 取得基準日（既定=今日）。失敗日のリカバリ実行で過去日を指定可能。
 
         Returns:
             list[dict]: {securities_code, company_name, earnings_date(date),
                          earnings_type, market_segment, source_updated_at(str)}
         """
-        today = date.today()
-        date_from = today.isoformat()
-        date_to = (today + timedelta(days=days)).isoformat()
+        start = start or date.today()
+        date_from = start.isoformat()
+        date_to = (start + timedelta(days=days)).isoformat()
 
         items = []
         offset = 0

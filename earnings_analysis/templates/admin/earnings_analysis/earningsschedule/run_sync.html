@@ -1,0 +1,98 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static %}
+
+{% block title %}決算予定の同期 | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+.ecs-container { max-width: 760px; margin: 0 auto; }
+.ecs-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px; margin-bottom: 20px; }
+.ecs-card h1 { font-size: 20px; margin: 0 0 6px 0; color: #1f2937; }
+.ecs-lead { color: #6b7280; font-size: 13px; margin: 0 0 20px 0; }
+.ecs-alert { border-radius: 6px; padding: 12px 16px; font-size: 13px; margin-bottom: 18px; }
+.ecs-alert-warn { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+.ecs-alert-info { background: #e0f2fe; color: #075985; border: 1px solid #7dd3fc; }
+.ecs-group { margin-bottom: 18px; }
+.ecs-label { display: block; font-weight: 600; color: #374151; margin-bottom: 6px; font-size: 14px; }
+.ecs-hint { display: block; color: #6b7280; font-size: 12px; margin-top: 4px; }
+.ecs-input { width: 100%; padding: 9px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
+.ecs-check { display: flex; align-items: center; gap: 8px; font-size: 14px; color: #374151; }
+.ecs-actions { display: flex; gap: 12px; margin-top: 22px; }
+.ecs-btn { padding: 11px 22px; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; }
+.ecs-btn-run { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; }
+.ecs-btn-cancel { background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; }
+.ecs-recent { font-size: 13px; color: #4b5563; }
+.ecs-recent li { margin: 2px 0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ecs-container">
+  <div class="ecs-card">
+    <h1>📅 決算予定の同期（手動実行）</h1>
+    <p class="ecs-lead">
+      決算予定APIから取得してDBへ保存します。通常は日次バッチ（cron）が自動実行しますが、
+      ここではテスト実行や、バッチが失敗した日のリカバリ実行ができます。
+    </p>
+
+    {% if not api_configured %}
+    <div class="ecs-alert ecs-alert-warn">
+      ⚠️ <strong>EARNINGS_CALENDAR_API_KEY が未設定です。</strong>
+      このまま実行しても外部APIは叩かれず、保存0件で終了します（安全側の挙動）。
+    </div>
+    {% endif %}
+
+    <div class="ecs-alert ecs-alert-info">
+      💡 リカバリの考え方：<br>
+      ・<strong>取得基準日</strong>＝この日を起点に「+取得期間日」分の決算予定を取得・洗い替えします（空欄なら今日）。<br>
+      ・<strong>通知対象決算日</strong>＝「決算前日通知」を送る対象の決算日（空欄なら翌日）。前日通知の送り逃しはここで日付指定して再送できます。
+    </div>
+
+    <form method="post">
+      {% csrf_token %}
+
+      <div class="ecs-group">
+        <label class="ecs-label" for="days">取得期間（日数）</label>
+        <input class="ecs-input" type="number" id="days" name="days" value="90" min="1" max="365">
+        <span class="ecs-hint">基準日から何日先までの決算予定を取得するか（既定90）。</span>
+      </div>
+
+      <div class="ecs-group">
+        <label class="ecs-label" for="base_date">取得基準日（任意）</label>
+        <input class="ecs-input" type="date" id="base_date" name="base_date" placeholder="{{ today|date:'Y-m-d' }}">
+        <span class="ecs-hint">空欄なら今日（{{ today|date:'Y-m-d' }}）。失敗日のリカバリ時に指定。</span>
+      </div>
+
+      <div class="ecs-group">
+        <label class="ecs-label" for="target_date">通知対象決算日（任意）</label>
+        <input class="ecs-input" type="date" id="target_date" name="target_date" placeholder="{{ default_target|date:'Y-m-d' }}">
+        <span class="ecs-hint">空欄なら翌日（{{ default_target|date:'Y-m-d' }}）。前日通知の送り逃しリカバリ時に指定。</span>
+      </div>
+
+      <div class="ecs-group">
+        <label class="ecs-check">
+          <input type="checkbox" name="skip_notifications" value="1">
+          通知を送らない（保存のみ・テスト実行向け）
+        </label>
+      </div>
+
+      <div class="ecs-actions">
+        <button type="submit" class="ecs-btn ecs-btn-run">▶ 実行する</button>
+        <a href="../" class="ecs-btn ecs-btn-cancel">キャンセル</a>
+      </div>
+    </form>
+  </div>
+
+  <div class="ecs-card">
+    <h3>最近更新された決算予定</h3>
+    <ul class="ecs-recent">
+      {% for s in recent %}
+      <li>{{ s.earnings_date|date:"Y/m/d" }} — {{ s.securities_code }} {{ s.company_name }}（更新 {{ s.updated_at|date:"m/d H:i" }}）</li>
+      {% empty %}
+      <li>まだ決算予定データがありません。</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock %}

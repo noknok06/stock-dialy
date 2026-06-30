@@ -34,7 +34,7 @@ from .services.tdnet_report_generator import TDNETReportGeneratorService
 
 @admin.register(EarningsSchedule)
 class EarningsScheduleAdmin(admin.ModelAdmin):
-    """決算予定の管理画面"""
+    """決算予定の管理画面（手動同期・失敗日リカバリ実行つき）"""
     list_display = (
         'securities_code', 'company_name', 'earnings_date',
         'earnings_type', 'market_segment', 'updated_at',
@@ -43,6 +43,96 @@ class EarningsScheduleAdmin(admin.ModelAdmin):
     search_fields = ('securities_code', 'company_name')
     date_hierarchy = 'earnings_date'
     ordering = ('earnings_date', 'securities_code')
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom = [
+            path('run-sync/',
+                 self.admin_site.admin_view(self.run_sync_view),
+                 name='earnings_analysis_earningsschedule_run_sync'),
+        ]
+        return custom + urls
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['total_schedules'] = EarningsSchedule.objects.count()
+        return super().changelist_view(request, extra_context=extra_context)
+
+    def run_sync_view(self, request):
+        """決算予定同期コマンドを管理画面から手動実行する。
+
+        テスト実行に加え、日次バッチが失敗した日のリカバリとして取得基準日
+        （base-date）や前日通知の対象決算日（target-date）を指定して実行できる。
+        """
+        from datetime import datetime, timedelta
+        from io import StringIO
+        from django.core.management import call_command
+
+        today = timezone.now().date()
+
+        if request.method == 'POST':
+            days = request.POST.get('days') or '90'
+            base_date = request.POST.get('base_date') or ''
+            target_date = request.POST.get('target_date') or ''
+            skip_notifications = request.POST.get('skip_notifications') == '1'
+
+            # 入力検証
+            try:
+                days = int(days)
+                if days < 1 or days > 365:
+                    raise ValueError('取得期間は1〜365日で指定してください。')
+                for label, value in (('取得基準日', base_date),
+                                     ('通知対象決算日', target_date)):
+                    if value:
+                        datetime.strptime(value, '%Y-%m-%d')
+            except ValueError as e:
+                messages.error(request, f'入力エラー: {e}')
+                return HttpResponseRedirect('.')
+
+            kwargs = {'days': days, 'stdout': StringIO(), 'stderr': StringIO()}
+            if base_date:
+                kwargs['base_date'] = base_date
+            if target_date:
+                kwargs['target_date'] = target_date
+            if skip_notifications:
+                kwargs['skip_notifications'] = True
+
+            try:
+                call_command('sync_earnings_calendar', **kwargs)
+                output = kwargs['stdout'].getvalue()
+                err = kwargs['stderr'].getvalue()
+                messages.success(
+                    request,
+                    '決算予定同期を実行しました。\n\n' + (output or '(出力なし)')
+                )
+                if err.strip():
+                    messages.warning(request, f'警告出力:\n{err[:500]}')
+            except Exception as e:
+                logger.error('決算予定同期の手動実行エラー: %s', e, exc_info=True)
+                messages.error(request, f'実行中にエラーが発生しました: {e}')
+                if settings.DEBUG:
+                    messages.info(request, traceback.format_exc()[:800])
+
+            return HttpResponseRedirect('../')
+
+        # フォーム表示
+        configured = bool(
+            getattr(settings, 'EARNINGS_CALENDAR_API_SETTINGS', {}).get('API_KEY')
+        )
+        context = {
+            'title': '決算予定の同期（手動実行）',
+            'has_permission': True,
+            'opts': self.model._meta,
+            'today': today,
+            'default_target': today + timedelta(days=1),
+            'api_configured': configured,
+            'recent': EarningsSchedule.objects.order_by('-updated_at')[:5],
+        }
+        return render(
+            request,
+            'admin/earnings_analysis/earningsschedule/run_sync.html',
+            context,
+        )
 
 
 # ログ設定（最優先で設定）
