@@ -9,6 +9,11 @@
 - クエリ: from / to（YYYY-MM-DD）・code・market・sort・order・limit（既定500・最大2000）
 - **offset は無い**。件数が limit を超える場合は日付レンジを分割して取得する。
 - 認証: X-API-Key ヘッダー（Authorization: Bearer も可）。
+- レスポンスは {"data": {"calendar": [...], "count": N, ...}} と1段ネストする。
+- 各項目（camelCase）: secCode(4桁) / companyName / periodType(決算種別) /
+  marketSegment / announcementDate（確定日, 予測時 null）/
+  estimatedAnnouncementDate（予測日）/ dateStatus(confirmed|estimated) 等。
+  → 確定日を優先し、無ければ予測日を採用する。
 
 設計方針:
 - エンドポイントURL・認証ヘッダーは settings.EARNINGS_CALENDAR_API_SETTINGS で
@@ -34,9 +39,12 @@ _CODE_KEYS = (
 _NAME_KEYS = (
     'company_name', 'companyName', 'name', 'filer_name', 'filerName',
 )
+# 確定日(announcementDate)を優先し、無ければ予測日(estimatedAnnouncementDate)に
+# フォールバックする。将来分は dateStatus='estimated' で確定日が null のことが多い。
 _DATE_KEYS = (
-    'earnings_date', 'announcementDate', 'announcement_date', 'scheduled_date',
-    'disclosureDate', 'disclosed_date', 'forecast_date', 'date',
+    'earnings_date', 'announcementDate', 'announcement_date',
+    'estimatedAnnouncementDate', 'estimated_announcement_date',
+    'scheduled_date', 'disclosureDate', 'disclosed_date', 'forecast_date', 'date',
 )
 _TYPE_KEYS = (
     'earnings_type', 'periodType', 'period_type', 'type', 'fiscal_period', 'quarter',
@@ -167,17 +175,36 @@ class EarningsCalendarAPIService:
 
         return self._extract_results(data)
 
-    @staticmethod
-    def _extract_results(data) -> list:
-        """レスポンスのトップレベルから結果リストを取り出す。"""
+    # 結果配列が入り得るキー（EDINET DB は data.calendar にネストする）
+    _ARRAY_KEYS = ('calendar', 'data', 'results', 'items', 'earnings',
+                   'entries', 'records')
+
+    @classmethod
+    def _extract_results(cls, data) -> list:
+        """レスポンスから結果リストを取り出す。
+
+        EDINET DB /v1/calendar は {"data": {"calendar": [...]}} のように1段
+        ネストするため、トップレベルと data 直下の両方を探索する。
+        """
         if isinstance(data, list):
             return data
-        if isinstance(data, dict):
-            for key in ('data', 'results', 'items', 'calendar', 'earnings',
-                        'entries', 'records'):
-                value = data.get(key)
-                if isinstance(value, list):
-                    return value
+        if not isinstance(data, dict):
+            return []
+
+        # トップレベルの配列キー（data が配列のケースも含む）
+        for key in cls._ARRAY_KEYS:
+            value = data.get(key)
+            if isinstance(value, list):
+                return value
+
+        # 1段ネスト（data / result 等のコンテナ内の配列キー）
+        for container_key in ('data', 'result', 'response', 'payload'):
+            inner = data.get(container_key)
+            if isinstance(inner, dict):
+                for key in cls._ARRAY_KEYS:
+                    value = inner.get(key)
+                    if isinstance(value, list):
+                        return value
         return []
 
     @staticmethod

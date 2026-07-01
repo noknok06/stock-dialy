@@ -55,12 +55,80 @@ def test_normalize_item_handles_field_name_variants():
     assert item['market_segment'] == 'プライム'
 
 
+def test_extract_results_handles_nested_calendar_envelope():
+    """EDINET DB の {"data": {"calendar": [...]}} ネストから配列を取り出す。"""
+    payload = {'data': {'calendar': [{'secCode': '9046'}], 'count': 1}}
+    rows = EarningsCalendarAPIService._extract_results(payload)
+    assert rows == [{'secCode': '9046'}]
+
+
+def test_normalize_uses_estimated_date_when_announcement_null():
+    """予測日（dateStatus=estimated）は announcementDate=null なので
+    estimatedAnnouncementDate を採用する（将来分を取りこぼさない）。"""
+    raw = {
+        'secCode': '9046', 'companyName': '神戸電鉄株式会社',
+        'announcementDate': None, 'estimatedAnnouncementDate': '2026-07-01',
+        'periodType': '第1四半期', 'marketSegment': None, 'dateStatus': 'estimated',
+    }
+    item = EarningsCalendarAPIService._normalize_item(raw)
+    assert item['securities_code'] == '9046'
+    assert item['company_name'] == '神戸電鉄株式会社'
+    assert item['earnings_date'] == date(2026, 7, 1)
+    assert item['earnings_type'] == '第1四半期'
+    assert item['market_segment'] == ''  # null は空文字に
+
+
+def test_normalize_prefers_confirmed_announcement_date():
+    """確定日（announcementDate）があればそちらを優先する。"""
+    raw = {
+        'secCode': '8316', 'companyName': 'SMFG',
+        'announcementDate': '2026-08-03',
+        'estimatedAnnouncementDate': '2026-07-02',
+        'periodType': '第1四半期',
+    }
+    item = EarningsCalendarAPIService._normalize_item(raw)
+    assert item['earnings_date'] == date(2026, 8, 3)
+
+
 def test_normalize_item_rejects_missing_code_or_date():
     """必須項目（コード・日付）が欠けたら捨てる（不完全データで落とさない）。"""
     assert EarningsCalendarAPIService._normalize_item({'name': 'x'}) is None
     assert EarningsCalendarAPIService._normalize_item(
         {'secCode': '7203'}  # 日付なし
     ) is None
+
+
+def test_fetch_window_parses_real_edinetdb_payload(settings):
+    """実物の /v1/calendar 応答（data.calendar ネスト・estimated 日付）を取り込める。"""
+    settings.EARNINGS_CALENDAR_API_SETTINGS = {
+        'API_KEY': 'k', 'BASE_URL': 'https://edinetdb.jp',
+        'CALENDAR_PATH': '/v1/calendar', 'PAGE_LIMIT': 2000, 'TIMEOUT': 5,
+    }
+    service = EarningsCalendarAPIService()
+    payload = {'data': {'calendar': [
+        {'secCode': '9046', 'companyName': '神戸電鉄株式会社',
+         'announcementDate': None, 'estimatedAnnouncementDate': '2026-07-01',
+         'periodType': '第1四半期', 'marketSegment': None,
+         'dateStatus': 'estimated'},
+        {'secCode': '8316', 'companyName': 'SMFG',
+         'announcementDate': None, 'estimatedAnnouncementDate': '2026-07-02',
+         'periodType': '第1四半期', 'marketSegment': None},
+    ], 'count': 2}}
+
+    def fake_get(url, params=None, timeout=None):
+        class Resp:
+            status_code = 200
+
+            def json(self_inner):
+                return payload
+        return Resp()
+
+    with patch.object(service.session, 'get', side_effect=fake_get):
+        items = service.fetch_window(days=30, start=date(2026, 7, 1))
+
+    assert {i['securities_code'] for i in items} == {'9046', '8316'}
+    assert items[0]['earnings_date'] == date(2026, 7, 1)
+    assert items[0]['earnings_type'] == '第1四半期'
 
 
 def test_fetch_window_splits_date_range_when_truncated(settings):
