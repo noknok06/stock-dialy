@@ -502,6 +502,45 @@ def test_calendar_view_requires_login(client):
 
 
 # ---------------------------------------------------------------------------
+# ホームの想起（確定決算ではなく「決算予定日が近い」を出す）
+# ---------------------------------------------------------------------------
+
+def test_recall_surfaces_upcoming_earnings():
+    """次回決算が14日以内なら想起キューに kind='earnings' が載る。"""
+    from stockdiary.services.recall_service import RecallService
+
+    user = User.objects.create_user('r_up', 'rup@e.com', 'p')
+    diary = StockDiary.objects.create(
+        user=user, stock_name='トヨタ自動車', stock_symbol='7203')
+    EarningsSchedule.objects.create(
+        securities_code='7203', earnings_date=date.today() + timedelta(days=5),
+        earnings_type='第1四半期')
+
+    recall = RecallService.build(user)
+    kinds = [c['kind'] for c in recall['queue']]
+    assert 'earnings' in kinds
+    assert 'disclosure' not in kinds  # 確定決算カードは載せない
+    card = next(c for c in recall['queue'] if c['kind'] == 'earnings')
+    assert card['diary_id'] == diary.id
+    assert 'あと5日' in card['meta']
+    assert recall['upcoming_earnings']
+
+
+def test_recall_ignores_far_earnings():
+    """次回決算が14日より先なら想起には出さない（近づいたら出る）。"""
+    from stockdiary.services.recall_service import RecallService
+
+    user = User.objects.create_user('r_far', 'rfar@e.com', 'p')
+    StockDiary.objects.create(user=user, stock_name='A', stock_symbol='7203')
+    EarningsSchedule.objects.create(
+        securities_code='7203', earnings_date=date.today() + timedelta(days=40))
+
+    recall = RecallService.build(user)
+    assert recall['upcoming_earnings'] == []
+    assert 'earnings' not in [c['kind'] for c in recall['queue']]
+
+
+# ---------------------------------------------------------------------------
 # 管理コマンド（手動実行・日付指定リカバリ）
 # ---------------------------------------------------------------------------
 
