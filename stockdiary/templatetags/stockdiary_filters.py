@@ -19,6 +19,31 @@ def extract_hashtags_filter(text):
     return extract_hashtags(text)
 
 
+# 表示用に取り除く会社種別表記（先頭/末尾どちらでも）。マスタ値は変更しない。
+_COMPANY_TYPE_TOKENS = ('株式会社', '（株）', '(株)', '㈱')
+
+
+@register.filter(name='company_short')
+@stringfilter
+def company_short(name):
+    """企業名から会社種別表記（株式会社・（株）・㈱）を除いた表示用の短縮名を返す。
+
+    可視文字数が限られる一覧で社名本体を見やすくするための表示専用フィルタ。
+    先頭・末尾どちらの表記も除く。結果が空になる場合（社名が種別表記のみ等）は
+    元の値を返す。マスタ（EarningsSchedule.company_name 等）は変更しない。
+    """
+    if not name:
+        return name
+    s = name.strip()
+    for token in _COMPANY_TYPE_TOKENS:
+        if s.startswith(token):
+            s = s[len(token):]
+        if s.endswith(token):
+            s = s[:-len(token)]
+    s = s.strip('　 ')
+    return s or name.strip()
+
+
 def _currency_code(obj):
     """日記オブジェクト・文字列・dict から通貨コード（JPY/USD）を取り出す"""
     if obj is None:
