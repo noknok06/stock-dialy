@@ -537,14 +537,17 @@ def test_recall_surfaces_upcoming_earnings():
     """次回決算が14日以内なら想起キューに kind='earnings' が載る。"""
     from stockdiary.services.recall_service import RecallService
 
+    today = date.today()
     user = User.objects.create_user('r_up', 'rup@e.com', 'p')
     diary = StockDiary.objects.create(
         user=user, stock_name='トヨタ自動車', stock_symbol='7203')
     EarningsSchedule.objects.create(
-        securities_code='7203', earnings_date=date.today() + timedelta(days=5),
+        securities_code='7203', earnings_date=today + timedelta(days=5),
         earnings_type='第1四半期')
 
-    recall = RecallService.build(user)
+    # today を明示（RecallService は timezone.now().date() を使うため、
+    # UTC/JST の日付境界でテストがぶれないように固定する）
+    recall = RecallService.build(user, today=today)
     kinds = [c['kind'] for c in recall['queue']]
     assert 'earnings' in kinds
     assert 'disclosure' not in kinds  # 確定決算カードは載せない
@@ -558,12 +561,13 @@ def test_recall_ignores_far_earnings():
     """次回決算が14日より先なら想起には出さない（近づいたら出る）。"""
     from stockdiary.services.recall_service import RecallService
 
+    today = date.today()
     user = User.objects.create_user('r_far', 'rfar@e.com', 'p')
     StockDiary.objects.create(user=user, stock_name='A', stock_symbol='7203')
     EarningsSchedule.objects.create(
-        securities_code='7203', earnings_date=date.today() + timedelta(days=40))
+        securities_code='7203', earnings_date=today + timedelta(days=40))
 
-    recall = RecallService.build(user)
+    recall = RecallService.build(user, today=today)
     assert recall['upcoming_earnings'] == []
     assert 'earnings' not in [c['kind'] for c in recall['queue']]
 
