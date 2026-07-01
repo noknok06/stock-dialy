@@ -693,7 +693,7 @@ EDINET_API_SETTINGS = {
 # エンドポイント・認証ヘッダーは提供元仕様に合わせて環境変数で差し替え可能。
 EARNINGS_CALENDAR_API_SETTINGS = {
     'API_KEY': os.getenv('EARNINGS_CALENDAR_API_KEY', ''),
-    'BASE_URL': os.getenv('EARNINGS_CALENDAR_API_BASE_URL', 'https://edinetdb.com'),
+    'BASE_URL': os.getenv('EARNINGS_CALENDAR_API_BASE_URL', 'https://edinetdb.jp'),
     'CALENDAR_PATH': os.getenv('EARNINGS_CALENDAR_API_PATH', '/v1/calendar'),
     # 認証ヘッダー名と方式（例: AUTH_HEADER='Authorization', AUTH_SCHEME='Bearer'）。
     # 既定はキーをヘッダーへそのまま入れる方式。提供元のドキュメントに合わせること。

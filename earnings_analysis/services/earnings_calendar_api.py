@@ -5,12 +5,18 @@
 決算発表予定を取得する。バッチ処理（日次1回）からのみ呼び出し、画面表示時は
 このクライアントを使わない（ローカルDB参照）。
 
+エンドポイント仕様（EDINET DB, https://edinetdb.jp/v1/calendar）:
+- クエリ: from / to（YYYY-MM-DD）・code・market・sort・order・limit（既定500・最大2000）
+- **offset は無い**。件数が limit を超える場合は日付レンジを分割して取得する。
+- 認証: X-API-Key ヘッダー（Authorization: Bearer も可）。
+
 設計方針:
 - エンドポイントURL・認証ヘッダーは settings.EARNINGS_CALENDAR_API_SETTINGS で
   差し替え可能にする（提供元の仕様変更や別プロバイダへの切り替えに耐える）。
-- レスポンスのフィールド名は提供元により揺れがあるため、複数の候補キーから
-  defensive に取り出して正規化する（_normalize_item）。
-- limit=2000 で取得し、返却件数が limit と等しい間は offset を進めて続きを取得する。
+- レスポンスのフィールド名は提供元により揺れがあるため、複数の候補キー
+  （snake / camel）から defensive に取り出して正規化する（_normalize_item）。
+- 決算は特定時期に集中するため 90 日窓で limit(2000) を超え得る。返却件数が limit と
+  等しい（＝切り捨ての可能性）ときは日付レンジを二分割して再取得する（_fetch_range）。
 """
 import logging
 from datetime import date, timedelta
@@ -20,15 +26,25 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-# レスポンスの揺れに備えた候補キー（先勝ち）
-_CODE_KEYS = ('securities_code', 'secCode', 'sec_code', 'code', 'ticker', 'stock_code')
-_NAME_KEYS = ('company_name', 'companyName', 'name', 'filer_name', 'filerName')
-_DATE_KEYS = (
-    'earnings_date', 'announcement_date', 'scheduled_date', 'disclosed_date',
-    'forecast_date', 'date',
+# レスポンスの揺れに備えた候補キー（先勝ち。snake/camel 両対応）
+_CODE_KEYS = (
+    'securities_code', 'securitiesCode', 'secCode', 'sec_code', 'securityCode',
+    'code', 'ticker', 'stock_code',
 )
-_TYPE_KEYS = ('earnings_type', 'type', 'period_type', 'fiscal_period', 'quarter')
-_MARKET_KEYS = ('market_segment', 'market', 'segment', 'market_division', 'market_code')
+_NAME_KEYS = (
+    'company_name', 'companyName', 'name', 'filer_name', 'filerName',
+)
+_DATE_KEYS = (
+    'earnings_date', 'announcementDate', 'announcement_date', 'scheduled_date',
+    'disclosureDate', 'disclosed_date', 'forecast_date', 'date',
+)
+_TYPE_KEYS = (
+    'earnings_type', 'periodType', 'period_type', 'type', 'fiscal_period', 'quarter',
+)
+_MARKET_KEYS = (
+    'market_segment', 'marketSegment', 'market', 'segment', 'market_division',
+    'market_code',
+)
 _UPDATED_KEYS = ('updated_at', 'updatedAt', 'modified', 'last_updated')
 
 
@@ -50,7 +66,7 @@ class EarningsCalendarAPIService:
     def __init__(self):
         conf = getattr(settings, 'EARNINGS_CALENDAR_API_SETTINGS', {}) or {}
         self.api_key = conf.get('API_KEY', '')
-        self.base_url = conf.get('BASE_URL', 'https://edinetdb.com').rstrip('/')
+        self.base_url = conf.get('BASE_URL', 'https://edinetdb.jp').rstrip('/')
         self.calendar_path = conf.get('CALENDAR_PATH', '/v1/calendar')
         self.auth_header = conf.get('AUTH_HEADER', 'X-API-Key')
         self.auth_scheme = conf.get('AUTH_SCHEME', '')  # 例: 'Bearer'。空ならキーをそのまま
@@ -87,39 +103,53 @@ class EarningsCalendarAPIService:
                          earnings_type, market_segment, source_updated_at(str)}
         """
         start = start or date.today()
-        date_from = start.isoformat()
-        date_to = (start + timedelta(days=days)).isoformat()
+        end = start + timedelta(days=days)
 
-        items = []
-        offset = 0
-        while True:
-            page = self._fetch_page(date_from, date_to, offset)
-            if not page:
-                break
-            items.extend(page)
-            # 返却件数が limit 未満なら最終ページ
-            if len(page) < self.page_limit:
-                break
-            offset += self.page_limit
-            # 無料枠保護のための安全弁（90日で2000件超×n回は通常あり得ない）
-            if offset > self.page_limit * 20:
-                logger.warning('決算予定API: offset上限に達したため打ち切り（offset=%s）', offset)
-                break
+        self._request_count = 0
+        raw = self._fetch_range(start, end)
 
         normalized = []
-        for raw in items:
-            item = self._normalize_item(raw)
-            if item:
-                normalized.append(item)
-        logger.info('決算予定API取得: 生%s件 → 正規化%s件', len(items), len(normalized))
+        for item in raw:
+            n = self._normalize_item(item)
+            if n:
+                normalized.append(n)
+        logger.info('決算予定API取得: 生%s件 → 正規化%s件', len(raw), len(normalized))
         return normalized
 
-    def _fetch_page(self, date_from: str, date_to: str, offset: int) -> list:
+    # 1回の同期での最大リクエスト数（無料枠100/日を守る安全弁）
+    MAX_REQUESTS = 25
+
+    def _fetch_range(self, date_from: date, date_to: date) -> list:
+        """[date_from, date_to] を取得。limit に達したら日付を二分割して取り切る。
+
+        /v1/calendar に offset は無いため、件数が limit と等しい（＝切り捨ての
+        可能性）ときはレンジを半分にして再帰取得する。重複は同期側で
+        (コード×日付) により排除されるため、分割の境界重複は無害。
+        """
+        if self._request_count >= self.MAX_REQUESTS:
+            logger.warning('決算予定API: リクエスト上限(%s)に達したため打ち切り',
+                           self.MAX_REQUESTS)
+            return []
+
+        rows = self._fetch_page(date_from, date_to)
+        self._request_count += 1
+
+        if len(rows) < self.page_limit or date_from >= date_to:
+            return rows
+
+        # 切り捨ての可能性 → レンジを二分割
+        mid = date_from + timedelta(days=(date_to - date_from).days // 2)
+        left = self._fetch_range(date_from, mid)
+        right = self._fetch_range(mid + timedelta(days=1), date_to)
+        return left + right
+
+    def _fetch_page(self, date_from: date, date_to: date) -> list:
         params = {
-            'from': date_from,
-            'to': date_to,
+            'from': date_from.isoformat(),
+            'to': date_to.isoformat(),
             'limit': self.page_limit,
-            'offset': offset,
+            'sort': 'date',
+            'order': 'asc',
         }
         try:
             resp = self.session.get(self.endpoint, params=params, timeout=self.timeout)
@@ -143,7 +173,8 @@ class EarningsCalendarAPIService:
         if isinstance(data, list):
             return data
         if isinstance(data, dict):
-            for key in ('results', 'data', 'items', 'calendar', 'records'):
+            for key in ('data', 'results', 'items', 'calendar', 'earnings',
+                        'entries', 'records'):
                 value = data.get(key)
                 if isinstance(value, list):
                     return value

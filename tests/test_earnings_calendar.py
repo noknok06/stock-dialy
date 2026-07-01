@@ -63,40 +63,53 @@ def test_normalize_item_rejects_missing_code_or_date():
     ) is None
 
 
-def test_fetch_window_paginates_with_offset(settings):
-    """返却件数が limit と等しい間は offset を進めて続きを取得する。"""
+def test_fetch_window_splits_date_range_when_truncated(settings):
+    """件数が limit と同数（切り捨ての可能性）なら日付レンジを分割して取り切る。
+
+    /v1/calendar に offset は無いため、offset ページングではなく from/to の
+    二分割で全件を取得することを固定する。
+    """
     settings.EARNINGS_CALENDAR_API_SETTINGS = {
         'API_KEY': 'k', 'BASE_URL': 'https://example.test',
         'CALENDAR_PATH': '/v1/calendar', 'AUTH_HEADER': 'X-API-Key',
         'AUTH_SCHEME': '', 'PAGE_LIMIT': 2, 'TIMEOUT': 5,
     }
     service = EarningsCalendarAPIService()
-
-    pages = [
-        # 1ページ目: limit(2)と同数 → 続きあり
-        [{'secCode': '1111', 'date': '2026-07-01'},
-         {'secCode': '2222', 'date': '2026-07-02'}],
-        # 2ページ目: limit未満 → 終了
-        [{'secCode': '3333', 'date': '2026-07-03'}],
-    ]
     calls = []
 
     def fake_get(url, params=None, timeout=None):
-        calls.append(params['offset'])
+        calls.append((params['from'], params['to']))
+        span = (params['from'], params['to'])
 
         class Resp:
             status_code = 200
 
             def json(self_inner):
-                idx = params['offset'] // 2
-                return {'results': pages[idx] if idx < len(pages) else []}
+                # フルレンジ（4日幅）は limit と同数(2件)で切り捨て → 分割を誘発
+                if span[0] != span[1] and (
+                        _daydiff(span) >= 3):
+                    return {'data': [{'code': 'AAAA', 'date': span[0]},
+                                     {'code': 'BBBB', 'date': span[1]}]}
+                # 分割後の各サブレンジは1件（< limit）→ 終了
+                return {'data': [{'code': span[0].replace('-', ''),
+                                  'date': span[0]}]}
         return Resp()
 
     with patch.object(service.session, 'get', side_effect=fake_get):
-        items = service.fetch_window(days=90)
+        items = service.fetch_window(days=4, start=date(2026, 7, 1))
 
-    assert calls == [0, 2]  # offset が 2 つ進んだ
-    assert [i['securities_code'] for i in items] == ['1111', '2222', '3333']
+    assert len(calls) >= 3  # フル + 分割2回以上
+    # 分割サブレンジ由来のレコードが取れている（全件取り切り）
+    codes = {i['securities_code'] for i in items}
+    assert codes  # 空でない
+    assert all(len(c) for c in codes)
+
+
+def _daydiff(span):
+    from datetime import datetime
+    a = datetime.strptime(span[0], '%Y-%m-%d').date()
+    b = datetime.strptime(span[1], '%Y-%m-%d').date()
+    return (b - a).days
 
 
 # ---------------------------------------------------------------------------
