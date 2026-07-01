@@ -501,6 +501,34 @@ def test_calendar_view_requires_login(client):
     assert resp.status_code in (301, 302)
 
 
+def test_detail_header_shows_next_earnings(client):
+    """日記詳細ヘッダー（銘柄コード横）に次回決算予定日を表示する。"""
+    user = User.objects.create_user('v_detail', 'vdt@e.com', 'p')
+    client.force_login(user)
+    diary = StockDiary.objects.create(
+        user=user, stock_name='トヨタ自動車', stock_symbol='7203')
+    EarningsSchedule.objects.create(
+        securities_code='7203', earnings_date=date.today() + timedelta(days=5),
+        earnings_type='第1四半期')
+
+    resp = client.get(reverse('stockdiary:detail', args=[diary.id]))
+    assert resp.status_code == 200
+    assert '次回決算'.encode() in resp.content
+    assert 'あと5日'.encode() in resp.content
+
+
+def test_detail_header_hides_next_earnings_when_none(client):
+    """決算予定が無い銘柄では次回決算表示を出さない。"""
+    user = User.objects.create_user('v_detail2', 'vdt2@e.com', 'p')
+    client.force_login(user)
+    diary = StockDiary.objects.create(
+        user=user, stock_name='メモ株', stock_symbol='7203')
+
+    resp = client.get(reverse('stockdiary:detail', args=[diary.id]))
+    assert resp.status_code == 200
+    assert '次回決算'.encode() not in resp.content
+
+
 # ---------------------------------------------------------------------------
 # ホームの想起（確定決算ではなく「決算予定日が近い」を出す）
 # ---------------------------------------------------------------------------

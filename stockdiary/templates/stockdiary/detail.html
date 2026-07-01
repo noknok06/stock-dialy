@@ -187,6 +187,14 @@
             {% if diary.stock_symbol %}
             <span class="stock-symbol-badge">{{ diary.stock_symbol }}</span>
             {% endif %}
+            {% if diary.next_earnings %}
+            <a class="earnings-indicator earnings-indicator--{{ diary.next_earnings.proximity }}"
+               href="{% url 'stockdiary:earnings_calendar' %}"
+               title="次回決算予定：{{ diary.next_earnings.date|date:'Y年m月d日' }}{% if diary.next_earnings.type %}（{{ diary.next_earnings.type }}）{% endif %}">
+              <i class="bi bi-calendar-event"></i>
+              <span class="earnings-date">次回決算 {{ diary.next_earnings.date|date:"n/j" }}{% with d=diary.next_earnings.days_until %}{% if d == 0 %}（本日）{% else %}（あと{{ d }}日）{% endif %}{% endwith %}</span>
+            </a>
+            {% endif %}
           </div>
           
           <div class="header-meta-info">
