@@ -1,12 +1,12 @@
-{# 保有/ウォッチの決算サマリー1行。diary.next_earnings（NextEarnings）が必須 #}
+{# 保有/ウォッチの決算サマリー1行。2段構成: タイトル(コード+銘柄名/長ければ省略)/メタ(種別・日付・残日数)。diary.next_earnings必須 #}
 <a class="ec-row" href="{% url 'stockdiary:detail' diary.id %}">
-  <span class="ec-row-name">
+  <div class="ec-row-title">
     <span class="ec-code">{{ diary.stock_symbol }}</span>
-    {{ diary.stock_name }}
+    <span class="ec-row-name">{{ diary.stock_name }}</span>
+  </div>
+  <div class="ec-row-meta">
     {% if diary.next_earnings.type %}<span class="ec-type">{{ diary.next_earnings.type }}</span>{% endif %}
-  </span>
-  <span class="ec-row-date">
-    {{ diary.next_earnings.date|date:"Y/m/d" }}
+    <span class="ec-row-date">{{ diary.next_earnings.date|date:"Y/m/d" }}</span>
     {% with d=diary.next_earnings.days_until %}
       {% if d == 0 %}
         <span class="ec-badge ec-badge--imminent">本日</span>
@@ -14,5 +14,5 @@
         <span class="ec-badge ec-badge--{{ diary.next_earnings.proximity }}">あと{{ d }}日</span>
       {% endif %}
     {% endwith %}
-  </span>
+  </div>
 </a>

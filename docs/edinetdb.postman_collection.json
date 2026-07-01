@@ -1,0 +1,209 @@
+{
+  "info": {
+    "name": "EDINET DB API (カブログ)",
+    "_postman_id": "edinetdb-kabulog-collection",
+    "description": "EDINET DB (https://edinetdb.jp/v1) を Postman から叩くためのコレクション。\n\n使い方:\n1. このコレクションと edinetdb.postman_environment.json をインポート\n2. Environment「EDINET DB」を選択し、api_key に発行済みキーを設定\n3. 各リクエストを送信（認証は X-API-Key ヘッダーをコレクション全体で自動付与）\n\n無料枠 100req/日。各レスポンスヘッダー X-RateLimit-Remaining / X-Unit-Cost を\nテストスクリプトが Postman Console に出力する。/usage で累計も確認可。\n\n変数:\n- base_url: https://edinetdb.jp/v1\n- api_key: 発行済みAPIキー（ファイルには入れない）\n- edinet_code: 企業系エンドポイントのパス（EDINETコード。例 E02144=トヨタ）\n- sec_code: 証券コード（calendar/events のフィルタ。例 7203）\n- from / to: 期間（YYYY-MM-DD）",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      { "key": "key", "value": "X-API-Key", "type": "string" },
+      { "key": "value", "value": "{{api_key}}", "type": "string" },
+      { "key": "in", "value": "header", "type": "string" }
+    ]
+  },
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// 無料枠(100/日)の残りとリクエスト単価を Console に出す",
+          "const remain = pm.response.headers.get('X-RateLimit-Remaining');",
+          "const cost = pm.response.headers.get('X-Unit-Cost');",
+          "if (remain !== null) console.log('X-RateLimit-Remaining:', remain, ' X-Unit-Cost:', cost);",
+          "pm.test('status is 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    { "key": "base_url", "value": "https://edinetdb.jp/v1" },
+    { "key": "api_key", "value": "" },
+    { "key": "edinet_code", "value": "E02144" },
+    { "key": "sec_code", "value": "7203" },
+    { "key": "from", "value": "2026-07-01" },
+    { "key": "to", "value": "2026-07-31" }
+  ],
+  "item": [
+    {
+      "name": "00 ステータス /status (認証不要)",
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/status",
+          "host": ["{{base_url}}"],
+          "path": ["status"]
+        },
+        "description": "API稼働状況・最終データ更新・企業数。認証不要。まず疎通確認に。"
+      }
+    },
+    {
+      "name": "01 利用状況 /usage (残枠の確認)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/usage",
+          "host": ["{{base_url}}"],
+          "path": ["usage"]
+        },
+        "description": "plan / daily_limit / today_count / daily_remaining / monthly_remaining / 過去30日履歴。無料枠の消費状況を確認する。"
+      }
+    },
+    {
+      "name": "02 決算カレンダー /calendar",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/calendar?from={{from}}&to={{to}}&limit=50&sort=date&order=asc",
+          "host": ["{{base_url}}"],
+          "path": ["calendar"],
+          "query": [
+            { "key": "from", "value": "{{from}}" },
+            { "key": "to", "value": "{{to}}" },
+            { "key": "limit", "value": "50" },
+            { "key": "sort", "value": "date" },
+            { "key": "order", "value": "asc" },
+            { "key": "code", "value": "{{sec_code}}", "disabled": true },
+            { "key": "market", "value": "prime", "disabled": true }
+          ]
+        },
+        "description": "決算発表予定。全銘柄横断で1〜数リクエスト（offsetは無く、超過時は日付レンジ分割）。\nレスポンスは data.calendar[] にネスト。各項目: secCode / companyName / periodType /\nmarketSegment / announcementDate(確定, 予測時null) / estimatedAnnouncementDate(予測) /\ndateStatus(confirmed|estimated) / marketCap 等。\nカブログの日次同期(sync_earnings_calendar)が使うエンドポイント。"
+      }
+    },
+    {
+      "name": "03 イベントフィード /events (決算=earnings_summary)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/events?since={{from}}&until={{to}}&event_type=earnings_summary&limit=50&offset=0",
+          "host": ["{{base_url}}"],
+          "path": ["events"],
+          "query": [
+            { "key": "since", "value": "{{from}}" },
+            { "key": "until", "value": "{{to}}" },
+            { "key": "event_type", "value": "earnings_summary" },
+            { "key": "event_category", "value": "earnings", "disabled": true },
+            { "key": "sec_code", "value": "{{sec_code}}", "disabled": true },
+            { "key": "limit", "value": "50" },
+            { "key": "offset", "value": "0" }
+          ]
+        },
+        "description": "コーポレートイベント統合フィード（15分更新）。全銘柄横断・limit最大1000・offsetあり。\n★確認したい点: earnings_summary にヘッドライン数値(売上/営業利益/YoY)が載っているか。\n載っていれば「決算が出た＋概況」を全銘柄1〜数リクエストで取得でき、個社取得が不要になる。\n他の event_type: tender_offer / mbo / merger / large_holding_report /\ndisclosure_forecast_revision(業績予想修正) 等。"
+      }
+    },
+    {
+      "name": "04 企業検索 /search (認証不要)",
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/search?q=トヨタ",
+          "host": ["{{base_url}}"],
+          "path": ["search"],
+          "query": [
+            { "key": "q", "value": "トヨタ" },
+            { "key": "business_tags", "value": "ai,saas", "disabled": true }
+          ]
+        },
+        "description": "企業名/EDINETコード/証券コードで検索。EDINETコード⇔証券コードの解決に。認証不要。"
+      }
+    },
+    {
+      "name": "05 企業詳細 /companies/{edinet_code}",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/companies/{{edinet_code}}",
+          "host": ["{{base_url}}"],
+          "path": ["companies", "{{edinet_code}}"]
+        },
+        "description": "基本情報＋最新財務＋基礎属性。{code} は EDINETコード（例 E02144=トヨタ）。1req=1単位。"
+      }
+    },
+    {
+      "name": "06 決算短信 /companies/{edinet_code}/earnings",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/companies/{{edinet_code}}/earnings?limit=8",
+          "host": ["{{base_url}}"],
+          "path": ["companies", "{{edinet_code}}", "earnings"],
+          "query": [
+            { "key": "limit", "value": "8" },
+            { "key": "include_qualitative_text", "value": "false", "disabled": true }
+          ]
+        },
+        "description": "決算短信(最新)。開示日・YoY・BS/CF・会社予想(forecast_*)・進捗率。\n個社エンドポイント（1銘柄=1req）。詳細は遅延取得＋キャッシュ＋日次上限で運用する想定。"
+      }
+    },
+    {
+      "name": "07 財務時系列 /companies/{edinet_code}/financials",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/companies/{{edinet_code}}/financials?years=5&period=annual",
+          "host": ["{{base_url}}"],
+          "path": ["companies", "{{edinet_code}}", "financials"],
+          "query": [
+            { "key": "years", "value": "5" },
+            { "key": "period", "value": "annual" }
+          ]
+        },
+        "description": "会計年度別の財務時系列（147項目×最大6年）。period=annual/quarterly/quarterly_standalone。"
+      }
+    },
+    {
+      "name": "08 財務指標 /companies/{edinet_code}/ratios",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/companies/{{edinet_code}}/ratios",
+          "host": ["{{base_url}}"],
+          "path": ["companies", "{{edinet_code}}", "ratios"]
+        },
+        "description": "ROE/ROA/営業利益率/自己資本比率/PER 等の年度別指標。"
+      }
+    },
+    {
+      "name": "09 健全性スコア /companies/{edinet_code}/analysis",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/companies/{{edinet_code}}/analysis",
+          "host": ["{{base_url}}"],
+          "path": ["companies", "{{edinet_code}}", "analysis"]
+        },
+        "description": "健全性スコア(0-100)＋主要指標サマリー＋業種ベンチマーク＋AIインサイト。"
+      }
+    },
+    {
+      "name": "10 開示一覧 /companies/{edinet_code}/disclosures",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/companies/{{edinet_code}}/disclosures?month=2026-07",
+          "host": ["{{base_url}}"],
+          "path": ["companies", "{{edinet_code}}", "disclosures"],
+          "query": [
+            { "key": "month", "value": "2026-07" },
+            { "key": "types", "value": "tanshin,yuho", "disabled": true }
+          ]
+        },
+        "description": "期間内の開示（決算短信＋有報の提出日）。week/month/since・until で絞り込み。既定は直近90日。"
+      }
+    }
+  ]
+}
