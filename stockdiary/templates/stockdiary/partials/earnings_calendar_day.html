@@ -1,3 +1,4 @@
+{% load stockdiary_filters %}
 {# 選択日の決算一覧（HTMXで日パネルのみ差し替える場合はこの要素ごと返す） #}
 <div id="ec-day-panel" class="ec-day-panel">
   <div class="ec-day-panel-head">
@@ -10,7 +11,7 @@
     {% for item in day_items %}
     <div class="ec-item{% if item.is_mine %} ec-item--mine{% endif %}">
       <span class="ec-code">{{ item.ticker_normalized }}</span>
-      <span class="ec-item-name">{{ item.company_name|default:"—" }}</span>
+      <span class="ec-item-name">{{ item.company_name|company_short|default:"—" }}</span>
       {% if item.earnings_type %}<span class="ec-type">{{ item.earnings_type }}</span>{% endif %}
       {% if item.market_segment %}<span class="ec-market">{{ item.market_segment }}</span>{% endif %}
       {% if item.is_mine %}<span class="ec-mine-tag"><i class="bi bi-bookmark-star-fill"></i> 記録中</span>{% endif %}
