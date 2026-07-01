@@ -404,6 +404,10 @@ class StockDiaryDetailView(ObjectNotFoundRedirectMixin, LoginRequiredMixin, Deta
         self._build_json_export_context(context)
         context['today'] = timezone.now().date()
         context['mention_map'] = get_mention_map(self.request.user)
+        # 次回決算予定日（ヘッダー表示用）。決算日は日記に持たせず、銘柄コードで
+        # EarningsSchedule を引いて self.object.next_earnings に付与する。
+        from .services.earnings_lookup import attach_next_earnings
+        attach_next_earnings([self.object])
         from tags.models import Tag as _Tag
         context['thesis_form'] = ThesisForm(user=self.request.user)
         context['thesis_all_tags'] = list(

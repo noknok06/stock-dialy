@@ -5,126 +5,190 @@
 
 {% block head %}
 <style>
-.ec-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.25rem; }
+/* 決算カレンダー — 添付レイアウト準拠のブラッシュアップ版。
+   ベース面/文字は既存のCSS変数（ダークモード対応）を使い、状態色（記録=ネイビー・
+   本日=レッド・選択=ブラック・件数=チャコール、残り日数=マロン/オリーブ/グレー）は
+   意味づけとして明示色を使う。 */
+.ec-page { --ec-mine: #2f3e6b; --ec-count: #3b4046; --ec-today: #dc2626;
+    --ec-selected: #1f2328; }
+
+.ec-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.5rem; }
 .ec-header h1 { font-size: 1.4rem; margin: 0; display: flex; align-items: center; gap: 0.5rem; }
 
-.ec-section { margin-bottom: 1.75rem; }
+.ec-section { margin-bottom: 2rem; }
 .ec-section-title {
-    font-size: 1.05rem; display: flex; align-items: center; gap: 0.5rem;
-    margin-bottom: 0.75rem; padding-bottom: 0.4rem;
-    border-bottom: 2px solid var(--border-light);
+    font-size: 0.78rem; letter-spacing: 0.04em; text-transform: uppercase;
+    display: flex; align-items: center; gap: 0.5rem;
+    margin-bottom: 0.85rem; color: var(--text-secondary); font-weight: 600;
 }
-.ec-count { font-size: 0.75rem; color: var(--text-secondary); font-weight: normal; margin-left: auto; }
-.ec-list { display: flex; flex-direction: column; gap: 0.4rem; }
+.ec-count { font-size: 0.78rem; color: var(--text-secondary); font-weight: 500; margin-left: auto; }
+.ec-list { display: flex; flex-direction: column; gap: 0.6rem; }
 .ec-row {
     display: flex; justify-content: space-between; align-items: center; gap: 0.75rem;
-    padding: 0.6rem 0.85rem; background: var(--bg-secondary);
-    border: 1px solid var(--border-light); border-radius: var(--radius-md, 8px);
+    padding: 0.85rem 1.1rem; background: var(--card-bg, var(--bg-primary, #fff));
+    border: 1px solid var(--border-light); border-radius: 14px;
     text-decoration: none; color: var(--text-primary);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03); transition: border-color .15s, box-shadow .15s;
 }
-.ec-row:hover { border-color: var(--primary-color); }
-.ec-row-name { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-.ec-row-date { display: flex; align-items: center; gap: 0.5rem; white-space: nowrap; font-size: 0.9rem; }
+.ec-row:hover { border-color: var(--ec-mine); box-shadow: 0 3px 8px rgba(0,0,0,0.06); }
+.ec-row-name { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; font-weight: 600; }
+.ec-row-date { display: flex; align-items: center; gap: 0.65rem; white-space: nowrap;
+    font-size: 0.95rem; color: var(--text-secondary); }
 .ec-code {
-    font-family: monospace; font-weight: 700; background: var(--bg-tertiary, #eef);
-    padding: 0.05rem 0.4rem; border-radius: 4px; font-size: 0.8rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 700;
+    background: var(--bg-tertiary, #eef1f4); color: var(--text-primary);
+    padding: 0.15rem 0.5rem; border-radius: 7px; font-size: 0.82rem; letter-spacing: 0.02em;
 }
 .ec-type, .ec-market {
-    font-size: 0.72rem; padding: 0.05rem 0.4rem; border-radius: 4px;
-    background: rgba(90,126,197,0.12); color: var(--primary-color);
+    font-size: 0.72rem; font-weight: 600; padding: 0.12rem 0.5rem; border-radius: 6px;
+    background: var(--bg-tertiary, #eef1f4); color: var(--text-secondary);
 }
-.ec-market { background: rgba(120,120,120,0.12); color: var(--text-secondary); }
 .ec-badge {
-    font-size: 0.72rem; font-weight: 700; padding: 0.1rem 0.5rem;
-    border-radius: var(--radius-full); color: #fff; background: var(--text-secondary);
+    font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.7rem;
+    border-radius: var(--radius-full, 999px); color: #fff; background: #6b7280;
 }
-.ec-badge--imminent { background: #e03131; }
-.ec-badge--soon { background: #f08c00; }
-.ec-badge--scheduled { background: #868e96; }
+.ec-badge--imminent { background: #8a2b2b; }
+.ec-badge--soon { background: #8a7636; }
+.ec-badge--scheduled { background: #6b7280; }
 .ec-empty { color: var(--text-secondary); font-size: 0.9rem; padding: 0.5rem 0; }
 
-/* ===== カレンダー本体（ハイブリッド） ===== */
-.ec-scope { display: inline-flex; border: 1px solid var(--border-light); border-radius: var(--radius-full); overflow: hidden; margin-bottom: 0.75rem; }
-.ec-scope button { border: none; background: var(--bg-secondary); padding: 0.45rem 1rem; font-size: 0.85rem; cursor: pointer; color: var(--text-secondary); }
-.ec-scope button.active { background: var(--primary-color); color: #fff; }
+/* ===== サマリーのタブ（保有 / ウォッチ）— CSSのみで切替、縦積みを回避 ===== */
+.ec-tab-input { position: absolute; opacity: 0; pointer-events: none; }
+.ec-tab-bar { display: inline-flex; gap: 2px; padding: 3px; background: var(--bg-secondary);
+    border-radius: var(--radius-full, 999px); margin-bottom: 0.85rem; }
+.ec-tab-bar label { display: inline-flex; align-items: center; gap: 0.4rem;
+    padding: 0.45rem 1rem; font-size: 0.86rem; font-weight: 600; color: var(--text-secondary);
+    border-radius: var(--radius-full, 999px); cursor: pointer; transition: background .15s, color .15s; }
+.ec-tab-count { font-size: 0.72rem; font-weight: 700; background: rgba(120,120,120,0.18);
+    color: inherit; border-radius: 999px; min-width: 1.15rem; padding: 0 0.35rem; text-align: center; }
+.ec-tab-panel { display: none; }
+#ec-tab-hold:checked ~ .ec-tab-bar label[for="ec-tab-hold"],
+#ec-tab-watch:checked ~ .ec-tab-bar label[for="ec-tab-watch"] {
+    background: var(--ec-selected); color: #fff; }
+#ec-tab-hold:checked ~ .ec-tab-bar label[for="ec-tab-hold"] .ec-tab-count,
+#ec-tab-watch:checked ~ .ec-tab-bar label[for="ec-tab-watch"] .ec-tab-count {
+    background: rgba(255,255,255,0.28); }
+#ec-tab-hold:checked ~ .ec-hold-panel { display: block; }
+#ec-tab-watch:checked ~ .ec-watch-panel { display: block; }
+.dark-mode #ec-tab-hold:checked ~ .ec-tab-bar label[for="ec-tab-hold"],
+.dark-mode #ec-tab-watch:checked ~ .ec-tab-bar label[for="ec-tab-watch"],
+[data-theme="dark"] #ec-tab-hold:checked ~ .ec-tab-bar label[for="ec-tab-hold"],
+[data-theme="dark"] #ec-tab-watch:checked ~ .ec-tab-bar label[for="ec-tab-watch"] {
+    background: var(--primary-color); }
 
-.ec-month-nav { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-bottom: 0.6rem; }
-.ec-month-label { font-size: 1.05rem; font-weight: 700; min-width: 7rem; text-align: center; }
+/* ===== カレンダー本体（ハイブリッド） ===== */
+.ec-scope { display: inline-flex; gap: 2px; padding: 3px; background: var(--bg-secondary);
+    border-radius: var(--radius-full, 999px); margin-bottom: 1.25rem; }
+.ec-scope button { border: none; background: transparent; padding: 0.5rem 1.25rem;
+    font-size: 0.88rem; font-weight: 600; cursor: pointer; color: var(--text-secondary);
+    border-radius: var(--radius-full, 999px); transition: background .15s, color .15s; }
+.ec-scope button.active { background: var(--ec-selected); color: #fff; }
+
+.ec-month-nav { display: flex; align-items: center; justify-content: center; gap: 1.25rem; margin-bottom: 1rem; }
+.ec-month-label { font-size: 1.5rem; font-weight: 700; min-width: 8rem; text-align: center; letter-spacing: 0.02em; }
 .ec-nav-btn {
-    border: 1px solid var(--border-light); background: var(--bg-secondary);
-    width: 2rem; height: 2rem; border-radius: 50%; cursor: pointer;
+    border: 1px solid var(--border-light); background: transparent;
+    width: 2.4rem; height: 2.4rem; border-radius: 50%; cursor: pointer;
     display: inline-flex; align-items: center; justify-content: center; color: var(--text-primary);
-}
+    transition: background .15s; }
+.ec-nav-btn:hover { background: var(--bg-secondary); }
 .ec-nav-btn--disabled { opacity: 0.3; cursor: default; }
 
-.ec-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-.ec-grid-head { text-align: center; font-size: 0.75rem; color: var(--text-secondary); padding: 0.25rem 0; font-weight: 600; }
+.ec-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+.ec-grid-head { text-align: center; font-size: 0.8rem; color: var(--text-secondary); padding: 0.25rem 0 0.5rem; font-weight: 600; }
 .ec-grid-head.ec-sat { color: #2563eb; }
 .ec-grid-head.ec-sun { color: #dc2626; }
 
 .ec-cell {
-    aspect-ratio: 1 / 1; border: 1px solid var(--border-light); border-radius: 8px;
+    aspect-ratio: 1 / 1; border: 1px solid var(--border-light); border-radius: 14px;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 2px; background: var(--bg-secondary); font: inherit; padding: 0;
+    gap: 3px; background: var(--card-bg, var(--bg-primary, #fff)); font: inherit; padding: 0;
 }
-.ec-cell-day { font-size: 0.8rem; color: var(--text-primary); }
+.ec-cell-day { font-size: 0.95rem; color: var(--text-primary); line-height: 1; }
 .ec-cell--empty { color: var(--text-secondary); }
-.ec-cell--other .ec-cell-day { opacity: 0.35; }
+.ec-cell--other .ec-cell-day { opacity: 0.3; }
 .ec-cell--out { background: transparent; border-color: transparent; }
-.ec-cell--has { cursor: pointer; border-color: rgba(90,126,197,0.4); }
-.ec-cell--has:hover { border-color: var(--primary-color); }
+.ec-cell--has { cursor: pointer; }
+.ec-cell--has:hover { border-color: var(--ec-mine); box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
 .ec-cell-count {
-    font-size: 0.7rem; font-weight: 700; line-height: 1; color: #fff;
-    background: #868e96; border-radius: 999px; padding: 1px 6px; min-width: 1.1rem; text-align: center;
+    font-size: 0.72rem; font-weight: 700; line-height: 1; color: #fff;
+    background: var(--ec-count); border-radius: 999px;
+    min-width: 1.5rem; height: 1.5rem; padding: 0 0.4rem;
+    display: inline-flex; align-items: center; justify-content: center;
 }
-.ec-cell-count--mine { background: var(--primary-color); }
-.ec-cell--today { box-shadow: inset 0 0 0 2px #e03131; }
-.ec-cell--selected { background: var(--primary-color); }
+/* 記録中の銘柄を含む日：ネイビーの件数バッジ＋セルを淡くハイライト */
+.ec-cell--mine { border-color: rgba(47,62,107,0.45); background: rgba(47,62,107,0.04); }
+.ec-cell-count--mine { background: var(--ec-mine); }
+/* 本日：赤いリング */
+.ec-cell--today { box-shadow: inset 0 0 0 2px var(--ec-today); }
+/* 選択日：黒塗り（本日・記録より優先。後に定義して勝たせる） */
+.ec-cell--selected { background: var(--ec-selected); border-color: var(--ec-selected); box-shadow: none; }
 .ec-cell--selected .ec-cell-day { color: #fff; }
-.ec-cell--selected .ec-cell-count { background: #fff; color: var(--primary-color); }
+.ec-cell--selected .ec-cell-count { background: #fff; color: var(--ec-selected); }
 
-.ec-day-panel { margin-top: 1rem; border: 1px solid var(--border-light); border-radius: var(--radius-md, 8px); overflow: hidden; }
-.ec-day-panel-head { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.85rem; background: var(--bg-secondary); font-weight: 700; font-size: 0.92rem; }
+.ec-day-panel { margin-top: 1.25rem; border: 1px solid var(--border-light); border-radius: 14px;
+    overflow: hidden; background: var(--card-bg, var(--bg-primary, #fff)); }
+.ec-day-panel-head { display: flex; align-items: center; gap: 0.5rem; padding: 0.7rem 1rem;
+    background: var(--bg-secondary); font-weight: 700; font-size: 0.95rem; }
 .ec-day-items { display: flex; flex-direction: column; }
-.ec-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.85rem; border-top: 1px solid var(--border-light); flex-wrap: wrap; }
-.ec-item--mine { background: rgba(90,126,197,0.06); }
-.ec-item-name { flex: 1; min-width: 8rem; }
-.ec-mine-tag { font-size: 0.72rem; color: var(--primary-color); white-space: nowrap; }
+.ec-item { display: flex; align-items: center; gap: 0.55rem; padding: 0.7rem 1rem;
+    border-top: 1px solid var(--border-light); flex-wrap: wrap; }
+.ec-item--mine { background: rgba(47,62,107,0.05); }
+.ec-item-name { flex: 1; min-width: 8rem; font-weight: 600; }
+.ec-mine-tag { font-size: 0.74rem; color: var(--ec-mine); font-weight: 600; white-space: nowrap; }
+
+/* ダークモードでは選択日をブランドカラー寄りにして視認性を確保 */
+.dark-mode .ec-scope button.active,
+[data-theme="dark"] .ec-scope button.active,
+.dark-mode .ec-cell--selected,
+[data-theme="dark"] .ec-cell--selected {
+    background: var(--primary-color); border-color: var(--primary-color);
+}
+[data-theme="dark"] .ec-cell--selected .ec-cell-count,
+.dark-mode .ec-cell--selected .ec-cell-count { color: var(--primary-color); }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container py-4 ec-page">
   <div class="ec-header">
     <h1><i class="bi bi-calendar-event"></i> 決算カレンダー</h1>
   </div>
 
-  {# ===== 保有銘柄: 次回決算日・残り日数 ===== #}
-  <section class="ec-section">
-    <h2 class="ec-section-title"><i class="bi bi-briefcase"></i> 保有銘柄の次回決算</h2>
-    {% if holdings %}
-    <div class="ec-list">
-      {% for diary in holdings %}
-      {% include 'stockdiary/components/_earnings_summary_row.html' with diary=diary %}
-      {% endfor %}
+  {# ===== 次回決算サマリー: 保有 / ウォッチ をタブ切替（縦積みを避ける・JS不要） ===== #}
+  <section class="ec-section ec-summary">
+    <input type="radio" name="ec-summary-tab" id="ec-tab-hold" class="ec-tab-input"
+           {% if holdings or not watchlist %}checked{% endif %}>
+    <input type="radio" name="ec-summary-tab" id="ec-tab-watch" class="ec-tab-input"
+           {% if not holdings and watchlist %}checked{% endif %}>
+    <div class="ec-tab-bar" role="tablist">
+      <label for="ec-tab-hold"><i class="bi bi-briefcase"></i> 保有<span class="ec-tab-count">{{ holdings|length }}</span></label>
+      <label for="ec-tab-watch"><i class="bi bi-eye"></i> ウォッチ<span class="ec-tab-count">{{ watchlist|length }}</span></label>
     </div>
-    {% else %}
-    <p class="ec-empty">次回決算日が判明している保有銘柄はありません。</p>
-    {% endif %}
-  </section>
 
-  {# ===== ウォッチリスト（メモ）: 決算予定日・近日順 ===== #}
-  <section class="ec-section">
-    <h2 class="ec-section-title"><i class="bi bi-eye"></i> ウォッチリストの決算予定</h2>
-    {% if watchlist %}
-    <div class="ec-list">
-      {% for diary in watchlist %}
-      {% include 'stockdiary/components/_earnings_summary_row.html' with diary=diary %}
-      {% endfor %}
+    <div class="ec-tab-panel ec-hold-panel">
+      {% if holdings %}
+      <div class="ec-list">
+        {% for diary in holdings %}
+        {% include 'stockdiary/components/_earnings_summary_row.html' with diary=diary %}
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="ec-empty">次回決算日が判明している保有銘柄はありません。</p>
+      {% endif %}
     </div>
-    {% else %}
-    <p class="ec-empty">次回決算日が判明しているウォッチ銘柄（メモ）はありません。</p>
-    {% endif %}
+
+    <div class="ec-tab-panel ec-watch-panel">
+      {% if watchlist %}
+      <div class="ec-list">
+        {% for diary in watchlist %}
+        {% include 'stockdiary/components/_earnings_summary_row.html' with diary=diary %}
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="ec-empty">次回決算日が判明しているウォッチ銘柄（メモ）はありません。</p>
+      {% endif %}
+    </div>
   </section>
 
   {# ===== 決算カレンダー（月グリッド＋選択日リスト） ===== #}
