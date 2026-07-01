@@ -345,7 +345,7 @@ def apply_diary_filters(queryset, params, user):
         フィルター・ソート済みの QuerySet（distinct 適用済み）
     """
     from datetime import timedelta
-    from django.db.models import Count, Q as _Q, F as _F
+    from django.db.models import Count, Q as _Q, F as _F, OuterRef, Subquery
     from django.utils import timezone as _tz
     from .models import Transaction as _Transaction
     from .utils import apply_diary_search, search_diaries_by_hashtag
@@ -423,6 +423,26 @@ def apply_diary_filters(queryset, params, user):
 
     # ソート
     sort = params.get('sort', '')
+    # 決算予定フィルタ/ソートで使う「次回決算日」。日記に決算日は持たせず、
+    # EarningsSchedule（証券コードがキーの決算予定マスタ・/calendar は4桁で返す）を
+    # コードで相関サブクエリ参照して annotate する。要求時のみ付与する。
+    earnings = params.get('earnings', '')
+    earnings_days = {'7': 7, '14': 14, '30': 30}.get(earnings)
+    if earnings_days is not None or sort == 'earnings_asc':
+        from earnings_analysis.models import EarningsSchedule
+        _today = _tz.now().date()
+        _next_e = (
+            EarningsSchedule.objects
+            .filter(securities_code=OuterRef('stock_symbol'), earnings_date__gte=_today)
+            .order_by('earnings_date')
+            .values('earnings_date')[:1]
+        )
+        queryset = queryset.annotate(_next_earnings_date=Subquery(_next_e))
+        if earnings_days is not None:
+            queryset = queryset.filter(
+                _next_earnings_date__range=(_today, _today + timedelta(days=earnings_days))
+            )
+
     sort_map = {
         'name': ['stock_name'],
         'symbol': ['stock_symbol'],
@@ -434,6 +454,8 @@ def apply_diary_filters(queryset, params, user):
         'transaction_count_asc': ['transaction_count', 'updated_at'],
         'total_cost_desc': ['-total_cost', '-updated_at'],
         'total_cost_asc': ['total_cost', 'updated_at'],
+        # 決算が近い順（決算予定が無い銘柄は末尾）
+        'earnings_asc': [_F('_next_earnings_date').asc(nulls_last=True), '-updated_at'],
     }
     queryset = queryset.order_by(*sort_map.get(sort, ['-updated_at']))
 
