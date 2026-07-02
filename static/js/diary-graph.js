@@ -31,11 +31,12 @@
 
   // エッジ色
   const EDGE_COLOR = {
-    manual:  '#94a3b8',
-    tag:     '#a78bfa',
-    sector:  '#fb923c',
-    hashtag: '#a78bfa',  // タグと統合（同色）
-    mention: '#f59e0b',
+    manual:        '#94a3b8',
+    tag:           '#a78bfa',
+    sector:        '#fb923c',
+    hashtag:       '#a78bfa',  // タグと統合（同色）
+    mention:       '#f59e0b',
+    tag_hierarchy: '#7c3aed',  // 親子タグ（細分タグ）のハブ-ハブ接続
   };
 
   // タグエッジの方向色（DiaryTagDirection）。追い風(up)=緑 / 向かい風(down)=赤
@@ -1115,6 +1116,7 @@
       const secLeg  = document.getElementById('legend-sector-node');
       const hubWrap = document.getElementById('legend-hubs');
       const mentionLeg = document.getElementById('legend-mention-edge');
+      const hierarchyLeg = document.getElementById('legend-hierarchy-edge');
       const axisLeg = document.getElementById('legend-axis');
 
       const toggle = (el, show) => el && el.classList.toggle('legend-hidden', !show);
@@ -1124,6 +1126,8 @@
       const hasHub = hasTag || modes.has('sector');
       toggle(hubWrap, hasHub);
       toggle(mentionLeg, modes.has('mention'));
+      // 親子タグ接続の凡例は tag モード時のみ表示（ハブ-ハブ接続は tag モード限定）
+      toggle(hierarchyLeg, modes.has('tag'));
       toggle(axisLeg, this.currentColorMode === 'axis');
       // 方向（追い風/向かい風）凡例は tag / hashtag いずれかのモード時に表示
       toggle(document.getElementById('legend-direction'), modes.has('tag') || modes.has('hashtag'));
@@ -1517,11 +1521,12 @@
       if (!src || !tgt) return;
 
       const TYPE_INFO = {
-        manual:  { icon: 'bi-link-45deg', label: '手動リンク', desc: '日記詳細ページの「関連日記」で設定した接続' },
-        tag:     { icon: 'bi-tag-fill',   label: 'タグ接続',   desc: '銘柄に付けたタグによる接続' },
-        hashtag: { icon: 'bi-hash',       label: '@タグ接続',  desc: '投資理由・継続記録内の @タグによる接続' },
-        sector:  { icon: 'bi-building',   label: '業種接続',   desc: '同じ業種に属する銘柄の接続' },
-        mention: { icon: 'bi-upc-scan',   label: 'コード参照', desc: '本文中で他銘柄のコードに言及した接続' },
+        manual:        { icon: 'bi-link-45deg',   label: '手動リンク',   desc: '日記詳細ページの「関連日記」で設定した接続' },
+        tag:           { icon: 'bi-tag-fill',     label: 'タグ接続',     desc: '銘柄に付けたタグによる接続' },
+        hashtag:       { icon: 'bi-hash',         label: '@タグ接続',    desc: '投資理由・継続記録内の @タグによる接続' },
+        sector:        { icon: 'bi-building',     label: '業種接続',     desc: '同じ業種に属する銘柄の接続' },
+        mention:       { icon: 'bi-upc-scan',     label: 'コード参照',   desc: '本文中で他銘柄のコードに言及した接続' },
+        tag_hierarchy: { icon: 'bi-diagram-2-fill', label: '親子タグ接続', desc: '親タグと子タグ（細分タグ）の階層関係による接続' },
       };
       const info = TYPE_INFO[edge.edge_type] || TYPE_INFO.manual;
 

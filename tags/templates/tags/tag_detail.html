@@ -231,6 +231,7 @@
         <span class="li"><svg width="13" height="13" viewBox="0 0 14 14"><polygon points="7,1 13,4.5 13,9.5 7,13 1,9.5 1,4.5" fill="{{ axis_color }}"/></svg>タグ</span>
         <span class="li" style="color:#16a34a"><span class="ln"></span>追い風</span>
         <span class="li" style="color:#dc2626"><span class="ln" style="border-top-style:dashed"></span>向かい風</span>
+        <span class="li" style="color:#7c3aed"><span class="ln" style="border-top-style:dotted"></span>親子タグ</span>
       </div>
       <div id="mini-graph-loading" style="display:flex;align-items:center;justify-content:center;height:100%;">
         <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
@@ -420,11 +421,16 @@
       .data(simEdges).join('line')
         .attr('stroke', d => {
           if (d.edge_type === 'tag' && DIR_STROKE[d.direction]) return DIR_STROKE[d.direction];
+          if (d.edge_type === 'tag_hierarchy') return '#7c3aed';
           return d.edge_type === 'tag' ? '#a78bfa' : '#94a3b8';
         })
         .attr('stroke-opacity', 0.6)
         .attr('stroke-width', 1.4)
-        .attr('stroke-dasharray', d => (d.edge_type === 'tag' && d.direction === 'down') ? '5,4' : null);
+        .attr('stroke-dasharray', d => {
+          if (d.edge_type === 'tag' && d.direction === 'down') return '5,4';
+          if (d.edge_type === 'tag_hierarchy') return '1,2';
+          return null;
+        });
 
     const nodeSel = g.append('g').selectAll('g')
       .data(sim.nodes())

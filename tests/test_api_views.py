@@ -294,6 +294,29 @@ class TestDiaryGraphData:
         resp = authed_client.get(url)
         assert resp.status_code == 200
 
+    def test_tag_hierarchy_edge_surfaced_through_api(self, authed_client, user):
+        """親子タグが両方ハブとして生き残る場合、tag_hierarchy エッジが返る。"""
+        from tags.models import Tag
+        parent = Tag.objects.create(user=user, name='エネルギー', axis='theme')
+        child = Tag.objects.create(user=user, name='LNG', axis='theme', parent=parent)
+        diaries = [
+            StockDiary.objects.create(user=user, stock_symbol=f'100{i}', stock_name=f'銘柄{i}')
+            for i in range(4)
+        ]
+        diaries[0].tags.add(parent)
+        diaries[1].tags.add(parent)
+        diaries[2].tags.add(child)
+        diaries[3].tags.add(child)
+
+        url = reverse('stockdiary:api_diary_graph_data')
+        resp = authed_client.get(url, {'edge_modes': 'tag'})
+        assert resp.status_code == 200
+        data = resp.json()
+        hierarchy_edges = [e for e in data['edges'] if e.get('edge_type') == 'tag_hierarchy']
+        assert len(hierarchy_edges) == 1
+        assert hierarchy_edges[0]['source'] == f'tag_{parent.pk}'
+        assert hierarchy_edges[0]['target'] == f'tag_{child.pk}'
+
 
 # ---------------------------------------------------------------------------
 # list_diary_notifications

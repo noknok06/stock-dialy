@@ -64,6 +64,50 @@ class TestTagGraphWeights:
 
 
 @pytest.mark.django_db
+class TestTagHierarchyEdges:
+    """親子タグ（Tag.parent）を持つハブ同士のハブ-ハブエッジ生成。"""
+
+    def test_hierarchy_edge_when_parent_and_child_both_used(self, user):
+        parent = Tag.objects.create(user=user, name='エネルギー', axis='theme')
+        child = Tag.objects.create(user=user, name='LNG', axis='theme', parent=parent)
+        d1 = _diary(user, '1605', 'INPEX')
+        d2 = _diary(user, '8058', '三菱商事')
+        d1.tags.add(parent)
+        d2.tags.add(child)
+
+        qs = StockDiary.objects.filter(user=user).prefetch_related('tags')
+        res = get_tag_graph_data(qs)
+
+        hierarchy_edges = [e for e in res['edges'] if e['edge_type'] == 'tag_hierarchy']
+        assert len(hierarchy_edges) == 1
+        assert hierarchy_edges[0]['source'] == f'tag_{parent.pk}'
+        assert hierarchy_edges[0]['target'] == f'tag_{child.pk}'
+
+    def test_no_hierarchy_edge_when_parent_unused(self, user):
+        """親タグがこのグラフ上のハブとして登場しない場合はエッジを作らない。"""
+        parent = Tag.objects.create(user=user, name='エネルギー', axis='theme')
+        child = Tag.objects.create(user=user, name='LNG', axis='theme', parent=parent)
+        d = _diary(user, '1605', 'INPEX')
+        d.tags.add(child)  # 親タグはどの日記にも付いていない
+
+        qs = StockDiary.objects.filter(user=user).prefetch_related('tags')
+        res = get_tag_graph_data(qs)
+
+        assert not any(e['edge_type'] == 'tag_hierarchy' for e in res['edges'])
+
+    def test_no_hierarchy_edge_between_unrelated_tags(self, user):
+        t1 = Tag.objects.create(user=user, name='半導体', axis='theme')
+        t2 = Tag.objects.create(user=user, name='脱炭素', axis='theme')
+        d = _diary(user, '8035', '東京エレクトロン')
+        d.tags.add(t1, t2)
+
+        qs = StockDiary.objects.filter(user=user).prefetch_related('tags')
+        res = get_tag_graph_data(qs)
+
+        assert not any(e['edge_type'] == 'tag_hierarchy' for e in res['edges'])
+
+
+@pytest.mark.django_db
 class TestComputeRelatedStrength:
     def test_shared_rare_tag_links_diaries(self, user):
         tag1 = Tag.objects.create(user=user, name='半導体')

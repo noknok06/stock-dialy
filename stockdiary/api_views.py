@@ -808,7 +808,12 @@ def diary_graph_data(request):
                 hub_nodes_map[hub['id']] = hub
                 filtered_tag_ids.add(hub['id'])
             for e in hub_data['edges']:
-                if e.get('target') not in filtered_tag_ids:
+                if e.get('edge_type') == 'tag_hierarchy':
+                    # 親子タグのハブ-ハブエッジ。両端がフィルターを通過した
+                    # ハブとして残っている場合のみ表示する
+                    if e.get('source') not in filtered_tag_ids or e.get('target') not in filtered_tag_ids:
+                        continue
+                elif e.get('target') not in filtered_tag_ids:
                     continue
                 all_edges.append(e)
 
