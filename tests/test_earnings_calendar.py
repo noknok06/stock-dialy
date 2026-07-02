@@ -501,6 +501,90 @@ def test_calendar_view_requires_login(client):
     assert resp.status_code in (301, 302)
 
 
+def test_thesis_next_earnings_uses_actual_date():
+    """Thesis「次の決算まで」の検証予定日が、実際の次回決算日になる。"""
+    from stockdiary.views_growth import _default_review_due_date
+
+    user = User.objects.create_user('t_ne', 'tne@e.com', 'p')
+    diary = StockDiary.objects.create(
+        user=user, stock_name='A', stock_symbol='7203',
+        first_purchase_date=date(2026, 1, 1))
+    earnings = date.today() + timedelta(days=20)
+    EarningsSchedule.objects.create(securities_code='7203', earnings_date=earnings)
+
+    assert _default_review_due_date(diary, 'next_earnings') == earnings
+
+
+def test_thesis_next_earnings_falls_back_without_schedule():
+    """決算予定が無ければ従来の概算45日（基準=初回購入日）にフォールバック。"""
+    from stockdiary.views_growth import _default_review_due_date
+
+    user = User.objects.create_user('t_nf', 'tnf@e.com', 'p')
+    diary = StockDiary.objects.create(
+        user=user, stock_name='A', stock_symbol='7203',
+        first_purchase_date=date(2026, 1, 1))
+    assert _default_review_due_date(diary, 'next_earnings') == date(2026, 1, 1) + timedelta(days=45)
+
+
+# ---------------------------------------------------------------------------
+# 日記一覧: 決算が近い順ソート・決算◯日以内フィルタ
+# ---------------------------------------------------------------------------
+
+def _make_diary_with_earnings(user, code, days_ahead):
+    from stockdiary.models import StockDiary as SD
+    d = SD.objects.create(user=user, stock_name=code, stock_symbol=code)
+    if days_ahead is not None:
+        EarningsSchedule.objects.create(
+            securities_code=code, earnings_date=date.today() + timedelta(days=days_ahead))
+    return d
+
+
+def test_list_earnings_filter_within_days():
+    """earnings=14 は次回決算が14日以内の銘柄だけに絞る（予定なしは除外）。"""
+    from stockdiary.utils import apply_diary_filters
+    from stockdiary.models import StockDiary as SD
+
+    user = User.objects.create_user('l_f', 'lf@e.com', 'p')
+    _make_diary_with_earnings(user, '7203', 5)    # in
+    _make_diary_with_earnings(user, '6758', 20)   # out(>14)
+    _make_diary_with_earnings(user, '9984', None)  # 予定なし → 除外
+
+    qs = apply_diary_filters(SD.objects.filter(user=user), {'earnings': '14'}, user)
+    codes = set(qs.values_list('stock_symbol', flat=True))
+    assert codes == {'7203'}
+
+
+def test_home_view_renders_with_earnings_sort_and_filter(client):
+    """ホーム一覧が sort=earnings_asc / earnings=30 でも描画できる（Subquery経路）。"""
+    user = User.objects.create_user('l_v', 'lv@e.com', 'p')
+    client.force_login(user)
+    _make_diary_with_earnings(user, '7203', 5)
+    _make_diary_with_earnings(user, '6758', 40)
+
+    resp = client.get(reverse('stockdiary:home'),
+                      {'sort': 'earnings_asc', 'earnings': '30'})
+    assert resp.status_code == 200
+    # 30日以内(7203)は残り、40日先(6758)は絞り込みで除外
+    assert b'7203' in resp.content
+    assert b'6758' not in resp.content
+
+
+def test_list_earnings_sort_nearest_first():
+    """sort=earnings_asc は決算が近い順（予定なしは末尾）。"""
+    from stockdiary.utils import apply_diary_filters
+    from stockdiary.models import StockDiary as SD
+
+    user = User.objects.create_user('l_s', 'ls@e.com', 'p')
+    _make_diary_with_earnings(user, '6758', 40)
+    _make_diary_with_earnings(user, '7203', 5)
+    _make_diary_with_earnings(user, '9984', None)  # 予定なし
+
+    qs = apply_diary_filters(SD.objects.filter(user=user), {'sort': 'earnings_asc'}, user)
+    codes = list(qs.values_list('stock_symbol', flat=True))
+    assert codes[0] == '7203' and codes[1] == '6758'
+    assert codes[-1] == '9984'  # 予定なしは末尾
+
+
 def test_detail_header_shows_next_earnings(client):
     """日記詳細ヘッダー（銘柄コード横）に次回決算予定日を表示する。"""
     user = User.objects.create_user('v_detail', 'vdt@e.com', 'p')

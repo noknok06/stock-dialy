@@ -378,3 +378,30 @@ def test_markdown_tables_have_mobile_min_width_css():
     assert 'min-width: 6.5em;' in text
     # 表本体は横スクロール可能（潰さず溢れさせる）
     assert '.markdown-content table' in text and 'overflow-x: auto;' in text
+
+
+class TestCompanyShort:
+    """company_short: 表示用に会社種別表記（株式会社等）を除く（マスタ値は不変）。
+
+    決算一覧で可視文字数が限られ「株式会社」で社名本体が読めない問題への対処。
+    """
+
+    def test_strips_leading_kabushiki(self):
+        assert f.company_short('株式会社アルバイトタイムス') == 'アルバイトタイムス'
+
+    def test_strips_trailing_kabushiki(self):
+        assert f.company_short('オーエスジー株式会社') == 'オーエスジー'
+
+    def test_strips_abbreviations(self):
+        assert f.company_short('（株）フライヤー') == 'フライヤー'
+        assert f.company_short('㈱コックス') == 'コックス'
+
+    def test_keeps_when_only_designation(self):
+        # 種別表記のみなら空にせず元を返す
+        assert f.company_short('株式会社') == '株式会社'
+
+    def test_noop_without_designation(self):
+        assert f.company_short('トヨタ自動車') == 'トヨタ自動車'
+
+    def test_empty(self):
+        assert f.company_short('') == ''

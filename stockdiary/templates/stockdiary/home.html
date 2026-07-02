@@ -174,6 +174,15 @@
           </select>
         </div>
         <div class="mt-2">
+          <label class="filter-group-label" for="sidebarEarningsFilter">決算予定</label>
+          <select class="form-select form-select-sm sidebar-filter" id="sidebarEarningsFilter" name="earnings" data-target="earningsFilter">
+            <option value="">指定なし</option>
+            <option value="7" {% if request.GET.earnings == '7' %}selected{% endif %}>7日以内</option>
+            <option value="14" {% if request.GET.earnings == '14' %}selected{% endif %}>14日以内</option>
+            <option value="30" {% if request.GET.earnings == '30' %}selected{% endif %}>30日以内</option>
+          </select>
+        </div>
+        <div class="mt-2">
           <label class="filter-group-label" for="sidebarDateRangeFilter">初回購入の時期</label>
           <select class="form-select form-select-sm sidebar-filter" id="sidebarDateRangeFilter" name="date_range" data-target="dateRangeFilter">
             <option value="">指定なし</option>
@@ -195,6 +204,7 @@
       <div class="sidebar-details-body">
         <select class="form-select form-select-sm sidebar-filter" id="sidebarSortFilter" name="sort" data-target="sortFilter">
           <option value="" {% if not request.GET.sort %}selected{% endif %}>デフォルト</option>
+          <option value="earnings_asc" {% if request.GET.sort == 'earnings_asc' %}selected{% endif %}>決算が近い順</option>
           <option value="date_desc" {% if request.GET.sort == 'date_desc' %}selected{% endif %}>更新日（新しい順）</option>
           <option value="date_asc" {% if request.GET.sort == 'date_asc' %}selected{% endif %}>更新日（古い順）</option>
           <option value="profit_desc" {% if request.GET.sort == 'profit_desc' %}selected{% endif %}>含み益（大きい順）</option>
@@ -352,6 +362,7 @@
             </button>
             <div class="sort-panel" id="sortPanel" role="listbox" aria-label="並び順">
               <button type="button" class="sort-option" data-value="" data-label="並び順">デフォルト（更新日）</button>
+              <button type="button" class="sort-option" data-value="earnings_asc" data-label="決算が近い">決算が近い順</button>
               <button type="button" class="sort-option" data-value="date_desc" data-label="取引日（新）">取引日（新しい順）</button>
               <button type="button" class="sort-option" data-value="date_asc" data-label="取引日（古）">取引日（古い順）</button>
               <button type="button" class="sort-option" data-value="name" data-label="銘柄名">銘柄名順</button>
@@ -506,6 +517,15 @@
           <option value="">指定なし</option>
           <option value="new" {% if request.GET.disclosure == 'new' %}selected{% endif %}>直近1週間に更新あり</option>
           <option value="recent" {% if request.GET.disclosure == 'recent' %}selected{% endif %}>直近1ヶ月に更新あり</option>
+        </select>
+      </div>
+      <div>
+        <label class="filter-group-label" for="earningsFilter">決算予定</label>
+        <select class="form-select" id="earningsFilter" name="earnings">
+          <option value="">指定なし</option>
+          <option value="7" {% if request.GET.earnings == '7' %}selected{% endif %}>7日以内に決算</option>
+          <option value="14" {% if request.GET.earnings == '14' %}selected{% endif %}>14日以内に決算</option>
+          <option value="30" {% if request.GET.earnings == '30' %}selected{% endif %}>30日以内に決算</option>
         </select>
       </div>
       <div>
@@ -746,7 +766,7 @@ document.getElementById('filterApplyBtn').addEventListener('click', function() {
 });
 
 document.getElementById('filterResetBtn').addEventListener('click', function() {
-  ['tagFilter', 'sectorFilter', 'transactionDateRangeFilter', 'dateRangeFilter', 'disclosureFilter'].forEach(function(id) {
+  ['tagFilter', 'sectorFilter', 'transactionDateRangeFilter', 'dateRangeFilter', 'disclosureFilter', 'earningsFilter'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.value = '';
   });
@@ -824,6 +844,7 @@ function removeFilter(filterName) {
     'transaction_date_range': 'transactionDateRangeFilter',
     'date_range': 'dateRangeFilter',
     'disclosure': 'disclosureFilter',
+    'earnings': 'earningsFilter',
     'hashtag': 'hashtagFilter',
     'sort': 'sortFilter'
   };
@@ -894,6 +915,13 @@ function updateFilterBadges() {
     count++;
   }
 
+  var earningsFilter = document.getElementById('earningsFilter');
+  if (earningsFilter && earningsFilter.value) {
+    addFilterChip('earnings', earningsFilter.value,
+      '決算予定: ' + earningsFilter.value + '日以内');
+    count++;
+  }
+
   var hashtagFilter = document.getElementById('hashtagFilter');
   if (hashtagFilter && hashtagFilter.value) {
     addFilterChip('hashtag', hashtagFilter.value, '@' + hashtagFilter.value);
@@ -914,6 +942,7 @@ function updateFilterBadges() {
   var sortLabel = document.getElementById('sortLabel');
   if (sortFilter && sortLabel) {
     var sortText = {
+      'earnings_asc': '決算が近い',
       'date_desc': '取引日（新）', 'date_asc': '取引日（古）',
       'name': '銘柄名', 'symbol': 'コード',
       'profit_desc': '損益↑', 'profit_asc': '損益↓',
@@ -946,7 +975,7 @@ function resetSearch() {
   document.getElementById('mainSearchInput').value = '';
   document.getElementById('hashtagFilter').value = '';
   document.getElementById('sortFilter').value = '';
-  ['tagFilter', 'sectorFilter', 'transactionDateRangeFilter', 'dateRangeFilter', 'disclosureFilter'].forEach(function(id) {
+  ['tagFilter', 'sectorFilter', 'transactionDateRangeFilter', 'dateRangeFilter', 'disclosureFilter', 'earningsFilter'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.value = '';
   });
@@ -994,7 +1023,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   // フィルターパネルの要素の値を optimizedSearchForm に同期
-  ['tagFilter', 'sectorFilter', 'transactionDateRangeFilter', 'disclosureFilter', 'dateRangeFilter'].forEach(function(id) {
+  ['tagFilter', 'sectorFilter', 'transactionDateRangeFilter', 'disclosureFilter', 'dateRangeFilter', 'earningsFilter'].forEach(function(id) {
     var elem = document.getElementById(id);
     if (elem) {
       elem.addEventListener('change', function() {
@@ -1559,7 +1588,7 @@ document.addEventListener('click', function(e) {
     if (noNotesEl) noNotesEl.value = '';
 
     // filterPanel 内のフィールドをリセット（tag/sector 等は filterPanel に存在）
-    ['tagFilter', 'sectorFilter', 'transactionDateRangeFilter', 'disclosureFilter', 'dateRangeFilter'].forEach(function(id) {
+    ['tagFilter', 'sectorFilter', 'transactionDateRangeFilter', 'disclosureFilter', 'dateRangeFilter', 'earningsFilter'].forEach(function(id) {
       var el = document.getElementById(id);
       if (el) el.value = '';
     });
