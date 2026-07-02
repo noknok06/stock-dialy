@@ -3,6 +3,21 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
+  <!-- ダークモード早期適用: 画面遷移時の白フラッシュ防止のため、CSS読み込み前に同期実行する -->
+  <script>
+    (function() {
+      try {
+        var theme = localStorage.getItem('theme-preference');
+        if (!theme) {
+          theme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+        }
+        if (theme === 'dark') {
+          document.documentElement.setAttribute('data-theme', 'dark');
+          document.documentElement.setAttribute('data-bs-theme', 'dark');
+        }
+      } catch (e) {}
+    })();
+  </script>
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3954701883136363"
      crossorigin="anonymous"></script>
   {% include 'partials/_analytics.html' %}
@@ -903,6 +918,15 @@
     {% block head %}{% endblock %}
 </head>
 <body{% block body_class %}{% endblock %}>
+  <script>
+    (function() {
+      try {
+        if (document.documentElement.getAttribute('data-theme') === 'dark') {
+          document.body.classList.add('dark-mode');
+        }
+      } catch (e) {}
+    })();
+  </script>
   <div class="page-wrapper">
     <!-- ヘッダー -->
     <header class="pc-only-header">
