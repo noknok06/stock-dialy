@@ -69,6 +69,11 @@
               <i class="bi bi-code-square me-2"></i>JSONをコピー
             </button>
           </li>
+          <li>
+            <button type="button" class="dropdown-item" id="download-json-btn" onclick="downloadDiaryJson()">
+              <i class="bi bi-download me-2"></i>JSONをダウンロード
+            </button>
+          </li>
           <li><hr class="dropdown-divider"></li>
           <li>
             <a href="{% url 'stockdiary:delete' diary.id %}" class="dropdown-item text-danger">
@@ -2855,6 +2860,23 @@ function copyDiaryJson(btn) {
     btn.innerHTML = '<i class="bi bi-check2 me-2"></i>コピーしました';
     setTimeout(function() { btn.innerHTML = originalHtml; }, 2000);
   });
+}
+
+function downloadDiaryJson() {
+  var el = document.getElementById('diary-export-json');
+  if (!el) return;
+  var data = JSON.parse(el.textContent);
+  var text = JSON.stringify(data, null, 2);
+  var blob = new Blob([text], { type: 'application/json' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  var namePart = (data.symbol || data.name || 'diary').toString().replace(/[\\/:*?"<>|]/g, '_');
+  a.href = url;
+  a.download = namePart + '_' + (data.exported_at || '') + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 </script>
 <!-- テーマ詳細モーダル（body直下・position:fixed で全画面表示） -->
