@@ -1,6 +1,5 @@
 {% load stockdiary_filters %}
-{# Phase 8a: 検証ループ（予想→結果→検証→学び）。HTMX で outerHTML 置換するため root に id を保持 #}
-<div id="karte-block" class="karte-block" data-thesis-create-url="{% url 'stockdiary:thesis_create' diary.id %}">
+<div id="karte-block" class="karte-block">
 
   {% for thesis in theses %}
   <div class="karte-thesis-item">
@@ -76,12 +75,11 @@
   {% comment %}
     仮説追加ボタンは空状態のみ常設（初回記録のCTA）。
     theses が既にある場合の追加導線はスピードダイヤル(FAB)に一本化して撤去。
-    FAB からは openThesisForm() が data-thesis-create-url を使って同じフォームを開く。
+    追加フォームは記録タブの仮説ボトムシート(#addThesisSheet)で開く（FAB・空状態CTA共通）。
   {% endcomment %}
   {% if not theses %}
   <button type="button" class="karte-add-thesis"
-          hx-get="{% url 'stockdiary:thesis_create' diary.id %}"
-          hx-target="#karte-block" hx-swap="outerHTML">
+          onclick="openBottomSheet('addThesisSheet')">
     <i class="bi bi-lightbulb"></i>
     <span class="karte-add-main">当時の仮説を記録する</span>
     {% if diary.is_memo %}

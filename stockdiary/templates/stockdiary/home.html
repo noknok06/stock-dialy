@@ -1478,6 +1478,27 @@
   border-color: var(--accent-200);
 }
 
+/* ========================================
+   スマホ：トップ画面の横方向パン（左右スクロール）を固定
+   ----------------------------------------
+   何もない部分を左右にドラッグするとページ全体が横へ動く挙動を抑止する。
+   - overflow-x:clip は scroll container を生成しないため position:sticky を壊さない
+     （未対応ブラウザ向けに hidden をフォールバックとして先に宣言）
+   - overscroll-behavior-x:none で横方向のラバーバンド／連鎖スクロールも止める
+   - カードの左右スワイプ操作(.diary-header 内)は内部 transform をオーバーフロー
+     クリップで処理しており、本文の横スクロールとは無関係なので影響しない
+   - .recent-hashtag-chips 等の横スクロール領域は独立した overflow-x:auto のため温存
+   このスタイルブロックはトップ画面でのみ読み込まれるため、適用範囲はトップに限定。
+   ======================================== */
+@media (max-width: 991px) {
+  html, body {
+    overflow-x: hidden;
+    overflow-x: clip;
+    overscroll-behavior-x: none;
+    max-width: 100%;
+  }
+}
+
 </style>
 {% endblock %}
 
