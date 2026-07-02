@@ -1,4 +1,3 @@
-<!-- ========== tag_form.html ========== -->
 {% extends 'base.html' %}
 {% load static %}
 
@@ -6,540 +5,336 @@
 
 {% block head %}
 <style>
-  /* ========== Form specific styles ========== */
-  .form-card-header {
-    background: linear-gradient(135deg, var(--primary-color) 0%, #2563eb 100%);
-    color: white;
-    padding: 20px 24px;
-    border-bottom: none;
-    border-radius: 12px 12px 0 0;
-  }
+/* ===== タグ作成/編集フォーム（.tagform 配下にスコープ・tf- 接頭辞。tag_detail.html と同一トークン体系） ===== */
+.tagform{
+  --accent-200:#00668c;--accent-100:#71c4ef;
+  --bg-100:#fffefb;--bg-200:#f5f4f1;--bg-300:#e7e5e0;--line:#e9e6df;
+  --t1:#1a2026;--t2:#566069;--t3:#9aa1aa;
+  --grad:linear-gradient(135deg,#71c4ef 0%,#00668c 100%);
+  --danger:#dc2626;
+  --shadow-sm:0 2px 8px rgba(20,40,60,.05);
+  --shadow-md:0 8px 24px rgba(20,40,60,.08);
+  --r-sm:8px;--r-md:14px;--r-lg:18px;--r-xl:22px;--r-pill:999px;
+  color:var(--t1);max-width:680px;margin:0 auto;
+}
+[data-theme="dark"] .tagform,.dark-mode .tagform{
+  --bg-100:#1e293b;--bg-200:#0f172a;--bg-300:#334155;--line:#334155;
+  --t1:#f1f5f9;--t2:#94a3b8;--t3:#64748b;
+  --shadow-sm:0 2px 8px rgba(0,0,0,.3);--shadow-md:0 8px 24px rgba(0,0,0,.4);
+}
+.tagform *{box-sizing:border-box}
 
-  .form-card-header h3 {
-    margin: 0;
-    font-weight: 600;
-    font-size: 20px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
+.tf-back{display:inline-flex;align-items:center;gap:7px;font-size:14px;font-weight:600;color:var(--t2);padding:.4rem .7rem;border-radius:var(--r-sm);margin-bottom:18px;transition:all .16s;text-decoration:none}
+.tf-back:hover{background:var(--bg-100);color:var(--accent-200)}
 
-  .tag-preview-section {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(37, 99, 235, 0.1));
-    border: 1px solid rgba(59, 130, 246, 0.3);
-    border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 24px;
-  }
+.tf-card{background:var(--bg-100);border:1px solid var(--line);border-radius:var(--r-xl);overflow:hidden;box-shadow:var(--shadow-sm)}
+.tf-card-head{padding:18px 24px;background:var(--grad);display:flex;align-items:center;gap:12px}
+.tf-card-head h2{color:#fff;font-size:1.05rem;font-weight:700;display:flex;align-items:center;gap:10px;margin:0}
+.tf-card-body{padding:24px;display:flex;flex-direction:column;gap:22px}
 
-  .tag-preview-label {
-    font-weight: 600;
-    font-size: 13px;
-    color: var(--text-secondary);
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
+.tf-field{display:flex;flex-direction:column;gap:8px}
+.tf-label{font-size:.72rem;font-weight:700;color:var(--t2);letter-spacing:.05em;text-transform:uppercase;display:flex;align-items:center;gap:6px}
+.tf-req{color:var(--accent-200)}
+.tf-hint{font-size:.72rem;color:var(--t3);margin-top:-2px}
+.tf-error{font-size:.78rem;color:var(--danger);display:flex;align-items:center;gap:5px;margin-top:2px}
 
-  .tag-preview {
-    display: inline-flex;
-    align-items: center;
-    padding: 10px 20px;
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.2));
-    color: var(--primary-color);
-    border: 1px solid rgba(59, 130, 246, 0.3);
-    border-radius: 9999px;
-    font-weight: 500;
-    font-size: 15px;
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
-    transition: all 0.2s;
-  }
+.tf-input{width:100%;padding:.7rem 1rem;border:1.5px solid var(--line);border-radius:var(--r-md);font-size:.95rem;color:var(--t1);background:var(--bg-200);transition:all .16s;font-family:inherit}
+.tf-input:focus{outline:none;border-color:var(--accent-200);background:var(--bg-100);box-shadow:0 0 0 3px rgba(0,102,140,.12)}
+.tf-input::placeholder{color:var(--t3)}
 
-  .tag-preview i {
-    margin-right: 8px;
-  }
+.tf-axis-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+@media (max-width:480px){.tf-axis-grid{grid-template-columns:repeat(2,1fr)}}
+.tf-axis-opt{border:1.5px solid var(--line);border-radius:var(--r-md);padding:12px 8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;background:var(--bg-200);text-align:center;transition:all .16s;user-select:none}
+.tf-axis-opt:hover{border-color:var(--ac);background:color-mix(in srgb,var(--ac) 8%,var(--bg-200))}
+.tf-axis-opt.sel{border-color:var(--ac);background:color-mix(in srgb,var(--ac) 14%,var(--bg-200));box-shadow:0 0 0 3px color-mix(in srgb,var(--ac) 25%,transparent)}
+.tf-axis-dot{width:12px;height:12px;border-radius:50%;background:var(--ac)}
+.tf-axis-lbl{font-size:.72rem;font-weight:700;color:var(--t1);line-height:1.2}
+.tf-axis-desc{font-size:.62rem;color:var(--t3);line-height:1.3}
+.tf-axis-note{font-size:.75rem;padding:.5rem .75rem;background:rgba(0,102,140,.08);border-left:3px solid var(--accent-200);border-radius:var(--r-sm);color:var(--t2);line-height:1.55}
 
-  .tag-preview.active {
-    transform: scale(1.05);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-  }
+.tf-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.tf-toggle-label{font-size:.9rem;color:var(--t1);font-weight:600;display:flex;align-items:center;gap:8px}
+.tf-toggle-label i{color:var(--t2)}
+.tf-sw{position:relative;width:42px;height:24px;flex-shrink:0}
+.tf-sw input{opacity:0;width:0;height:0;position:absolute}
+.tf-sw-track{position:absolute;inset:0;background:var(--bg-300);border-radius:var(--r-pill);cursor:pointer;transition:background .16s}
+.tf-sw-track::after{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform .16s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.tf-sw input:checked+.tf-sw-track{background:var(--accent-200)}
+.tf-sw input:checked+.tf-sw-track::after{transform:translateX(18px)}
+.tf-sw input:disabled+.tf-sw-track{opacity:.4;cursor:not-allowed}
 
-  .tag-preview-empty {
-    color: var(--text-tertiary);
-    font-style: italic;
-  }
+.tf-parent-note{font-size:.75rem;color:var(--t3);padding:.6rem .8rem;background:var(--bg-200);border-radius:var(--r-sm)}
+.tf-parent-picker{margin-top:10px;display:flex;flex-direction:column;gap:8px}
+.tf-parent-empty{font-size:.85rem;color:var(--t3);padding:12px;background:var(--bg-200);border-radius:var(--r-sm);text-align:center}
+.tf-parent-list{display:flex;flex-direction:column;gap:4px;max-height:200px;overflow-y:auto;border:1.5px solid var(--line);border-radius:var(--r-md);background:var(--bg-200);padding:4px}
+.tf-parent-opt{display:flex;align-items:center;gap:10px;padding:.5rem .75rem;border-radius:var(--r-sm);cursor:pointer;transition:background .16s;user-select:none}
+.tf-parent-opt:hover{background:var(--bg-300)}
+.tf-parent-opt.sel{background:color-mix(in srgb,var(--cur-ax,var(--accent-200)) 14%,var(--bg-200))}
+.tf-parent-opt input[type=radio]{accent-color:var(--cur-ax,var(--accent-200));width:16px;height:16px;flex-shrink:0}
+.tf-parent-opt-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.tf-parent-opt-name{flex:1;font-size:.85rem;font-weight:600;color:var(--t1)}
+.tf-parent-opt-count{font-size:.7rem;color:var(--t3)}
 
-  .help-section {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(79, 70, 229, 0.05));
-    border-left: 3px solid var(--primary-color);
-    border-radius: 8px;
-    padding: 20px;
-    margin-top: 24px;
-  }
+.tf-preview-box{background:var(--bg-200);border:1px solid var(--line);border-radius:var(--r-md);padding:16px;display:flex;flex-direction:column;gap:12px}
+.tf-preview-tag{display:inline-flex;align-items:center;gap:8px;padding:.55rem 1.1rem;border-radius:var(--r-pill);background:color-mix(in srgb,var(--cur-ax,var(--accent-200)) 14%,transparent);border:1.5px solid color-mix(in srgb,var(--cur-ax,var(--accent-200)) 40%,transparent);color:var(--cur-ax,var(--accent-200));font-weight:700;font-size:.9rem;transition:all .16s;width:fit-content}
+.tf-preview-tag .tf-preview-empty{color:var(--t3);font-weight:400}
+.tf-preview-dot{width:10px;height:10px;border-radius:50%;background:var(--cur-ax,var(--accent-200))}
+.tf-tree{display:flex;flex-direction:column;gap:4px}
+.tf-tree-row{display:flex;align-items:center;gap:8px}
+.tf-tree-row.parent{opacity:.6}
+.tf-tree-row.child{margin-left:20px}
+.tf-tree-connector{color:var(--t3);font-size:.8rem}
+.tf-tree-chip{display:inline-flex;align-items:center;gap:6px;padding:.3rem .75rem;border-radius:var(--r-pill);font-size:.72rem;font-weight:700}
+.tf-tree-chip.is-parent{background:var(--bg-100);border:1px solid var(--line);color:var(--t2)}
+.tf-tree-chip.is-this{background:var(--cur-ax,var(--accent-200));color:#fff}
+.tf-tree-dot{width:8px;height:8px;border-radius:50%}
+.tf-tree-meta{font-size:.68rem;color:var(--t3)}
 
-  .help-title {
-    font-weight: 600;
-    font-size: 16px;
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--text-primary);
-  }
-
-  .help-title i {
-    color: var(--primary-color);
-    font-size: 18px;
-  }
-
-  .help-text {
-    color: var(--text-secondary);
-    font-size: 14px;
-    line-height: 1.6;
-    margin-bottom: 0;
-  }
-
-  .help-list {
-    margin: 12px 0 0 0;
-    padding-left: 24px;
-    color: var(--text-secondary);
-    font-size: 14px;
-  }
-
-  .help-list li {
-    margin-bottom: 6px;
-    line-height: 1.6;
-  }
-
-  .help-list strong {
-    color: var(--text-primary);
-  }
-
-  .form-actions {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    margin-top: 32px;
-    padding-top: 24px;
-    border-top: 1px solid var(--border-color);
-  }
-
-  /* 分析グループ（軸）ピッカー */
-  .axis-picker {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    margin-bottom: 8px;
-  }
-
-  @media (max-width: 576px) {
-    .axis-picker {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-
-  .axis-option {
-    border: 2px solid var(--border-color, #e2e8f0);
-    border-radius: 10px;
-    padding: 10px 8px;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 5px;
-    background: var(--bg-100, #fff);
-    text-align: center;
-    user-select: none;
-  }
-
-  .axis-option:hover {
-    border-color: var(--axis-color);
-    background: color-mix(in srgb, var(--axis-color) 8%, transparent);
-  }
-
-  .axis-option.selected {
-    border-color: var(--axis-color);
-    background: color-mix(in srgb, var(--axis-color) 12%, transparent);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--axis-color) 25%, transparent);
-  }
-
-  .axis-dot {
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: var(--axis-color);
-    flex-shrink: 0;
-  }
-
-  .axis-label {
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--text-100, #1e293b);
-    line-height: 1.2;
-  }
-
-  .axis-desc {
-    font-size: 10px;
-    color: var(--text-300, #94a3b8);
-    line-height: 1.3;
-  }
-
-  .axis-note {
-    font-size: 12px;
-    color: var(--text-200, #64748b);
-    padding: 8px 12px;
-    background: color-mix(in srgb, #3b82f6 6%, transparent);
-    border-left: 3px solid #3b82f6;
-    border-radius: 4px;
-    margin-top: 6px;
-  }
-
-  /* Dark mode */
-  .dark-mode .tag-preview,
-  [data-theme="dark"] .tag-preview {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.2));
-    color: var(--dm-primary);
-    border-color: rgba(59, 130, 246, 0.3);
-  }
-
-  .dark-mode .tag-preview-empty,
-  [data-theme="dark"] .tag-preview-empty {
-    color: var(--dm-muted-foreground);
-  }
-
-  .dark-mode .axis-option,
-  [data-theme="dark"] .axis-option {
-    background: var(--dm-card, #1e293b);
-    border-color: var(--dm-border, #334155);
-  }
-
-  .dark-mode .axis-label,
-  [data-theme="dark"] .axis-label {
-    color: var(--dm-text, #f1f5f9);
-  }
-
-  .dark-mode .axis-desc,
-  [data-theme="dark"] .axis-desc {
-    color: var(--dm-text-secondary, #94a3b8);
-  }
-
-  .dark-mode .axis-note,
-  [data-theme="dark"] .axis-note {
-    color: var(--dm-text-secondary, #94a3b8);
-    background: rgba(59, 130, 246, 0.1);
-  }
-
-  .dark-mode .help-section,
-  [data-theme="dark"] .help-section {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(79, 70, 229, 0.05));
-    border-left-color: var(--dm-primary);
-  }
-
-  .dark-mode .help-title,
-  [data-theme="dark"] .help-title {
-    color: var(--dm-foreground);
-  }
-
-  .dark-mode .help-title i,
-  [data-theme="dark"] .help-title i {
-    color: var(--dm-primary);
-  }
-
-  .dark-mode .help-text,
-  .dark-mode .help-list,
-  [data-theme="dark"] .help-text,
-  [data-theme="dark"] .help-list {
-    color: var(--dm-muted-foreground);
-  }
-
-  .dark-mode .help-list strong,
-  [data-theme="dark"] .help-list strong {
-    color: var(--dm-foreground);
-  }
-
-  .dark-mode .form-actions,
-  [data-theme="dark"] .form-actions {
-    border-top-color: var(--dm-border);
-  }
-
-  /* Responsive */
-  @media (max-width: 768px) {
-    .form-card-header {
-      padding: 16px 20px;
-    }
-
-    .form-card-header h3 {
-      font-size: 18px;
-    }
-
-    .tag-preview-section {
-      padding: 16px;
-    }
-
-    .help-section {
-      padding: 16px;
-    }
-
-    .form-actions {
-      flex-direction: column-reverse;
-      gap: 8px;
-    }
-
-    .form-actions .btn {
-      width: 100%;
-      justify-content: center;
-    }
-  }
-
-  @media (max-width: 576px) {
-    .form-card-header h3 {
-      font-size: 16px;
-    }
-
-    .tag-preview {
-      font-size: 14px;
-      padding: 8px 16px;
-    }
-
-    .help-title {
-      font-size: 15px;
-    }
-
-    .help-text,
-    .help-list {
-      font-size: 13px;
-    }
-  }
+.tf-divider{height:1px;background:var(--line)}
+.tf-actions{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.tf-btn{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 1.25rem;border-radius:var(--r-md);font-size:.9rem;font-weight:700;cursor:pointer;border:none;transition:all .16s;text-decoration:none}
+.tf-btn.ghost{background:transparent;color:var(--t2);border:1.5px solid var(--line)}
+.tf-btn.ghost:hover{background:var(--bg-200);color:var(--t1)}
+.tf-btn.primary{background:var(--grad);color:#fff}
+.tf-btn.primary:hover{opacity:.88;color:#fff}
+.tf-btn.primary:disabled{opacity:.4;cursor:not-allowed}
 </style>
 {% endblock %}
 
 {% block content %}
-<body class="dark-mode">
-<div class="dashboard-container py-4">
-  <div class="page-header page-header-with-actions mb-4">
-      <div class="page-header-content">
-          <h1 class="page-title">
-              <i class="bi bi-tags"></i>
-              <span>タグ管理</span>
-          </h1>
-        <p class="page-subtitle">投資記録を分類・整理するためのタグを{% if form.instance.pk %}編集{% else %}作成{% endif %}します</p>
-      </div>
-  </div>
+<div class="tagform">
+  <a class="tf-back" href="{% url 'tags:list' %}"><i class="bi bi-arrow-left"></i>タグ一覧に戻る</a>
 
-  <div class="row justify-content-center">
-    <div class="col-lg-8">
-      <div class="card">
-        <div class="form-card-header">
-          <h3>
-            <i class="bi bi-{% if form.instance.pk %}pencil-square{% else %}plus-circle{% endif %}"></i>
-            <span>タグ情報</span>
-          </h3>
+  <div class="tf-card">
+    <div class="tf-card-head">
+      <h2><i class="bi bi-{% if form.instance.pk %}pencil-square{% else %}plus-circle{% endif %}"></i>{% if form.instance.pk %}タグの編集{% else %}新規タグ作成{% endif %}</h2>
+    </div>
+    <div class="tf-card-body">
+      <form method="post" id="tagForm">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="tf-error"><i class="bi bi-exclamation-circle"></i><span>{{ form.non_field_errors.0 }}</span></div>
+        {% endif %}
+
+        <!-- 1. タグ名 -->
+        <div class="tf-field">
+          <span class="tf-label"><i class="bi bi-at"></i>タグ名<span class="tf-req">*</span></span>
+          {{ form.name }}
+          {% if form.name.errors %}
+          <div class="tf-error"><i class="bi bi-exclamation-circle"></i><span>{{ form.name.errors.0 }}</span></div>
+          {% endif %}
+          <span class="tf-hint">日記に @タグ名 と書くと自動で紐付けられます</span>
         </div>
-        
-        <div class="card-body">
-          <form method="post" id="tagForm">
-            {% csrf_token %}
-            
-            <div class="mb-4">
-              <label for="{{ form.name.id_for_label }}" class="form-label">
-                <i class="bi bi-tag-fill"></i>
-                <span>タグ名</span>
-                <span class="text-danger">*</span>
-              </label>
-              {{ form.name }}
-              {% if form.name.errors %}
-                <div class="error-message">
-                  <i class="bi bi-exclamation-circle"></i>
-                  <span>{{ form.name.errors.0 }}</span>
-                </div>
-              {% endif %}
-              <small class="form-text">
-                投資戦略や銘柄の特性を表す分かりやすいタグ名を入力してください
-              </small>
-            </div>
-            
-            {# 分析グループ（軸）ピッカー — hidden select を JS で連動 #}
-            <div class="mb-4">
-              <label class="form-label mb-2">
-                <i class="bi bi-diagram-3-fill"></i>
-                <span>分析グループ</span>
-                <span class="text-danger">*</span>
-              </label>
-              <p class="axis-note mb-2">
-                日記に <strong>@{{ form.instance.name|default:"タグ名" }}</strong> と書いたとき、グラフで何色のハブとして表示されるかを決めます。同じグループの@タグを多く共有する銘柄同士がグラフで繋がります。
-              </p>
 
-              {# 実際に送信される select は非表示 #}
-              <div style="display:none;">{{ form.axis }}</div>
+        <div class="tf-divider"></div>
 
-              <div class="axis-picker" id="axisPicker">
-                <div class="axis-option" data-value="theme" style="--axis-color:#7c3aed;">
-                  <div class="axis-dot"></div>
-                  <div class="axis-label">注目テーマ</div>
-                  <div class="axis-desc">AI・半導体・脱炭素など</div>
-                </div>
-                <div class="axis-option" data-value="macro" style="--axis-color:#d97706;">
-                  <div class="axis-dot"></div>
-                  <div class="axis-label">マクロ感応</div>
-                  <div class="axis-desc">金利・為替・景気サイクル</div>
-                </div>
-                <div class="axis-option" data-value="business_model" style="--axis-color:#0891b2;">
-                  <div class="axis-dot"></div>
-                  <div class="axis-label">ビジネスモデル</div>
-                  <div class="axis-desc">稼ぎ方・成長ロジック</div>
-                </div>
-                <div class="axis-option" data-value="capital_policy" style="--axis-color:#16a34a;">
-                  <div class="axis-dot"></div>
-                  <div class="axis-label">資本政策</div>
-                  <div class="axis-desc">配当・株主還元・ROE</div>
-                </div>
-                <div class="axis-option" data-value="risk" style="--axis-color:#dc2626;">
-                  <div class="axis-dot"></div>
-                  <div class="axis-label">リスク</div>
-                  <div class="axis-desc">地政学・規制・需給変化</div>
-                </div>
-                <div class="axis-option" data-value="event" style="--axis-color:#6b7280;">
-                  <div class="axis-dot"></div>
-                  <div class="axis-label">イベント</div>
-                  <div class="axis-desc">決算・一過性イベント（接続対象外）</div>
-                </div>
-                <div class="axis-option" data-value="custom" style="--axis-color:#9333ea;">
-                  <div class="axis-dot"></div>
-                  <div class="axis-label">🏷️ ラベル</div>
-                  <div class="axis-desc">@監視中・@保有候補など個人管理用（分析対象外）</div>
-                </div>
-              </div>
-              {% if form.axis.errors %}
-                <div class="error-message mt-1">
-                  <i class="bi bi-exclamation-circle"></i>
-                  <span>{{ form.axis.errors.0 }}</span>
-                </div>
-              {% endif %}
+        <!-- 2. 分析グループ（軸） -->
+        <div class="tf-field">
+          <span class="tf-label"><i class="bi bi-diagram-3-fill"></i>分析グループ（軸）<span class="tf-req">*</span></span>
+          <p class="tf-axis-note" id="axisNote">グラフで何色のハブとして表示されるかを決めます。同じ軸の @タグを共有する銘柄同士がグラフで繋がります。</p>
+          <div style="display:none;">{{ form.axis }}</div>
+          <div class="tf-axis-grid" id="axisPicker">
+            {% for ax in axis_meta %}
+            <div class="tf-axis-opt" data-value="{{ ax.key }}" style="--ac:{{ ax.color }};">
+              <span class="tf-axis-dot"></span>
+              <span class="tf-axis-lbl">{{ ax.label }}</span>
+              <span class="tf-axis-desc">{{ ax.desc }}</span>
             </div>
-
-            <div class="tag-preview-section">
-              <div class="tag-preview-label">
-                <i class="bi bi-eye"></i>
-                <span>プレビュー</span>
-              </div>
-              <div class="tag-preview" id="tagPreview" style="border-color: var(--preview-axis-color, #7c3aed);">
-                <span class="axis-dot" id="previewDot" style="background: var(--preview-axis-color, #7c3aed); margin-right: 6px;"></span>
-                <i class="bi bi-tag-fill" style="color: var(--preview-axis-color, #7c3aed);"></i>
-                <span id="tagPreviewText" style="margin-left:4px;">
-                  {% if form.instance.name %}
-                    {{ form.instance.name }}
-                  {% else %}
-                    <span class="tag-preview-empty">タグ名を入力してください</span>
-                  {% endif %}
-                </span>
-              </div>
-            </div>
-
-            <div class="form-actions">
-              <a href="{% url 'tags:list' %}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i>
-                <span>キャンセル</span>
-              </a>
-              <button type="submit" class="btn btn-primary">
-                <i class="bi bi-{% if form.instance.pk %}check-lg{% else %}plus-lg{% endif %}"></i>
-                <span>{% if form.instance.pk %}更新{% else %}作成{% endif %}</span>
-              </button>
-            </div>
-          </form>
+            {% endfor %}
+          </div>
+          {% if form.axis.errors %}
+          <div class="tf-error"><i class="bi bi-exclamation-circle"></i><span>{{ form.axis.errors.0 }}</span></div>
+          {% endif %}
         </div>
-      </div>
+
+        <div class="tf-divider"></div>
+
+        <!-- 3. 親タグ -->
+        <div class="tf-field">
+          <div class="tf-toggle-row">
+            <span class="tf-toggle-label"><i class="bi bi-diagram-2"></i>この軸の既存タグの子タグにする</span>
+            <label class="tf-sw">
+              <input type="checkbox" id="parentToggle"{% if can_be_child == False %} disabled{% endif %}>
+              <span class="tf-sw-track"></span>
+            </label>
+          </div>
+          {% if can_be_child == False %}
+          <p class="tf-parent-note"><i class="bi bi-info-circle"></i> このタグには既に子タグがあるため、別のタグの子タグにはできません（階層は2段階まで）。</p>
+          {% endif %}
+          <div id="parentSection" class="tf-parent-picker" style="display:none;">
+            <div id="parentList" class="tf-parent-list"></div>
+            <div style="display:none;">{{ form.parent }}</div>
+          </div>
+          {% if form.parent.errors %}
+          <div class="tf-error"><i class="bi bi-exclamation-circle"></i><span>{{ form.parent.errors.0 }}</span></div>
+          {% endif %}
+        </div>
+
+        <div class="tf-divider"></div>
+
+        <!-- 4. プレビュー -->
+        <div class="tf-field">
+          <span class="tf-label"><i class="bi bi-eye"></i>プレビュー</span>
+          <div class="tf-preview-box">
+            <div id="previewTag" class="tf-preview-tag">
+              <span class="tf-preview-dot"></span>
+              <span id="previewText">タグ名を入力してください</span>
+            </div>
+            <div class="tf-tree" id="treePreview" style="display:none;"></div>
+          </div>
+        </div>
+
+        <div class="tf-actions">
+          <a class="tf-btn ghost" href="{% url 'tags:list' %}"><i class="bi bi-arrow-left"></i>キャンセル</a>
+          <button type="submit" class="tf-btn primary" id="submitBtn">
+            <i class="bi bi-{% if form.instance.pk %}check-lg{% else %}plus-lg{% endif %}"></i>{% if form.instance.pk %}更新する{% else %}作成する{% endif %}
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 </div>
 
 {% include 'speed_dial.html' with actions=page_actions %}
-</body>
 {% endblock %}
 
 {% block scripts %}
 {{ block.super }}
+{{ axis_meta|json_script:"axis-meta-data" }}
+{{ existing_tags|json_script:"existing-tags-data" }}
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    initializeSpeedDial();
+document.addEventListener('DOMContentLoaded', function() {
+  if (typeof initializeSpeedDial === 'function') { initializeSpeedDial(); }
 
-    // ===== 分析グループ（軸）ピッカー =====
-    const AXIS_COLORS = {
-      theme:          '#7c3aed',
-      macro:          '#d97706',
-      business_model: '#0891b2',
-      capital_policy: '#16a34a',
-      risk:           '#dc2626',
-      event:          '#6b7280',
-    };
+  const AXES = JSON.parse(document.getElementById('axis-meta-data').textContent);
+  const EXISTING_TAGS = JSON.parse(document.getElementById('existing-tags-data').textContent);
 
-    const axisSelect = document.getElementById('{{ form.axis.id_for_label }}');
-    const axisPicker = document.getElementById('axisPicker');
-    const previewContainer = document.getElementById('tagPreview');
+  const nameInput = document.getElementById('{{ form.name.id_for_label }}');
+  const axisSelect = document.getElementById('{{ form.axis.id_for_label }}');
+  const parentSelect = document.getElementById('{{ form.parent.id_for_label }}');
+  const axisPicker = document.getElementById('axisPicker');
+  const axisNote = document.getElementById('axisNote');
+  const parentToggle = document.getElementById('parentToggle');
+  const parentSection = document.getElementById('parentSection');
+  const parentList = document.getElementById('parentList');
+  const previewText = document.getElementById('previewText');
+  const treePreview = document.getElementById('treePreview');
+  const submitBtn = document.getElementById('submitBtn');
 
-    function selectAxis(value) {
-      if (axisSelect) axisSelect.value = value;
-      axisPicker.querySelectorAll('.axis-option').forEach(opt => {
-        opt.classList.toggle('selected', opt.dataset.value === value);
-      });
-      const color = AXIS_COLORS[value] || '#7c3aed';
-      if (previewContainer) {
-        previewContainer.style.setProperty('--preview-axis-color', color);
-        const dot = previewContainer.querySelector('#previewDot');
-        const icon = previewContainer.querySelector('i.bi-tag-fill');
-        if (dot) dot.style.background = color;
-        if (icon) icon.style.color = color;
-      }
+  let curAxis = axisSelect.value || (AXES[0] && AXES[0].key) || 'theme';
+  let curParentId = parentSelect.value ? String(parentSelect.value) : null;
+  let isChild = !!curParentId;
+
+  function selectAxis(key, opts) {
+    opts = opts || {};
+    curAxis = key;
+    axisSelect.value = key;
+    const ax = AXES.find(a => a.key === key) || {};
+    document.documentElement.style.setProperty('--cur-ax', ax.color || '#00668c');
+    axisPicker.querySelectorAll('.tf-axis-opt').forEach(o => o.classList.toggle('sel', o.dataset.value === key));
+    if (axisNote) {
+      const name = nameInput.value.trim() || 'タグ名';
+      axisNote.textContent = `「@${name}」は ${ax.label || key} グループのハブ色（${ax.short || ''}）で関連グラフに表示されます。同じ軸のタグを多く共有する銘柄同士が繋がります。`;
     }
+    buildParentList(key, opts.keepParent);
+    updatePreview();
+  }
 
-    // クリックハンドラ
-    axisPicker.querySelectorAll('.axis-option').forEach(opt => {
-      opt.addEventListener('click', () => selectAxis(opt.dataset.value));
-    });
+  function buildParentList(axisKey, keepParent) {
+    parentList.innerHTML = '';
+    if (!keepParent) curParentId = null;
 
-    // 初期値を反映
-    const initialAxis = axisSelect ? axisSelect.value : 'theme';
-    selectAxis(initialAxis || 'theme');
-
-    // ===== タグ名プレビュー =====
-    const nameInput = document.getElementById('{{ form.name.id_for_label }}');
-    const previewText = document.getElementById('tagPreviewText');
-
-    if (nameInput && previewText) {
-      const updatePreview = () => {
-        const value = nameInput.value.trim();
-        if (value) {
-          previewText.textContent = value;
-          previewText.classList.remove('tag-preview-empty');
-        } else {
-          previewText.innerHTML = '<span class="tag-preview-empty">タグ名を入力してください</span>';
-        }
-        // axis note の中のタグ名も更新
-        const noteStrong = document.querySelector('.axis-note strong');
-        if (noteStrong) noteStrong.textContent = '@' + (value || 'タグ名');
-      };
-
-      nameInput.addEventListener('input', updatePreview);
-      if (previewContainer) {
-        nameInput.addEventListener('focus', () => previewContainer.classList.add('active'));
-        nameInput.addEventListener('blur', () => previewContainer.classList.remove('active'));
-      }
+    const candidates = EXISTING_TAGS.filter(t => t.axis === axisKey);
+    if (!candidates.length) {
+      parentList.innerHTML = '<div class="tf-parent-empty"><i class="bi bi-info-circle"></i> この軸にはまだ親タグになれるタグがありません</div>';
+      if (!keepParent) { parentSelect.value = ''; }
       updatePreview();
+      return;
+    }
+    candidates.forEach(t => {
+      const row = document.createElement('label');
+      row.className = 'tf-parent-opt' + (String(t.id) === curParentId ? ' sel' : '');
+      row.innerHTML = `<input type="radio" name="parent_ui" value="${t.id}" ${String(t.id) === curParentId ? 'checked' : ''}>
+        <span class="tf-parent-opt-dot" style="background:${(AXES.find(a=>a.key===axisKey)||{}).color||'#888'};"></span>
+        <span class="tf-parent-opt-name">@${t.name}</span>
+        <span class="tf-parent-opt-count">${t.count}件で使用中</span>`;
+      row.querySelector('input').addEventListener('change', () => {
+        parentList.querySelectorAll('.tf-parent-opt').forEach(r => r.classList.remove('sel'));
+        row.classList.add('sel');
+        curParentId = String(t.id);
+        parentSelect.value = t.id;
+        updatePreview();
+      });
+      parentList.appendChild(row);
+    });
+  }
+
+  parentToggle.addEventListener('change', function() {
+    isChild = this.checked;
+    parentSection.style.display = isChild ? 'flex' : 'none';
+    if (!isChild) {
+      curParentId = null;
+      parentSelect.value = '';
+      parentList.querySelectorAll('.tf-parent-opt').forEach(r => r.classList.remove('sel'));
+      parentList.querySelectorAll('input[type=radio]').forEach(r => r.checked = false);
+    }
+    updatePreview();
+  });
+
+  function updatePreview() {
+    const name = nameInput.value.trim();
+    const ax = AXES.find(a => a.key === curAxis);
+
+    if (name) {
+      previewText.textContent = '@' + name;
+      previewText.classList.remove('tf-preview-empty');
+    } else {
+      previewText.textContent = 'タグ名を入力してください';
+      previewText.classList.add('tf-preview-empty');
     }
 
-    // ===== 送信ボタン =====
-    const form = document.getElementById('tagForm');
-    if (form) {
-      form.addEventListener('submit', function(e) {
-        const submitBtn = this.querySelector('button[type="submit"]');
-        const btnIcon = submitBtn.querySelector('i');
-        const btnText = submitBtn.querySelector('span');
-        submitBtn.disabled = true;
-        btnIcon.className = 'bi bi-hourglass-split';
-        if (btnText) btnText.textContent = '保存中...';
-      });
+    if (isChild && curParentId && name) {
+      const parent = EXISTING_TAGS.find(t => String(t.id) === curParentId);
+      if (parent) {
+        treePreview.style.display = 'flex';
+        treePreview.innerHTML = `
+          <div class="tf-tree-row parent">
+            <span class="tf-tree-chip is-parent"><span class="tf-tree-dot" style="background:${(ax||{}).color||'#888'};"></span>@${parent.name}</span>
+            <span class="tf-tree-meta">親タグ</span>
+          </div>
+          <div class="tf-tree-row child">
+            <span class="tf-tree-connector"><i class="bi bi-arrow-return-right"></i></span>
+            <span class="tf-tree-chip is-this"><span class="tf-tree-dot" style="background:rgba(255,255,255,.7);"></span>@${name}</span>
+            <span class="tf-tree-meta">このタグ</span>
+          </div>`;
+      } else {
+        treePreview.style.display = 'none';
+        treePreview.innerHTML = '';
+      }
+    } else {
+      treePreview.style.display = 'none';
+      treePreview.innerHTML = '';
     }
+  }
+
+  axisPicker.querySelectorAll('.tf-axis-opt').forEach(opt => {
+    opt.addEventListener('click', () => selectAxis(opt.dataset.value));
   });
+
+  nameInput.addEventListener('input', () => selectAxis(curAxis, { keepParent: true }));
+
+  // 初期化（編集時は既存値を反映）
+  if (isChild) {
+    parentToggle.checked = true;
+    parentSection.style.display = 'flex';
+  }
+  selectAxis(curAxis, { keepParent: true });
+
+  document.getElementById('tagForm').addEventListener('submit', function() {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> 保存中…';
+  });
+});
 </script>
 {% endblock %}

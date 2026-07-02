@@ -1,1281 +1,262 @@
 {% extends 'base.html' %}
 {% load static %}
-{% load stockdiary_filters %}
 
 {% block title %}タグ管理 | カブログ{% endblock %}
 
 {% block head %}
-<!-- コンポーネントCSS -->
-<link rel="stylesheet" href="{% static 'css/3-components/components.css' %}?v={{ STATIC_VERSION }}">
-<link rel="stylesheet" href="{% static 'css/3-components/dark-mode-components.css' %}?v={{ STATIC_VERSION }}">
-
 <style>
-  /* ========== モダンタグ管理UI ========== */
-
-  .tags-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 2rem 1rem;
-  }
-
-  /* ヘッダーセクション */
-  .tags-header {
-    text-align: center;
-    margin-bottom: 3rem;
-  }
-
-  .tags-header-title {
-    font-size: 2.5rem;
-    font-weight: 800;
-    background: linear-gradient(135deg, var(--primary-200) 0%, var(--accent-200) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-bottom: 0.75rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 1rem;
-  }
-
-  .tags-header-subtitle {
-    font-size: 1.1rem;
-    color: var(--text-200);
-    max-width: 600px;
-    margin: 0 auto;
-  }
-
-  /* 検索とアクションバー */
-  .tags-actions {
-    background: var(--bg-100);
-    border: 1px solid var(--border-light);
-    border-radius: var(--radius-xl);
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-    box-shadow: var(--shadow-sm);
-  }
-
-  .tags-search-wrapper {
-    position: relative;
-    flex: 1;
-  }
-
-  .tags-search-icon {
-    position: absolute;
-    left: 1.25rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--text-300);
-    font-size: 1.125rem;
-  }
-
-  .tags-search-input {
-    width: 100%;
-    padding: 0.875rem 1.25rem 0.875rem 3.25rem;
-    border: 2px solid var(--border-light);
-    border-radius: var(--radius-lg);
-    font-size: 1rem;
-    transition: all 0.3s ease;
-    background: var(--bg-200);
-  }
-
-  .tags-search-input:focus {
-    outline: none;
-    border-color: var(--primary-200);
-    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
-    background: var(--bg-100);
-  }
-
-  .tags-action-btn {
-    padding: 0.875rem 1.5rem;
-    border-radius: var(--radius-lg);
-    font-weight: 600;
-    font-size: 1rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    transition: all 0.3s ease;
-    border: none;
-    cursor: pointer;
-    white-space: nowrap;
-    text-decoration: none;
-  }
-
-  .tags-action-btn-primary {
-    background: var(--gradient-primary);
-    color: white;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-  }
-
-  .tags-action-btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
-    color: white;
-  }
-
-  .tags-action-btn-secondary {
-    background: transparent;
-    color: var(--text-200);
-    border: 2px solid var(--border-light);
-  }
-
-  .tags-action-btn-secondary:hover {
-    background: var(--bg-200);
-    border-color: var(--text-200);
-    color: var(--text-100);
-  }
-
-  /* タグカードグリッド */
-  .tags-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 0.75rem;
-    margin-bottom: 2rem;
-  }
-
-  .tag-card {
-    background: var(--bg-100);
-    border: 2px solid var(--border-light);
-    border-radius: var(--radius-xl);
-    padding: 0.875rem 1rem;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .tag-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: var(--gradient-primary);
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 0.3s ease;
-  }
-
-  .tag-card:hover {
-    border-color: var(--primary-200);
-    transform: translateY(-4px);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
-  }
-
-  .tag-card:hover::before {
-    transform: scaleX(1);
-  }
-
-  .tag-card-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 0.5rem;
-  }
-
-  .tag-card-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: var(--radius-md);
-    background: var(--gradient-primary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
-  }
-
-  .tag-card-icon i {
-    font-size: 1.1rem;
-    color: white;
-  }
-
-  .tag-card-menu {
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  .tag-card-menu-btn {
-    width: 36px;
-    height: 36px;
-    border-radius: var(--radius-md);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: none;
-    background: transparent;
-    color: var(--text-300);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-decoration: none;
-  }
-
-  .tag-card-menu-btn:hover {
-    background: var(--bg-200);
-    color: var(--text-100);
-  }
-
-  .tag-card-body {
-    margin-bottom: 0.4rem;
-  }
-
-  .tag-card-name {
-    font-size: 1.05rem;
-    font-weight: 700;
-    color: var(--text-100);
-    margin-bottom: 0.25rem;
-    line-height: 1.3;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  .tag-card-count {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    color: var(--text-200);
-    font-size: 0.82rem;
-  }
-
-  .tag-card-count i {
-    font-size: 0.85rem;
-  }
-
-  .tag-card-footer {
-    display: flex;
-    gap: 0.5rem;
-    padding-top: 0.625rem;
-    border-top: 1px solid var(--border-light);
-  }
-
-  .tag-card-btn {
-    flex: 1;
-    padding: 0.45rem 0.5rem;
-    border-radius: var(--radius-md);
-    font-weight: 600;
-    font-size: 0.82rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    border: none;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-decoration: none;
-  }
-
-  .tag-card-btn-primary {
-    background: var(--primary-100);
-    color: var(--primary-200);
-  }
-
-  .tag-card-btn-primary:hover {
-    background: var(--primary-200);
-    color: white;
-    transform: translateY(-1px);
-  }
-
-  .tag-card-btn-secondary {
-    background: var(--bg-200);
-    color: var(--text-200);
-  }
-
-  .tag-card-btn-secondary:hover {
-    background: var(--bg-300);
-    color: var(--text-100);
-  }
-
-  /* 統計カード */
-  .tags-stats {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1rem;
-    margin-bottom: 1.75rem;
-  }
-
-  /* 通常カード（白背景・色付きアイコン） */
-  .tags-stat-card {
-    background: var(--bg-100);
-    border: 1px solid var(--border-light);
-    color: var(--text-100);
-    padding: 1.1rem 1.25rem;
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-sm);
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    transition: transform 0.22s ease, box-shadow 0.22s ease;
-  }
-  .tags-stat-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 24px rgba(20, 40, 60, 0.08);
-  }
-
-  /* ヒーローカード（グラデーション） */
-  .tags-stat-card.hero {
-    background: var(--gradient-primary);
-    border: none;
-    color: #fff;
-    box-shadow: 0 10px 26px rgba(0, 102, 140, 0.3);
-  }
-
-  .tags-stat-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: var(--radius-md);
-    background: rgba(0, 102, 140, 0.1);
-    color: var(--accent-200);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-  .tags-stat-card.hero .tags-stat-icon {
-    background: rgba(255, 255, 255, 0.2);
-    color: #fff;
-  }
-
-  .tags-stat-icon i {
-    font-size: 1.5rem;
-  }
-
-  .tags-stat-content {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .tags-stat-value {
-    font-size: 1.7rem;
-    font-weight: 800;
-    margin-bottom: 0.1rem;
-    line-height: 1.05;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .tags-stat-label {
-    font-size: 0.82rem;
-    color: var(--text-200);
-  }
-  .tags-stat-card.hero .tags-stat-label {
-    color: rgba(255, 255, 255, 0.9);
-  }
-
-  /* 空の状態 */
-  .tags-empty {
-    text-align: center;
-    padding: 5rem 2rem;
-    background: var(--bg-100);
-    border-radius: var(--radius-xl);
-    border: 2px dashed var(--border-light);
-  }
-
-  .tags-empty-icon {
-    width: 120px;
-    height: 120px;
-    margin: 0 auto 2rem;
-    border-radius: var(--radius-full);
-    background: var(--primary-100);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .tags-empty-icon i {
-    font-size: 4rem;
-    color: var(--primary-200);
-  }
-
-  .tags-empty-title {
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: var(--text-100);
-    margin-bottom: 0.75rem;
-  }
-
-  .tags-empty-text {
-    font-size: 1.1rem;
-    color: var(--text-200);
-    max-width: 500px;
-    margin: 0 auto 2rem;
-    line-height: 1.6;
-  }
-
-  /* ガイドセクション */
-  .tags-guide {
-    background: var(--bg-100);
-    border: 1px solid var(--border-light);
-    border-radius: var(--radius-xl);
-    padding: 2rem;
-    margin-top: 3rem;
-  }
-
-  .tags-guide-title {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--text-100);
-    margin-bottom: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  .tags-guide-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 2rem;
-  }
-
-  .tags-guide-item {
-    display: flex;
-    gap: 1rem;
-  }
-
-  .tags-guide-icon {
-    width: 56px;
-    height: 56px;
-    border-radius: var(--radius-lg);
-    background: var(--gradient-primary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-
-  .tags-guide-icon i {
-    font-size: 1.5rem;
-    color: white;
-  }
-
-  .tags-guide-content h3 {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--text-100);
-    margin-bottom: 0.5rem;
-  }
-
-  .tags-guide-content p {
-    font-size: 0.95rem;
-    color: var(--text-200);
-    line-height: 1.5;
-    margin: 0;
-  }
-
-  /* ダークモード */
-  .dark-mode .tags-header-title,
-  [data-theme="dark"] .tags-header-title {
-    background: linear-gradient(135deg, var(--dm-primary-200) 0%, var(--accent-200) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .dark-mode .tags-header-subtitle,
-  [data-theme="dark"] .tags-header-subtitle {
-    color: var(--dm-text-secondary);
-  }
-
-  .dark-mode .tags-actions,
-  [data-theme="dark"] .tags-actions {
-    background: var(--dm-card);
-    border-color: var(--dm-border);
-  }
-
-  .dark-mode .tags-search-input,
-  [data-theme="dark"] .tags-search-input {
-    background: var(--dm-bg-300);
-    border-color: var(--dm-border);
-    color: var(--dm-text);
-  }
-
-  .dark-mode .tags-search-input:focus,
-  [data-theme="dark"] .tags-search-input:focus {
-    background: var(--dm-card);
-    border-color: var(--dm-primary-200);
-    box-shadow: 0 0 0 4px rgba(89, 142, 243, 0.15);
-  }
-
-  .dark-mode .tags-search-icon,
-  [data-theme="dark"] .tags-search-icon {
-    color: var(--dm-text-secondary);
-  }
-
-  .dark-mode .tag-card,
-  [data-theme="dark"] .tag-card {
-    background: var(--dm-card);
-    border-color: var(--dm-border);
-  }
-
-  .dark-mode .tag-card:hover,
-  [data-theme="dark"] .tag-card:hover {
-    border-color: var(--dm-primary-200);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
-  }
-
-  .dark-mode .tag-card-name,
-  [data-theme="dark"] .tag-card-name {
-    color: var(--dm-text);
-  }
-
-  .dark-mode .tag-card-count,
-  [data-theme="dark"] .tag-card-count {
-    color: var(--dm-text-secondary);
-  }
-
-  .dark-mode .tag-card-footer,
-  [data-theme="dark"] .tag-card-footer {
-    border-top-color: var(--dm-border);
-  }
-
-  .dark-mode .tag-card-btn-primary,
-  [data-theme="dark"] .tag-card-btn-primary {
-    background: var(--dm-primary-bg);
-    color: var(--dm-primary-text);
-  }
-
-  .dark-mode .tag-card-btn-primary:hover,
-  [data-theme="dark"] .tag-card-btn-primary:hover {
-    background: var(--dm-primary-100);
-    color: white;
-  }
-
-  .dark-mode .tag-card-btn-secondary,
-  [data-theme="dark"] .tag-card-btn-secondary {
-    background: var(--dm-bg-300);
-    color: var(--dm-text-secondary);
-  }
-
-  .dark-mode .tag-card-btn-secondary:hover,
-  [data-theme="dark"] .tag-card-btn-secondary:hover {
-    background: var(--dm-bg-200);
-    color: var(--dm-text);
-  }
-
-  .dark-mode .tag-card-menu-btn,
-  [data-theme="dark"] .tag-card-menu-btn {
-    color: var(--dm-text-secondary);
-  }
-
-  .dark-mode .tag-card-menu-btn:hover,
-  [data-theme="dark"] .tag-card-menu-btn:hover {
-    background: var(--dm-bg-300);
-    color: var(--dm-text);
-  }
-
-  .dark-mode .tags-empty,
-  [data-theme="dark"] .tags-empty {
-    background: var(--dm-card);
-    border-color: var(--dm-border);
-  }
-
-  .dark-mode .tags-empty-icon,
-  [data-theme="dark"] .tags-empty-icon {
-    background: var(--dm-primary-bg);
-  }
-
-  .dark-mode .tags-empty-icon i,
-  [data-theme="dark"] .tags-empty-icon i {
-    color: var(--dm-primary-text);
-  }
-
-  .dark-mode .tags-empty-title,
-  [data-theme="dark"] .tags-empty-title {
-    color: var(--dm-text);
-  }
-
-  .dark-mode .tags-empty-text,
-  [data-theme="dark"] .tags-empty-text {
-    color: var(--dm-text-secondary);
-  }
-
-  .dark-mode .tags-guide,
-  [data-theme="dark"] .tags-guide {
-    background: var(--dm-card);
-    border-color: var(--dm-border);
-  }
-
-  .dark-mode .tags-guide-title,
-  [data-theme="dark"] .tags-guide-title {
-    color: var(--dm-text);
-  }
-
-  .dark-mode .tags-guide-content h3,
-  [data-theme="dark"] .tags-guide-content h3 {
-    color: var(--dm-text);
-  }
-
-  .dark-mode .tags-guide-content p,
-  [data-theme="dark"] .tags-guide-content p {
-    color: var(--dm-text-secondary);
-  }
-
-  /* レスポンシブ */
-  @media (max-width: 768px) {
-    .tags-container {
-      padding: 1.5rem 1rem;
-    }
-
-    .tags-header-title {
-      font-size: 2rem;
-    }
-
-    .tags-header-subtitle {
-      font-size: 1rem;
-    }
-
-    .tags-grid {
-      grid-template-columns: 1fr;
-      gap: 0.625rem;
-    }
-
-    .tags-guide-grid {
-      grid-template-columns: 1fr;
-      gap: 1.5rem;
-    }
-
-    .tags-actions {
-      padding: 1rem;
-    }
-
-    .tags-action-btn {
-      font-size: 0.9rem;
-      padding: 0.75rem 1.25rem;
-    }
-
-    .tags-header {
-      margin-bottom: 1.5rem;
-    }
-
-    .tag-card-menu-btn {
-      min-width: 44px;
-      min-height: 44px;
-    }
-
-    .tags-stats {
-      margin-bottom: 1rem;
-    }
-
-    .tags-stat-card {
-      padding: 0.75rem 1rem;
-      flex-direction: row;
-      align-items: center;
-      gap: 0.75rem;
-    }
-
-    .tags-stat-icon {
-      width: 36px;
-      height: 36px;
-      flex-shrink: 0;
-    }
-
-    .tags-stat-icon i {
-      font-size: 1rem;
-    }
-
-    .tags-stat-value {
-      font-size: 1.25rem;
-    }
-  }
-
-  @media (max-width: 480px) {
-    .tags-header-title {
-      font-size: 1.75rem;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    .tags-stat-value {
-      font-size: 1.75rem;
-    }
-  }
-  /* ========== ツールバー行（検索 + グループ切替 + 新規） ========== */
-  .tags-toolbar-row {
-    display: flex;
-    gap: 0.75rem;
-    align-items: center;
-  }
-  .tags-search-wrapper { flex: 1; min-width: 0; }
-
-  /* グループ切替トグルの ON 状態 */
-  .tags-action-btn-secondary.on {
-    background: rgba(0, 102, 140, 0.1);
-    border-color: rgba(0, 102, 140, 0.3);
-    color: var(--accent-200);
-  }
-
-  /* ========== 軸フィルターチップ ========== */
-  .axis-row {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-    margin-top: 0.9rem;
-    padding-top: 0.9rem;
-    border-top: 1px dashed var(--border-light);
-  }
-  .axis-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    padding: 0.38rem 0.85rem;
-    border-radius: 999px;
-    font-size: 0.84rem;
-    font-weight: 600;
-    background: var(--bg-200);
-    color: var(--text-200);
-    border: 1.5px solid transparent;
-    cursor: pointer;
-    transition: all 0.16s ease;
-    white-space: nowrap;
-  }
-  .axis-chip .dot {
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-  .axis-chip .ct {
-    font-size: 0.72rem;
-    font-weight: 700;
-    opacity: 0.6;
-    font-variant-numeric: tabular-nums;
-  }
-  .axis-chip:hover { background: var(--bg-300); }
-  .axis-chip.active {
-    color: #fff;
-    background: var(--chip-color, var(--accent-200));
-    border-color: var(--chip-color, var(--accent-200));
-  }
-  .axis-chip.active .ct { opacity: 0.85; }
-  .axis-chip.active .dot { background: rgba(255, 255, 255, 0.9) !important; }
-
-  /* ========== 軸グループ見出し（グリッド全幅でセクション区切り） ========== */
-  .axis-head {
-    grid-column: 1 / -1;
-    display: flex;
-    align-items: center;
-    gap: 0.7rem;
-    margin: 0.5rem 0 0.1rem;
-  }
-  .axis-head:first-child { margin-top: 0; }
-  .axis-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.92rem;
-    font-weight: 800;
-    padding: 0.3rem 0.8rem;
-    border-radius: 10px;
-    color: #fff;
-  }
-  .axis-meta {
-    font-size: 0.82rem;
-    color: var(--text-300);
-    font-weight: 500;
-    white-space: nowrap;
-  }
-  .axis-line {
-    flex: 1;
-    height: 1px;
-    background: var(--border-light);
-  }
-
-  /* ========== 軸カラーのカード調整 ========== */
-  .tag-card::before {
-    background: var(--cardaccent, var(--gradient-primary));
-  }
-  .tag-card:hover {
-    border-color: transparent;
-  }
-  .tag-card-name {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-    -webkit-line-clamp: unset;
-    overflow: visible;
-  }
-  .tag-card-name .at {
-    color: var(--cardaccent, var(--accent-200));
-    font-weight: 800;
-  }
-  .ax-pill {
-    flex-shrink: 0;
-    font-size: 0.66rem;
-    font-weight: 700;
-    padding: 2px 8px;
-    border-radius: 999px;
-    border: 1px solid;
-    white-space: nowrap;
-    line-height: 1.7;
-  }
-  .tag-card-stats {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    margin-top: 0.35rem;
-  }
-  .tag-card-stats .tag-card-count.unused { color: var(--text-300); }
-
-  /* ========== 検索/フィルタの該当なし ========== */
-  .tags-noresult {
-    text-align: center;
-    padding: 3.5rem 1.5rem;
-    background: var(--bg-100);
-    border: 2px dashed var(--border-light);
-    border-radius: var(--radius-xl);
-    color: var(--text-300);
-    margin-bottom: 2rem;
-  }
-  .tags-noresult i { font-size: 2.4rem; display: block; margin-bottom: 0.6rem; color: var(--bg-300); }
-  .tags-noresult b { display: block; font-size: 1.05rem; color: var(--text-200); margin-bottom: 0.25rem; }
-
-  /* ========== レスポンシブ（統計グリッド） ========== */
-  @media (max-width: 980px) {
-    .tags-stats { grid-template-columns: 1fr 1fr; }
-  }
-  @media (max-width: 640px) {
-    .tags-toolbar-row { flex-wrap: wrap; }
-    .tags-search-wrapper { flex: 1 1 100%; }
-    .btn-toggle-txt { display: none; }
-  }
-  @media (max-width: 420px) {
-    .tags-stats { grid-template-columns: 1fr; }
-  }
-
-  /* ========== ダークモード（新レイアウト要素） ========== */
-  .dark-mode .tags-stat-card,
-  [data-theme="dark"] .tags-stat-card {
-    background: var(--dm-card);
-    border-color: var(--dm-border);
-    color: var(--dm-text);
-  }
-  .dark-mode .tags-stat-card.hero,
-  [data-theme="dark"] .tags-stat-card.hero {
-    background: var(--gradient-primary);
-    border: none;
-    color: #fff;
-  }
-  .dark-mode .tags-stat-label,
-  [data-theme="dark"] .tags-stat-label { color: var(--dm-text-secondary); }
-  .dark-mode .tags-stat-card.hero .tags-stat-label,
-  [data-theme="dark"] .tags-stat-card.hero .tags-stat-label { color: rgba(255,255,255,0.9); }
-
-  .dark-mode .axis-chip,
-  [data-theme="dark"] .axis-chip {
-    background: var(--dm-bg-300);
-    color: var(--dm-text-secondary);
-  }
-  .dark-mode .axis-chip:hover,
-  [data-theme="dark"] .axis-chip:hover { background: var(--dm-bg-200); }
-  .dark-mode .axis-row,
-  [data-theme="dark"] .axis-row { border-top-color: var(--dm-border); }
-  .dark-mode .axis-line,
-  [data-theme="dark"] .axis-line { background: var(--dm-border); }
-  .dark-mode .axis-meta,
-  [data-theme="dark"] .axis-meta { color: var(--dm-text-secondary); }
-  .dark-mode .tags-action-btn-secondary.on,
-  [data-theme="dark"] .tags-action-btn-secondary.on {
-    background: rgba(89, 142, 243, 0.18);
-    border-color: rgba(89, 142, 243, 0.4);
-    color: var(--dm-primary-200);
-  }
-  .dark-mode .tags-noresult,
-  [data-theme="dark"] .tags-noresult {
-    background: var(--dm-card);
-    border-color: var(--dm-border);
-  }
-
-  /* ========== ページ固有スタイル ========== */
-
-  /* タグバッジ（テーブル内） */
-  .table-tag-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 6px 16px;
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.2));
-    color: var(--primary-color);
-    border: 1px solid rgba(59, 130, 246, 0.3);
-    border-radius: 9999px;
-    font-weight: 500;
-    font-size: 14px;
-    transition: all 0.2s ease;
-    text-decoration: none;
-  }
-
-  .table-tag-badge:hover {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(37, 99, 235, 0.3));
-    border-color: var(--primary-color);
-    transform: translateY(-1px);
-    color: var(--primary-color);
-  }
-
-  .table-tag-badge i {
-    margin-right: 6px;
-  }
-
-  /* ガイドカードアイコン */
-  .guide-icon {
-    width: 48px;
-    height: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark, #2563eb));
-    border-radius: var(--radius-md);
-    flex-shrink: 0;
-  }
-
-  .guide-icon i {
-    color: white;
-    font-size: 1.25rem;
-  }
-
-  .guide-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 1rem;
-  }
-
-  .guide-item h6 {
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    color: var(--text-primary);
-  }
-
-  .guide-item p {
-    color: var(--text-muted);
-    font-size: 0.875rem;
-    margin: 0;
-    line-height: 1.5;
-  }
-
-  /* 検索フォーム */
-  .search-input-wrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
-  }
-
-  .search-input-wrapper .search-icon {
-    position: absolute;
-    right: 0.875rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--text-200);
-    pointer-events: none;
-    font-size: 0.875rem;
-    z-index: 1;
-    line-height: 1;
-  }
-
-  .search-input-wrapper .form-control {
-    padding-right: 2.5rem;
-  }
-
-  /* テーブル行のホバー効果 */
-  .table tbody tr {
-    transition: background-color 0.2s ease;
-  }
-
-  .table tbody tr:hover {
-    background-color: var(--bg-hover, rgba(0, 0, 0, 0.02));
-  }
-
-  /* ========== ダークモード ========== */
-
-  /* Bootstrap テーブル変数オーバーライド */
-  .dark-mode .table,
-  [data-theme="dark"] .table {
-    --bs-table-bg: transparent;
-    --bs-table-color: var(--dm-text-100);
-    --bs-table-border-color: var(--dm-border);
-    --bs-table-striped-bg: rgba(71, 85, 105, 0.15);
-    --bs-table-hover-bg: rgba(89, 142, 243, 0.08);
-    --bs-table-hover-color: var(--dm-text-100);
-    color: var(--dm-text-100) !important;
-    border-color: var(--dm-border) !important;
-  }
-
-  .dark-mode .table thead th,
-  [data-theme="dark"] .table thead th {
-    background-color: rgba(71, 85, 105, 0.4) !important;
-    color: var(--dm-text-200) !important;
-    border-bottom-color: var(--dm-border) !important;
-    border-top: none;
-  }
-
-  .dark-mode .table tbody tr,
-  [data-theme="dark"] .table tbody tr {
-    background-color: transparent !important;
-  }
-
-  .dark-mode .table tbody tr:hover,
-  [data-theme="dark"] .table tbody tr:hover {
-    background-color: rgba(89, 142, 243, 0.08) !important;
-  }
-
-  .dark-mode .table tbody td,
-  [data-theme="dark"] .table tbody td {
-    border-bottom-color: var(--dm-border) !important;
-    color: var(--dm-text-100) !important;
-    background-color: transparent !important;
-  }
-
-  .dark-mode .table-responsive,
-  [data-theme="dark"] .table-responsive {
-    border-color: var(--dm-border);
-  }
-
-  /* カード */
-  .dark-mode .card,
-  [data-theme="dark"] .card {
-    background-color: var(--dm-card) !important;
-    border-color: var(--dm-border) !important;
-  }
-
-  .dark-mode .card-header,
-  [data-theme="dark"] .card-header {
-    background-color: rgba(71, 85, 105, 0.3) !important;
-    border-bottom-color: var(--dm-border) !important;
-    color: var(--dm-text-100);
-  }
-
-  .dark-mode .card-title,
-  [data-theme="dark"] .card-title {
-    color: var(--dm-text-100) !important;
-  }
-
-  .dark-mode .card-body,
-  [data-theme="dark"] .card-body {
-    background-color: transparent !important;
-  }
-
-  /* タグバッジ */
-  .dark-mode .table-tag-badge,
-  [data-theme="dark"] .table-tag-badge {
-    background: linear-gradient(135deg, rgba(89, 142, 243, 0.2), rgba(37, 99, 235, 0.2)) !important;
-    border-color: rgba(89, 142, 243, 0.4) !important;
-    color: var(--dm-primary-200) !important;
-  }
-
-  .dark-mode .table-tag-badge:hover,
-  [data-theme="dark"] .table-tag-badge:hover {
-    background: linear-gradient(135deg, rgba(89, 142, 243, 0.35), rgba(37, 99, 235, 0.35)) !important;
-    border-color: var(--dm-primary-200) !important;
-    color: var(--dm-primary-200) !important;
-  }
-
-  /* テーブル内ボタン */
-  .dark-mode .btn-icon.btn-primary-icon,
-  [data-theme="dark"] .btn-icon.btn-primary-icon {
-    background: rgba(89, 142, 243, 0.2) !important;
-    color: var(--dm-primary-200) !important;
-  }
-
-  .dark-mode .btn-icon.btn-primary-icon:hover,
-  [data-theme="dark"] .btn-icon.btn-primary-icon:hover {
-    background: var(--dm-primary-100) !important;
-    color: white !important;
-  }
-
-  .dark-mode .btn-icon.btn-warning-icon,
-  [data-theme="dark"] .btn-icon.btn-warning-icon {
-    background: rgba(245, 158, 11, 0.2) !important;
-    color: #fbbf24 !important;
-  }
-
-  .dark-mode .btn-icon.btn-warning-icon:hover,
-  [data-theme="dark"] .btn-icon.btn-warning-icon:hover {
-    background: #f59e0b !important;
-    color: white !important;
-  }
-
-  .dark-mode .btn-icon.btn-danger-icon,
-  [data-theme="dark"] .btn-icon.btn-danger-icon {
-    background: rgba(239, 68, 68, 0.2) !important;
-    color: #fca5a5 !important;
-  }
-
-  .dark-mode .btn-icon.btn-danger-icon:hover,
-  [data-theme="dark"] .btn-icon.btn-danger-icon:hover {
-    background: #ef4444 !important;
-    color: white !important;
-  }
-
-  /* 使用件数テキスト */
-  .dark-mode .text-muted,
-  [data-theme="dark"] .text-muted {
-    color: var(--dm-text-200) !important;
-  }
-
-  /* ページヘッダー */
-  .dark-mode .page-title,
-  [data-theme="dark"] .page-title {
-    color: var(--dm-text-100) !important;
-  }
-
-  .dark-mode .page-subtitle,
-  [data-theme="dark"] .page-subtitle {
-    color: var(--dm-text-200) !important;
-  }
-
-  /* フォームセクション */
-  .dark-mode .form-section-title,
-  [data-theme="dark"] .form-section-title {
-    color: var(--dm-text-100) !important;
-  }
-
-  /* 検索フォーム */
-  .dark-mode .search-input-wrapper .search-icon,
-  [data-theme="dark"] .search-input-wrapper .search-icon {
-    color: var(--dm-text-200) !important;
-  }
-
-  .dark-mode .form-control,
-  [data-theme="dark"] .form-control {
-    background-color: rgba(71, 85, 105, 0.3) !important;
-    border-color: var(--dm-border) !important;
-    color: var(--dm-text-100) !important;
-  }
-
-  .dark-mode .form-control:focus,
-  [data-theme="dark"] .form-control:focus {
-    background-color: rgba(71, 85, 105, 0.4) !important;
-    border-color: var(--dm-primary-200) !important;
-    box-shadow: 0 0 0 0.25rem rgba(89, 142, 243, 0.15) !important;
-  }
-
-  .dark-mode .form-control::placeholder,
-  [data-theme="dark"] .form-control::placeholder {
-    color: var(--dm-text-300) !important;
-  }
-
-  /* ボタン */
-  .dark-mode .btn-outline-secondary,
-  [data-theme="dark"] .btn-outline-secondary {
-    border-color: var(--dm-border) !important;
-    color: var(--dm-text-200) !important;
-  }
-
-  .dark-mode .btn-outline-secondary:hover,
-  [data-theme="dark"] .btn-outline-secondary:hover {
-    background-color: rgba(71, 85, 105, 0.3) !important;
-    border-color: var(--dm-text-200) !important;
-    color: var(--dm-text-100) !important;
-  }
-
-  /* ガイドカード */
-  .dark-mode .guide-item h6,
-  [data-theme="dark"] .guide-item h6 {
-    color: var(--dm-text-100) !important;
-  }
-
-  .dark-mode .guide-item p,
-  [data-theme="dark"] .guide-item p {
-    color: var(--dm-text-200) !important;
-  }
-
-  .dark-mode .guide-icon,
-  [data-theme="dark"] .guide-icon {
-    background: linear-gradient(135deg, var(--dm-primary-100), var(--dm-primary-200)) !important;
-  }
-
-  /* レスポンシブ調整 */
-  @media (max-width: 576px) {
-    .table-tag-badge {
-      font-size: 12px;
-      padding: 4px 12px;
-    }
-
-    .guide-icon {
-      width: 40px;
-      height: 40px;
-    }
-
-    .guide-icon i {
-      font-size: 1rem;
-    }
-  }
+/* ===== タグ一覧（.tagslist 配下にスコープ・tl- 接頭辞で衝突回避。tag_detail.html と同一トークン体系） ===== */
+.tagslist{
+  --accent-200:#00668c;--accent-100:#71c4ef;--accent-700:#004d6b;
+  --bg-100:#fffefb;--bg-200:#f5f4f1;--bg-300:#e7e5e0;--line:#e9e6df;
+  --t1:#1a2026;--t2:#566069;--t3:#9aa1aa;
+  --grad:linear-gradient(135deg,#71c4ef 0%,#00668c 100%);
+  --warn:#d97706;--warn-bg:#fff7ed;--warn-border:#fdba74;--warn-text:#92400e;
+  --danger:#dc2626;
+  --shadow-sm:0 2px 8px rgba(20,40,60,.05);
+  --shadow-md:0 8px 24px rgba(20,40,60,.08);
+  --r-sm:8px;--r-md:14px;--r-lg:18px;--r-xl:22px;--r-pill:999px;
+  color:var(--t1);font-variant-numeric:tabular-nums;
+}
+[data-theme="dark"] .tagslist,.dark-mode .tagslist{
+  --bg-100:#1e293b;--bg-200:#0f172a;--bg-300:#334155;--line:#334155;
+  --t1:#f1f5f9;--t2:#94a3b8;--t3:#64748b;
+  --warn-bg:rgba(217,119,6,.14);--warn-border:rgba(217,119,6,.5);--warn-text:#fbbf24;
+  --shadow-sm:0 2px 8px rgba(0,0,0,.3);--shadow-md:0 8px 24px rgba(0,0,0,.4);
+}
+.tagslist *{box-sizing:border-box}
+
+/* head */
+.tl-head{margin-bottom:20px}
+.tl-title{font-size:1.6rem;font-weight:800;display:flex;align-items:center;gap:10px}
+.tl-title i{color:var(--accent-200)}
+.tl-sub{font-size:14px;color:var(--t2);margin-top:6px}
+
+/* stats */
+.tl-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px}
+.tl-stat{background:var(--bg-100);border:1px solid var(--line);border-radius:var(--r-md);padding:14px 16px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow-sm);transition:transform .2s,box-shadow .2s}
+.tl-stat:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.tl-stat.hero{background:var(--grad);border:none;color:#fff}
+.tl-stat.hero .tl-stat-label{color:rgba(255,255,255,.85)}
+.tl-stat-icon{width:38px;height:38px;border-radius:11px;background:rgba(0,102,140,.1);color:var(--accent-200);display:flex;align-items:center;justify-content:center;font-size:1.05rem;flex-shrink:0}
+.tl-stat.hero .tl-stat-icon{background:rgba(255,255,255,.2);color:#fff}
+.tl-stat-val{font-size:1.5rem;font-weight:800;line-height:1}
+.tl-stat-label{font-size:.72rem;color:var(--t2);font-weight:600;letter-spacing:.03em;margin-top:2px}
+.tl-stat.unused{cursor:pointer}
+.tl-stat.unused .tl-stat-icon{background:rgba(217,119,6,.12);color:var(--warn)}
+.tl-stat.unused .tl-stat-val{color:var(--warn)}
+.tl-stat.unused .tl-hint{font-size:.62rem;color:var(--warn);font-weight:700}
+
+/* bulk cleanup panel */
+.tl-bulk{background:var(--warn-bg);border:1px solid var(--warn-border);border-radius:var(--r-md);padding:14px 18px;margin-bottom:16px;display:none;flex-direction:column;gap:12px}
+.tl-bulk.open{display:flex}
+.tl-bulk-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.tl-bulk-title{font-size:14px;font-weight:700;color:var(--warn-text);display:flex;align-items:center;gap:8px}
+.tl-bulk-close{background:none;border:none;color:var(--warn-text);cursor:pointer;font-size:1.1rem;padding:2px 6px;border-radius:6px}
+.tl-bulk-close:hover{background:rgba(217,119,6,.15)}
+.tl-unused-list{display:flex;flex-direction:column;gap:4px;max-height:220px;overflow-y:auto}
+.tl-unused-item{display:flex;align-items:center;gap:10px;padding:.4rem .75rem;background:var(--bg-100);border:1px solid var(--line);border-radius:var(--r-sm)}
+.tl-unused-item input[type=checkbox]{accent-color:var(--warn);width:16px;height:16px;flex-shrink:0}
+.tl-unused-item-name{flex:1;font-size:13.5px;color:var(--t1)}
+.tl-unused-item-axis{font-size:.68rem;padding:1px 8px;border-radius:var(--r-pill);color:#fff;font-weight:700}
+.tl-bulk-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.tl-sel-all{font-size:.72rem;color:var(--accent-200);background:none;border:none;font-weight:700;cursor:pointer}
+.tl-sel-count{font-size:.72rem;color:var(--t3)}
+.tl-btn-del{display:inline-flex;align-items:center;gap:6px;padding:.5rem 1rem;background:var(--danger);color:#fff;border:none;border-radius:var(--r-sm);font-size:13.5px;font-weight:700;cursor:pointer;transition:opacity .15s}
+.tl-btn-del:hover{opacity:.88}
+
+/* toolbar */
+.tl-toolbar{background:var(--bg-100);border:1px solid var(--line);border-radius:var(--r-xl);box-shadow:var(--shadow-sm);padding:14px 16px;margin-bottom:14px}
+.tl-toolbar-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.tl-search{flex:1;min-width:160px;position:relative}
+.tl-search i{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--t3)}
+.tl-search input{width:100%;height:44px;border:1.5px solid var(--line);border-radius:var(--r-md);background:var(--bg-200);font-family:inherit;font-size:14.5px;color:var(--t1);padding:0 14px 0 42px;transition:all .2s}
+.tl-search input:focus{outline:none;border-color:var(--accent-200);background:var(--bg-100);box-shadow:0 0 0 4px rgba(0,102,140,.1)}
+.tl-tbtn{display:inline-flex;align-items:center;gap:7px;height:44px;padding:0 14px;border:1.5px solid var(--line);border-radius:var(--r-md);font-size:13.5px;font-weight:700;background:var(--bg-100);color:var(--t2);cursor:pointer;transition:all .16s;white-space:nowrap;text-decoration:none}
+.tl-tbtn:hover{background:var(--bg-200);color:var(--t1)}
+.tl-tbtn.active{background:var(--accent-200);color:#fff;border-color:var(--accent-200)}
+.tl-tbtn.primary{background:var(--grad);color:#fff;border-color:transparent;box-shadow:0 4px 12px rgba(0,102,140,.25)}
+.tl-tbtn.primary:hover{opacity:.9;color:#fff}
+
+/* axis chips */
+.tl-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}
+.tl-chip{display:inline-flex;align-items:center;gap:6px;padding:.35rem .85rem;border-radius:var(--r-pill);font-size:.78rem;font-weight:700;background:var(--bg-200);color:var(--t2);border:1.5px solid transparent;cursor:pointer;transition:all .15s;white-space:nowrap}
+.tl-chip .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.tl-chip .ct{font-size:.68rem;opacity:.65;font-weight:800}
+.tl-chip:hover{background:var(--bg-300)}
+.tl-chip.active{color:#fff;background:var(--chip-color,var(--accent-200));border-color:var(--chip-color,var(--accent-200))}
+.tl-chip.active .dot{background:rgba(255,255,255,.9)!important}
+.tl-chip.active .ct{opacity:.85}
+
+/* card grid */
+.tl-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.tl-axis-head{grid-column:1/-1;display:flex;align-items:center;gap:10px;margin:8px 0 2px}
+.tl-axis-head:first-child{margin-top:0}
+.tl-axis-badge{display:inline-flex;align-items:center;gap:7px;font-size:.8rem;font-weight:800;padding:.28rem .8rem;border-radius:10px;color:#fff}
+.tl-axis-meta{font-size:.75rem;color:var(--t3);white-space:nowrap}
+.tl-axis-line{flex:1;height:1px;background:var(--line)}
+
+.tl-card{background:var(--bg-100);border:1px solid var(--line);border-radius:var(--r-md);padding:14px;cursor:pointer;position:relative;overflow:hidden;box-shadow:var(--shadow-sm);transition:transform .2s,box-shadow .2s,border-color .2s}
+.tl-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--ac,var(--accent-200));transform:scaleX(0);transform-origin:left;transition:transform .2s}
+.tl-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-md);border-color:transparent}
+.tl-card:hover::before{transform:scaleX(1)}
+.tl-card.unused{opacity:.65}
+.tl-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px}
+.tl-card-icon{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.95rem;color:#fff;background:var(--ac,var(--accent-200))}
+.tl-card-menu{display:flex;gap:4px}
+.tl-card-btn{width:30px;height:30px;border-radius:10px;border:none;background:transparent;color:var(--t3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.8rem;transition:all .16s;text-decoration:none}
+.tl-card-btn:hover{background:var(--bg-200);color:var(--t1)}
+.tl-card-name{font-size:14.5px;font-weight:800;color:var(--t1);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.tl-card-at{color:var(--ac,var(--accent-200));font-weight:800}
+.tl-card-pill{font-size:.62rem;font-weight:700;padding:1px 7px;border-radius:var(--r-pill);border:1px solid;white-space:nowrap;color:var(--ac,var(--accent-200));border-color:color-mix(in srgb,var(--ac,var(--accent-200)) 45%,transparent);background:color-mix(in srgb,var(--ac,var(--accent-200)) 12%,transparent)}
+.tl-card-meta{font-size:.72rem;color:var(--t2);margin-top:6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.tl-card-meta.unused{color:var(--t3)}
+.tl-card-children{font-size:.72rem;color:var(--t3);display:flex;align-items:center;gap:4px;margin-top:3px}
+.tl-card-foot{display:flex;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
+.tl-card-fbtn{flex:1;padding:.4rem 0;border:none;border-radius:10px;font-size:.72rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:all .16s;text-decoration:none}
+.tl-card-fbtn.pri{background:rgba(0,102,140,.1);color:var(--accent-200)}
+.tl-card-fbtn.pri:hover{background:var(--accent-200);color:#fff}
+.tl-card-fbtn.sec{background:var(--bg-200);color:var(--t2)}
+.tl-card-fbtn.sec:hover{background:var(--bg-300);color:var(--t1)}
+
+/* list view */
+.tl-list{display:flex;flex-direction:column;gap:3px}
+.tl-list-axis-head{display:flex;align-items:center;gap:10px;padding:12px 0 4px}
+.tl-list-axis-head:first-child{padding-top:0}
+.tl-row{background:var(--bg-100);border:1px solid var(--line);border-radius:10px;display:flex;align-items:center;gap:10px;padding:.55rem .85rem;transition:all .16s;cursor:pointer;text-decoration:none;color:inherit}
+.tl-row:hover{background:var(--bg-200);border-color:var(--accent-100);color:inherit}
+.tl-row.unused{opacity:.62}
+.tl-row.child{margin-left:26px;border-left:2px solid var(--line);border-radius:0 10px 10px 0}
+.tl-row-dot{width:10px;height:10px;border-radius:50%;background:var(--ac,var(--accent-200));flex-shrink:0}
+.tl-row-name{font-size:13.5px;font-weight:700;color:var(--t1);flex:1;min-width:0;display:flex;align-items:center;gap:6px}
+.tl-row-at{color:var(--ac,var(--accent-200));font-weight:800;font-size:.9rem}
+.tl-row-child-icon{color:var(--t3);font-size:.75rem}
+.tl-row-axis{font-size:.68rem;padding:1px 9px;border-radius:var(--r-pill);color:#fff;font-weight:700;white-space:nowrap;flex-shrink:0;background:var(--ac,var(--accent-200))}
+.tl-row-count{font-size:.7rem;color:var(--t2);white-space:nowrap;flex-shrink:0;min-width:5rem;text-align:right}
+.tl-row-count.zero{color:var(--t3)}
+.tl-row-actions{display:flex;gap:2px;flex-shrink:0}
+.tl-row-btn{width:28px;height:28px;border:none;background:transparent;color:var(--t3);border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.78rem;transition:all .16s;text-decoration:none}
+.tl-row-btn:hover{background:var(--bg-200);color:var(--t1)}
+
+/* empty / no-result */
+.tl-empty{text-align:center;padding:4rem 1.5rem;background:var(--bg-100);border:2px dashed var(--line);border-radius:var(--r-xl)}
+.tl-empty-icon{width:96px;height:96px;margin:0 auto 20px;border-radius:50%;background:rgba(0,102,140,.1);display:flex;align-items:center;justify-content:center;font-size:2.4rem;color:var(--accent-200)}
+.tl-empty h2{font-size:1.4rem;font-weight:700;margin-bottom:10px}
+.tl-empty p{font-size:14.5px;color:var(--t2);max-width:460px;margin:0 auto 20px;line-height:1.6}
+.tl-noresult{text-align:center;padding:3rem 1rem;border:2px dashed var(--line);border-radius:var(--r-md);color:var(--t3);display:none}
+.tl-noresult i{font-size:2rem;display:block;margin-bottom:8px}
+.tl-noresult b{display:block;font-size:1rem;color:var(--t2);margin-bottom:4px}
+
+/* guide */
+.tl-guide{background:var(--bg-100);border:1px solid var(--line);border-radius:var(--r-xl);padding:1.75rem;margin-top:2rem}
+.tl-guide-title{font-size:1.2rem;font-weight:700;margin-bottom:1.25rem;display:flex;align-items:center;gap:.6rem}
+.tl-guide-title i{color:var(--accent-200)}
+.tl-guide-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1.5rem}
+.tl-guide-item{display:flex;gap:.9rem}
+.tl-guide-icon{width:46px;height:46px;border-radius:12px;background:var(--grad);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff;font-size:1.15rem}
+.tl-guide-item h3{font-size:1rem;font-weight:700;margin-bottom:.35rem}
+.tl-guide-item p{font-size:.85rem;color:var(--t2);line-height:1.5;margin:0}
+
+@media (max-width:900px){.tl-stats{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:640px){
+  .tl-stats{grid-template-columns:repeat(2,1fr)}
+  .tl-tbtn span{display:none}
+  .tl-search{flex:1 1 100%}
+}
+@media (max-width:420px){.tl-stats{grid-template-columns:1fr}}
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="tags-container">
-  <!-- ヘッダー -->
-  <div class="page-header mb-5 text-center">
-    <h1 class="page-title tags-header-title">
-      <i class="bi bi-tags-fill"></i>
-      <span>タグ管理</span>
-    </h1>
-    <p class="page-subtitle tags-header-subtitle">
-      日記に <code>@AI</code> などと書くと自動登録されます。ここでは各タグのグループ（軸）を変更できます。
-    </p>
+<div class="tagslist">
+  <div class="tl-head">
+    <h1 class="tl-title"><i class="bi bi-tags-fill"></i>タグ管理</h1>
+    <p class="tl-sub">日記に <code>@AI</code> などと書くと自動登録されます。ここでは軸の変更や親子関係の整理ができます。</p>
   </div>
 
-  <!-- 統計カード -->
   {% if tags %}
-  <div class="tags-stats">
-    <div class="tags-stat-card hero">
-      <div class="tags-stat-icon"><i class="bi bi-tags-fill"></i></div>
-      <div class="tags-stat-content">
-        <div class="tags-stat-value">{{ tag_stats.total }}</div>
-        <div class="tags-stat-label">作成済みタグ</div>
-      </div>
+  <!-- 統計 -->
+  <div class="tl-stats">
+    <div class="tl-stat hero">
+      <div class="tl-stat-icon"><i class="bi bi-tags-fill"></i></div>
+      <div><div class="tl-stat-val">{{ tag_stats.total }}</div><div class="tl-stat-label">作成済みタグ</div></div>
     </div>
-    <div class="tags-stat-card">
-      <div class="tags-stat-icon" style="background:rgba(22,163,74,.12);color:#16a34a;"><i class="bi bi-journal-check"></i></div>
-      <div class="tags-stat-content">
-        <div class="tags-stat-value">{{ tag_stats.used }}</div>
-        <div class="tags-stat-label">使用中のタグ</div>
-      </div>
+    <div class="tl-stat">
+      <div class="tl-stat-icon" style="background:rgba(22,163,74,.12);color:#16a34a;"><i class="bi bi-journal-check"></i></div>
+      <div><div class="tl-stat-val">{{ tag_stats.used }}</div><div class="tl-stat-label">使用中</div></div>
     </div>
-    <div class="tags-stat-card">
-      <div class="tags-stat-icon" style="background:rgba(124,58,237,.12);color:#7c3aed;"><i class="bi bi-collection"></i></div>
-      <div class="tags-stat-content">
-        <div class="tags-stat-value">{{ tag_stats.total_records }}</div>
-        <div class="tags-stat-label">タグ付け記録数</div>
-      </div>
+    {% if tag_stats.unused > 0 %}
+    <div class="tl-stat unused" id="unusedStatCard" title="未使用タグを整理する">
+      <div class="tl-stat-icon"><i class="bi bi-exclamation-circle"></i></div>
+      <div><div class="tl-stat-val">{{ tag_stats.unused }}</div><div class="tl-stat-label">未使用タグ <span class="tl-hint">→ 整理する</span></div></div>
     </div>
-    <div class="tags-stat-card">
-      <div class="tags-stat-icon" style="background:rgba(217,119,6,.12);color:#d97706;"><i class="bi bi-diagram-2"></i></div>
-      <div class="tags-stat-content">
-        <div class="tags-stat-value">{{ tag_stats.axes_in_use }}</div>
-        <div class="tags-stat-label">使用中の軸</div>
-      </div>
+    {% else %}
+    <div class="tl-stat">
+      <div class="tl-stat-icon" style="background:rgba(217,119,6,.12);color:#d97706;"><i class="bi bi-exclamation-circle"></i></div>
+      <div><div class="tl-stat-val">0</div><div class="tl-stat-label">未使用タグ</div></div>
     </div>
+    {% endif %}
+    <div class="tl-stat">
+      <div class="tl-stat-icon" style="background:rgba(124,58,237,.12);color:#7c3aed;"><i class="bi bi-diagram-2"></i></div>
+      <div><div class="tl-stat-val">{{ tag_stats.axes_in_use }}</div><div class="tl-stat-label">使用中の軸</div></div>
+    </div>
+    <div class="tl-stat">
+      <div class="tl-stat-icon" style="background:rgba(0,102,140,.12);color:var(--accent-200);"><i class="bi bi-collection"></i></div>
+      <div><div class="tl-stat-val">{{ tag_stats.total_records }}</div><div class="tl-stat-label">タグ付け記録数</div></div>
+    </div>
+  </div>
+
+  {% if unused_tags %}
+  <!-- 未使用タグ整理パネル -->
+  <div class="tl-bulk" id="bulkPanel">
+    <form method="post" action="{% url 'tags:bulk_delete_unused' %}" id="bulkDeleteForm">
+      {% csrf_token %}
+      <div class="tl-bulk-head">
+        <div class="tl-bulk-title"><i class="bi bi-exclamation-circle-fill"></i>未使用タグ（{{ unused_tags|length }}件）— チェックして一括削除</div>
+        <button type="button" class="tl-bulk-close" id="bulkPanelClose"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="tl-unused-list">
+        {% for t in unused_tags %}
+        <label class="tl-unused-item">
+          <input type="checkbox" name="tag_ids" value="{{ t.id }}" class="unused-chk">
+          <span class="tl-unused-item-name">@{{ t.name }}</span>
+          <span class="tl-unused-item-axis" style="background:{{ t.axis_color }};color:#fff;">{{ t.axis_short }}</span>
+        </label>
+        {% endfor %}
+      </div>
+      <div class="tl-bulk-actions">
+        <button type="button" class="tl-sel-all" id="bulkSelectAll">すべて選択</button>
+        <span class="tl-sel-count" id="bulkSelCount">0件選択中</span>
+        <button type="submit" class="tl-btn-del" onclick="return confirm('選択した未使用タグを削除しますか？この操作は元に戻せません。');"><i class="bi bi-trash3"></i>選択削除</button>
+      </div>
+    </form>
   </div>
   {% endif %}
+  {% endif %}
 
-  <!-- 検索・グループ切替・新規タグ -->
-  <div class="tags-actions">
-    <div class="tags-toolbar-row">
-      <div class="tags-search-wrapper">
-        <i class="bi bi-search tags-search-icon"></i>
-        <input type="text" id="tagSearch" class="tags-search-input"
-               placeholder="タグ名で検索…" autocomplete="off">
+  <!-- ツールバー -->
+  <div class="tl-toolbar">
+    <div class="tl-toolbar-row">
+      <div class="tl-search">
+        <i class="bi bi-search"></i>
+        <input type="text" id="tagSearch" placeholder="タグ名で検索…" autocomplete="off">
       </div>
       {% if tags %}
-      <button type="button" class="tags-action-btn tags-action-btn-secondary on" id="groupToggle" title="軸でグループ表示">
-        <i class="bi bi-collection"></i><span class="btn-toggle-txt">軸でグループ</span>
-      </button>
+      <button type="button" class="tl-tbtn active" id="groupToggle"><i class="bi bi-collection"></i><span>グループ</span></button>
+      <button type="button" class="tl-tbtn active" id="cardViewBtn"><i class="bi bi-grid-3x2-gap"></i><span>カード</span></button>
+      <button type="button" class="tl-tbtn" id="listViewBtn"><i class="bi bi-list-ul"></i><span>リスト</span></button>
       {% endif %}
-      <a href="{% url 'tags:create' %}" class="tags-action-btn tags-action-btn-primary">
-        <i class="bi bi-plus-lg"></i><span class="btn-toggle-txt">新規タグ</span>
-      </a>
+      <a href="{% url 'tags:create' %}" class="tl-tbtn primary"><i class="bi bi-plus-lg"></i><span>新規タグ</span></a>
     </div>
 
     {% if tags %}
-    <!-- 軸フィルターチップ -->
-    <div class="axis-row" id="axisRow">
-      <button type="button" class="axis-chip active" data-axis="all">
-        <span class="dot" style="background:var(--accent-200,#00668c);"></span>すべて
-        <span class="ct">{{ tag_stats.total }}</span>
+    <div class="tl-chips" id="chipsRow">
+      <button type="button" class="tl-chip active" data-axis="all" style="--chip-color:var(--accent-200);">
+        <span class="dot" style="background:var(--accent-200);"></span>すべて<span class="ct">{{ tag_stats.total }}</span>
       </button>
       {% for g in axis_groups %}
-      <button type="button" class="axis-chip" data-axis="{{ g.key }}" style="--chip-color:{{ g.color }};">
-        <span class="dot" style="background:{{ g.color }};"></span>{{ g.short }}
-        <span class="ct">{{ g.count }}</span>
+      <button type="button" class="tl-chip" data-axis="{{ g.key }}" style="--chip-color:{{ g.color }};">
+        <span class="dot" style="background:{{ g.color }};"></span>{{ g.short }}<span class="ct">{{ g.count }}</span>
       </button>
       {% endfor %}
     </div>
@@ -1283,119 +264,104 @@
   </div>
 
   {% if tags %}
-  <!-- タグカードグリッド（軸ごとにグループ化。見出しはグリッド全幅で区切り） -->
-  <div class="tags-grid" id="tagsGrid">
-    {% for g in axis_groups %}
-    <div class="axis-head" data-axis-head="{{ g.key }}">
-      <span class="axis-badge" style="background:{{ g.color }};"><i class="bi {{ g.icon }}"></i>{{ g.label }}</span>
-      <span class="axis-meta">{{ g.count }}個のタグ</span>
-      <span class="axis-line"></span>
-    </div>
-    {% for tag in g.tags %}
-    <div class="tag-card" data-axis="{{ g.key }}" data-name="{{ tag.name|lower }}" style="--cardaccent:{{ g.color }};">
-      <div class="tag-card-header">
-        <div class="tag-card-icon" style="background:{{ g.color }};box-shadow:0 3px 10px {{ g.color }}40;">
-          <i class="bi {{ g.icon }}"></i>
-        </div>
-        <div class="tag-card-menu">
-          <a href="{% url 'tags:update' tag.id %}" class="tag-card-menu-btn" title="編集">
-            <i class="bi bi-pencil-fill"></i>
-          </a>
-          <a href="{% url 'tags:delete' tag.id %}" class="tag-card-menu-btn" title="削除">
-            <i class="bi bi-trash-fill"></i>
-          </a>
-        </div>
+  <!-- カードビュー -->
+  <div id="cardView">
+    <div class="tl-cards" id="cardsGrid">
+      {% for g in axis_groups %}
+      <div class="tl-axis-head" data-axis-head="{{ g.key }}">
+        <span class="tl-axis-badge" style="background:{{ g.color }};"><i class="bi {{ g.icon }}"></i>{{ g.label }}</span>
+        <span class="tl-axis-meta">{{ g.count }}個のタグ</span>
+        <span class="tl-axis-line"></span>
       </div>
-
-      <div class="tag-card-body">
-        <h2 class="tag-card-name">
-          <span class="at" style="color:{{ g.color }};">@</span>{{ tag.name }}
-          <span class="ax-pill" style="background:{{ g.color }}1a;color:{{ g.color }};border-color:{{ g.color }}55;">{{ g.short }}</span>
-        </h2>
-        <div class="tag-card-stats">
-          <div class="tag-card-count {% if tag.record_count == 0 %}unused{% endif %}">
-            {% if tag.record_count > 0 %}
-            <i class="bi bi-journal-text"></i><span>{{ tag.record_count }}件の記録で使用中</span>
-            {% else %}
-            <i class="bi bi-dash-circle"></i><span>未使用</span>
-            {% endif %}
+      {% for tag in g.tags %}
+      <div class="tl-card{% if tag.record_count == 0 %} unused{% endif %}" data-axis="{{ g.key }}" data-name="{{ tag.name|lower }}" style="--ac:{{ g.color }};" onclick="if(!event.target.closest('a,button')){window.location='{% url 'tags:detail' tag.id %}';}">
+        <div class="tl-card-head">
+          <div class="tl-card-icon"><i class="bi {{ g.icon }}"></i></div>
+          <div class="tl-card-menu">
+            <a href="{% url 'tags:update' tag.id %}" class="tl-card-btn" title="編集"><i class="bi bi-pencil"></i></a>
+            <a href="{% url 'tags:delete' tag.id %}" class="tl-card-btn" title="削除"><i class="bi bi-trash"></i></a>
           </div>
-          {% if tag.book_count > 0 %}
-          <div class="tag-card-count" style="font-size:0.8rem;">
-            <i class="bi bi-book"></i><span>{{ tag.book_count }}銘柄（背景あり）</span>
-          </div>
+        </div>
+        <div class="tl-card-name">
+          <span class="tl-card-at">@</span>{{ tag.name }}
+          {% if tag.parent_id %}<span class="tl-card-pill">子タグ</span>{% endif %}
+        </div>
+        <div class="tl-card-meta{% if tag.record_count == 0 %} unused{% endif %}">
+          {% if tag.record_count > 0 %}
+          <i class="bi bi-journal-text"></i><span>{{ tag.record_count }}件で使用中</span>
+          {% else %}
+          <i class="bi bi-dash-circle"></i><span>未使用</span>
           {% endif %}
         </div>
+        {% if tag.child_tags %}
+        <div class="tl-card-children"><i class="bi bi-diagram-2"></i>子タグ{{ tag.child_tags|length }}個</div>
+        {% endif %}
+        <div class="tl-card-foot">
+          <a href="{% url 'tags:detail' tag.id %}" class="tl-card-fbtn pri"><i class="bi bi-eye-fill"></i>詳細</a>
+          <a href="{% url 'tags:book' tag.id %}" class="tl-card-fbtn sec"><i class="bi bi-journal-richtext"></i>背景</a>
+        </div>
       </div>
-
-      <div class="tag-card-footer">
-        <a href="{% url 'tags:detail' tag.id %}" class="tag-card-btn tag-card-btn-primary">
-          <i class="bi bi-eye-fill"></i><span>詳細</span>
-        </a>
-        <a href="{% url 'tags:book' tag.id %}" class="tag-card-btn tag-card-btn-secondary">
-          <i class="bi bi-journal-richtext"></i><span>背景まとめ</span>
-        </a>
-      </div>
+      {% endfor %}
+      {% endfor %}
     </div>
-    {% endfor %}
-    {% endfor %}
   </div>
 
-  <!-- 検索・フィルタの該当なし（JSで表示制御） -->
-  <div class="tags-noresult" id="tagsNoResult" style="display:none;">
-    <i class="bi bi-search"></i><b>該当するタグがありません</b>検索条件や軸フィルターを変えてみてください。
+  <!-- リストビュー -->
+  <div id="listView" style="display:none;">
+    <div class="tl-list" id="listGrid">
+      {% for g in axis_groups %}
+      <div class="tl-list-axis-head" data-axis-head="{{ g.key }}">
+        <span class="tl-axis-badge" style="background:{{ g.color }};font-size:.72rem;"><i class="bi {{ g.icon }}"></i>{{ g.label }}</span>
+        <span class="tl-axis-line"></span>
+      </div>
+      {% for tag in g.tags %}
+      <a href="{% url 'tags:detail' tag.id %}" class="tl-row{% if tag.record_count == 0 %} unused{% endif %}{% if tag.parent_id %} child{% endif %}" data-axis="{{ g.key }}" data-name="{{ tag.name|lower }}" style="--ac:{{ g.color }};">
+        <span class="tl-row-dot"></span>
+        <span class="tl-row-name">
+          {% if tag.parent_id %}<i class="bi bi-arrow-return-right tl-row-child-icon"></i>{% endif %}
+          <span class="tl-row-at">@</span>{{ tag.name }}
+        </span>
+        <span class="tl-row-axis">{{ g.short }}</span>
+        <span class="tl-row-count{% if tag.record_count == 0 %} zero{% endif %}">
+          {% if tag.record_count > 0 %}<i class="bi bi-journal-text"></i> {{ tag.record_count }}件{% else %}未使用{% endif %}
+        </span>
+        <span class="tl-row-actions">
+          <a href="{% url 'tags:update' tag.id %}" class="tl-row-btn" title="編集" onclick="event.stopPropagation();"><i class="bi bi-pencil"></i></a>
+          <a href="{% url 'tags:delete' tag.id %}" class="tl-row-btn" title="削除" onclick="event.stopPropagation();"><i class="bi bi-trash"></i></a>
+        </span>
+      </a>
+      {% endfor %}
+      {% endfor %}
+    </div>
   </div>
+
+  <div class="tl-noresult" id="tagsNoResult"><i class="bi bi-search"></i><b>該当するタグがありません</b>検索条件や軸フィルターを変えてみてください。</div>
+
   {% else %}
   <!-- 空の状態 -->
-  <div class="tags-empty">
-    <div class="tags-empty-icon">
-      <i class="bi bi-tags-fill"></i>
-    </div>
-    <h2 class="tags-empty-title">まだタグがありません</h2>
-    <p class="tags-empty-text">
-      背景に <code>@AI</code> などと書いて日記を保存すると、自動的にここに表示されます。<br>
-      タグを作成して、株式日記を整理・分類することもできます。
-    </p>
-    <a href="{% url 'tags:create' %}" class="tags-action-btn tags-action-btn-primary">
-      <i class="bi bi-plus-lg"></i>
-      <span>最初のタグを作成</span>
-    </a>
+  <div class="tl-empty">
+    <div class="tl-empty-icon"><i class="bi bi-tags-fill"></i></div>
+    <h2>まだタグがありません</h2>
+    <p>背景に <code>@AI</code> などと書いて日記を保存すると、自動的にここに表示されます。<br>タグを作成して、株式日記を整理・分類することもできます。</p>
+    <a href="{% url 'tags:create' %}" class="tl-tbtn primary"><i class="bi bi-plus-lg"></i><span>最初のタグを作成</span></a>
   </div>
   {% endif %}
 
-  <!-- タグの使い方ガイド（タグあり時はモバイルで非表示） -->
-  <div class="tags-guide {% if tags %}d-none d-md-block{% endif %}">
-    <h2 class="tags-guide-title">
-      <i class="bi bi-lightbulb-fill"></i>
-      タグの活用方法
-    </h2>
-    <div class="tags-guide-grid">
-      <div class="tags-guide-item">
-        <div class="tags-guide-icon">
-          <i class="bi bi-folder-fill"></i>
-        </div>
-        <div class="tags-guide-content">
-          <h3>銘柄を分類</h3>
-          <p>業種、投資戦略、市場などでタグ付けして銘柄を整理します。</p>
-        </div>
+  <!-- タグの活用方法 -->
+  <div class="tl-guide {% if tags %}d-none d-md-block{% endif %}">
+    <h2 class="tl-guide-title"><i class="bi bi-lightbulb-fill"></i>タグの活用方法</h2>
+    <div class="tl-guide-grid">
+      <div class="tl-guide-item">
+        <div class="tl-guide-icon"><i class="bi bi-folder-fill"></i></div>
+        <div><h3>銘柄を分類</h3><p>業種、投資戦略、市場などでタグ付けして銘柄を整理します。</p></div>
       </div>
-      <div class="tags-guide-item">
-        <div class="tags-guide-icon">
-          <i class="bi bi-search"></i>
-        </div>
-        <div class="tags-guide-content">
-          <h3>素早く検索</h3>
-          <p>タグを使って関連する投資記録をすばやく見つけることができます。</p>
-        </div>
+      <div class="tl-guide-item">
+        <div class="tl-guide-icon"><i class="bi bi-diagram-2-fill"></i></div>
+        <div><h3>親子関係で束ねる</h3><p>「@AI」の下に「@生成AI」「@AI半導体」のような子タグを作り、大分類と細分類を両立できます。</p></div>
       </div>
-      <div class="tags-guide-item">
-        <div class="tags-guide-icon">
-          <i class="bi bi-graph-up-arrow"></i>
-        </div>
-        <div class="tags-guide-content">
-          <h3>傾向を分析</h3>
-          <p>タグごとのパフォーマンスを比較して投資戦略を最適化できます。</p>
-        </div>
+      <div class="tl-guide-item">
+        <div class="tl-guide-icon"><i class="bi bi-graph-up-arrow"></i></div>
+        <div><h3>傾向を分析</h3><p>タグごとのパフォーマンスを比較して投資戦略を最適化できます。</p></div>
       </div>
     </div>
   </div>
@@ -1408,52 +374,70 @@
 {{ block.super }}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  // スピードダイアル初期化
-  if (typeof initializeSpeedDial === 'function') {
-    initializeSpeedDial();
+  if (typeof initializeSpeedDial === 'function') { initializeSpeedDial(); }
+
+  // ---------- 未使用タグ整理パネル ----------
+  const unusedStatCard = document.getElementById('unusedStatCard');
+  const bulkPanel = document.getElementById('bulkPanel');
+  const bulkPanelClose = document.getElementById('bulkPanelClose');
+  const bulkSelectAll = document.getElementById('bulkSelectAll');
+  const bulkSelCount = document.getElementById('bulkSelCount');
+
+  function updateSelCount() {
+    if (!bulkSelCount) return;
+    const n = document.querySelectorAll('.unused-chk:checked').length;
+    bulkSelCount.textContent = `${n}件選択中`;
   }
-
-  // カードのクリックで詳細へ遷移（リンク/ボタン上のクリックは除く）
-  document.querySelectorAll('.tag-card').forEach(card => {
-    card.addEventListener('click', function(e) {
-      if (!e.target.closest('a') && !e.target.closest('button')) {
-        const detailLink = this.querySelector('.tag-card-btn-primary');
-        if (detailLink) detailLink.click();
-      }
+  if (unusedStatCard && bulkPanel) {
+    unusedStatCard.addEventListener('click', () => {
+      bulkPanel.classList.add('open');
+      bulkPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     });
-  });
+  }
+  if (bulkPanelClose && bulkPanel) {
+    bulkPanelClose.addEventListener('click', () => bulkPanel.classList.remove('open'));
+  }
+  if (bulkSelectAll) {
+    bulkSelectAll.addEventListener('click', () => {
+      document.querySelectorAll('.unused-chk').forEach(cb => cb.checked = true);
+      updateSelCount();
+    });
+  }
+  document.querySelectorAll('.unused-chk').forEach(cb => cb.addEventListener('change', updateSelCount));
 
-  // ---------- 検索・軸フィルタ・グループ切替（クライアント側） ----------
-  const grid     = document.getElementById('tagsGrid');
-  if (!grid) return;
+  // ---------- 検索・軸フィルタ・グループ切替・表示切替 ----------
+  const cardsGrid = document.getElementById('cardsGrid');
+  if (!cardsGrid) return;
 
-  const cards    = Array.from(grid.querySelectorAll('.tag-card'));
-  const heads    = Array.from(grid.querySelectorAll('.axis-head'));
+  const cardEls  = Array.from(document.querySelectorAll('.tl-card'));
+  const rowEls   = Array.from(document.querySelectorAll('.tl-row'));
+  const cardHeads = Array.from(document.querySelectorAll('#cardsGrid .tl-axis-head'));
+  const listHeads = Array.from(document.querySelectorAll('#listGrid .tl-list-axis-head'));
   const noResult = document.getElementById('tagsNoResult');
   const searchEl = document.getElementById('tagSearch');
   const groupBtn = document.getElementById('groupToggle');
-  const chips    = Array.from(document.querySelectorAll('.axis-chip'));
+  const cardViewBtn = document.getElementById('cardViewBtn');
+  const listViewBtn = document.getElementById('listViewBtn');
+  const cardView = document.getElementById('cardView');
+  const listView = document.getElementById('listView');
+  const chips = Array.from(document.querySelectorAll('.tl-chip'));
 
-  const state = { q: '', axis: 'all', grouped: true };
+  const state = { q: '', axis: 'all', grouped: true, view: 'card' };
 
   function applyFilter() {
-    // 見出しは「グループ表示 かつ 軸=すべて」のときだけ表示
     const showHeads = state.grouped && state.axis === 'all';
     let anyVisible = false;
     const visibleByAxis = {};
 
-    cards.forEach(card => {
-      const matchAxis = state.axis === 'all' || card.dataset.axis === state.axis;
-      const matchQ    = !state.q || (card.dataset.name || '').includes(state.q);
+    [...cardEls, ...rowEls].forEach(el => {
+      const matchAxis = state.axis === 'all' || el.dataset.axis === state.axis;
+      const matchQ = !state.q || (el.dataset.name || '').includes(state.q);
       const show = matchAxis && matchQ;
-      card.style.display = show ? '' : 'none';
-      if (show) {
-        anyVisible = true;
-        visibleByAxis[card.dataset.axis] = true;
-      }
+      el.style.display = show ? '' : 'none';
+      if (show) { anyVisible = true; visibleByAxis[el.dataset.axis] = true; }
     });
 
-    heads.forEach(head => {
+    [...cardHeads, ...listHeads].forEach(head => {
       const key = head.dataset.axisHead;
       head.style.display = (showHeads && visibleByAxis[key]) ? '' : 'none';
     });
@@ -1461,7 +445,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (noResult) noResult.style.display = anyVisible ? 'none' : 'block';
   }
 
-  // 検索（即時フィルタ）
   if (searchEl) {
     searchEl.addEventListener('input', e => {
       state.q = e.target.value.trim().toLowerCase();
@@ -1469,7 +452,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // 軸チップ
   chips.forEach(chip => {
     chip.addEventListener('click', () => {
       state.axis = chip.dataset.axis;
@@ -1478,14 +460,23 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 
-  // グループ切替トグル
   if (groupBtn) {
     groupBtn.addEventListener('click', () => {
       state.grouped = !state.grouped;
-      groupBtn.classList.toggle('on', state.grouped);
+      groupBtn.classList.toggle('active', state.grouped);
       applyFilter();
     });
   }
+
+  function setView(v) {
+    state.view = v;
+    if (cardView) cardView.style.display = v === 'card' ? '' : 'none';
+    if (listView) listView.style.display = v === 'list' ? '' : 'none';
+    if (cardViewBtn) cardViewBtn.classList.toggle('active', v === 'card');
+    if (listViewBtn) listViewBtn.classList.toggle('active', v === 'list');
+  }
+  if (cardViewBtn) cardViewBtn.addEventListener('click', () => setView('card'));
+  if (listViewBtn) listViewBtn.addEventListener('click', () => setView('list'));
 
   applyFilter();
 });

@@ -1,10 +1,11 @@
 # tags/views.py
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
 from django.urls import reverse_lazy
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, render, redirect
 from django.http import HttpResponseBadRequest
 from django.db.models import Count, Q
 from .models import Tag
@@ -35,16 +36,45 @@ AXIS_SHORT = {
     'event':          'イベント',
     'custom':         'ラベル',
 }
+# 軸ピッカー（タグ作成/編集フォーム）用の補足説明
+AXIS_DESC = {
+    'theme':          'AI・半導体・脱炭素など',
+    'macro':          '金利・為替・景気サイクル',
+    'business_model': '稼ぎ方・成長ロジック',
+    'capital_policy': '配当・株主還元・ROE',
+    'risk':           '地政学・規制・需給変化',
+    'event':          '決算・一過性イベント',
+    'custom':         '監視中・保有候補など個人管理用',
+}
 
 # タグ方向トグルの選択肢（バッジ表示用ラベル）
 DIRECTION_TOGGLE_CHOICES = [('up', '▲+'), ('down', '▼−'), ('neutral', '→中立')]
+
+
+def get_axis_meta():
+    """軸ピッカー・チップ描画に使う軸メタ情報を表示順で返す。"""
+    return [
+        {
+            'key':   key,
+            'label': AXIS_LABELS.get(key, key),
+            'short': AXIS_SHORT.get(key, key),
+            'color': AXIS_COLORS.get(key, '#6b7280'),
+            'icon':  AXIS_ICONS.get(key, 'bi-tag-fill'),
+            'desc':  AXIS_DESC.get(key, ''),
+        }
+        for key in AXIS_ORDER
+    ]
+
 
 class TagForm(forms.ModelForm):
     class Meta:
         model = Tag
         fields = ['name', 'axis', 'parent']
         widgets = {
-            'name':   forms.TextInput(attrs={'class': 'form-control'}),
+            'name':   forms.TextInput(attrs={
+                'class': 'tf-input', 'placeholder': '例: AI、金利低下、高配当…',
+                'autocomplete': 'off', 'maxlength': 50,
+            }),
             'axis':   forms.Select(attrs={'class': 'form-select'}),
             'parent': forms.Select(attrs={'class': 'form-select'}),
         }
@@ -54,11 +84,25 @@ class TagForm(forms.ModelForm):
         self.fields['parent'].required = False
         self.fields['parent'].empty_label = '（なし）'
         if user is not None:
-            self.fields['parent'].queryset = Tag.objects.filter(user=user).exclude(
-                pk=self.instance.pk if self.instance.pk else None
-            )
+            # 親タグにできるのは「親を持たない（＝ルート）タグ」のみ。
+            # 3階層以上のネストを防ぎ、常に2階層（親→子）に保つ。
+            qs = Tag.objects.filter(user=user, parent__isnull=True)
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            self.fields['parent'].queryset = qs.order_by('axis', 'name')
         else:
             self.fields['parent'].queryset = Tag.objects.none()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        parent = cleaned_data.get('parent')
+        axis = cleaned_data.get('axis')
+        if parent:
+            if self.instance.pk and self.instance.children.exists():
+                raise forms.ValidationError('子タグを持つタグを、別のタグの子タグにはできません。')
+            if axis and parent.axis != axis:
+                raise forms.ValidationError('親タグと同じ分析グループ（軸）を選択してください。')
+        return cleaned_data
 
 class TagListView(LoginRequiredMixin, ListView):
     model = Tag
@@ -67,7 +111,7 @@ class TagListView(LoginRequiredMixin, ListView):
     
     def get_queryset(self):
         # 各タグの記録数（紐づく日記件数）を注釈。Meta.ordering により axis, name 順。
-        return Tag.objects.filter(user=self.request.user).annotate(
+        return Tag.objects.filter(user=self.request.user).select_related('parent').annotate(
             record_count=Count('stockdiary', distinct=True)
         )
 
@@ -88,20 +132,39 @@ class TagListView(LoginRequiredMixin, ListView):
             tag_book_counts[tag.id] = book_count
         context['tag_book_counts'] = tag_book_counts
 
-        # 統計（4カード分）
+        unused_tags = [t for t in tags if (t.record_count or 0) == 0]
+        for t in unused_tags:
+            t.axis_color = AXIS_COLORS.get(t.axis, '#6b7280')
+            t.axis_short = AXIS_SHORT.get(t.axis, t.axis)
+
+        # 統計（4カード分 + 未使用）
         context['tag_stats'] = {
             'total':         len(tags),
             'used':          sum(1 for t in tags if (t.record_count or 0) > 0),
             'total_records': sum((t.record_count or 0) for t in tags),
             'axes_in_use':   len({t.axis for t in tags}),
+            'unused':        len(unused_tags),
         }
+        context['unused_tags'] = unused_tags
 
-        # 軸（グループ）ごとにまとめる。表示順は AXIS_ORDER に従う。
+        # 軸（グループ）ごとにまとめる。親タグの直後に子タグを並べて階層を表現する。
         axis_groups = []
         for key in AXIS_ORDER:
             group_tags = [t for t in tags if t.axis == key]
             if not group_tags:
                 continue
+            roots = [t for t in group_tags if t.parent_id is None]
+            children_by_parent = {}
+            for t in group_tags:
+                if t.parent_id is not None:
+                    children_by_parent.setdefault(t.parent_id, []).append(t)
+
+            ordered_tags = []
+            for root in roots:
+                root.child_tags = children_by_parent.get(root.id, [])
+                ordered_tags.append(root)
+                ordered_tags.extend(root.child_tags)
+
             axis_groups.append({
                 'key':   key,
                 'label': AXIS_LABELS.get(key, key),
@@ -109,7 +172,7 @@ class TagListView(LoginRequiredMixin, ListView):
                 'color': AXIS_COLORS.get(key, '#6b7280'),
                 'icon':  AXIS_ICONS.get(key, 'bi-tag-fill'),
                 'count': len(group_tags),
-                'tags':  group_tags,
+                'tags':  ordered_tags,
             })
         context['axis_groups'] = axis_groups
 
@@ -311,6 +374,22 @@ class TagDetailView(LoginRequiredMixin, DetailView):
         
         return context
 
+def _parent_candidates(user, exclude_pk=None):
+    """親タグ候補（ルートタグのみ）を JS の軸別ピッカー用に返す。
+
+    テンプレート側で {{ ...|json_script }} を使い、タグ名に含まれうる
+    HTML特殊文字（例: </script>）が安全にエスケープされた状態で埋め込む。
+    """
+    qs = Tag.objects.filter(user=user, parent__isnull=True)
+    if exclude_pk:
+        qs = qs.exclude(pk=exclude_pk)
+    qs = qs.annotate(record_count=Count('stockdiary', distinct=True)).order_by('axis', 'name')
+    return [
+        {'id': t.id, 'name': t.name, 'axis': t.axis, 'count': t.record_count}
+        for t in qs
+    ]
+
+
 class TagCreateView(SubscriptionLimitCheckMixin, LoginRequiredMixin, CreateView):
     model = Tag
     form_class = TagForm
@@ -329,6 +408,8 @@ class TagCreateView(SubscriptionLimitCheckMixin, LoginRequiredMixin, CreateView)
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
+        context['axis_meta'] = get_axis_meta()
+        context['existing_tags'] = _parent_candidates(user)
         # スピードダイアルのアクションを定義
         analytics_actions = [
             {
@@ -358,6 +439,9 @@ class TagUpdateView(LoginRequiredMixin, UpdateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
+        context['axis_meta'] = get_axis_meta()
+        context['existing_tags'] = _parent_candidates(user, exclude_pk=self.object.pk)
+        context['can_be_child'] = not self.object.children.exists()
         # スピードダイアルのアクションを定義
         analytics_actions = [
             {
@@ -522,3 +606,20 @@ def set_tag_direction(request, pk):
         'direction': direction,
         'dir_choices': DIRECTION_TOGGLE_CHOICES,
     })
+
+
+@login_required
+@require_POST
+def bulk_delete_unused_tags(request):
+    """未使用タグ（どの日記にも紐づいていないタグ）をまとめて削除する。"""
+    ids = request.POST.getlist('tag_ids')
+    tags = Tag.objects.filter(user=request.user, pk__in=ids).annotate(
+        record_count=Count('stockdiary', distinct=True)
+    ).filter(record_count=0)
+    count = tags.count()
+    if count:
+        tags.delete()
+        messages.success(request, f'{count}件の未使用タグを削除しました。')
+    else:
+        messages.info(request, '削除できる未使用タグが選択されていません。')
+    return redirect('tags:list')
