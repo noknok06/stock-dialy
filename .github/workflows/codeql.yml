@@ -1,0 +1,45 @@
+# CodeQL — セマンティックな静的解析（SAST）。
+# 公開リポジトリは無料。所見は GitHub の Security → Code scanning に集約され、
+# 公開リポジトリでは Copilot Autofix（LLM による修正提案）も無料で利用できる。
+# 従量課金（per-token / per-scan）は発生しない。
+name: CodeQL
+
+on:
+  push:
+    branches: [main, develop]
+    paths-ignore: ['**.md', 'docs/**']   # ドキュメントのみの変更ではスキャンしない
+  pull_request:
+    branches: [main, develop]
+    paths-ignore: ['**.md', 'docs/**']
+  schedule:
+    - cron: '23 5 * * 1'   # 毎週月曜 05:23 UTC に定期スキャン
+  workflow_dispatch:        # 手動実行も可（このブランチで今すぐ試せる）
+
+# 連続 push 時は古いランをキャンセルし、無駄な実行を1本に絞る
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Analyze (Python)
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write   # 所見を Code scanning に書き込む
+      actions: read
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: python
+          # security-extended: 既定より広いセキュリティクエリ（無料）
+          queries: security-extended
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:python"

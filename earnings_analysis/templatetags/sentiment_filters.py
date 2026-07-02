@@ -1,6 +1,7 @@
 # earnings_analysis/templatetags/sentiment_filters.py（書類種別表示名対応版）
 from django import template
 from django.utils.safestring import mark_safe
+from django.utils.html import conditional_escape, escape
 import json
 import re
 import logging
@@ -78,7 +79,7 @@ def sentiment_meter_color(level):
 def sentiment_progress_bar(positive_count, negative_count, total_count):
     """感情分析結果のプログレスバーHTML生成"""
     if total_count == 0:
-        return mark_safe('<div class="progress"><div class="progress-bar bg-secondary" style="width: 100%">データなし</div></div>')
+        return mark_safe('<div class="progress"><div class="progress-bar bg-secondary" style="width: 100%">データなし</div></div>')  # nosec B308, B703 — 静的HTML
     
     positive_percent = (positive_count / total_count) * 100
     negative_percent = (negative_count / total_count) * 100
@@ -91,7 +92,7 @@ def sentiment_progress_bar(positive_count, negative_count, total_count):
         <div class="progress-bar bg-secondary" style="width: {neutral_percent:.1f}%" title="中立: {total_count - positive_count - negative_count}件"></div>
     </div>
     '''
-    return mark_safe(html)
+    return mark_safe(html)  # nosec B308, B703 — 数値計算のみ、ユーザー入力なし
 
 # ====================
 # 書類種別表示名関連フィルター（新規追加）
@@ -428,8 +429,8 @@ def debug_financial_value(value):
             debug_html += f"<small class='{css_class}'>{label}: {formatted} {status}</small><br>"
         
         debug_html += "</div>"
-        return mark_safe(debug_html)
-        
+        return mark_safe(debug_html)  # nosec B308, B703 — ハードコードラベル＋数値フォーマットのみ
+
     except (ValueError, TypeError):
         return f"<small class='text-danger'>デバッグ失敗: {value}</small>"
 
@@ -510,12 +511,14 @@ def highlight_keywords(text, keyword):
     """テキスト内のキーワードをハイライト"""
     if not keyword or not text:
         return text
-    
+
+    escaped_text = conditional_escape(text)
+    safe_keyword = escape(keyword)
     highlighted = re.sub(
-        re.escape(keyword),
-        f'<span class="keyword-highlight">{keyword}</span>',
-        str(text),
-        flags=re.IGNORECASE
+        re.escape(str(safe_keyword)),
+        f'<span class="keyword-highlight">{safe_keyword}</span>',
+        str(escaped_text),
+        flags=re.IGNORECASE,
     )
     return mark_safe(highlighted)
 
@@ -620,11 +623,13 @@ def length_filter_range(scores_list, range_str):
 # ユーティリティフィルター
 # ====================
 
+_HTML_UNSAFE = {ord('<'): '\\u003C', ord('>'): '\\u003E', ord('&'): '\\u0026'}
+
 @register.filter
 def json_safe(value):
     """Python辞書をJavaScriptで安全に使用できるJSON文字列に変換"""
     try:
-        return mark_safe(json.dumps(value))
+        return mark_safe(json.dumps(value).translate(_HTML_UNSAFE))
     except (ValueError, TypeError):
         return mark_safe('{}')
 
@@ -649,26 +654,22 @@ def highlight_all_keywords(text, keywords):
     if not text or not keywords:
         return text
     
-    highlighted_text = str(text)
-    
-    # キーワードをリストに変換（文字列の場合）
+    highlighted_text = str(conditional_escape(text))
+
     if isinstance(keywords, str):
         keyword_list = [keywords]
     else:
         keyword_list = list(keywords) if keywords else []
-    
-    # キーワードを長い順にソートして、部分マッチによる重複を避ける
+
     sorted_keywords = sorted(set(keyword_list), key=len, reverse=True)
-    
+
     for keyword in sorted_keywords:
-        if keyword and keyword in highlighted_text:
-            # 既にハイライトされている部分は除外
-            if f'<span class="keyword-highlight">{keyword}</span>' not in highlighted_text:
-                highlighted_text = highlighted_text.replace(
-                    str(keyword),
-                    f'<span class="keyword-highlight">{keyword}</span>'
-                )
-    
+        safe_keyword = str(escape(keyword))
+        if safe_keyword and safe_keyword in highlighted_text:
+            span = f'<span class="keyword-highlight">{safe_keyword}</span>'
+            if span not in highlighted_text:
+                highlighted_text = highlighted_text.replace(safe_keyword, span)
+
     return mark_safe(highlighted_text)
 
 @register.filter

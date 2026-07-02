@@ -4,6 +4,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import ProhibitNullCharactersValidator, MaxLengthValidator
 from .models import StockDiary, Transaction, StockSplit, DiaryNote, Thesis, Verdict, sanitize_text_content
 from .utils import detect_currency
+from .services.migration_export_service import SECTION_CHOICES as _SECTION_CHOICES
 from decimal import Decimal
 
 
@@ -34,7 +35,9 @@ class StockDiaryForm(forms.ModelForm):
 
     class Meta:
         model = StockDiary
-        # memo は廃止（書く場所を reason=投資仮説 / DiaryNote=時系列の追記 の2層に整理）。
+        # memo は廃止（書く場所を reason=背景 / DiaryNote=時系列の追記 の2層に整理）。
+        # reason＝背景（どんな会社か・着目したニュース/テーマ）。購入理由・決算・ニュースの
+        # 都度の記録は DiaryNote の topic スレッドへ（docs/diary_recording_redesign.md §3）。
         # 既存データは detail で読み取り専用表示のみ（移行マイグレーションは行わない）
         fields = [
             'stock_symbol', 'stock_name', 'currency', 'reason',
@@ -57,7 +60,7 @@ class StockDiaryForm(forms.ModelForm):
                 'class': 'form-control',
                 'maxlength': '5000',
                 'id': 'id_reason',
-                'placeholder': '投資理由や分析内容を記録（Markdown対応）\n\n📝 見出し: # 見出し\n🏷️ タグ: @成長株 @配当 @長期保有\n\n例:\n## 投資判断\n成長性が高く、配当も安定している。\nタグ: @成長株 @配当'
+                'placeholder': 'どんな会社か・着目したニュースやテーマなど、この記録の背景を書く（Markdown対応）\n\n📝 見出し: # 見出し\n🏷️ タグ: @成長株 @配当 @長期保有\n\n例:\n## どんな会社か\n成長性が高く、配当も安定している。\nタグ: @成長株 @配当\n\n※購入理由や決算・ニュースの都度の記録は、継続記録（トピック）に残します。'
             }),
             'sector': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -81,8 +84,8 @@ class StockDiaryForm(forms.ModelForm):
         self.fields['currency'].label = "通貨"
         self.fields['currency'].help_text = "銘柄コードから自動判定されます。必要に応じて変更できます。"
         self.fields['currency'].required = False
-        self.fields['reason'].label = "投資理由 / 分析内容"
-        self.fields['reason'].help_text = "Markdown対応。タグは @タグ名 の形式で記述すると検索可能になります（例: @成長株 @配当）"
+        self.fields['reason'].label = "背景"
+        self.fields['reason'].help_text = "どんな会社か・着目したニュースやテーマなど、この記録の背景。購入理由や決算・ニュースの都度の追記は継続記録（トピック）に残します。Markdown対応・@タグで検索可（例: @成長株 @配当）"
 
     def clean_stock_name(self):
         """銘柄名のバリデーション"""
@@ -92,10 +95,10 @@ class StockDiaryForm(forms.ModelForm):
         return stock_name
 
     def clean_reason(self):
-        """投資理由のバリデーション"""
+        """背景のバリデーション"""
         reason = self.cleaned_data.get('reason')
         if reason and len(reason) > 5000:
-            raise ValidationError('投資理由は5000文字以内で入力してください。')
+            raise ValidationError('背景は5000文字以内で入力してください。')
         return reason
 
     def clean_stock_symbol(self):
@@ -422,8 +425,6 @@ class SelectiveExportForm(forms.Form):
     日記本体（銘柄・投資理由）は常に含め、ここで選んだ関連データのみを追加する。
     LLM に渡して分析する用途で、不要なデータを削ってファイルを軽くするのが目的（Issue #356）。
     """
-    from .services.migration_export_service import SECTION_CHOICES as _SECTION_CHOICES
-
     sections = forms.MultipleChoiceField(
         label='含める項目（日記本体は常に含まれます）',
         choices=_SECTION_CHOICES,

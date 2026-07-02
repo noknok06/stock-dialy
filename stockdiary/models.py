@@ -64,7 +64,7 @@ class StockDiary(models.Model):
     currency = models.CharField(
         max_length=3, choices=CURRENCY_CHOICES, default='JPY', verbose_name='通貨'
     )
-    reason = models.TextField(verbose_name='投資理由', blank=True, max_length=5000)
+    reason = models.TextField(verbose_name='背景', blank=True, max_length=5000)
     tags = models.ManyToManyField(Tag, blank=True)
     sector = models.CharField(max_length=50, blank=True, verbose_name='業種')
     image = models.ImageField(upload_to=get_diary_image_path, null=True, blank=True, help_text="日記に関連する画像")
@@ -172,8 +172,19 @@ class StockDiary(models.Model):
             return 'recent'
         return None
 
+    @property
+    def disclosure_freshness(self):
+        """recent_disclosure_status の別名。"""
+        return self.recent_disclosure_status
+
     def update_aggregates(self):
-        """集計フィールドを再計算して save() する。"""
+        """集計フィールドを再計算して save() する。
+
+        AggregateService.deferred() ブロック内では抑制され、ブロックを抜けるときに
+        一度だけ再集計が走る（個別 save() による N 回のフル再集計を防ぐ）。
+        """
+        if getattr(self, '_defer_recalc', False):
+            return
         from .services.aggregate_service import AggregateService
         AggregateService.recalculate(self)
 
@@ -344,23 +355,28 @@ class StockSplit(models.Model):
                 raise ValidationError('適用済みの分割情報は編集できません')
 
     def apply_split(self):
+        from .services.aggregate_service import AggregateService
+
         # 対象取引（分割日より前）
-        transactions = self.diary.transactions.filter(
+        transactions = list(self.diary.transactions.filter(
             transaction_date__lt=self.split_date
-        )
+        ))
 
         for tx in transactions:
             tx.quantity = tx.quantity * self.split_ratio
             tx.price = tx.price / self.split_ratio
-            tx.save(update_fields=["quantity", "price"])
 
-        # フラグ更新
-        self.is_applied = True
-        self.applied_at = timezone.now()
-        self.save(update_fields=["is_applied", "applied_at"])
+        # bulk_update は Transaction.save() を経由しないため自動再集計が走らない。
+        # deferred() で囲み、ブロック出口で一度だけ再集計する（O(N)→O(1)、かつ
+        # 再集計の呼び忘れを構造的に防ぐ）。
+        with AggregateService.deferred(self.diary):
+            if transactions:
+                Transaction.objects.bulk_update(transactions, ["quantity", "price"])
 
-        # 再集計
-        self.diary.update_aggregates()
+            # フラグ更新
+            self.is_applied = True
+            self.applied_at = timezone.now()
+            self.save(update_fields=["is_applied", "applied_at"])
 
 
 class DiaryNote(models.Model):
@@ -473,7 +489,7 @@ class DiaryNote(models.Model):
     
     def get_price_change(self):
         """購入価格からの変動率を計算"""
-        if self.current_price and self.diary.average_purchase_price:
+        if self.current_price is not None and self.diary.average_purchase_price:
             change = ((self.current_price - self.diary.average_purchase_price) / self.diary.average_purchase_price) * 100
             return change
         return None
@@ -545,6 +561,16 @@ class NotificationLog(models.Model):
         related_name='notification_logs',
         null=True, blank=True
     )
+    # 決算予定由来の「決算前日」通知。(user, earnings_schedule) の一意制約で重複を防ぐ。
+    # EarningsSchedule は日次同期で未来分を洗い替えする（行が消える）ため、送信済みの
+    # 通知履歴が巻き添えで消えないよう SET_NULL にする（DisclosureEvent は追記専用で
+    # 削除されないため CASCADE で問題ないが、こちらは削除され得る点が異なる）。
+    earnings_schedule = models.ForeignKey(
+        'earnings_analysis.EarningsSchedule',
+        on_delete=models.SET_NULL,
+        related_name='notification_logs',
+        null=True, blank=True
+    )
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -570,6 +596,11 @@ class NotificationLog(models.Model):
                 fields=['user', 'disclosure_event'],
                 condition=models.Q(disclosure_event__isnull=False),
                 name='uniq_user_disclosure_event',
+            ),
+            models.UniqueConstraint(
+                fields=['user', 'earnings_schedule'],
+                condition=models.Q(earnings_schedule__isnull=False),
+                name='uniq_user_earnings_schedule',
             ),
         ]
 
@@ -718,31 +749,25 @@ class Verdict(models.Model):
 
     @property
     def hyp_ok(self):
-        return self.hypothesis_result in (self.HYP_HIT, self.HYP_PARTIAL)
+        # 「何を的中とみなすか」の定義は services.metrics（セマンティックレイヤー）が正。
+        from .services import metrics
+        return metrics.is_hypothesis_hit(self.hypothesis_result)
 
     @property
     def pnl_ok(self):
-        return self.pnl_result == self.PNL_PROFIT
+        from .services import metrics
+        return metrics.is_pnl_win(self.pnl_result)
 
     @property
     def quadrant(self):
         """意思決定の質 × 結果 の象限を返す。"""
-        if self.hyp_ok and self.pnl_ok:
-            return 'skill'        # 仮説◯×利益: 再現せよ
-        if self.hyp_ok and not self.pnl_ok:
-            return 'unlucky'      # 仮説◯×損失: 運/握力（学び: 継続の是非）
-        if not self.hyp_ok and self.pnl_ok:
-            return 'lucky'        # 仮説×××利益: 偶然（危険）
-        return 'discipline'       # 仮説×××損失: 想定通りの失敗（学び: 撤退の妥当性）
+        from .services import metrics
+        return metrics.quadrant_of(self.hyp_ok, self.pnl_ok)
 
     @property
     def quadrant_label(self):
-        return {
-            'skill': '再現すべき勝ち',
-            'unlucky': '正しいが報われず',
-            'lucky': '偶然の勝ち（要注意）',
-            'discipline': '想定通りの負け',
-        }[self.quadrant]
+        from .services import metrics
+        return metrics.QUADRANT_LABELS[self.quadrant]
 
     @property
     def stars(self):

@@ -18,8 +18,9 @@ class StockdiaryConfig(AppConfig):
         
         try:
             # 通知スケジュールを設定
-            from .tasks import setup_notification_schedule
+            from .tasks import setup_notification_schedule, setup_monthly_review_schedule
             setup_notification_schedule()
+            setup_monthly_review_schedule()
             logger.info("✅ stockdiaryアプリ準備完了")
         except Exception as e:
             logger.warning(f"⚠️ 通知スケジュール設定スキップ: {e}")

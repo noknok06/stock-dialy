@@ -57,3 +57,36 @@ class TestDiarySummaryView:
         response = authenticated_client.get(reverse('stockdiary:diary_summary'))
         symbols = [s['symbol'] for s in response.context['summary_list']]
         assert '9999' not in symbols
+
+    def test_table_view_aggregates_volume_and_outcome(
+        self, authenticated_client, diary_with_notes, complex_diary_with_multiple_transactions
+    ):
+        """銘柄別テーブルは「向き合った量×成果」を集計する。
+
+        record_count（日記＋ノート）と txn_count（取引回数）が
+        リストでは見えない銘柄単位の累計として context に載ることを保証する。
+        """
+        response = authenticated_client.get(reverse('stockdiary:diary_summary'))
+        table = {s['symbol']: s for s in response.context['table_list']}
+
+        # ノート付き日記: 記録数 = 日記1 + ノート数。集計フィールドが揃っている
+        notes_sym = diary_with_notes.stock_symbol
+        assert notes_sym in table
+        row = table[notes_sym]
+        assert row['record_count'] == row['diary_count'] + row['note_count']
+        assert row['record_count'] >= 1
+        # 量×成果の対比に必要なキーが欠けていない
+        for key in ('txn_count', 'realized_profit', 'verdict_hit', 'verdict_total'):
+            assert key in row
+
+        # 複数取引の銘柄は取引回数が積み上がる
+        multi_sym = complex_diary_with_multiple_transactions.stock_symbol
+        assert table[multi_sym]['txn_count'] >= 2
+
+    def test_table_sort_by_record_count(self, authenticated_client, diary_with_notes, sample_memo_diary):
+        """tsort=record_desc で記録数の多い銘柄が先頭に並ぶ（デフォルト軸）。"""
+        response = authenticated_client.get(
+            reverse('stockdiary:diary_summary'), {'tsort': 'record_desc'}
+        )
+        counts = [s['record_count'] for s in response.context['table_list']]
+        assert counts == sorted(counts, reverse=True)

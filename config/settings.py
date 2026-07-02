@@ -30,33 +30,32 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 
 # 本番環境用デバッグ設定（無効）。DJANGO_DEBUG=True で開発用に上書き可
 DEBUG = os.getenv('DJANGO_DEBUG', 'False') == 'True'
+# ドメイン取得前のデプロイ検証用。True のとき本番分岐でも HTTP を許可する（検証後は False に戻す）
+HTTP_ONLY = os.getenv('HTTP_ONLY', 'False') == 'True'
 
 # ホストとCSRF設定
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
+_extra_csrf = [o for o in os.getenv('EXTRA_CSRF_ORIGINS', '').split(',') if o]
 CSRF_TRUSTED_ORIGINS = [
-    'https://kabu-log.net', 'http://kabu-log.net', 
-    'http://localhost:8000', 
-]
+    'https://kabu-log.net', 'http://kabu-log.net',
+    'http://localhost:8000',
+] + _extra_csrf
 
 # 1. セキュリティ向上のための基本設定
-if DEBUG:
-    # 開発環境の設定
+if DEBUG or HTTP_ONLY:
+    # 開発環境またはドメインなし検証時の設定
     SECURE_SSL_REDIRECT = False
     SESSION_COOKIE_SECURE = False
     CSRF_COOKIE_SECURE = False
-    # CSP: 開発環境ではインラインスタイル・外部CDNを許可
-    CSP_DEFAULT_SRC = ["'self'", "'unsafe-inline'", "cdn.jsdelivr.net", "*.googleapis.com", "*.gstatic.com", "*.bootstrapcdn.com", "*"]
-    CSP_STYLE_SRC = ["'self'", "'unsafe-inline'", "cdn.jsdelivr.net", "*.googleapis.com", "https:", "*"]
-    CSP_SCRIPT_SRC = ["'self'", "'unsafe-inline'", "'unsafe-eval'", "cdn.jsdelivr.net", "*"]
-    CSP_FONT_SRC = ["'self'", "data:", "*.googleapis.com", "*.gstatic.com", "*"]
-    CSP_IMG_SRC = ["'self'", "data:", "*"]
+    # CSP は django-csp 4.0 形式（CONTENT_SECURITY_POLICY dict）で下部に一元管理。
+    # CSP_* 変数は 4.0 では無効のためここには書かない。
 else:
     # 本番環境の設定
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
 
-SECURE_HSTS_SECONDS = 31536000  # 1年
+SECURE_HSTS_SECONDS = 0 if HTTP_ONLY else 31536000  # 検証時は無効、本番は1年
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 SECURE_BROWSER_XSS_FILTER = True
@@ -298,29 +297,82 @@ GOOGLE_OAUTH_ENABLED = bool(GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRE
 # 静的・メディアファイル設定
 # =============================================================================
 
-# 静的ファイル
-STATIC_URL = '/static/'
+# AWS S3 を使うか（本番でメディア・静的ファイルを S3/CloudFront 配信する場合 True）
+USE_S3 = os.getenv('USE_S3', 'False') == 'True'
+
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
 
-# メディアファイル
-MEDIA_URL = '/media/'
+# メディアファイル（ローカル保存時のルート）
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+if USE_S3:
+    # --- S3 / CloudFront 配信 ---
+    # 認証情報は EC2 の IAM インスタンスプロファイルから boto3 が自動取得するため、
+    # アクセスキーは設定しない（静的キーを置かない＝セキュリティ）
+    AWS_STORAGE_BUCKET_NAME = os.getenv('AWS_STORAGE_BUCKET_NAME', '')
+    AWS_S3_REGION_NAME = os.getenv('AWS_S3_REGION_NAME', 'ap-northeast-1')
+    # CloudFront 等のカスタムドメイン（任意）。未設定なら S3 標準ドメインで配信
+    AWS_S3_CUSTOM_DOMAIN = os.getenv('AWS_S3_CUSTOM_DOMAIN', '') or None
+    AWS_DEFAULT_ACL = None
+    AWS_QUERYSTRING_AUTH = False          # 公開オブジェクトとして署名なしURLで配信
+    AWS_S3_FILE_OVERWRITE = False         # 同名アップロードを上書きせずユニーク名に
+    AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
+
+    STORAGES = {
+        'default': {
+            'BACKEND': 'storages.backends.s3.S3Storage',
+            'OPTIONS': {'location': 'media'},
+        },
+        'staticfiles': {
+            # 非ハッシュの静的配信（現行 VPS と同じ挙動）。manifest 化はマイグレーションとは
+            # 別途に行う（Django 5.2 では旧 STATICFILES_STORAGE は無視され実挙動は非 manifest）
+            'BACKEND': 'storages.backends.s3.S3StaticStorage',
+            'OPTIONS': {'location': 'static'},
+        },
+    }
+
+    _s3_domain = AWS_S3_CUSTOM_DOMAIN or f'{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com'
+    STATIC_URL = f'https://{_s3_domain}/static/'
+    MEDIA_URL = f'https://{_s3_domain}/media/'
+else:
+    # --- ローカル / VPS 保存（現状維持） ---
+    STATIC_URL = '/static/'
+    MEDIA_URL = '/media/'
+    STORAGES = {
+        'default': {
+            'BACKEND': 'django.core.files.storage.FileSystemStorage',
+        },
+        'staticfiles': {
+            # 現行 VPS の実挙動に合わせ非 manifest（Django 5.2 は旧 STATICFILES_STORAGE を無視）
+            'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
+        },
+    }
 
 # =============================================================================
 # メール設定
 # =============================================================================
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'  # メールサーバー
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'kabulog.information@gmail.com'
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
-if not EMAIL_HOST_PASSWORD and not os.getenv('DJANGO_TESTING'):
-    raise ValueError("EMAIL_HOST_PASSWORD environment variable is required")
+# Amazon SES を使うか（本番でメール送信を SES へ移行する場合 True）
+USE_SES = os.getenv('USE_SES', 'False') == 'True'
+
+if USE_SES:
+    # Amazon SES 経由で送信。認証は EC2 の IAM インスタンスプロファイル（静的キー不使用）
+    EMAIL_BACKEND = 'django_ses.SESBackend'
+    AWS_SES_REGION_NAME = os.getenv('AWS_SES_REGION_NAME', 'ap-northeast-1')
+    AWS_SES_REGION_ENDPOINT = f'email.{AWS_SES_REGION_NAME}.amazonaws.com'
+else:
+    # Gmail SMTP（現状）
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = 'smtp.gmail.com'  # メールサーバー
+    EMAIL_PORT = 587
+    EMAIL_USE_TLS = True
+    EMAIL_HOST_USER = 'kabulog.information@gmail.com'
+    EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+    if not EMAIL_HOST_PASSWORD and not os.getenv('DJANGO_TESTING'):
+        raise ValueError("EMAIL_HOST_PASSWORD environment variable is required")
 # デフォルトの送信元メールアドレス
 DEFAULT_FROM_EMAIL = 'カブログ <kabulog.information@gmail.com>'
 # =============================================================================
@@ -527,6 +579,24 @@ CONTENT_SECURITY_POLICY = {
         ],
     }
 }
+
+# USE_S3=True のとき S3/CloudFront ドメインを CSP の各ディレクティブに追加
+if USE_S3:
+    # S3 には3種類のドメイン形式があり、boto3/ブラウザリダイレクトで混在する:
+    #   global:          bucket.s3.amazonaws.com
+    #   regional (dot):  bucket.s3.ap-northeast-1.amazonaws.com  (現行)
+    #   regional (dash): bucket.s3-ap-northeast-1.amazonaws.com  (レガシー・boto3が生成する場合あり)
+    # *.amazonaws.com は広すぎるため、バケット名を含む3形式を明示する。
+    _s3_origins = [
+        f'https://{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com',
+        f'https://{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com',
+        f'https://{AWS_STORAGE_BUCKET_NAME}.s3-{AWS_S3_REGION_NAME}.amazonaws.com',
+    ]
+    if AWS_S3_CUSTOM_DOMAIN:
+        _s3_origins.append(f'https://{AWS_S3_CUSTOM_DOMAIN}')
+    for _directive in ('default-src', 'script-src', 'style-src', 'font-src', 'img-src', 'connect-src'):
+        CONTENT_SECURITY_POLICY['DIRECTIVES'].setdefault(_directive, []).extend(_s3_origins)
+    CONTENT_SECURITY_POLICY['DIRECTIVES']['manifest-src'] = ["'self'"] + _s3_origins
 # =============================================================================
 # 現在使用していない設定（コメントアウト）
 # =============================================================================
@@ -561,8 +631,8 @@ AXES_FAILURE_LIMIT = 10  # 10回の失敗でロック
 AXES_COOLOFF_TIME = 1  # ロックアウト期間（時間単位）
 AXES_LOCKOUT_PARAMETERS = ['username', 'ip_address'] 
 
-# 静的ファイルのキャッシュ期間を設定（秒単位）
-STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
+# 静的ファイルのストレージは上部「静的・メディアファイル設定」の STORAGES で定義
+# （USE_S3 フラグで S3StaticStorage / StaticFilesStorage を切替。非 manifest で現行挙動を踏襲）
 
 
 # スパム検出設定
@@ -616,6 +686,22 @@ EDINET_API_SETTINGS = {
     'RATE_LIMIT_DELAY': 2,  # リクエスト間隔（秒）
     'TIMEOUT': 120,         # タイムアウト（秒）
     'USER_AGENT': 'EarningsAnalysisBot/1.0 (https://kabu-log.net)',
+}
+
+# 決算予定API設定（EDINET DB /v1/calendar 等）
+# 画面表示時は使わず、日次バッチ（sync_earnings_calendar）からのみ呼び出す。
+# エンドポイント・認証ヘッダーは提供元仕様に合わせて環境変数で差し替え可能。
+EARNINGS_CALENDAR_API_SETTINGS = {
+    'API_KEY': os.getenv('EARNINGS_CALENDAR_API_KEY', ''),
+    'BASE_URL': os.getenv('EARNINGS_CALENDAR_API_BASE_URL', 'https://edinetdb.jp'),
+    'CALENDAR_PATH': os.getenv('EARNINGS_CALENDAR_API_PATH', '/v1/calendar'),
+    # 認証ヘッダー名と方式（例: AUTH_HEADER='Authorization', AUTH_SCHEME='Bearer'）。
+    # 既定はキーをヘッダーへそのまま入れる方式。提供元のドキュメントに合わせること。
+    'AUTH_HEADER': os.getenv('EARNINGS_CALENDAR_API_AUTH_HEADER', 'X-API-Key'),
+    'AUTH_SCHEME': os.getenv('EARNINGS_CALENDAR_API_AUTH_SCHEME', ''),
+    'PAGE_LIMIT': int(os.getenv('EARNINGS_CALENDAR_API_PAGE_LIMIT', '2000')),
+    'TIMEOUT': int(os.getenv('EARNINGS_CALENDAR_API_TIMEOUT', '60')),
+    'USER_AGENT': 'KabulogEarningsCalendarBot/1.0 (https://kabu-log.net)',
 }
 
 # REST Framework設定
@@ -723,6 +809,12 @@ LOGGING['loggers']['security'] = {
 
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
 
+# 分析API（Claude Code / 外部ツール向け）
+# generate_analysis_key コマンドで生成し .env に追記する
+ANALYSIS_API_KEY = os.environ.get('ANALYSIS_API_KEY', '')
+# 書き込みAPIの対象ユーザー（サーバー側で固定。呼び出し元からは変更不可）
+ANALYSIS_API_USER = os.environ.get('ANALYSIS_API_USER', '')
+
 AUTO_GENERATE_SUMMARY = True  # 自動要約生成を有効化
 
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 50000
@@ -753,4 +845,4 @@ Q_CLUSTER = {
     'catch_up': False,
 }
 
-STATIC_VERSION = '1.2.909'
+STATIC_VERSION = '1.2.992'

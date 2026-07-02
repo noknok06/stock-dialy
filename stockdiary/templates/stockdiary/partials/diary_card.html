@@ -62,6 +62,15 @@
               <span class="disclosure-date">{{ diary.latest_disclosure_date|date:"m/d" }}</span>
             </span>
           {% endif %}
+          {% if diary.next_earnings %}
+            <span class="earnings-indicator earnings-indicator--{{ diary.next_earnings.proximity }}"
+                  title="次回決算予定：{{ diary.next_earnings.date|date:'Y年m月d日' }}{% if diary.next_earnings.type %}（{{ diary.next_earnings.type }}）{% endif %}">
+              <i class="bi bi-calendar-event"></i>
+              {% with d=diary.next_earnings.days_until %}
+                <span class="earnings-date">{% if d == 0 %}決算本日{% else %}決算まであと{{ d }}日{% endif %}</span>
+              {% endwith %}
+            </span>
+          {% endif %}
         </div>
       </div>
 
@@ -143,7 +152,7 @@
   <div class="diary-tags-row diary-tags-row--footer">
     {% for tag in diary.tags.all %}
       {% with direction=dir_map|get_item:tag.id %}
-      <span class="tag-pill diary-tag {% if direction == 'up' %}tag-pill--up{% elif direction == 'down' %}tag-pill--down{% endif %}" data-tag-id="{{ tag.id }}" title="{% if direction == 'up' %}追い風{% elif direction == 'down' %}向かい風{% else %}中立{% endif %}">
+      <span class="tag-pill diary-tag {% if direction == 'up' %}tag-pill--up{% elif direction == 'down' %}tag-pill--down{% endif %}" data-tag-id="{{ tag.id }}" data-tag-name="{{ tag.name }}" title="{% if direction == 'up' %}追い風{% elif direction == 'down' %}向かい風{% else %}中立{% endif %}">
         <i class="bi {% if direction == 'up' %}bi-arrow-up-right{% elif direction == 'down' %}bi-arrow-down-right{% else %}bi-tag-fill{% endif %}"></i>
         {{ tag.name }}
       </span>

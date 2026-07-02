@@ -1,0 +1,38 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls static %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+.ec-admin-actions {
+    background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+    border-radius: 8px; padding: 20px; margin-bottom: 20px; border: 1px solid #e5e7eb;
+}
+.ec-admin-actions h3 { margin: 0 0 12px 0; color: #1f2937; font-size: 18px; font-weight: 600; }
+.ec-admin-actions p { margin: 0 0 16px 0; color: #6b7280; font-size: 13px; }
+.ec-admin-btn {
+    padding: 12px 20px; border: none; border-radius: 6px; font-size: 14px; font-weight: 600;
+    text-decoration: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: all 0.2s ease;
+}
+.ec-admin-btn:hover { color: white; transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+.ec-admin-stat { margin-top: 14px; padding-top: 14px; border-top: 1px solid #d1d5db; color: #374151; font-size: 13px; }
+</style>
+{% endblock %}
+
+{% block content_title %}
+<div class="ec-admin-actions">
+    <h3>📅 決算予定の同期</h3>
+    <p>
+        決算予定APIから当日〜90日後の決算予定を取得してDBへ保存します。手動でのテスト実行のほか、
+        日次バッチが失敗した日のリカバリとして「取得基準日」「通知対象決算日」を指定して実行できます。
+    </p>
+    <a href="{% url 'admin:earnings_analysis_earningsschedule_run_sync' %}" class="ec-admin-btn">
+        ▶ 同期を実行（テスト / リカバリ）
+    </a>
+    <div class="ec-admin-stat">登録済み決算予定: <strong>{{ total_schedules|default:0 }}</strong> 件</div>
+</div>
+
+{{ block.super }}
+{% endblock %}

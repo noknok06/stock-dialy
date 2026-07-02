@@ -1,0 +1,35 @@
+{% comment %}
+バックリンク（この銘柄に言及している他の記録）。
+detail の関連タブから HTMX で遅延ロードされる（find_backlinks は重いため、
+タブを開いたときだけ計算する）。空のときは何も描画しない。
+{% endcomment %}
+{% if backlinks %}
+<div class="info-card mobile-optimized mt-3">
+  <div class="info-card-title">
+    <i class="bi bi-arrow-90deg-left"></i> この銘柄に触れている記録
+    <span class="related-unified-note">他の日記からの言及</span>
+  </div>
+  <div class="backlink-list">
+    {% for item in backlinks %}
+    <a href="{% url 'stockdiary:detail' item.diary.pk %}"
+       class="d-block text-decoration-none small mb-2 pb-2 border-bottom">
+      <div class="mb-1">
+        {% if item.diary.stock_symbol %}
+        <span class="badge bg-secondary">{{ item.diary.stock_symbol }}</span>
+        {% endif %}
+        <strong>{{ item.diary.stock_name }}</strong>
+        <span class="badge bg-light text-dark border">{{ item.date|date:"Y/m/d" }}</span>
+        {% if item.source == 'note' %}
+        <span class="badge bg-info">継続記録</span>
+        {% elif item.source == 'link' %}
+        <span class="badge bg-secondary">手動リンク</span>
+        {% endif %}
+      </div>
+      {% if item.snippet %}
+      <div class="text-muted">{{ item.snippet }}</div>
+      {% endif %}
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}

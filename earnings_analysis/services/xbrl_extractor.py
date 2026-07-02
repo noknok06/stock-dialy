@@ -1,6 +1,7 @@
 # earnings_analysis/services/xbrl_extractor.py の完全版
 
 import xml.etree.ElementTree as ET
+import defusedxml.ElementTree as _defused_ET
 import re
 import requests
 import zipfile
@@ -619,7 +620,7 @@ class XBRLFinancialExtractor:
         
         try:
             # XMLパース
-            root = ET.fromstring(xml_content)
+            root = _defused_ET.fromstring(xml_content)
             
             # 各テキスト要素を検索
             for pattern in self.text_element_patterns:
@@ -838,7 +839,7 @@ class XBRLFinancialExtractor:
         comprehensive_data = {'financial_data': {}, 'text_sections': {}, 'table_unit': 'yen'}
         
         try:
-            root = ET.fromstring(xml_content)
+            root = _defused_ET.fromstring(xml_content)
             logger.info(f"XML解析開始: ルート要素={root.tag}")
             
             # 財務データ抽出（キャッシュフロー強化版）

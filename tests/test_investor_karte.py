@@ -74,6 +74,67 @@ class TestKarteService:
         assert isinstance(k['diagnosis'][0], str)
 
 
+class TestGrowthTrajectory:
+    """成長の軌跡グラフ用データの回帰テスト（軸2）。
+
+    なぜこのテストを足したか:
+    _build_growth_trajectory() は月別の判断の質スコアと仮説的中率を集計して
+    Chart.js に渡す形式で返す。2ヶ月未満は has_chart=False にして
+    graceful degradation する設計を固定する。
+    """
+
+    def test_growth_key_exists_in_karte(self, user):
+        """build_investor_karte() の返り値に growth キーが含まれる。"""
+        k = build_investor_karte(user)
+        assert 'growth' in k
+
+    def test_empty_karte_has_no_chart(self, user):
+        """Verdict が0件なら has_chart=False。"""
+        k = build_investor_karte(user)
+        assert k['growth']['has_chart'] is False
+        assert k['growth']['total_learnings'] == 0
+
+    def test_single_verdict_no_chart(self, user):
+        """Verdict が1件（1ヶ月分のみ）なら has_chart=False。"""
+        d = StockDiary.objects.create(user=user, stock_name='A', stock_symbol='1')
+        _verdict(d, Verdict.HYP_HIT, Verdict.PNL_PROFIT, decision_quality=4)
+        k = build_investor_karte(user)
+        assert k['growth']['has_chart'] is False
+        assert k['growth']['latest_quality'] == 4.0
+        assert k['growth']['latest_hit_rate'] == 100
+
+    def test_two_months_enables_chart(self, user):
+        """異なる月に Verdict が存在すれば has_chart=True になる。"""
+        from django.utils import timezone
+        import datetime
+
+        d = StockDiary.objects.create(user=user, stock_name='A', stock_symbol='1')
+
+        # 2件の Verdict を異なる月の created_at で作る
+        v1 = _verdict(d, Verdict.HYP_HIT, Verdict.PNL_PROFIT, decision_quality=3)
+        v2 = _verdict(d, Verdict.HYP_MISS, Verdict.PNL_LOSS, decision_quality=4)
+
+        # created_at を直接書き換えて別月にする
+        two_months_ago = timezone.now() - datetime.timedelta(days=62)
+        Verdict.objects.filter(pk=v1.pk).update(created_at=two_months_ago)
+
+        k = build_investor_karte(user)
+        g = k['growth']
+        assert g['has_chart'] is True
+        assert len(g['labels']) == 2
+        assert len(g['quality']) == 2
+        assert len(g['hit_rates']) == 2
+
+    def test_learning_count_accumulated(self, user):
+        """learning フィールドが入力された Verdict の数が total_learnings に反映される。"""
+        d = StockDiary.objects.create(user=user, stock_name='A', stock_symbol='1')
+        _verdict(d, Verdict.HYP_HIT, Verdict.PNL_PROFIT, learning='学びA')
+        _verdict(d, Verdict.HYP_MISS, Verdict.PNL_LOSS)  # learning なし
+        _verdict(d, Verdict.HYP_HIT, Verdict.PNL_PROFIT, learning='学びB')
+        k = build_investor_karte(user)
+        assert k['growth']['total_learnings'] == 2
+
+
 class TestKarteView:
     def test_karte_renders(self, authenticated_client):
         r = authenticated_client.get(reverse('stockdiary:investor_karte'))

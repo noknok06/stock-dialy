@@ -1,5 +1,5 @@
 """
-投資理由まとめ（TagBookView / 読み物ビュー）のテスト。
+背景まとめ（TagBookView / 読み物ビュー）のテスト。
 
 - reason のある銘柄のみが entries に入り、継続記録(notes)と mention_map を持つ
 - ?order=asc/desc で並びが変わる
@@ -55,7 +55,7 @@ class TestTagBookReading:
         diary_with_notes.tags.add(tag)
         html = authenticated_client.get(reverse('tags:book', kwargs={'pk': tag.pk})).content.decode()
         assert 'readbook' in html
-        assert '投資理由まとめ' in html
+        assert '背景まとめ' in html
         assert 'rb-reason' in html
         assert 'その後の考え' in html          # 継続記録セクション
         assert '長期保有目的' in html           # reason 本文が全文描画される
@@ -81,4 +81,4 @@ class TestTagBookReading:
     def test_empty_state(self, authenticated_client, user):
         tag = Tag.objects.create(user=user, name='空タグ', axis='theme')
         html = authenticated_client.get(reverse('tags:book', kwargs={'pk': tag.pk})).content.decode()
-        assert 'まだ投資理由の記録がありません' in html
+        assert 'まだ背景の記録がありません' in html

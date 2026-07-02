@@ -1,0 +1,17 @@
+# 決算予定（決算発表スケジュール）日次同期
+# 毎日 06:30（サーバーのローカルタイム）に実行
+# 決算予定API（EDINET DB /v1/calendar）から当日〜90日後の決算予定を取得し、
+# EarningsSchedule を洗い替え。各日記の next_earnings_date を事前計算し、
+# 決算前日（翌日決算）の通知をファンアウトする。
+#
+# API利用は1日あたり1〜3リクエスト程度（無料枠100リクエスト/日に十分収まる）。
+#
+# 設定手順:
+#   sudo cp /var/www/django/stock-dialy/etc/cron.d/earnings-calendar /etc/cron.d/
+#   sudo chmod 644 /etc/cron.d/earnings-calendar
+#
+# ログ確認:
+#   tail -f /var/www/django/stock-dialy/logs/earnings_calendar.log
+
+# 分  時  日  月  曜日  ユーザー  コマンド
+30   6   *   *   *     naoki    cd /var/www/django/stock-dialy && /var/www/django/stock-dialy/venv/bin/python manage.py sync_earnings_calendar >> /var/www/django/stock-dialy/logs/earnings_calendar.log 2>&1

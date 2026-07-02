@@ -90,17 +90,31 @@ python manage.py collectstatic
 - `linked_diaries` は非対称 M2M（A→B ≠ B→A）
 - `StockDiary` には EDINET から定期更新される `latest_disclosure_date` / `latest_disclosure_doc_type_name` フィールドがある
 
-### ⚠️ AggregateService — 必須呼び出しルール
+### ⚠️ AggregateService — 集計の不変条件
 
-`Transaction` を作成・更新・削除した後は **必ず** 以下を呼ぶこと。
-呼び忘れると `StockDiary` の集計値（保有数・損益等）がずれる。
+`StockDiary` の集計値（保有数・損益等）は、取引の変更後に必ず再計算される必要がある。
+この不変条件は **構造で守られている**（規約として手動で覚える必要はない）。
+
+**単体操作 → 自動。** `Transaction.save()` / `delete()` が `diary.update_aggregates()`
+を内部で呼ぶ（`models.py`）。`views.py` のように1件ずつ操作するコードは、手動で
+`recalculate` を呼んではならない（二重再集計になる）。
+
+**一括操作 → `deferred()` で囲む。** `bulk_create` / `bulk_update` /
+`QuerySet.update` / `QuerySet.delete` は `save()` を経由せず自動再集計が走らない。
+これらは必ず `AggregateService.deferred(diary)` ブロック内で行う。ブロックを抜けると
+**必ず1回だけ** 再集計が走る（呼び忘れても集計がずれない）。
 
 ```python
 from stockdiary.services.aggregate_service import AggregateService
 
-AggregateService.recalculate(diary)
-# ※ recalculate() 内で diary.save() まで実行される
+# 一括操作はこの形に統一する（手動 recalculate は不要）
+with AggregateService.deferred(diary):
+    Transaction.objects.bulk_create([...])
+# ここで diary の集計は確定済み（recalculate() 内で diary.save() まで実行される）
 ```
+
+直接 `AggregateService.recalculate(diary)` を呼ぶのは、取引以外の理由で集計を
+作り直す管理コマンド・admin アクションなど、上記2経路に当てはまらない場合のみ。
 
 ### サービス層
 
@@ -109,6 +123,7 @@ AggregateService.recalculate(diary)
 | サービス | 役割 |
 |----------|------|
 | `AggregateService` | 全取引から損益・保有数をゼロから再計算 |
+| `metrics`（`metrics.py`） | 意思決定の質の指標の**意味定義の正本**（セマンティックレイヤー）。的中/勝ちの判定・2×2象限タクソノミ・得意/苦手の閾値を1箇所に集約。`Verdict` モデルと `karte_service` が参照する。純粋関数・定数のみ（モデル非依存）。指標を足す/変える際はここを正とする |
 | `GeminiStockAnalysis` | Google Gemini AI による銘柄分析 |
 | `ImageService` | django-q で非同期 WebP 圧縮（800×600） |
 | `NotificationService` | Web Push（VAPID）・アプリ内・メール通知 |
@@ -151,10 +166,11 @@ AggregateService.recalculate(diary)
 |----------|------|----------|
 | Google Gemini API | AI 銘柄・財務分析 | `GEMINI_API_KEY` |
 | EDINET API | 日本の開示書類取得 | `EDINET_API_KEY` |
-| yfinance | 株価履歴・財務データ | — |
+| yfinance | 株価履歴・財務データ・ニュース | — |
 | Google OAuth | 認証（allauth 経由） | `GOOGLE_CLIENT_ID` |
 | Web Push（VAPID） | プッシュ通知 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_ADMIN_EMAIL` |
 | Gmail SMTP | メール送信 | `EMAIL_HOST_PASSWORD` |
+| **分析API（自前）** | Claude Code など外部ツール向け読み取り専用API | `ANALYSIS_API_KEY` |
 
 ---
 
@@ -166,9 +182,16 @@ AggregateService.recalculate(diary)
 
 ```
 stockdiary/               ← 単一ファイル方式
-  views.py                # メインビュー（約 3,600 行）
+  views.py                # メインビュー（日記CRUD・一覧・詳細・取引・ダッシュボード・EDINET・成長OS等）
   views_comparison.py     # 銘柄比較・InvestmentHub
   views_mobile_ux.py      # クイック記録（モバイル向け）
+  views_timeline.py       # 全銘柄横断タイムライン
+  views_migration.py      # 日記データ移行（インポート/エクスポート）
+  views_trade_import.py   # 証券CSV取込（楽天・SBI）— views.py から責務分割
+  views_growth.py         # 成長OS（仮説・検証・カルテ・ライブラリ・年次レビュー）— views.py から責務分割
+  views_panels.py         # 詳細ページの遅延ロードHTMXパネル（backlinks・EDINET）— views.py から責務分割
+  views_dashboard.py      # ダッシュボード・パフォーマンスグラフ・タグ別成績— views.py から責務分割
+  views_transactions.py   # 取引・株式分割の CRUD— views.py から責務分割
   api.py                  # 株式情報 API（yfinance）
   api_views.py            # 通知・関連日記・グラフ API
   models.py               # 全モデル（単一ファイル）
@@ -348,6 +371,11 @@ JSON を返す View → `api.py` / `api_views.py` に集約する。
 
 `.github/workflows/django-tests.yml` で push / PR 時に `pytest` が自動実行される。
 
+セキュリティ検知（従量課金なし・公開リポジトリの無料枠＋定額）も常設：
+`codeql.yml`（セマンティックSAST）・`security-scan.yml`（Bandit / pip-audit）・
+`dependabot.yml`（依存CVE）。文脈依存の検知は Claude Code `/security-review`（定額）で補う。
+詳細とリポジトリ側の有効化手順は `docs/security_scanning.md`。
+
 ---
 
 ## 開発規約
@@ -372,3 +400,150 @@ JSON を返す View → `api.py` / `api_views.py` に集約する。
 ### 禁止事項
 - ❌ 同じ用途のファイルを複数作成して並行利用する（保守性低下）
 - ❌ 理由なく既存の構造を変更する
+
+---
+
+## Claude Code 分析連携
+
+### 目的
+カブログの実データ（日記・取引・損益）＋最新ニュースを Claude Code から取得し、
+個別銘柄の投資分析を行う。**従量課金ゼロ**（ニュースは yfinance 無料、分析は Claude Code 定額）。
+
+### アーキテクチャ
+```
+Claude Code
+  └─ WebFetch / curl
+       └─ GET /api/analysis/diary/<symbol>/  ← Bearer 認証
+            ├─ StockDiary（日記・取引・継続記録）
+            └─ yfinance.news（最新ニュース・無料）
+```
+
+### 実装ファイル
+
+| ファイル | 役割 |
+|----------|------|
+| `stockdiary/api_analysis.py` | 分析API エンドポイント本体（Bearer認証・読み取り専用） |
+| `stockdiary/management/commands/generate_analysis_key.py` | APIキー生成コマンド |
+| `config/settings.py` | `ANALYSIS_API_KEY = os.environ.get('ANALYSIS_API_KEY', '')` |
+| `config/urls.py` | `/api/analysis/` 以下の URL 登録 |
+
+### エンドポイント一覧
+
+| パス | 返却内容 |
+|------|----------|
+| `GET /api/analysis/holdings/` | 保有中全銘柄（銘柄コード・名前・数量・平均取得単価・実現損益） |
+| `GET /api/analysis/diaries/` | **記録銘柄の一覧（スクリーニング用・保有/売却/メモ横断）**。`?tags=半導体,AI`（OR）・`?sector=`・`?status=holding\|sold\|memo\|all`・`?user=` で絞り込み。各銘柄に最新の信用倍率を付与（バリュエーションは呼び出し側で補完） |
+| `GET /api/analysis/diary/<symbol>/` | 指定銘柄の日記全体＋取引履歴＋継続記録＋**最新ニュース** |
+| `GET /api/analysis/portfolio/` | 業種分布・損益合計などポートフォリオサマリー |
+| `POST /api/analysis/diary/<symbol>/notes/` | **継続記録（DiaryNote）を追加**（書き込み）。書き込み先ユーザーは `ANALYSIS_API_USER` で固定 |
+| `DELETE /api/analysis/diary/<symbol>/notes/<note_id>/` | **継続記録を1件削除**（書き込み）。削除後にタグを再同期する |
+| `PATCH /api/analysis/diary/<symbol>/reason/` | **日記本体の投資理由（reason）を更新**（書き込み）。旧内容は `ReasonVersion` に自動退避 |
+
+クエリパラメータ:
+- `diary/<symbol>/?news=0` → ニュース取得をスキップ（高速）
+- `diary/<symbol>/?margin=0` → 信用残（信用倍率）取得をスキップ
+- `diary/<symbol>/?user=<username>` → 複数ユーザー環境での絞り込み
+
+`diary_detail` は `margin` フィールドを返す（`margin_tracking.MarginData` 連携）。
+JPX週次の信用取引残高から、最新の `margin_ratio`（=買い残/売り残）と直近トレンド
+（`history`・古い順）を含む。信用倍率は需給の補助指標として分析に使う
+（1倍未満＝売り長で取組良好、高倍率・買い残増＝将来の戻り売り圧力＝上値の重し）。
+データが無い銘柄（外国株・未取得）は `margin: null`。回帰テスト:
+`tests/test_api_analysis_margin.py`。
+
+📝 **書き込み本文は markdown をそのまま使ってよい**（見出し `##`・表 `|---|`・
+アポストロフィ可）。日記本体（PATCH）も継続記録（POST）も同じ。
+
+補足: security ミドルウェア（`security/middleware.py` の `_is_suspicious_request`）は
+`/api/` 配下の POST JSON ボディを SQLi/XSS ヒューリスティックで走査し、
+`'`・`--`・`#`・`<...>` を不正とみなす。これが markdown を誤検知して 403
+`Suspicious Request Detected` を返していたため、**`/api/analysis/` だけ本文走査の
+対象外**にした（Bearer 認証・ORM 保存・テンプレート自動エスケープで SQLi/XSS は別途不成立）。
+回帰テスト: `tests/test_security_middleware.py`。
+※ この除外はサーバーへ反映（デプロイ＋再起動）して初めて有効。
+
+### 認証方式
+```
+Authorization: Bearer <ANALYSIS_API_KEY>
+```
+キーが `.env` 未設定の場合は 503 を返す（誤って公開 API になることを防ぐ）。
+
+### サーバー側セットアップ（初回のみ）
+```bash
+# 1. キー生成（指示に従って .env に追記）
+python manage.py generate_analysis_key
+
+# 2. サーバー再起動
+sudo systemctl reload gunicorn  # または systemctl restart
+```
+
+### Claude Code からの使い方
+```bash
+# 保有銘柄一覧を確認
+curl -H "Authorization: Bearer <KEY>" https://<サーバー>/api/analysis/holdings/
+
+# 7203（トヨタ）を分析
+curl -H "Authorization: Bearer <KEY>" https://<サーバー>/api/analysis/diary/7203/
+```
+
+Claude Code セッション内でのプロンプト例:
+> 「7203の日記データと最新ニュースを /api/analysis/diary/7203/ から取得して、
+>  投資継続判断の観点で分析して」
+
+Claude が `diary_detail` エンドポイントを叩き、
+`investment_reason`（投資理由）・`transactions`（取引履歴）・`notes`（継続記録）・
+`latest_news`（最新ニュース）を一括取得して分析する。
+
+### `diary_detail` レスポンス構造（主要フィールド）
+```json
+{
+  "symbol": "7203",
+  "name": "トヨタ自動車",
+  "status": "保有中",
+  "investment_reason": "投資理由のテキスト...",
+  "current_quantity": 100.0,
+  "avg_cost": 2000.0,
+  "realized_profit": 50000.0,
+  "transactions": [
+    { "date": "2023-04-01", "type": "buy", "price": 2000.0, "quantity": 100.0 }
+  ],
+  "notes": [
+    { "date": "2023-06-01", "type": "analysis", "topic": "決算", "content": "..." }
+  ],
+  "latest_news": [
+    { "title": "...", "publisher": "...", "published_at": "2024-01-15 12:00 UTC", "url": "..." }
+  ]
+}
+```
+
+### 記録時のテンプレート運用（必須）
+
+分析APIで日記・継続記録を**書き込む**ときは、必ず `docs/analysis_templates/` の
+テンプレートに沿って記録する。役割設定・出力制限・タグ運用は `_手順.md` が正本。
+
+| 記録の種類 | 書き込み先 | エンドポイント | 使うテンプレート |
+|------------|------------|----------------|------------------|
+| **企業分析**（ビジネスモデル・稼ぐ力・競合の俯瞰） | 日記本体（`reason`） | `PATCH .../diary/<symbol>/reason/` | `企業説明テンプレート.md` |
+| **決算分析**（決算の質×継続性×アクション判定） | 継続記録（DiaryNote） | `POST .../diary/<symbol>/notes/` | `決算業績分析テンプレート.md` |
+
+- **決算分析を継続記録に書くときは `topic="決算分析"` を必ず指定する。**
+- タグは **`docs/analysis_templates/tag_master.md` から最大4つ**だけ選ぶ
+  （子タグ優先・企業名/コードは不可・マクロは方向矢印付き・マスタにないタグは作らない）。
+  本文中の `@タグ` は書き込み後に `diary.tags` へ**自動同期**される（UIと同じ
+  `views._sync_hashtag_tags` を `update_reason`/`add_note` が呼ぶ。追加・解除・
+  方向(↑/↓/→)・df 再計算まで実施。reason とノートの和集合で同期される）。
+  → 別途タグ更新APIを叩く必要はない。レスポンスの `tags` に同期後の一覧が返る。
+  回帰テスト: `tests/test_api_analysis_tags.py`。
+- 出力制限（`_手順.md`）: テンプレートの指示文コメントは記録に含めない／
+  3,000字以内（改行含む）／`<h1>` は使わない。
+- 該当テンプレートが未取り込みの分析種別（仮説・ピア比較等。`docs/analysis_templates/README.md`
+  の「⛔ 本文未取り込み」を参照）は、本文が揃うまで記録用途には使わない。
+
+### 注意事項
+- `holdings/` は全ユーザーのデータを返す（シングルユーザー前提）。
+  マルチユーザーで運用する場合は `?user=<username>` で絞るか、
+  `api_analysis.py` の `holdings()` にユーザーフィルターを追加すること。
+- `ANALYSIS_API_KEY` はセッション認証とは完全に独立。ローテーションは
+  `.env` の書き換え＋サーバー再起動のみで完結する。
+- ニュースは yfinance 経由のため日本株は `.T` サフィックスを自動付与。
+  外国株（`AAPL` 等）はそのままで取得できる。

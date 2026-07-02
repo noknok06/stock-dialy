@@ -14,6 +14,7 @@ from .tdnet import (
     TDNETReport,
     TDNETReportSection,
 )
+from .earnings import EarningsSchedule
 
 __all__ = [
     'Company',
@@ -29,4 +30,5 @@ __all__ = [
     'TDNETDisclosure',
     'TDNETReport',
     'TDNETReportSection',
+    'EarningsSchedule',
 ]

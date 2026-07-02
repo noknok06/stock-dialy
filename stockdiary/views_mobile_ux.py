@@ -17,7 +17,6 @@ from django.shortcuts import get_object_or_404
 from decimal import Decimal, InvalidOperation
 
 from .models import StockDiary, DiaryNote, Transaction, sanitize_text_content
-from tags.models import Tag
 import logging
 
 logger = logging.getLogger(__name__)
@@ -200,6 +199,13 @@ def quick_add_transaction(request, diary_id):
                 'message': '取引種別を選択してください'
             }, status=400)
 
+        # buy_margin / sell_margin は Transaction.transaction_type の選択肢（buy/sell）に
+        # 正規化し、信用フラグは is_margin で表現する。
+        # 旧実装は 'buy_margin' 等を transaction_type にそのまま保存しており、
+        # モデルの選択肢に無い不正値が is_margin も立たないまま永続化されていた。
+        is_margin = transaction_type.endswith('_margin')
+        normalized_type = 'buy' if transaction_type.startswith('buy') else 'sell'
+
         if not price or not quantity:
             return JsonResponse({
                 'success': False,
@@ -227,18 +233,18 @@ def quick_add_transaction(request, diary_id):
             transaction_date = timezone.now().date()
 
         # 取引作成
+        # Transaction.objects.create() は内部で save() を呼び、その中で
+        # diary.update_aggregates()（＝集計の再計算）が自動的に走る。
+        # ここで明示的に recalculate() を呼ぶと二重再集計になるため呼ばない
+        # （CLAUDE.md「AggregateService — 集計の不変条件」: 単体操作は自動）。
         transaction = Transaction.objects.create(
             diary=diary,
-            transaction_type=transaction_type,
+            transaction_type=normalized_type,
             transaction_date=transaction_date,
             price=price_decimal,
-            quantity=quantity_decimal
+            quantity=quantity_decimal,
+            is_margin=is_margin,
         )
-
-        # 取引作成後は集計（保有数・損益等）を再計算する。
-        # ※ recalculate() 内で diary.save() まで実行される。
-        from .services.aggregate_service import AggregateService
-        AggregateService.recalculate(diary)
 
         return JsonResponse({
             'success': True,

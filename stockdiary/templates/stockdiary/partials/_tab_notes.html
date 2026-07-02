@@ -1,0 +1,41 @@
+{% load stockdiary_filters %}
+<div class="px-1 py-2">
+  <div class="notes-timeline">
+    {% if notes %}
+      {% for note in notes %}
+      <div class="note-item mb-3">
+        <div class="d-flex justify-content-between align-items-start mb-1">
+          <div class="note-date">
+            <i class="bi bi-calendar-date text-muted"></i>
+            <span class="text-muted small">{{ note.date|date:"Y年n月j日" }}</span>
+          </div>
+          <span class="badge {{ note.badge_class }} small">{{ note.get_note_type_display }}</span>
+        </div>
+        {% if note.current_price %}
+        <div class="note-price small mb-1">
+          <span class="text-muted">記録時価格:</span>
+          <span class="fw-medium">{{ note.current_price|floatformat:2 }}円</span>
+          {% if note.price_change is not None %}
+          <span class="{{ note.price_change_class }} ms-2">
+            ({% if note.price_change > 0 %}+{% endif %}{{ note.price_change|floatformat:2 }}%)
+          </span>
+          {% endif %}
+        </div>
+        {% endif %}
+        <div class="note-content bg-light p-2 rounded">
+          {{ note.content|linebreaksbr }}
+        </div>
+      </div>
+      {% endfor %}
+      {% if notes_count > 3 %}
+      <div class="text-end mt-2">
+        <a href="/stockdiary/{{ diary_id }}/" class="text-primary text-decoration-none small">
+          すべての記録を見る ({{ notes_count }}件) <i class="bi bi-arrow-right"></i>
+        </a>
+      </div>
+      {% endif %}
+    {% else %}
+      <p class="text-muted">継続記録はまだありません</p>
+    {% endif %}
+  </div>
+</div>

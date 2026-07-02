@@ -16,7 +16,7 @@ def google_adsense():
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3954701883136363"
          crossorigin="anonymous"></script>
     """
-    return mark_safe(ad_code)
+    return mark_safe(ad_code)  # nosec B308, B703 — 静的HTMLリテラル
 
 @register.simple_tag(takes_context=True)
 def display_ad(context, ad_slot, format='auto'):
@@ -38,8 +38,8 @@ def display_ad(context, ad_slot, format='auto'):
         format=format,
         personalized='' if personalized_ads else 'data-adtest="on" data-ad-channel="non-personalized"'
     )
-    return mark_safe(ad_code)
-    
+    return mark_safe(ad_code)  # nosec B308, B703 — ad_slot はテンプレート作者が指定、ユーザー入力でない
+
 @register.simple_tag(takes_context=True)
 def show_placement_ad(context, position):
     """指定された配置位置の広告を表示する"""
@@ -73,7 +73,7 @@ def show_placement_ad(context, position):
     </div>
     """
     
-    return mark_safe(ad_code)
+    return mark_safe(ad_code)  # nosec B308, B703 — ad_unit は管理者設定のDBレコード
 
 # ads/templatetags/ads_tags.py に追加
 
@@ -133,8 +133,8 @@ def show_template_ad(context, template_type):
         if ad_unit.custom_js:
             ad_code += f"<script>{ad_unit.custom_js}</script>"
             
-        return mark_safe(ad_code)
-        
+        return mark_safe(ad_code)  # nosec B308, B703 — ad_unit は管理者設定のDBレコード
+
     except Exception as e:
         # エラー時は何も表示しない（開発時のみログ出力）
         if settings.DEBUG:

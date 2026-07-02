@@ -1,0 +1,30 @@
+{% load stockdiary_filters %}
+{# 選択日の決算一覧（HTMXで日パネルのみ差し替える場合はこの要素ごと返す） #}
+<div id="ec-day-panel" class="ec-day-panel">
+  <div class="ec-day-panel-head">
+    <i class="bi bi-list-ul"></i>
+    {{ selected_date|date:"n月j日" }}（{{ selected_date|date:"D" }}）の決算
+    <span class="ec-count">{{ day_items|length }}件</span>
+  </div>
+  {% if day_items %}
+  <div class="ec-day-items">
+    {% for item in day_items %}
+    <div class="ec-item{% if item.is_mine %} ec-item--mine{% endif %}">
+      <span class="ec-code">{{ item.ticker_normalized }}</span>
+      <span class="ec-item-name">{{ item.company_name|company_short|default:"—" }}</span>
+      {% if item.earnings_type %}<span class="ec-type">{{ item.earnings_type }}</span>{% endif %}
+      {% if item.market_segment %}<span class="ec-market">{{ item.market_segment }}</span>{% endif %}
+      {% if item.is_mine %}<span class="ec-mine-tag"><i class="bi bi-bookmark-star-fill"></i> 記録中</span>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="ec-empty">
+    {% if scope == 'mine' %}
+      この日に決算予定の記録銘柄はありません。「全銘柄」に切り替えると市場全体を表示できます。
+    {% else %}
+      この日の決算予定はありません。
+    {% endif %}
+  </p>
+  {% endif %}
+</div>

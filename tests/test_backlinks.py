@@ -100,11 +100,42 @@ class TestFindBacklinks:
         memo = StockDiary.objects.create(user=user, stock_symbol='', stock_name='投資メモ')
         assert find_backlinks(memo, user) == []
 
-    def test_detail_page_renders_backlinks(self, authenticated_client, sample_diary, mentioning_diary):
+    def test_detail_page_defers_backlinks_to_htmx(self, authenticated_client, sample_diary, mentioning_diary):
+        """detail 初期表示ではバックリンクを計算せず、関連タブ表示時に HTMX で
+        遅延ロードする。重い find_backlinks を毎回走らせないための回帰。
+        初期HTMLには遅延ロードの配線（エンドポイントURLとコンテナ）だけが入る。"""
         from django.urls import reverse
         response = authenticated_client.get(
             reverse('stockdiary:detail', kwargs={'pk': sample_diary.pk})
         )
         assert response.status_code == 200
-        assert 'この銘柄に触れている記録' in response.content.decode()
-        assert 'デンソー' in response.content.decode()
+        html = response.content.decode()
+        # 遅延ロードの配線が入っている
+        assert reverse('stockdiary:backlinks_panel', kwargs={'diary_id': sample_diary.pk}) in html
+        assert 'id="backlinks-panel-body"' in html
+        # バックリンク本体（見出し）は初期HTMLには含めない（遅延ロードの partial にのみ存在）。
+        # ※ 銘柄名そのものは別所（日記メンションのオートコンプリート等）にも出るため
+        #   バックリンク固有の見出し文言で判定する。
+        assert 'この銘柄に触れている記録' not in html
+
+    def test_backlinks_panel_endpoint_renders(self, authenticated_client, sample_diary, mentioning_diary):
+        """遅延ロード先のエンドポイントはバックリンクを描画する（HTMXリクエスト）。"""
+        from django.urls import reverse
+        response = authenticated_client.get(
+            reverse('stockdiary:backlinks_panel', kwargs={'diary_id': sample_diary.pk}),
+            HTTP_HX_REQUEST='true',
+        )
+        assert response.status_code == 200
+        html = response.content.decode()
+        assert 'この銘柄に触れている記録' in html
+        assert 'デンソー' in html
+
+    def test_backlinks_panel_other_user_forbidden(self, client, sample_diary, another_user):
+        """他人の日記のバックリンクパネルは取得できない。"""
+        from django.urls import reverse
+        client.force_login(another_user)
+        response = client.get(
+            reverse('stockdiary:backlinks_panel', kwargs={'diary_id': sample_diary.pk}),
+            HTTP_HX_REQUEST='true',
+        )
+        assert response.status_code == 404

@@ -218,6 +218,16 @@ class IPFilterMiddleware:
     
     def _is_suspicious_request(self, request):
         """不審なリクエストパターンをチェック"""
+        # 分析API（/api/analysis/）は本文走査の対象外にする。
+        # 理由: ①Bearer(ANALYSIS_API_KEY)認証必須、②本文は DiaryNote.content /
+        # StockDiary.reason に ORM 経由で保存（パラメータ化されSQLi不成立）、
+        # ③表示時は Django テンプレートで自動エスケープ（XSS不成立）。
+        # 一方で下記パターンは `'` `--` `#` `<...>` を不正とみなすため、
+        # markdown（## 見出し・表区切り ---・アポストロフィ）が誤検知され
+        # 正当な分析ノートの書き込みが 403 になる。よってこのパスのみ除外する。
+        if request.path.startswith('/api/analysis/'):
+            return False
+
         suspicious_patterns = [
             r"(\%27)|(\')|(\-\-)|(\%23)|(#)",
             r"((\%3C)|<)((\%2F)|\/)*[a-z0-9\%]+((\%3E)|>)",

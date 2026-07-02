@@ -77,8 +77,12 @@ body.dark-mode, html[data-theme="dark"] {
 .reading-page .karte-q-lucky      { border-left-color: var(--verdict-lucky); }
 .reading-page .karte-q-discipline { border-left-color: var(--verdict-discipline); }
 
+.reading-page .karte-row-head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem;
+  margin-bottom: 0.85rem;
+}
 .reading-page .karte-verdict-head {
-  display: flex; align-items: baseline; gap: 0.6rem; margin: 0.3rem 0 0.5rem;
+  display: flex; align-items: center; gap: 0.6rem; margin: 0 0 0.4rem;
 }
 .reading-page .karte-quadrant {
   font-weight: var(--font-semibold); color: var(--ink); font-size: 0.9375rem;
@@ -92,6 +96,7 @@ body.dark-mode, html[data-theme="dark"] {
 .reading-page .karte-verdict-axes {
   display: flex; align-items: baseline; gap: 0.5rem;
   font-size: 0.875rem; color: var(--ink-soft); margin-bottom: 0.35rem;
+  padding-left: calc(3px + 0.5rem);
 }
 .reading-page .karte-axis-k {
   font-size: 0.7rem; color: var(--faint-ink); margin-right: 0.3rem;
@@ -99,12 +104,30 @@ body.dark-mode, html[data-theme="dark"] {
 .reading-page .karte-axis-sep { color: var(--hairline); }
 .reading-page .karte-missed { font-size: 0.8125rem; color: var(--muted-ink); margin: 0; }
 
-/* 学び＝引用ブロック */
+/* 見逃した要因（ラベル＋本文の2行レイアウト） */
+.reading-page .karte-missed-block {
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--hairline-soft);
+}
+.reading-page .karte-missed-label {
+  font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em;
+  color: var(--faint-ink); margin-bottom: 0.25rem;
+}
+.reading-page .karte-missed-text {
+  font-size: 0.875rem; color: var(--ink-soft);
+  line-height: 1.65; margin: 0;
+}
+
+/* 学び＝引用ブロック（Bootstrap の blockquote リセット込み） */
 .reading-page .karte-learning-quote {
   font-family: var(--font-family-serif);
   font-size: 1.0625rem; line-height: 1.7; color: var(--ink);
-  margin: 0.5rem 0 0; padding-left: var(--space-4, 1rem);
+  margin: 0.35rem 0 0; padding: 0 0 0 0.85rem;
+  border: none;
   border-left: 2px solid var(--ink);
+  background: none;
+  border-radius: 0;
   font-style: normal;
 }
 
@@ -112,6 +135,11 @@ body.dark-mode, html[data-theme="dark"] {
 .reading-page .karte-verify-cta {
   display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
   gap: 0.75rem;
+  background: var(--paper-raised);
+  border: 1px solid var(--hairline-soft);
+  border-radius: var(--radius-lg);
+  padding: 0.9rem 1.25rem;
+  margin-bottom: 0.5rem;
 }
 .reading-page .karte-verify-msg { font-size: 0.875rem; color: var(--muted-ink); display: inline-flex; gap: 0.4rem; align-items: center; }
 .reading-page .karte-verify-cta.is-due .karte-verify-msg { color: var(--ink); }
@@ -220,6 +248,62 @@ body.dark-mode, html[data-theme="dark"] {
 
 @media (max-width: 640px) {
   .reading-page .karte-form-2col { grid-template-columns: 1fr; }
+}
+
+/* ------------------------------------------------------------------
+   仮説追加ボトムシート（#addThesisSheet）
+   karte-* / tag-suggest-* は本来 .reading-page 配下のみで装飾される。
+   このシートは .reading-page の外（body 直下のボトムシート）に置かれる
+   ため、同じ見た目を出すには専用スコープで再定義する必要がある。
+   （カード地色は付けず、他のボトムシートと揃えてフラットにする）
+   ------------------------------------------------------------------ */
+#addThesisSheet .karte-label {
+  display: block; font-size: 0.8125rem; color: var(--muted-ink);
+  margin: 0.75rem 0 0.3rem; font-weight: var(--font-medium);
+}
+#addThesisSheet .karte-req {
+  font-size: 0.7rem; color: var(--verdict-lucky); margin-left: 0.3rem;
+}
+#addThesisSheet .karte-form-2col {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;
+}
+#addThesisSheet .karte-field-err {
+  color: var(--verdict-lucky); font-size: 0.8125rem; margin-top: 0.3rem;
+}
+#addThesisSheet .tag-suggest { position: relative; }
+#addThesisSheet .tag-suggest-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+#addThesisSheet .tag-suggest-chips:not(:empty) { margin-bottom: 0.45rem; }
+#addThesisSheet .tag-suggest-chip {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  font-size: 0.8125rem; color: var(--ink);
+  background: var(--paper); border: 1px solid var(--hairline);
+  border-radius: var(--radius-full, 999px); padding: 0.18rem 0.3rem 0.18rem 0.6rem;
+}
+#addThesisSheet .tag-suggest-chip .ts-x {
+  border: none; background: none; color: var(--faint-ink);
+  cursor: pointer; font-size: 0.95rem; line-height: 1; padding: 0 0.15rem;
+}
+#addThesisSheet .tag-suggest-chip .ts-x:hover { color: var(--ink); }
+#addThesisSheet .tag-suggest-input {
+  width: 100%; background: var(--paper);
+  border: 1px solid var(--hairline); border-radius: var(--radius-sm, 6px);
+  color: var(--ink); padding: 0.5rem 0.65rem; font-size: 0.9375rem;
+}
+#addThesisSheet .tag-suggest-list {
+  position: absolute; left: 0; right: 0; top: 100%; z-index: 30;
+  background: var(--paper-raised); border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm, 8px); box-shadow: 0 10px 28px rgba(32,32,29,.12);
+  max-height: 220px; overflow-y: auto; margin-top: 4px; padding: 0.2rem;
+}
+#addThesisSheet .tag-suggest-list .ts-opt {
+  display: block; width: 100%; text-align: left; background: none; border: none;
+  padding: 0.5rem 0.6rem; font-size: 0.875rem; color: var(--ink);
+  cursor: pointer; border-radius: 6px;
+}
+#addThesisSheet .tag-suggest-list .ts-opt:hover { background: var(--paper-sunken); }
+
+@media (max-width: 640px) {
+  #addThesisSheet .karte-form-2col { grid-template-columns: 1fr; }
 }
 
 /* ============================================================
@@ -656,3 +740,174 @@ body.reading-app .modal-title { color: var(--ink) !important; }
 body.reading-app .modal-body { color: var(--ink-soft) !important; }
 body.reading-app .modal-body .text-muted,
 body.reading-app .modal-body small { color: var(--muted-ink) !important; }
+
+/* ============================================================
+   9k-6. 仮説タブ カード型レイアウト（Phase 9 ブラッシュアップ）
+   デザインシステム準拠: border-left 3px でステータス/象限を色分け。
+   ============================================================ */
+
+/* 仮説アイテム間の間隔 */
+.reading-page .karte-thesis-item {
+  margin-bottom: 2rem;
+}
+
+/* ── 仮説カード ── */
+.reading-page .karte-tcard {
+  background: var(--paper-sunken);
+  border: 1px solid var(--hairline-soft);
+  border-left: 3px solid var(--verdict-unlucky);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 0.5rem;
+}
+.reading-page .karte-tcard--open     { border-left-color: var(--verdict-unlucky); }
+.reading-page .karte-tcard--abandoned { border-left-color: var(--hairline); }
+/* 検証済みは象限色を引き継ぐ */
+.reading-page .karte-tcard--q-skill      { border-left-color: var(--verdict-skill); }
+.reading-page .karte-tcard--q-unlucky    { border-left-color: var(--verdict-unlucky); }
+.reading-page .karte-tcard--q-lucky      { border-left-color: var(--verdict-lucky); }
+.reading-page .karte-tcard--q-discipline { border-left-color: var(--verdict-discipline); }
+
+/* 仮説カードのヘッダー行（ラベル + ステータスバッジ + 編集） */
+.reading-page .karte-tcard-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+.reading-page .karte-tcard-head-right {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* ステータスバッジ */
+.reading-page .karte-ts-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted-ink);
+  background: var(--paper-raised);
+  border: 1px solid var(--hairline);
+  border-radius: 9999px;
+  padding: 0.2rem 0.65rem;
+  line-height: 1.5;
+}
+.reading-page .karte-ts-badge .bi { font-size: 0.8em; }
+.reading-page .karte-ts-badge--open     { color: var(--verdict-unlucky); border-color: color-mix(in srgb, var(--verdict-unlucky) 35%, transparent); background: color-mix(in srgb, var(--verdict-unlucky) 6%, var(--paper-raised)); }
+.reading-page .karte-ts-badge--verified { color: var(--verdict-skill); border-color: color-mix(in srgb, var(--verdict-skill) 35%, transparent); background: color-mix(in srgb, var(--verdict-skill) 6%, var(--paper-raised)); }
+.reading-page .karte-ts-badge--abandoned { color: var(--faint-ink); }
+
+/* ── 検証カード（検証済み時） ── */
+/* カード自体は plain raised — 象限色はラベルテキストに載せる（VerdictBadge パターン） */
+.reading-page .karte-vcard {
+  background: var(--paper-raised);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 0.5rem;
+  box-shadow: var(--shadow-xs);
+}
+
+/* 象限名テキストに左罫線＋色（VerdictBadge: border-left 3px + padding-left 0.5rem） */
+.reading-page .karte-quadrant {
+  font-weight: 600;
+  font-size: 0.9375rem;
+  line-height: 1.2;
+  border-left: 3px solid var(--hairline);
+  padding-left: 0.5rem;
+}
+.reading-page .karte-vcard.karte-q-skill .karte-quadrant      { color: var(--verdict-skill);      border-left-color: var(--verdict-skill); }
+.reading-page .karte-vcard.karte-q-unlucky .karte-quadrant    { color: var(--verdict-unlucky);    border-left-color: var(--verdict-unlucky); }
+.reading-page .karte-vcard.karte-q-lucky .karte-quadrant      { color: var(--verdict-lucky);      border-left-color: var(--verdict-lucky); }
+.reading-page .karte-vcard.karte-q-discipline .karte-quadrant { color: var(--verdict-discipline); border-left-color: var(--verdict-discipline); }
+
+/* 学びブロック（上罫線のみ。左罫線は .karte-learning-quote 側に集約） */
+.reading-page .karte-learning-block {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--hairline-soft);
+}
+
+/* 旧 .karte-row.karte-verdict は削除せずオーバーライドで非表示化（既存 HTMX 応答と共存） */
+.reading-page .karte-row.karte-verdict {
+  border: 1px solid var(--hairline);
+  border-left-width: 3px;
+  border-radius: var(--radius-lg);
+  padding: 1.15rem 1.5rem;
+  background: var(--paper-raised);
+  margin-top: 0.5rem;
+}
+
+/* ── あなたの判断の傾向（2×2） ── */
+.reading-page .karte-tendency {
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--hairline-soft);
+}
+.reading-page .karte-tendency-head {
+  font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em;
+  color: var(--faint-ink); margin-bottom: 0.75rem;
+}
+.reading-page .karte-tendency-axis-label {
+  display: flex; justify-content: space-between;
+  font-size: 0.65rem; color: var(--faint-ink);
+  padding: 0 0 0.35rem;
+}
+/* 2列グリッド。QUADRANTS 順: skill, unlucky, lucky, discipline
+   → CSS grid-column で配置: skill=col2, unlucky=col1, lucky=col2, discipline=col1 */
+.reading-page .karte-tendency-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 0.5rem;
+}
+/* skill: 仮説○×利益 → 右上 (row1,col2) */
+.reading-page .karte-tendency-cell--skill      { grid-row: 1; grid-column: 2; }
+/* unlucky: 仮説○×損失 → 左上 (row1,col1) */
+.reading-page .karte-tendency-cell--unlucky    { grid-row: 1; grid-column: 1; }
+/* lucky: 仮説×××利益 → 右下 (row2,col2) */
+.reading-page .karte-tendency-cell--lucky      { grid-row: 2; grid-column: 2; }
+/* discipline: 仮説×××損失 → 左下 (row2,col1) */
+.reading-page .karte-tendency-cell--discipline { grid-row: 2; grid-column: 1; }
+
+.reading-page .karte-tendency-cell {
+  background: var(--paper-raised);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+}
+.reading-page .karte-tendency-cell.is-highlight {
+  background: color-mix(in srgb, var(--paper-raised) 80%, currentColor 5%);
+  border-color: currentColor;
+}
+.reading-page .karte-tendency-cell--skill      { color: var(--verdict-skill); }
+.reading-page .karte-tendency-cell--unlucky    { color: var(--verdict-unlucky); }
+.reading-page .karte-tendency-cell--lucky      { color: var(--verdict-lucky); }
+.reading-page .karte-tendency-cell--discipline { color: var(--verdict-discipline); }
+.reading-page .karte-tendency-count {
+  font-size: 1.5rem; font-weight: 700; line-height: 1;
+  font-variant-numeric: tabular-nums; color: inherit;
+}
+.reading-page .karte-tendency-label {
+  font-size: 0.875rem; font-weight: 600; color: var(--ink);
+  margin-top: 0.3rem;
+}
+.reading-page .karte-tendency-axis {
+  font-size: 0.7rem; color: var(--muted-ink); margin-top: 0.15rem;
+}
+.reading-page .karte-tendency-caption {
+  font-family: var(--font-family-serif);
+  font-size: 0.875rem; color: var(--faint-ink);
+  text-align: center; margin-top: 1rem; font-style: italic;
+}
+
+/* Horizon メタ行を横並びに（既存 karte-thesis-meta に追加） */
+.reading-page .karte-thesis-meta {
+  gap: 0.5rem;
+}
+.reading-page .karte-due .bi {
+  font-size: 0.8em;
+}

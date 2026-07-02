@@ -2,14 +2,14 @@
 {% load static %}
 {% load stockdiary_filters %}
 
-{% block title %}{{ tag.name }} - 投資理由まとめ | カブログ{% endblock %}
+{% block title %}{{ tag.name }} - 背景まとめ | カブログ{% endblock %}
 
 {% block head %}
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'css/3-components/components.css' %}?v={{ STATIC_VERSION }}">
 <link rel="stylesheet" href="{% static 'css/3-components/dark-mode-components.css' %}?v={{ STATIC_VERSION }}">
 <style>
-/* ===== 投資理由まとめ（読み物）。.readbook 配下にスコープ・rb- 接頭辞 ===== */
+/* ===== 背景まとめ（読み物）。.readbook 配下にスコープ・rb- 接頭辞 ===== */
 .readbook{
   --ax:#7c3aed;
   --accent-200:#00668c;--accent-700:#004d6b;
@@ -113,11 +113,11 @@
   <a class="rb-back" href="{% url 'tags:detail' tag.pk %}"><i class="bi bi-arrow-left"></i>タグ詳細に戻る</a>
 
   <header class="rb-head">
-    <h1 class="rb-title"><i class="bi bi-journal-richtext"></i><span>{{ tag.name }}</span><span class="rb-sub">投資理由まとめ</span></h1>
-    <p class="rb-lead">このタグで残した投資理由を、その後の考え（継続記録）まで通して読み返す。</p>
+    <h1 class="rb-title"><i class="bi bi-journal-richtext"></i><span>{{ tag.name }}</span><span class="rb-sub">背景まとめ</span></h1>
+    <p class="rb-lead">このタグで残した背景（どんな会社か・着目したニュースやテーマ）を、その後の考え（継続記録）まで通して読み返す。</p>
     {% if entries %}
     <div class="rb-meta">
-      <span class="rb-count"><b>{{ reason_count }}</b> 銘柄の投資理由</span>
+      <span class="rb-count"><b>{{ reason_count }}</b> 銘柄の背景</span>
       <div class="rb-order">
         <a class="rb-order-btn {% if order != 'asc' %}active{% endif %}" href="?order=desc">新しい順</a>
         <a class="rb-order-btn {% if order == 'asc' %}active{% endif %}" href="?order=asc">古い順</a>
@@ -183,8 +183,8 @@
   {% else %}
   <div class="rb-empty">
     <div class="ei"><i class="bi bi-journal-x"></i></div>
-    <h2>まだ投資理由の記録がありません</h2>
-    <p>このタグを付けた日記に「投資理由（なぜ投資したか）」を書くと、ここでまとめて読み返せます。</p>
+    <h2>まだ背景の記録がありません</h2>
+    <p>このタグを付けた日記に「背景（どんな会社か・着目したニュースやテーマ）」を書くと、ここでまとめて読み返せます。</p>
     <a class="rb-cta" href="{% url 'tags:detail' tag.pk %}"><i class="bi bi-arrow-left"></i>タグ詳細へ</a>
   </div>
   {% endif %}
@@ -196,7 +196,7 @@
 {% block scripts %}
 {{ block.super }}
 <script>
-/* 投資理由まとめ：銘柄目次（ジャンプナビ）。中身は変えず、長い記録を飛ばして移動できるようにする。 */
+/* 背景まとめ：銘柄目次（ジャンプナビ）。中身は変えず、長い記録を飛ばして移動できるようにする。 */
 (function() {
   var nav = document.getElementById('rbNav');
   if (!nav) return;  // 銘柄1件以下では非表示

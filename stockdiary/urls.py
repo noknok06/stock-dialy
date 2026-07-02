@@ -7,6 +7,12 @@ from . import views_mobile_ux  # 🆕 モバイルUX用ビュー
 from . import views_comparison  # 銘柄比較機能
 from . import views_timeline  # 全銘柄横断タイムライン
 from . import views_migration  # 日記データ移行（インポート/エクスポート）
+from . import views_trade_import  # 証券CSV取込（楽天・SBI）
+from . import views_growth  # 成長OS（仮説・検証・カルテ・ライブラリ・年次レビュー）
+from . import views_panels  # 詳細ページの遅延ロードHTMXパネル（backlinks・EDINET）
+from . import views_dashboard  # ダッシュボード・パフォーマンスグラフ・タグ別成績
+from . import views_earnings  # 決算カレンダー（決算予定の表示）
+from . import views_transactions  # 取引・株式分割の CRUD
 from django.contrib.auth.decorators import login_required
 from django.views.generic.base import RedirectView
 
@@ -34,17 +40,17 @@ urlpatterns = [
     # ==========================================
     # 取引管理
     # ==========================================
-    path('<int:diary_id>/transaction/add/', views.add_transaction, name='add_transaction'),
-    path('transaction/<int:transaction_id>/', views.get_transaction, name='get_transaction'),
-    path('transaction/<int:transaction_id>/update/', views.update_transaction, name='update_transaction'),
-    path('transaction/<int:transaction_id>/delete/', views.delete_transaction, name='delete_transaction'),
+    path('<int:diary_id>/transaction/add/', views_transactions.add_transaction, name='add_transaction'),
+    path('transaction/<int:transaction_id>/', views_transactions.get_transaction, name='get_transaction'),
+    path('transaction/<int:transaction_id>/update/', views_transactions.update_transaction, name='update_transaction'),
+    path('transaction/<int:transaction_id>/delete/', views_transactions.delete_transaction, name='delete_transaction'),
 
     # ==========================================
     # 株式分割管理
     # ==========================================
-    path('<int:diary_id>/stock-split/add/', views.add_stock_split, name='add_stock_split'),
-    path('stock-split/<int:split_id>/apply/', views.apply_stock_split, name='apply_stock_split'),
-    path('stock-split/<int:split_id>/delete/', views.delete_stock_split, name='delete_stock_split'),
+    path('<int:diary_id>/stock-split/add/', views_transactions.add_stock_split, name='add_stock_split'),
+    path('stock-split/<int:split_id>/apply/', views_transactions.apply_stock_split, name='apply_stock_split'),
+    path('stock-split/<int:split_id>/delete/', views_transactions.delete_stock_split, name='delete_stock_split'),
 
     # ==========================================
     # 継続記録関連
@@ -119,8 +125,8 @@ path('api/create/', api.api_create_diary, name='api_create'),
     path('api/stock-diaries/<str:symbol>/', views.api_stock_diaries, name='api_stock_diaries'),
 
     # 取引履歴アップロード
-    path('trade-upload/', views.TradeUploadView.as_view(), name='trade_upload'),
-    path('trade-upload/process/', views.process_trade_upload, name='process_trade_upload'),
+    path('trade-upload/', views_trade_import.TradeUploadView.as_view(), name='trade_upload'),
+    path('trade-upload/process/', views_trade_import.process_trade_upload, name='process_trade_upload'),
 
     # 日記データ移行（インポート/エクスポート）
     path('migration/export/', views_migration.MigrationExportView.as_view(), name='migration_export'),
@@ -130,15 +136,16 @@ path('api/create/', api.api_create_diary, name='api_create'),
     path('migration/import/process/', views_migration.migration_import_process, name='migration_import_process'),
 
 
-    path('dashboard/', views.TradingDashboardView.as_view(), name='dashboard'),
-    path('review/', views.AnnualReviewView.as_view(), name='annual_review'),
-    path('karte/', views.InvestorKarteView.as_view(), name='investor_karte'),
-    path('library/', views.LibraryView.as_view(), name='library'),
+    path('dashboard/', views_dashboard.TradingDashboardView.as_view(), name='dashboard'),
+    path('earnings-calendar/', views_earnings.earnings_calendar, name='earnings_calendar'),
+    path('review/', views_growth.AnnualReviewView.as_view(), name='annual_review'),
+    path('karte/', views_growth.InvestorKarteView.as_view(), name='investor_karte'),
+    path('library/', views_growth.LibraryView.as_view(), name='library'),
     # Phase 8a: 検証ループ（仮説・検証）
-    path('<int:diary_id>/karte/', views.karte_block, name='karte_block'),
-    path('<int:diary_id>/thesis/new/', views.thesis_edit, name='thesis_create'),
-    path('<int:diary_id>/thesis/<int:thesis_id>/edit/', views.thesis_edit, name='thesis_edit'),
-    path('<int:diary_id>/thesis/<int:thesis_id>/verify/', views.thesis_verify, name='thesis_verify'),
+    path('<int:diary_id>/karte/', views_growth.karte_block, name='karte_block'),
+    path('<int:diary_id>/thesis/new/', views_growth.thesis_edit, name='thesis_create'),
+    path('<int:diary_id>/thesis/<int:thesis_id>/edit/', views_growth.thesis_edit, name='thesis_edit'),
+    path('<int:diary_id>/thesis/<int:thesis_id>/verify/', views_growth.thesis_verify, name='thesis_verify'),
     path('compare/', views_comparison.StockComparisonView.as_view(), name='stock_comparison'),
     path('investment-hub/', views_comparison.InvestmentHubView.as_view(), name='investment_hub'),
     path('api/gemini-stock-analysis/', views_comparison.api_gemini_stock_analysis, name='api_gemini_stock_analysis'),
@@ -146,13 +153,16 @@ path('api/create/', api.api_create_diary, name='api_create'),
     # ==========================================
     # 日記関連グラフ
     # ==========================================
-    path('graph/', views.DiaryGraphView.as_view(), name='diary_graph'),
+    path('graph/', views_dashboard.DiaryGraphView.as_view(), name='diary_graph'),
     path('api/diary-graph/data/', api_views.diary_graph_data, name='api_diary_graph_data'),
 
     # ==========================================
     # EDINET連携（開示書類パネル）
     # ==========================================
-    path('<int:diary_id>/edinet-panel/', views.edinet_panel, name='edinet_panel'),
-    path('<int:diary_id>/edinet-note-prefill/', views.edinet_note_prefill, name='edinet_note_prefill'),
-    path('<int:diary_id>/edinet-xbrl-analyze/', views.edinet_xbrl_analyze, name='edinet_xbrl_analyze'),
+    # バックリンク（関連タブの遅延ロード）
+    path('<int:diary_id>/backlinks-panel/', views_panels.backlinks_panel, name='backlinks_panel'),
+
+    path('<int:diary_id>/edinet-panel/', views_panels.edinet_panel, name='edinet_panel'),
+    path('<int:diary_id>/edinet-note-prefill/', views_panels.edinet_note_prefill, name='edinet_note_prefill'),
+    path('<int:diary_id>/edinet-xbrl-analyze/', views_panels.edinet_xbrl_analyze, name='edinet_xbrl_analyze'),
 ]

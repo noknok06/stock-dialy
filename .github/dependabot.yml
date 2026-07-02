@@ -1,0 +1,22 @@
+# Dependabot — 依存パッケージの脆弱性(CVE)検知と更新PR。全リポジトリ無料・従量課金なし。
+# セキュリティアラート自体は公開リポジトリで自動有効。本ファイルは「更新PRの自動作成」を設定する。
+version: 2
+updates:
+  # Python 依存（requirements.txt）
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels: ["dependencies", "security"]
+    commit-message:
+      prefix: "deps"
+
+  # GitHub Actions 自体の更新（ワークフローの固定バージョンを最新追従）
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels: ["dependencies", "ci"]
+    commit-message:
+      prefix: "ci"

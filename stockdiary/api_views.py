@@ -3,6 +3,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods, require_GET
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
@@ -307,14 +308,17 @@ def get_notification_logs(request):
 @login_required
 def mark_notification_read(request, log_id):
     """通知を既読にする"""
+    from django.http import Http404
     try:
         log = get_object_or_404(NotificationLog, id=log_id, user=request.user)
         log.is_read = True
         log.read_at = timezone.now()
         log.save()
-        
+
         return JsonResponse({'success': True})
-        
+
+    except Http404:
+        raise
     except Exception as e:
         logger.error("Mark notification read error: %s", e, exc_info=True)
         return JsonResponse({'error': '既読処理に失敗しました'}, status=500)
@@ -565,7 +569,6 @@ def search_related_diaries(request, diary_id):
     already_linked_ids |= set(diary.linked_from.values_list('id', flat=True))
     already_linked_ids.add(diary_id)
 
-    from django.db.models import Q
     results = StockDiary.objects.filter(
         user=request.user
     ).filter(
@@ -600,11 +603,10 @@ def search_my_diaries(request):
     """
     query = request.GET.get('q', '').strip()
 
-    from django.db.models import Q
     qs = StockDiary.objects.filter(user=request.user)
     if query:
         qs = qs.filter(Q(stock_name__icontains=query) | Q(stock_symbol__icontains=query))
-    results = qs.order_by('-updated_at')[:8]
+    results = list(qs.prefetch_related('notes').order_by('-updated_at')[:8])
 
     diaries = []
     for d in results:
@@ -687,7 +689,6 @@ def diary_graph_data(request):
     複数モードを同時に指定すると各モードのノード・エッジを統合して返す。
     """
     try:
-        from django.db.models import Q as _Q
         user = request.user
         tag_id = request.GET.get('tag', '').strip()
 
@@ -712,13 +713,13 @@ def diary_graph_data(request):
         # --- primary: フィルター条件に合う日記 ---
         primary_qs = all_user_qs
         if statuses and 'all' not in statuses:
-            status_q = _Q()
+            status_q = Q()
             if 'holding' in statuses:
-                status_q |= _Q(current_quantity__gt=0)
+                status_q |= Q(current_quantity__gt=0)
             if 'sold' in statuses:
-                status_q |= _Q(transaction_count__gt=0, current_quantity=0)
+                status_q |= Q(transaction_count__gt=0, current_quantity=0)
             if 'memo' in statuses:
-                status_q |= _Q(transaction_count=0)
+                status_q |= Q(transaction_count=0)
             primary_qs = primary_qs.filter(status_q)
         if tag_id:
             try:

@@ -1,0 +1,58 @@
+{# 月グリッド＋選択日パネル。月送り/scope切替時はこの要素（#ec-calendar）ごと差し替える #}
+<div id="ec-calendar" class="ec-calendar-block">
+  {# scope 切替（記録銘柄 / 全銘柄） #}
+  <div class="ec-scope" role="group" aria-label="表示範囲">
+    <button type="button" class="{% if scope == 'mine' %}active{% endif %}"
+            hx-get="{% url 'stockdiary:earnings_calendar' %}?scope=mine&month={{ month_value }}&date={{ selected_date|date:'Y-m-d' }}"
+            hx-target="#ec-calendar" hx-swap="outerHTML" hx-push-url="true">記録銘柄</button>
+    <button type="button" class="{% if scope == 'all' %}active{% endif %}"
+            hx-get="{% url 'stockdiary:earnings_calendar' %}?scope=all&month={{ month_value }}&date={{ selected_date|date:'Y-m-d' }}"
+            hx-target="#ec-calendar" hx-swap="outerHTML" hx-push-url="true">全銘柄</button>
+  </div>
+
+  {# 月ヘッダ（前月 / 当月 / 翌月） #}
+  <div class="ec-month-nav">
+    {% if prev_month %}
+    <button type="button" class="ec-nav-btn"
+            hx-get="{% url 'stockdiary:earnings_calendar' %}?scope={{ scope }}&month={{ prev_month }}"
+            hx-target="#ec-calendar" hx-swap="outerHTML" hx-push-url="true"
+            aria-label="前の月"><i class="bi bi-chevron-left"></i></button>
+    {% else %}<span class="ec-nav-btn ec-nav-btn--disabled"><i class="bi bi-chevron-left"></i></span>{% endif %}
+
+    <span class="ec-month-label">{{ month_label }}</span>
+
+    {% if next_month %}
+    <button type="button" class="ec-nav-btn"
+            hx-get="{% url 'stockdiary:earnings_calendar' %}?scope={{ scope }}&month={{ next_month }}"
+            hx-target="#ec-calendar" hx-swap="outerHTML" hx-push-url="true"
+            aria-label="次の月"><i class="bi bi-chevron-right"></i></button>
+    {% else %}<span class="ec-nav-btn ec-nav-btn--disabled"><i class="bi bi-chevron-right"></i></span>{% endif %}
+  </div>
+
+  {# 月グリッド #}
+  <div class="ec-grid">
+    {% for head in weekday_headers %}
+    <div class="ec-grid-head{% if forloop.counter == 6 %} ec-sat{% elif forloop.counter == 7 %} ec-sun{% endif %}">{{ head }}</div>
+    {% endfor %}
+
+    {% for week in grid %}
+      {% for cell in week %}
+        {% if cell.in_window and cell.count %}
+        <button type="button"
+                class="ec-cell ec-cell--has{% if cell.is_selected %} ec-cell--selected{% endif %}{% if cell.is_today %} ec-cell--today{% endif %}{% if cell.has_mine %} ec-cell--mine{% endif %}{% if not cell.in_month %} ec-cell--other{% endif %}"
+                hx-get="{% url 'stockdiary:earnings_calendar' %}?scope={{ scope }}&month={{ month_value }}&date={{ cell.date|date:'Y-m-d' }}"
+                hx-target="#ec-calendar" hx-swap="outerHTML" hx-push-url="true">
+          <span class="ec-cell-day">{{ cell.date|date:"j" }}</span>
+          <span class="ec-cell-count{% if cell.has_mine %} ec-cell-count--mine{% endif %}">{{ cell.count }}</span>
+        </button>
+        {% else %}
+        <div class="ec-cell ec-cell--empty{% if cell.is_today %} ec-cell--today{% endif %}{% if not cell.in_month %} ec-cell--other{% endif %}{% if not cell.in_window %} ec-cell--out{% endif %}">
+          <span class="ec-cell-day">{{ cell.date|date:"j" }}</span>
+        </div>
+        {% endif %}
+      {% endfor %}
+    {% endfor %}
+  </div>
+
+  {% include 'stockdiary/partials/earnings_calendar_day.html' %}
+</div>

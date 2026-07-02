@@ -2,6 +2,7 @@
 import re
 import math
 from django.utils.safestring import mark_safe
+from django.utils.html import conditional_escape
 from django import template
 from django.template.defaultfilters import stringfilter
 import decimal
@@ -16,6 +17,31 @@ def extract_hashtags_filter(text):
     """本文から @ハッシュタグ を抽出する（stockdiary.utils.extract_hashtags への委譲）"""
     from ..utils import extract_hashtags
     return extract_hashtags(text)
+
+
+# 表示用に取り除く会社種別表記（先頭/末尾どちらでも）。マスタ値は変更しない。
+_COMPANY_TYPE_TOKENS = ('株式会社', '（株）', '(株)', '㈱')
+
+
+@register.filter(name='company_short')
+@stringfilter
+def company_short(name):
+    """企業名から会社種別表記（株式会社・（株）・㈱）を除いた表示用の短縮名を返す。
+
+    可視文字数が限られる一覧で社名本体を見やすくするための表示専用フィルタ。
+    先頭・末尾どちらの表記も除く。結果が空になる場合（社名が種別表記のみ等）は
+    元の値を返す。マスタ（EarningsSchedule.company_name 等）は変更しない。
+    """
+    if not name:
+        return name
+    s = name.strip()
+    for token in _COMPANY_TYPE_TOKENS:
+        if s.startswith(token):
+            s = s[len(token):]
+        if s.endswith(token):
+            s = s[:-len(token)]
+    s = s.strip('　 ')
+    return s or name.strip()
 
 
 def _currency_code(obj):
@@ -103,23 +129,23 @@ def highlight(text, search_term):
     例: {{ diary.reason|highlight:request.GET.query }}
     """
     if not search_term or not text:
-        return mark_safe(text)
+        return mark_safe(conditional_escape(text))
 
     # 空白区切りの複数語はそれぞれハイライトする（AND検索に対応）
     from stockdiary.utils import split_search_terms
     terms = split_search_terms(search_term)
     if not terms:
-        return mark_safe(text)
+        return mark_safe(conditional_escape(text))
 
-    # HTMLタグをエスケープせずに検索するために正規表現を使用
-    # 一方の語が他方の語の接頭辞になっている場合に備え、長い語から優先して照合する
+    # 未エスケープのテキストをエスケープしてからハイライト処理（XSS防止）
+    # SafeString（|escape や |linebreaks 適用済み）は conditional_escape でそのまま通過する
     search_pattern = re.compile(
         r'({0})'.format(
             '|'.join(re.escape(t) for t in sorted(terms, key=len, reverse=True))
         ),
         re.IGNORECASE,
     )
-    result = search_pattern.sub(r'<span class="search-highlight">\1</span>', text)
+    result = search_pattern.sub(r'<span class="search-highlight">\1</span>', conditional_escape(text))
 
     return mark_safe(result)
         
@@ -649,7 +675,7 @@ def render_markdown(value):
         strip=True,
     )
 
-    return mark_safe(clean_html)
+    return mark_safe(clean_html)  # nosec B308, B703 — bleach.clean() でサニタイズ済み
 
 
 _MENTION_PATTERN = re.compile(r'[（(](\d{4,6}|\d{3,4}[A-Z]|[A-Z]{2,6})[）)]')

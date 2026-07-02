@@ -8,25 +8,25 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.12'
 
       - name: Cache pip
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
           restore-keys: ${{ runner.os }}-pip-
 
       - name: Cache apt packages
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         id: apt-cache
         with:
           path: /var/cache/apt/archives
@@ -59,7 +59,7 @@ jobs:
           DJANGO_TESTING: '1'
 
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: test
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 

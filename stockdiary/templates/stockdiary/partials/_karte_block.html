@@ -4,20 +4,32 @@
   {% for thesis in theses %}
   <div class="karte-thesis-item">
 
-    {# 当時の仮説 #}
-    <div class="karte-row karte-thesis">
-      <div class="karte-row-head">
-        <span class="karte-row-label">当時の仮説</span>
-        <button type="button" class="karte-editlink"
-                hx-get="{% url 'stockdiary:thesis_edit' diary.id thesis.id %}"
-                hx-target="#karte-block" hx-swap="outerHTML">編集</button>
+    {# ── 仮説カード ── #}
+    <div class="karte-tcard {% if thesis.verdict %}karte-tcard--q-{{ thesis.verdict.quadrant }}{% elif thesis.status == 'abandoned' %}karte-tcard--abandoned{% else %}karte-tcard--open{% endif %}">
+      <div class="karte-tcard-head">
+        <span class="karte-row-label">仮説</span>
+        <div class="karte-tcard-head-right">
+          <span class="karte-ts-badge karte-ts-badge--{{ thesis.status }}">
+            {% if thesis.status == 'verified' %}<i class="bi bi-check2-circle"></i>検証済み
+            {% elif thesis.status == 'abandoned' %}<i class="bi bi-x-circle"></i>取り下げ
+            {% elif thesis.is_due %}<i class="bi bi-bell"></i>検証待ち
+            {% else %}<i class="bi bi-hourglass-split"></i>未検証
+            {% endif %}
+          </span>
+          <button type="button" class="karte-editlink"
+                  hx-get="{% url 'stockdiary:thesis_edit' diary.id thesis.id %}"
+                  hx-target="#karte-block" hx-swap="outerHTML">編集</button>
+        </div>
       </div>
       <p class="karte-claim">{{ thesis.claim|linebreaksbr }}</p>
       {% if thesis.basis %}<p class="karte-basis">{{ thesis.basis|linebreaksbr }}</p>{% endif %}
       <div class="karte-thesis-meta">
         {% for tag in thesis.basis_tags.all %}<span class="chip-quiet">{{ tag.name }}</span>{% endfor %}
-        {% if thesis.review_due_date and thesis.status == 'open' %}
-          <span class="karte-due"><i class="bi bi-calendar-check"></i>検証予定 {{ thesis.review_due_date|date:"Y/n/j" }}</span>
+        {% if thesis.horizon %}
+          <span class="karte-due"><i class="bi bi-hourglass"></i>{{ thesis.get_horizon_display }}</span>
+        {% endif %}
+        {% if thesis.review_due_date %}
+          <span class="karte-due"><i class="bi bi-calendar3"></i>検証期限 {{ thesis.review_due_date|date:"Y/n/j" }}</span>
         {% endif %}
       </div>
       {% if thesis.worst_case %}
@@ -26,10 +38,10 @@
     </div>
 
     {% if thesis.verdict %}
-      {# 検証（意思決定の質 × 結果 の2×2） #}
-      <div class="karte-row karte-verdict karte-q-{{ thesis.verdict.quadrant }}">
+      {# ── 検証カード（検証済み） ── #}
+      <div class="karte-vcard karte-q-{{ thesis.verdict.quadrant }}">
         <div class="karte-row-head">
-          <span class="karte-row-label">検証</span>
+          <span class="karte-row-label">この銘柄の検証</span>
           <button type="button" class="karte-editlink"
                   hx-get="{% url 'stockdiary:thesis_verify' diary.id thesis.id %}"
                   hx-target="#karte-block" hx-swap="outerHTML">見直す</button>
@@ -44,19 +56,22 @@
           <span class="karte-axis"><span class="karte-axis-k">損益</span>{{ thesis.verdict.get_pnl_result_display }}</span>
         </div>
         {% if thesis.verdict.missed_factor %}
-          <p class="karte-missed">見落とし：{{ thesis.verdict.missed_factor }}</p>
+        <div class="karte-missed-block">
+          <div class="karte-missed-label">見逃した要因</div>
+          <p class="karte-missed-text">{{ thesis.verdict.missed_factor }}</p>
+        </div>
+        {% endif %}
+        {% if thesis.verdict.learning %}
+        <div class="karte-learning-block">
+          <div class="karte-row-label" style="margin-bottom:0.35rem;">学び</div>
+          <blockquote class="karte-learning-quote">{{ thesis.verdict.learning }}</blockquote>
+        </div>
         {% endif %}
       </div>
 
-      {% if thesis.verdict.learning %}
-      <div class="karte-row karte-learning">
-        <div class="karte-row-label">学び</div>
-        <blockquote class="karte-learning-quote">{{ thesis.verdict.learning }}</blockquote>
-      </div>
-      {% endif %}
-
     {% else %}
-      <div class="karte-row karte-verify-cta {% if thesis.is_due %}is-due{% endif %}">
+      {# ── 答え合わせ促進 ── #}
+      <div class="karte-verify-cta {% if thesis.is_due %}is-due{% endif %}">
         <span class="karte-verify-msg">
           {% if thesis.is_due %}<i class="bi bi-bell"></i>検証予定日が来ました。答え合わせをしましょう。
           {% else %}結果が出たら、仮説は正しかったか答え合わせを。{% endif %}
@@ -88,6 +103,29 @@
     <span class="karte-add-hint">この投資の「主張」を一文で残すと、後で答え合わせ（検証）できます</span>
     {% endif %}
   </button>
+  {% endif %}
+
+  {# ── あなたの判断の傾向（全銘柄集計 2×2） ── #}
+  {% if user_total_verdicts %}
+  <div class="karte-tendency">
+    <div class="karte-tendency-head">あなたの判断の傾向</div>
+    <div class="karte-tendency-axes">
+      <span class="karte-tendency-axis-label karte-tendency-axis-x"><span>損失 −</span><span>利益 ＋</span></span>
+    </div>
+    <div class="karte-tendency-grid">
+      {# 行ラベル（仮説○ 上段 / 仮説× 下段）× 列（損失/利益） #}
+      {# QUADRANTS 順: skill(○×利益), unlucky(○×損失), lucky(×利益), discipline(×損失) #}
+      {# グリッド: 上行=仮説○、下行=仮説×。左列=損失、右列=利益 #}
+      {% for q in user_quadrants %}
+      <div class="karte-tendency-cell karte-tendency-cell--{{ q.key }} {% if q.is_highlight %}is-highlight{% endif %}">
+        <div class="karte-tendency-count">{{ q.count }}</div>
+        <div class="karte-tendency-label">{{ q.label }}</div>
+        <div class="karte-tendency-axis">{{ q.axis }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    <p class="karte-tendency-caption">損益と、判断の質は、別物だ。</p>
+  </div>
   {% endif %}
 
 </div>

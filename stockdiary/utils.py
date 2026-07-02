@@ -330,6 +330,138 @@ def apply_diary_search(queryset, query: str):
     return queryset.distinct()
 
 
+def apply_diary_filters(queryset, params, user):
+    """GET パラメータに基づいて日記 QuerySet にフィルター・ソートを適用する。
+
+    StockDiaryListView.get_queryset() と diary_list FBV の両方で使われる共通ロジック。
+    params は request.GET (QueryDict) を想定する。
+
+    Args:
+        queryset: StockDiary の QuerySet（user 絞り込み済みであること）
+        params: request.GET など dict-like オブジェクト
+        user: リクエストユーザー（transaction_date_range フィルターで参照）
+
+    Returns:
+        フィルター・ソート済みの QuerySet（distinct 適用済み）
+    """
+    from datetime import timedelta
+    from django.db.models import Count, Q as _Q, F as _F, OuterRef, Subquery
+    from django.utils import timezone as _tz
+    from .models import Transaction as _Transaction
+    from .utils import apply_diary_search, search_diaries_by_hashtag
+
+    DATE_RANGE_DAYS = {'1w': 7, '1m': 30, '3m': 90, '6m': 180, '1y': 365}
+
+    # 全文検索
+    query = params.get('query', '').strip()
+    if query:
+        queryset = apply_diary_search(queryset, query)
+
+    # ハッシュタグフィルター
+    hashtag = params.get('hashtag', '').strip()
+    if hashtag:
+        queryset = search_diaries_by_hashtag(queryset, hashtag)
+
+    # タグフィルター
+    tag_id = params.get('tag', '')
+    if tag_id:
+        try:
+            queryset = queryset.filter(tags__id=int(tag_id))
+        except (ValueError, TypeError):
+            pass
+
+    # 業種フィルター
+    sector = params.get('sector', '').strip()
+    if sector:
+        queryset = queryset.filter(sector__iexact=sector)
+
+    # 保有状態フィルター
+    status = params.get('status', 'all')
+    if status == 'active':
+        queryset = queryset.filter(current_quantity__gt=0)
+    elif status == 'sold':
+        queryset = queryset.filter(
+            _Q(current_quantity=0) | _Q(current_quantity__lt=0),
+            transaction_count__gt=0,
+        )
+    elif status == 'memo':
+        queryset = queryset.filter(transaction_count=0)
+    elif status == 'excluded':
+        queryset = queryset.filter(is_excluded=True)
+    if status != 'excluded':
+        queryset = queryset.filter(is_excluded=False)
+
+    # 日付範囲フィルター（first_purchase_date 基準）
+    date_range = params.get('date_range', '')
+    if date_range in DATE_RANGE_DAYS:
+        start_date = _tz.now().date() - timedelta(days=DATE_RANGE_DAYS[date_range])
+        queryset = queryset.filter(
+            _Q(first_purchase_date__gte=start_date) |
+            _Q(first_purchase_date__isnull=True, created_at__gte=start_date)
+        )
+
+    # 取引日基準フィルター
+    transaction_date_range = params.get('transaction_date_range', '')
+    if transaction_date_range in DATE_RANGE_DAYS:
+        start_date = _tz.now().date() - timedelta(days=DATE_RANGE_DAYS[transaction_date_range])
+        diary_ids = _Transaction.objects.filter(
+            diary__user=user,
+            transaction_date__gte=start_date,
+        ).values_list('diary_id', flat=True).distinct()
+        queryset = queryset.filter(id__in=diary_ids)
+
+    # 開示書類更新フィルター
+    disclosure = params.get('disclosure', '')
+    if disclosure in ('new', 'recent'):
+        days = 7 if disclosure == 'new' else 30
+        cutoff = _tz.now().date() - timedelta(days=days)
+        queryset = queryset.filter(latest_disclosure_date__gte=cutoff)
+
+    # 未記録フィルター
+    if params.get('no_notes', ''):
+        queryset = queryset.annotate(note_count=Count('notes')).filter(note_count=0)
+
+    # ソート
+    sort = params.get('sort', '')
+    # 決算予定フィルタ/ソートで使う「次回決算日」。日記に決算日は持たせず、
+    # EarningsSchedule（証券コードがキーの決算予定マスタ・/calendar は4桁で返す）を
+    # コードで相関サブクエリ参照して annotate する。要求時のみ付与する。
+    earnings = params.get('earnings', '')
+    earnings_days = {'7': 7, '14': 14, '30': 30}.get(earnings)
+    if earnings_days is not None or sort == 'earnings_asc':
+        from earnings_analysis.models import EarningsSchedule
+        _today = _tz.now().date()
+        _next_e = (
+            EarningsSchedule.objects
+            .filter(securities_code=OuterRef('stock_symbol'), earnings_date__gte=_today)
+            .order_by('earnings_date')
+            .values('earnings_date')[:1]
+        )
+        queryset = queryset.annotate(_next_earnings_date=Subquery(_next_e))
+        if earnings_days is not None:
+            queryset = queryset.filter(
+                _next_earnings_date__range=(_today, _today + timedelta(days=earnings_days))
+            )
+
+    sort_map = {
+        'name': ['stock_name'],
+        'symbol': ['stock_symbol'],
+        'date_asc': [_F('first_purchase_date').asc(nulls_last=True), 'created_at'],
+        'date_desc': [_F('first_purchase_date').desc(nulls_last=True), '-created_at'],
+        'profit_desc': ['-realized_profit'],
+        'profit_asc': ['realized_profit'],
+        'transaction_count_desc': ['-transaction_count', '-updated_at'],
+        'transaction_count_asc': ['transaction_count', 'updated_at'],
+        'total_cost_desc': ['-total_cost', '-updated_at'],
+        'total_cost_asc': ['total_cost', 'updated_at'],
+        # 決算が近い順（決算予定が無い銘柄は末尾）
+        'earnings_asc': [_F('_next_earnings_date').asc(nulls_last=True), '-updated_at'],
+    }
+    queryset = queryset.order_by(*sort_map.get(sort, ['-updated_at']))
+
+    return queryset.distinct()
+
+
 def _make_search_snippet(text: str, query: str, radius: int = 40) -> str:
     """検索語の周辺を切り出した抜粋テキストを返す（ハイライトは呼び出し側で行う）。"""
     if not text or not query:
@@ -800,12 +932,23 @@ def compute_related_strength(focal, user, limit: int = 12) -> List[dict]:
     effective_focal_tags = [t for t in focal_tags if getattr(t, 'axis', 'theme') not in ('event', 'custom')]
 
     if effective_focal_tags and themes_enabled:
-        # tag_id → 共有している他日記のset（ノイズ上限でフィルタ済み）
-        tag_diary_map: Dict[int, set] = {}
-        for tag in effective_focal_tags:
-            ids = set(others.filter(tags=tag).values_list('id', flat=True))
-            if ids and len(ids) <= RELATED_NOISE_MAX:
-                tag_diary_map[tag.id] = ids
+        # tag_id → 共有している他日記のset（ノイズ上限でフィルタ済み）。
+        # 旧実装は focal タグ1つにつき1クエリ（others.filter(tags=tag)）で、
+        # タグ数ぶんのクエリが detail ロード毎に走っていた（theme_recall が常設の
+        # ため遅延もできない）。(tag_id, diary_id) ペアを1クエリでまとめて取得し、
+        # Python 側でタグごとに集約する。
+        focal_tag_id_set = {t.id for t in effective_focal_tags}
+        tag_to_ids: Dict[int, set] = defaultdict(set)
+        for t_id, d_id in (
+            others.filter(tags__in=focal_tag_id_set).values_list('tags__id', 'id')
+        ):
+            # WHERE で focal タグに限定済みだが、念のため focal タグのみ採用する
+            if t_id in focal_tag_id_set:
+                tag_to_ids[t_id].add(d_id)
+        tag_diary_map: Dict[int, set] = {
+            t_id: ids for t_id, ids in tag_to_ids.items()
+            if ids and len(ids) <= RELATED_NOISE_MAX
+        }
 
         # diary_id → 共有タグリスト
         shared_tag_map: Dict[int, List] = defaultdict(list)
