@@ -54,6 +54,11 @@ TAG_MASTER: list[tuple[str, list[str]]] = [
     ]),
 ]
 
+# 子タグ名 → 親タグ名（tag_master.md の細分タグ＝インデント表現に対応。階層は2段階まで）
+TAG_MASTER_PARENTS: dict[str, str] = {
+    'LNG': 'エネルギー',
+}
+
 
 class Command(BaseCommand):
     help = '投資タグマスタ(tag_master)を MasterTag に正しい軸で一括登録する（冪等）。'
@@ -107,6 +112,29 @@ class Command(BaseCommand):
                 else:
                     unchanged += 1
 
+        # 親子関係の同期（TAG_MASTER_PARENTS）。
+        # 親は必ず先に登録済み（TAG_MASTER内の並び）である前提。存在しない/軸不一致はスキップ。
+        parents_linked = 0
+        for child_name, parent_name in TAG_MASTER_PARENTS.items():
+            child = MasterTag.objects.filter(name=child_name).first()
+            parent = MasterTag.objects.filter(name=parent_name).first()
+            if not child or not parent:
+                self.stdout.write(self.style.WARNING(
+                    f'  ! 親子関係スキップ: {child_name} → {parent_name}（未登録）'
+                ))
+                continue
+            if child.axis != parent.axis:
+                self.stdout.write(self.style.WARNING(
+                    f'  ! 親子関係スキップ: {child_name} → {parent_name}（軸不一致）'
+                ))
+                continue
+            if child.parent_id != parent.id:
+                parents_linked += 1
+                self.stdout.write(f'  ⤷ {child_name} の親を {parent_name} に設定')
+                if not dry_run:
+                    child.parent = parent
+                    child.save()
+
         pruned = 0
         if prune:
             stale = MasterTag.objects.filter(is_active=True).exclude(name__in=master_names)
@@ -137,6 +165,7 @@ class Command(BaseCommand):
         prefix = '[dry-run] ' if dry_run else ''
         self.stdout.write(self.style.SUCCESS(
             f'{prefix}MasterTag シード完了: 新規 {created} / 更新 {updated} / 変更なし {unchanged}'
+            + f' / 親子関係設定 {parents_linked}'
             + (f' / 無効化 {pruned}' if prune else '')
             + (f' / ユーザータグ同期 {user_synced}' if sync_user_tags else '')
         ))

@@ -28,24 +28,30 @@ class MasterTagAdmin(admin.ModelAdmin):
     次のリクエストから全ユーザーの補完候補・軸決定に反映される。
     """
 
-    list_display = ('name', 'axis_badge', 'is_active', 'sort_order', 'updated_at')
+    list_display = ('name', 'axis_badge', 'parent', 'is_active', 'sort_order', 'updated_at')
     list_editable = ('is_active', 'sort_order')
     list_filter = ('axis', 'is_active')
     search_fields = ('name',)
     ordering = ('sort_order', 'axis', 'name')
+    autocomplete_fields = ('parent',)
     actions = ('activate', 'deactivate', 'set_axis_theme', 'set_axis_macro',
                'set_axis_capital_policy', 'set_axis_business_model',
                'set_axis_risk', 'set_axis_event', 'set_axis_custom')
 
     fieldsets = (
         (None, {
-            'fields': ('name', 'axis', 'is_active', 'sort_order'),
+            'fields': ('name', 'axis', 'parent', 'is_active', 'sort_order'),
             'description': (
                 '<p style="color:#555;">追加・変更を保存するとキャッシュが自動クリアされ、'
-                '全ユーザーの補完候補に即時反映されます（デプロイ不要）。</p>'
+                '全ユーザーの補完候補に即時反映されます（デプロイ不要）。'
+                'parent は tag_master.md の細分タグ（インデント）に対応。'
+                '親タグ自身は他タグの子にできません（階層は2段階まで）。</p>'
             ),
         }),
     )
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('parent')
 
     @admin.display(description='軸')
     def axis_badge(self, obj):

@@ -1,5 +1,6 @@
 # tags/models.py
 import math
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.conf import settings
 
@@ -71,6 +72,14 @@ class MasterTag(models.Model):
         default=Tag.AXIS_THEME,
         verbose_name='軸',
     )
+    parent = models.ForeignKey(
+        'self',
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name='children',
+        verbose_name='親タグ',
+        help_text='docs/analysis_templates/tag_master.md の細分タグ（インデント）に対応。',
+    )
     is_active = models.BooleanField(default=True, verbose_name='有効')
     sort_order = models.IntegerField(default=0, verbose_name='表示順')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -86,6 +95,18 @@ class MasterTag(models.Model):
 
     def __str__(self):
         return str(self.name)
+
+    def clean(self):
+        super().clean()
+        if self.parent_id:
+            if self.pk and self.parent_id == self.pk:
+                raise ValidationError({'parent': '自分自身を親タグにはできません。'})
+            if self.pk and self.children.exists():
+                raise ValidationError({'parent': '子タグを持つタグを、別のタグの子タグにはできません。'})
+            if self.parent.parent_id:
+                raise ValidationError({'parent': '親タグ自身が子タグです。階層は2段階までにしてください。'})
+            if self.parent.axis != self.axis:
+                raise ValidationError({'parent': '親タグと同じ分析グループ（軸）を選択してください。'})
 
     def _clear_axis_cache(self):
         from django.core.cache import cache
