@@ -296,7 +296,18 @@ def _suggest_pnl_result(diary):
 
 
 def _default_review_due_date(diary, horizon):
-    """horizon から検証予定日を補完する（基準は初回購入日 or 今日）。"""
+    """horizon から検証予定日を補完する（基準は初回購入日 or 今日）。
+
+    horizon='next_earnings'（次の決算まで）は、実際の次回決算日
+    （EarningsSchedule をコードで参照）があればそれを採用し、無ければ従来の
+    概算45日にフォールバックする。これにより決算後の「答え合わせ待ち」想起が
+    正確なタイミングで発火する。
+    """
+    if horizon == 'next_earnings' and diary.stock_symbol:
+        from .services.earnings_lookup import get_next_earnings_map
+        ne = get_next_earnings_map({diary.stock_symbol}).get(diary.stock_symbol)
+        if ne:
+            return ne.date
     base = diary.first_purchase_date or timezone.localdate()
     days = {'next_earnings': 45, '3m': 90, '6m': 180, '1y': 365, 'long': 365}.get(horizon, 180)
     return base + timedelta(days=days)
